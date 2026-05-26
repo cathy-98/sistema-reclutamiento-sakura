@@ -1,0 +1,16 @@
+# Python (Ambiente Virtual y Caché)
+backend/venv/
+backend/__pycache__/
+*.pyc
+
+# Angular (Módulos de Node y compilados)
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
+
+# Configuración local de editores y sistemas operativos
+.env
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
