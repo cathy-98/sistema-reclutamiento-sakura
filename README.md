@@ -1,6 +1,6 @@
 # 🚀 Sakura Recruitment System - 
 
-Este repositorio contiene el código fuente unificado y la infraestructura local para el desarrollo e integración del módulo de autenticación (**Login**) del Sistema de Reclutamiento y Evaluación de Elitsoft. 
+Este repositorio contiene el código fuente unificado y la infraestructura local para el desarrollo e integración del módulo de autenticación (**Login**) del Sistema de Reclutamiento y Evaluación de Sakura. 
 
 El proyecto adopta un enfoque de monorrepositorio local, segmentando limpiamente la capa de servicios (Backend), la capa de interfaz de usuario (Frontend) y la orquestación del entorno de datos a través de contenedores.
 
