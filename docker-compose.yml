@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: elitsoft_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: elitsoft_admin
+      POSTGRES_PASSWORD: elitsoft_password_2026
+      POSTGRES_DB: db_reclutamiento_elitsoft
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
