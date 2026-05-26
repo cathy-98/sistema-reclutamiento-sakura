@@ -4,7 +4,7 @@ services:
   postgres_db:
     image: postgres:15-alpine
     container_name: elitsoft_postgres
-    restart: always prueba
+    restart: always
     environment:
       POSTGRES_USER: elitsoft_admin
       POSTGRES_PASSWORD: elitsoft_password_2026
