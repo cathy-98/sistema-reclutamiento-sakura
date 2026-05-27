@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # URL de conexión al contenedor PostgreSQL de Docker.
-# Si tu compañero de DB cambió el usuario, clave o nombre de BD, edítalos aquí.
+# Si tu compañero de DB cambió el usuario, clave o usuario de BD, edítalos aquí.
 DATABASE_URL = "postgresql://elitsoft_admin:elitsoft_password_2026@localhost:5432/db_reclutamiento_elitsoft"
 
 # Crear el motor de conexión
