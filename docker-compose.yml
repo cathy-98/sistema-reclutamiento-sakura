@@ -5,14 +5,21 @@ services:
     image: postgres:16
     container_name: elitsoft_postgres
     restart: always
+
     environment:
       POSTGRES_USER: elitsoft_admin
       POSTGRES_PASSWORD: elitsoft_password_2026
       POSTGRES_DB: db_reclutamiento_elitsoft
+
     ports:
       - "5432:5432"
+
     volumes:
+      # Persistencia de datos
       - postgres_data:/var/lib/postgresql/data
+
+      # Script de respaldo/importación
+      - ./respaldo.sql:/docker-entrypoint-initdb.d/respaldo.sql
 
 volumes:
   postgres_data:
