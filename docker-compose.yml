@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres_db:
-    image: postgres:15-alpine
+    image: postgres:16
     container_name: elitsoft_postgres
     restart: always
     environment:
