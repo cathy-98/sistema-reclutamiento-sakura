@@ -18,7 +18,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
       # Script de respaldo/importación
-      - ./respaldo.sql:/docker-entrypoint-initdb.d/respaldo.sql
+      - ./base_inicial.sql:/docker-entrypoint-initdb.d/base_inicial.sql
 
 volumes:
   postgres_data:
