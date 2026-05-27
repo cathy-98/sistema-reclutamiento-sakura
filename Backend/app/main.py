@@ -16,10 +16,8 @@ app = FastAPI(
 )
 
 # ==========================================
-# CONFIGURACIÓN DE CORS (¡Crucial para Angular!)
+# CONFIGURACIÓN DE CORS
 # ==========================================
-# Permite que la aplicación frontend (Angular) alojada en el puerto 4200
-# pueda realizar peticiones HTTP sin ser bloqueada por las políticas del navegador.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:4200"],
@@ -30,18 +28,16 @@ app.add_middleware(
 
 
 # ==========================================
-# ENDPOINTS / RUTAS DE LA API
+# ENDPOINTS
 # ==========================================
 
-# 1. Endpoint de Prueba de Base de Datos (GET /)
+# 1. Endpoint de Prueba (GET /)
 @app.get("/", tags=["Pruebas"])
 def verificar_conexion_db(db: Session = Depends(obtener_db)):
     """
-    Realiza una consulta de prueba rápida a PostgreSQL en Docker
-    para asegurar que la conexión en el puerto 5432 esté 100% activa.
+    Realiza una consulta de prueba rápida a PostgreSQL en Docker.
     """
     try:
-        # Ejecuta una instrucción SQL nativa simple
         db.execute(text("SELECT 1"))
         return {
             "estado": "¡Al abordaje! Backend activo y conectado a PostgreSQL",
@@ -66,34 +62,34 @@ def login(
     db: Session = Depends(obtener_db)
 ):
     """
-    Valida las credenciales de los usuarios. Si son correctas, genera un
-    token JWT firmado con su rol para permitir la navegación segura en Angular.
+    Valida las credenciales de los usuarios comparando la contraseña hash 
+    con la nueva columna 'contrasena' de PostgreSQL.
     """
     # 1. Buscamos al usuario en la base de datos por su email
     usuario = db.query(Usuario).filter(Usuario.email == solicitud.email).first()
     
-    # 2. Validamos que el usuario exista y que el Hash de la clave coincida
-    if not usuario or not verificar_password(solicitud.password, usuario.password_hash):
+    # 2. Validamos que exista y que la contraseña coincida con 'usuario.contrasena'
+    if not usuario or not verificar_password(solicitud.password, usuario.contrasena):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Correo electrónico o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"}
         )
         
-    # 3. Datos del usuario que viajarán encriptados en el Token (Payload)
+    # 3. Datos que viajarán en el Token (Se utiliza 'usuario.usuario' en vez de nombre)
     datos_token = {
         "sub": usuario.email,
         "rol": usuario.rol,
-        "nombre": usuario.nombre
+        "usuario": usuario.usuario
     }
     
     # 4. Generamos el JWT firmado
     token_jwt = crear_token_acceso(datos_token)
     
-    # 5. Retornamos la respuesta esperada por el Frontend
+    # 5. Respondemos al frontend con el TokenResponse adaptado
     return TokenResponse(
         access_token=token_jwt,
         token_type="bearer",
-        nombre=usuario.nombre,
+        usuario=usuario.usuario,
         rol=usuario.rol
     )
