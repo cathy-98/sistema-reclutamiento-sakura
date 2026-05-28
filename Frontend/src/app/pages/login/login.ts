@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -12,21 +12,26 @@ import { Router } from '@angular/router';
 export class Login {
   email = '';
   password = '';
+  cargando = false;
 
   constructor(
-    private http: HttpClient,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ingresar() {
-    this.http.post('http://localhost:8000/api/auth/login', {
+    this.cargando = true;
+
+    this.authService.login({
       email: this.email,
       password: this.password,
     }).subscribe({
       next: () => {
+        this.cargando = false;
         this.router.navigate(['/dashboard']);
       },
       error: () => {
+        this.cargando = false;
         alert('Correo o contraseña incorrectos');
       },
     });
