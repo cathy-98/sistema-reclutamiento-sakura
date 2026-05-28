@@ -12,19 +12,36 @@
     <form class="login-form" (ngSubmit)="ingresar()">
       <div class="form-group">
         <label>Correo electrónico</label>
-        <input name="email" type="email" placeholder="Ingresa tu correo" [(ngModel)]="email" />
+        <input
+          name="email"
+          type="email"
+          placeholder="Ingresa tu correo"
+          [(ngModel)]="email"
+          required
+        />
       </div>
 
       <div class="form-group">
         <label>Contraseña</label>
-        <input name="password" type="password" placeholder="Ingresa tu contraseña" [(ngModel)]="password" />
+        <div class="password-field">
+          <input
+            name="password"
+            type="password"
+            placeholder="Ingresa tu contraseña"
+            [(ngModel)]="password"
+            required
+          />
+          <span aria-hidden="true">○</span>
+        </div>
       </div>
 
       <a class="forgot-password">¿Olvidaste tu contraseña?</a>
 
-      <button type="submit">Ingresar</button>
+      <button type="submit" [disabled]="cargando">
+        {{ cargando ? 'Ingresando...' : 'Ingresar' }}
+      </button>
     </form>
 
-
+    <div class="login-dot" aria-hidden="true"></div>
   </div>
 </section>
