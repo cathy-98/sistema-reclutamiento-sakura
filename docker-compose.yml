@@ -4,21 +4,55 @@ services:
     image: postgres:16
     container_name: elitsoft_postgres
     restart: always
-
     environment:
       POSTGRES_USER: elitsoft_admin
       POSTGRES_PASSWORD: elitsoft_password_2026
       POSTGRES_DB: db_reclutamiento_elitsoft
-
     ports:
       - "5432:5432"
-
     volumes:
-      # Persistencia de datos
       - postgres_data:/var/lib/postgresql/data
-
-      # Script de respaldo/importación
       - ./base_inicial.sql:/docker-entrypoint-initdb.d/base_inicial.sql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U elitsoft_admin -d db_reclutamiento_elitsoft",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: elitsoft_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://elitsoft_admin:elitsoft_password_2026@postgres_db:5432/db_reclutamiento_elitsoft
+    volumes:
+      - ./Backend:/app
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: elitsoft_frontend
+    restart: unless-stopped
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./Frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
+  frontend_node_modules:
