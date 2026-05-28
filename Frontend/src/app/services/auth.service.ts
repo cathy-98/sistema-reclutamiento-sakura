@@ -18,10 +18,27 @@ export interface LoginResponse {
 })
 export class AuthService {
   private readonly apiUrl = 'http://localhost:8000/api/auth/login';
+  private readonly tokenKey = 'sakura_access_token';
 
   constructor(private http: HttpClient) {}
 
   login(credenciales: LoginRequest) {
     return this.http.post<LoginResponse>(this.apiUrl, credenciales);
+  }
+
+  guardarToken(token: string) {
+    localStorage.setItem(this.tokenKey, token);
+  }
+
+  obtenerToken() {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  eliminarToken() {
+    localStorage.removeItem(this.tokenKey);
+  }
+
+  estaAutenticado() {
+    return this.obtenerToken() !== null;
   }
 }

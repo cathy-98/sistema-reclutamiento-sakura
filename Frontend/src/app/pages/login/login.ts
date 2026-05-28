@@ -26,7 +26,8 @@ export class Login {
       email: this.email,
       password: this.password,
     }).subscribe({
-      next: () => {
+      next: (respuesta) => {
+        this.authService.guardarToken(respuesta.access_token);
         this.cargando = false;
         this.router.navigate(['/dashboard']);
       },
