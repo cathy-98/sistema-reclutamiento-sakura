@@ -1,9 +1,19 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
-export class Dashboard {}
+export class Dashboard {
+  usuario = 'usuario';
+  rol = '';
+
+  constructor(private authService: AuthService) {
+    this.usuario = this.authService.obtenerUsuario() ?? 'usuario';
+    this.rol = this.authService.obtenerRol() ?? '';
+  }
+}
