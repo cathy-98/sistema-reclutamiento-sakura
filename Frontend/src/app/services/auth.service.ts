@@ -19,11 +19,19 @@ export interface LoginResponse {
 export class AuthService {
   private readonly apiUrl = 'http://localhost:8000/api/auth/login';
   private readonly tokenKey = 'sakura_access_token';
+  private readonly usuarioKey = 'sakura_usuario';
+  private readonly rolKey = 'sakura_rol';
 
   constructor(private http: HttpClient) {}
 
   login(credenciales: LoginRequest) {
     return this.http.post<LoginResponse>(this.apiUrl, credenciales);
+  }
+
+  guardarSesion(respuesta: LoginResponse) {
+    localStorage.setItem(this.tokenKey, respuesta.access_token);
+    localStorage.setItem(this.usuarioKey, respuesta.usuario);
+    localStorage.setItem(this.rolKey, respuesta.rol);
   }
 
   guardarToken(token: string) {
@@ -34,8 +42,18 @@ export class AuthService {
     return localStorage.getItem(this.tokenKey);
   }
 
+  obtenerUsuario() {
+    return localStorage.getItem(this.usuarioKey);
+  }
+
+  obtenerRol() {
+    return localStorage.getItem(this.rolKey);
+  }
+
   eliminarToken() {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.usuarioKey);
+    localStorage.removeItem(this.rolKey);
   }
 
   estaAutenticado() {

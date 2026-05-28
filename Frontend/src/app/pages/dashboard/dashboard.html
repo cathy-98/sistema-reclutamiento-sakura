@@ -1,1 +1,7 @@
-<p>exito piratas!</p>
+<main class="dashboard-page">
+  <section class="welcome-panel">
+    <p class="eyebrow">Sesión iniciada</p>
+    <h1>Hola, {{ usuario }}</h1>
+    <p *ngIf="rol">Rol: {{ rol }}</p>
+  </section>
+</main>
