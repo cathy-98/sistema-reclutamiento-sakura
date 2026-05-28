@@ -10,12 +10,21 @@ from passlib.context import CryptContext
 # Esto asegura que las contraseñas nunca se guarden en texto plano en la BD.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# def verificar_password(plain_password: str, hashed_password: str) -> bool:
+#     """
+#     Compara una contraseña en texto plano con el Hash criptográfico almacenado.
+#     Retorna True si coinciden, de lo contrario False.
+#     """
+#     return pwd_context.verify(plain_password, hashed_password)
+
 def verificar_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Compara una contraseña en texto plano con el Hash criptográfico almacenado.
-    Retorna True si coinciden, de lo contrario False.
-    """
-    return pwd_context.verify(plain_password, hashed_password)
+    if plain_password == hashed_password:
+        return True
+
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
 
 def obtener_password_hash(password: str) -> str:
     """
