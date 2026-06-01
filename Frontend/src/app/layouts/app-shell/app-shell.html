@@ -1,0 +1,63 @@
+<div class="app-layout" [class.menu-cerrado]="!menuAbierto">
+  <aside class="sidebar" aria-label="Menu principal">
+    <header class="sidebar-header">
+      <img class="brand-logo" src="/images/Logos/logo_sakura.png" alt="Sakura" />
+      <span class="brand-name">Sakura</span>
+    </header>
+
+    <p class="sidebar-section">Principal</p>
+
+    <nav class="sidebar-nav">
+      <a
+        *ngFor="let item of menuItems"
+        class="sidebar-link"
+        [routerLink]="item.route"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+        (click)="abrirMenuSiEstaCerrado()"
+      >
+        <span class="sidebar-icon" [ngSwitch]="item.icon" aria-hidden="true">
+          <svg *ngSwitchCase="'home'" viewBox="0 0 24 24">
+            <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" />
+          </svg>
+          <svg *ngSwitchCase="'requests'" viewBox="0 0 24 24">
+            <path d="M6 3h9l3 3v15H6z" />
+            <path d="M9 10h6M9 14h6M9 18h4" />
+          </svg>
+          <svg *ngSwitchCase="'reports'" viewBox="0 0 24 24">
+            <path d="M5 20V4h14v16z" />
+            <path d="M8 16v-4M12 16V8M16 16v-6" />
+          </svg>
+          <svg *ngSwitchCase="'tools'" viewBox="0 0 24 24">
+            <path d="m14 7 3 3M5 19l9-9 3 3-9 9H5z" />
+            <path d="M13 5h6v6" />
+          </svg>
+          <svg *ngSwitchCase="'users'" viewBox="0 0 24 24">
+            <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+            <path d="M3 21a6 6 0 0 1 12 0" />
+            <path d="M16 11a3 3 0 0 0 0-6M18 21a5 5 0 0 0-3-4.5" />
+          </svg>
+          <svg *ngSwitchCase="'calendar'" viewBox="0 0 24 24">
+            <path d="M5 5h14v16H5z" />
+            <path d="M8 3v4M16 3v4M5 10h14" />
+          </svg>
+        </span>
+        <span class="sidebar-label">{{ item.label }}</span>
+      </a>
+    </nav>
+  </aside>
+
+  <button
+    class="menu-toggle"
+    type="button"
+    [attr.aria-expanded]="menuAbierto"
+    aria-label="Abrir o cerrar menu lateral"
+    (click)="alternarMenu()"
+  >
+    <span aria-hidden="true">{{ menuAbierto ? '<' : '>' }}</span>
+  </button>
+
+  <main class="app-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
