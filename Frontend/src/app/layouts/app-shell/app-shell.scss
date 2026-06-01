@@ -18,7 +18,7 @@
   height: calc(100vh - 32px);
   margin: 16px 0 16px 18px;
   padding: 22px 16px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--color-border);
   border-radius: 16px;
   background: var(--color-card-bg);
@@ -62,20 +62,27 @@
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sidebar-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 40px;
+  width: 100%;
   padding: 0 12px;
+  border: 0;
   border-radius: 9px;
+  background: transparent;
   color: #5c5555;
+  cursor: pointer;
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
+  text-align: left;
   white-space: nowrap;
   transition:
     background 150ms ease,
@@ -92,6 +99,24 @@
   background: rgba(164, 82, 82, 0.14);
   color: var(--color-sakura);
   box-shadow: inset 3px 0 0 var(--color-sakura);
+}
+
+.sidebar-link.has-open-submenu {
+  background: rgba(164, 82, 82, 0.08);
+  color: var(--color-sakura);
+}
+
+.sidebar-chevron {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-size: 18px;
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform 150ms ease;
+}
+
+.sidebar-link.has-open-submenu .sidebar-chevron {
+  transform: rotate(-90deg);
 }
 
 .sidebar-icon {
@@ -111,6 +136,63 @@
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.sidebar-tooltip {
+  position: absolute;
+  left: 54px;
+  z-index: 5;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-text);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  white-space: nowrap;
+}
+
+.app-layout:not(.menu-cerrado) .sidebar-tooltip {
+  display: none;
+}
+
+.menu-cerrado .sidebar-link:hover .sidebar-tooltip,
+.menu-cerrado .sidebar-link:focus-visible .sidebar-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sidebar-submenu {
+  display: grid;
+  margin: 4px 0 4px 31px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(164, 82, 82, 0.16);
+}
+
+.sidebar-submenu-link {
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6f6767;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.sidebar-submenu-link:hover,
+.sidebar-submenu-link.is-active {
+  background: rgba(164, 82, 82, 0.08);
+  color: var(--color-sakura);
 }
 
 .menu-toggle {
@@ -155,7 +237,9 @@
 
   .brand-name,
   .sidebar-section,
-  .sidebar-label {
+  .sidebar-label,
+  .sidebar-chevron,
+  .sidebar-submenu {
     display: none;
   }
 }

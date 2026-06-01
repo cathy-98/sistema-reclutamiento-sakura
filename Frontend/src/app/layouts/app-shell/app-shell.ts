@@ -4,8 +4,14 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 interface MenuItem {
   label: string;
-  route: string;
+  route?: string;
   icon: string;
+  children?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  label: string;
+  route?: string;
 }
 
 @Component({
@@ -16,14 +22,34 @@ interface MenuItem {
 })
 export class AppShell {
   menuAbierto = true;
+  submenuAbierto: string | null = 'Gestion de solicitudes';
 
   menuItems: MenuItem[] = [
-    { label: 'Bienvenida', route: '/dashboard', icon: 'home' },
-    { label: 'Gestion de solicitudes', route: '/admin/solicitudes', icon: 'requests' },
-    { label: 'Informes', route: '/informes', icon: 'reports' },
-    { label: 'Creacion de test', route: '/tests', icon: 'tools' },
-    { label: 'Candidatos', route: '/candidatos', icon: 'users' },
-    { label: 'Gestion de entrevistas', route: '/entrevistas', icon: 'calendar' },
+    {
+      label: 'Inicio',
+      icon: 'home',
+      route: '/dashboard',
+    },
+    {
+      label: 'Gestion de cuestionarios',
+      icon: 'questionnaire',
+    },
+    {
+      label: 'Gestion de solicitudes',
+      icon: 'requests',
+      children: [
+        { label: 'Listado de solicitudes' },
+        { label: 'Informes' },
+      ],
+    },
+    {
+      label: 'Candidatos',
+      icon: 'users',
+    },
+    {
+      label: 'Gestion de entrevistas',
+      icon: 'calendar',
+    },
   ];
 
   alternarMenu() {
@@ -34,5 +60,18 @@ export class AppShell {
     if (!this.menuAbierto) {
       this.menuAbierto = true;
     }
+  }
+
+  alternarSubmenu(item: MenuItem) {
+    if (!item.children?.length) {
+      return;
+    }
+
+    this.abrirMenuSiEstaCerrado();
+    this.submenuAbierto = this.submenuAbierto === item.label ? null : item.label;
+  }
+
+  estaSubmenuAbierto(item: MenuItem) {
+    return this.submenuAbierto === item.label;
   }
 }
