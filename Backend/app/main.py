@@ -14,7 +14,7 @@ from app.schemas import (
 from app.security import verificar_password, crear_token_acceso
 
 app = FastAPI(
-    title="P&E Platform - Core API",
+    title="Sakura Platform - Core API",
     description="Servidor de servicios backend adaptado a la base de datos física normalizada del Sprint 1",
     version="1.4.0"
 )
