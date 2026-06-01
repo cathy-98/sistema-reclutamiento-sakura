@@ -74,6 +74,7 @@ COPY public.usuarios (id, usuario, contrasena, email, rol) FROM stdin;
 1	fvaldesm	felipe123	felipe@gmail.com	ADMIN
 3	cathy98	cathy123	cathy@gmail.com	RECLUTADORA
 2	nmchavezm	noe123	noelid@gmail.com	CANDIDATO
+4	jperez	miClave123	juan.perez@gmail.com	CANDIDATO
 \.
 
 
