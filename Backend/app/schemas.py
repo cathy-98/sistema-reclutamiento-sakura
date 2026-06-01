@@ -43,6 +43,8 @@ class SolicitudHabilidadResponse(SolicitudHabilidadBase):
 # ESQUEMAS DE SOLICITUD DE VACANTES (Sprint 1)
 # ==========================================
 class SolicitudBase(BaseModel):
+    # Campos para listar todas las solicitudes
+    id_solicitud: Optional[int] = None
     titulo: str = Field(..., max_length=200)
     descripcion: Optional[str] = None
     id_cargo: int
