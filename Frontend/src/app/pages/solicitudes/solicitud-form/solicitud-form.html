@@ -1,0 +1,170 @@
+<main class="request-form-page">
+  <header class="form-header">
+    <div class="title-row">
+      <h1>{{ esEdicion ? 'Editar solicitud de vacante' : 'Nueva solicitud de vacante' }}</h1>
+      <span>ID solicitud: {{ idSolicitud }}</span>
+    </div>
+    <a class="close-button" routerLink="/solicitudes" aria-label="Cerrar formulario">×</a>
+  </header>
+
+  <nav class="steps" aria-label="Pasos de solicitud">
+    <a class="step is-active" href="#informacion"><span>1</span>Información general</a>
+    <a class="step" href="#condiciones"><span>2</span>Condiciones</a>
+    <a class="step" href="#descripcion"><span>3</span>Descripción del cargo</a>
+    <a class="step" href="#cronograma"><span>4</span>Cronograma</a>
+    <a class="step" href="#habilidades"><span>5</span>Habilidades técnicas</a>
+  </nav>
+
+  <form class="form-grid" (ngSubmit)="guardar()">
+    <section id="informacion" class="form-section">
+      <h2><span class="section-icon">▤</span>1. Información general</h2>
+      <label>
+        Nombre de la solicitud <strong>*</strong>
+        <input type="text" placeholder="Ej. Solicitud desarrollador frontend para Latam" />
+      </label>
+      <label>
+        Cargo solicitado <strong>*</strong>
+        <select>
+          <option>Ej. Desarrollador Full Stack</option>
+          <option>Backend</option>
+          <option>Frontend</option>
+          <option>QA</option>
+        </select>
+      </label>
+      <div class="two-columns">
+        <label>
+          Área / Departamento <strong>*</strong>
+          <select>
+            <option>Selecciona un área</option>
+            <option>Tecnología</option>
+            <option>Operaciones</option>
+          </select>
+        </label>
+        <label>
+          Solicitante <strong>*</strong>
+          <select>
+            <option>Selecciona solicitante</option>
+            <option>Joaquín</option>
+          </select>
+        </label>
+        <label>
+          Cliente <strong>*</strong>
+          <select>
+            <option>Selecciona un cliente</option>
+            <option>Latam</option>
+            <option>Banco de chile</option>
+          </select>
+        </label>
+        <label>
+          Reclutador asignado <strong>*</strong>
+          <select>
+            <option>Selecciona reclutador</option>
+            <option>Macarena Lopez</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section id="condiciones" class="form-section">
+      <h2><span class="section-icon">▣</span>2. Condiciones de la vacante</h2>
+      <div class="conditions-grid">
+        <fieldset>
+          <legend>Prioridad de atención</legend>
+          <label><input type="checkbox" checked /> Alta</label>
+          <label><input type="checkbox" /> Media</label>
+          <label><input type="checkbox" /> Baja</label>
+        </fieldset>
+        <label>
+          Cantidad de vacantes <strong>*</strong>
+          <span class="stepper">
+            <button type="button" (click)="cambiarVacantes(-1)">−</button>
+            <input type="number" [(ngModel)]="cantidadVacantes" name="cantidadVacantes" min="1" />
+            <button type="button" (click)="cambiarVacantes(1)">+</button>
+          </span>
+        </label>
+      </div>
+      <fieldset>
+        <legend>Modalidad</legend>
+        <label><input type="checkbox" checked /> Home Office</label>
+        <label><input type="checkbox" /> Presencial</label>
+        <label><input type="checkbox" /> Híbrido</label>
+      </fieldset>
+      <div class="two-columns">
+        <label>
+          Rango salarial mínimo
+          <input type="text" value="$ 6.000.000" />
+        </label>
+        <label>
+          Rango salarial máximo
+          <input type="text" value="$ 8.500.000" />
+        </label>
+      </div>
+      <label>
+        Horario
+        <input type="text" placeholder="Ej. 10:00 am - 6:00 pm" />
+      </label>
+    </section>
+
+    <section id="descripcion" class="form-section full-width">
+      <h2><span class="section-icon">☷</span>3. Descripción del cargo y observaciones adicionales</h2>
+      <label class="textarea-label">
+        <textarea
+          name="observaciones"
+          maxlength="200"
+          [(ngModel)]="observaciones"
+          placeholder="Añadir observaciones adicionales o detalles relevantes sobre la vacante (máx. 200 caracteres)"
+        ></textarea>
+        <span>{{ observaciones.length }}/200</span>
+      </label>
+    </section>
+
+    <section id="cronograma" class="form-section full-width">
+      <h2><span class="section-icon">□</span>4. Cronograma del proceso</h2>
+      <div class="four-columns">
+        <label>Fecha de solicitud<input type="text" value="15/08/2025" /></label>
+        <label>Fecha inicio de empleo<input type="text" value="07/10/2025" /></label>
+        <label>Inicio de selección<input type="text" value="07/10/2025" /></label>
+        <label>Fin selección<input type="text" value="31/10/2025" /></label>
+      </div>
+    </section>
+
+    <section id="habilidades" class="form-section full-width">
+      <div class="section-toolbar">
+        <h2><span class="section-icon">⌘</span>5. Habilidades técnicas</h2>
+        <label>
+          Buscar tecnología
+          <input type="search" placeholder="Buscar tecnología" />
+        </label>
+        <button class="primary-button" type="button" (click)="agregarTecnologia()">+ Agregar</button>
+      </div>
+      <div class="skills-table">
+        <div class="skills-head">
+          <span>Tecnología</span>
+          <span>Nivel técnico</span>
+          <span>Área mínima experiencia</span>
+          <span>Acciones</span>
+        </div>
+        <div class="skill-row" *ngFor="let tecnologia of tecnologias; let i = index; trackBy: trackTecnologia">
+          <span class="drag-handle">⋮⋮</span>
+          <input type="text" [(ngModel)]="tecnologia.nombre" [name]="'nombre' + i" />
+          <select [(ngModel)]="tecnologia.nivel" [name]="'nivel' + i">
+            <option>Junior</option>
+            <option>Semi Senior</option>
+            <option>Senior</option>
+          </select>
+          <input type="text" [(ngModel)]="tecnologia.experiencia" [name]="'experiencia' + i" />
+          <button type="button" aria-label="Editar tecnología">✎</button>
+          <button class="danger-button" type="button" (click)="eliminarTecnologia(i)" aria-label="Eliminar tecnología">
+            🗑
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="form-actions full-width">
+      <a class="secondary-button" routerLink="/solicitudes">Cancelar</a>
+      <span>Los cambios se guardan automáticamente</span>
+      <button class="save-button" type="submit">Guardar y continuar ›</button>
+    </footer>
+  </form>
+</main>

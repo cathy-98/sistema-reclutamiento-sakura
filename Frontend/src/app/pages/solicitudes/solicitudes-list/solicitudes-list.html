@@ -1,0 +1,95 @@
+<main class="requests-page">
+  <section class="welcome-panel">
+    <div>
+      <h1>Bienvenido Joaquín (admin)</h1>
+      <p>Listado de solicitudes</p>
+    </div>
+    <img src="/images/Logos/logo_sakura.png" alt="Perfil" />
+  </section>
+
+  <section class="toolbar-panel">
+    <div>
+      <p>Gestión de solicitudes</p>
+      <span>Genera solicitudes</span>
+    </div>
+    <a class="primary-button" routerLink="/solicitudes/nueva">
+      <span aria-hidden="true">+</span>
+      Crear nueva solicitud
+    </a>
+  </section>
+
+  <section class="table-panel" aria-label="Listado de solicitudes">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" aria-label="Seleccionar todas" /></th>
+            <th>ID solicitud</th>
+            <th>Cliente</th>
+            <th>Cargo / vacantes</th>
+            <th>Responsable</th>
+            <th>Fecha inicio y fin selección</th>
+            <th>Fecha inicio empleo</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let solicitud of solicitudes; trackBy: trackSolicitud">
+            <td><input type="checkbox" [attr.aria-label]="'Seleccionar ' + solicitud.id" /></td>
+            <td>{{ solicitud.id }}</td>
+            <td>{{ solicitud.cliente }}</td>
+            <td>{{ solicitud.cargo }}</td>
+            <td>{{ solicitud.responsable }}</td>
+            <td>{{ solicitud.seleccion }}</td>
+            <td>{{ solicitud.inicioEmpleo }}</td>
+            <td>{{ solicitud.prioridad }}</td>
+            <td>
+              <span class="status" [class]="'status ' + estadoClase(solicitud.estado)">
+                {{ solicitud.estado }}
+              </span>
+            </td>
+            <td>
+              <div class="row-actions">
+                <a [routerLink]="['/solicitudes', solicitud.id, 'editar']" aria-label="Editar solicitud">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m5 19 4.2-.8L19 8.4 15.6 5 5.8 14.8z" />
+                    <path d="m14.5 6.1 3.4 3.4" />
+                  </svg>
+                </a>
+                <button type="button" aria-label="Ver solicitud">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
+                    <circle cx="12" cy="12" r="2.2" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="table-footer">
+      <span>Mostrando 31 - 60 de 2030 registros</span>
+      <div class="pagination">
+        <label>
+          Registros por página:
+          <select aria-label="Registros por página">
+            <option>1</option>
+            <option>10</option>
+            <option>25</option>
+          </select>
+        </label>
+        <button type="button" aria-label="Página anterior">‹</button>
+        <button class="is-active" type="button">1</button>
+        <button type="button">2</button>
+        <button type="button">3</button>
+        <span>...</span>
+        <button type="button">9</button>
+        <button type="button" aria-label="Página siguiente">›</button>
+      </div>
+    </footer>
+  </section>
+</main>

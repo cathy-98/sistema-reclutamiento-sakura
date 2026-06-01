@@ -38,8 +38,9 @@ export class AppShell {
       label: 'Gestion de solicitudes',
       icon: 'requests',
       children: [
-        { label: 'Listado de solicitudes' },
+        { label: 'Listado de solicitudes', route: '/solicitudes' },
         { label: 'Informes' },
+        { label: 'Creacion de test' },
       ],
     },
     {
