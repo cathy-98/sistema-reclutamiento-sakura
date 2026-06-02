@@ -1,15 +1,27 @@
-.request-form-page {
-  min-height: 100vh;
+.request-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
   padding: 24px;
-  background: var(--color-page-bg);
+  background: rgba(20, 24, 31, 0.78);
+}
+
+.request-modal {
+  width: min(100%, 1500px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px 28px 18px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.28);
 }
 
 .form-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: min(100%, 1500px);
-  margin-inline: auto;
   margin-bottom: 18px;
 }
 
@@ -39,14 +51,11 @@
 .steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 24px;
-  width: min(100%, 1500px);
-  margin-inline: auto;
+  gap: 20px;
   margin-bottom: 10px;
 }
 
 .step {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -81,8 +90,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px 20px;
-  width: min(100%, 1500px);
-  margin-inline: auto;
 }
 
 .form-section {
@@ -136,7 +143,6 @@ textarea {
   background: #fff;
   color: #2b3142;
   font: inherit;
-  font-weight: 500;
   padding: 0 16px;
 }
 
@@ -259,7 +265,6 @@ fieldset label {
   grid-template-columns: 36px 1.1fr 1.2fr 1.3fr 84px;
   background: #f3f4f6;
   color: #2f3545;
-  font-size: 12px;
   font-weight: 800;
 }
 

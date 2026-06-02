@@ -50,8 +50,12 @@ export class SolicitudForm {
     this.tecnologias = this.tecnologias.filter((_tecnologia, i) => i !== index);
   }
 
-  guardar() {
+  cerrar() {
     void this.router.navigate(['/solicitudes']);
+  }
+
+  guardar() {
+    this.cerrar();
   }
 
   trackTecnologia(index: number) {

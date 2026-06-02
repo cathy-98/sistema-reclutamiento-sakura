@@ -1,21 +1,30 @@
-<main class="request-form-page">
-  <header class="form-header">
-    <div class="title-row">
-      <h1>{{ esEdicion ? 'Editar solicitud de vacante' : 'Nueva solicitud de vacante' }}</h1>
-      <span>ID solicitud: {{ idSolicitud }}</span>
-    </div>
-    <a class="close-button" routerLink="/solicitudes" aria-label="Cerrar formulario">×</a>
-  </header>
+<main class="request-modal-backdrop" (click)="cerrar()">
+  <section
+    class="request-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="solicitud-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="form-header">
+      <div class="title-row">
+        <h1 id="solicitud-modal-title">
+          {{ esEdicion ? 'Editar solicitud de vacante' : 'Nueva solicitud de vacante' }}
+        </h1>
+        <span>ID solicitud: {{ idSolicitud }}</span>
+      </div>
+      <button class="close-button" type="button" (click)="cerrar()" aria-label="Cerrar formulario">×</button>
+    </header>
 
-  <nav class="steps" aria-label="Pasos de solicitud">
-    <a class="step is-active" href="#informacion"><span>1</span>Información general</a>
-    <a class="step" href="#condiciones"><span>2</span>Condiciones</a>
-    <a class="step" href="#descripcion"><span>3</span>Descripción del cargo</a>
-    <a class="step" href="#cronograma"><span>4</span>Cronograma</a>
-    <a class="step" href="#habilidades"><span>5</span>Habilidades técnicas</a>
-  </nav>
+    <nav class="steps" aria-label="Pasos de solicitud">
+      <a class="step is-active" href="#informacion"><span>1</span>Información general</a>
+      <a class="step" href="#condiciones"><span>2</span>Condiciones</a>
+      <a class="step" href="#descripcion"><span>3</span>Descripción del cargo</a>
+      <a class="step" href="#cronograma"><span>4</span>Cronograma</a>
+      <a class="step" href="#habilidades"><span>5</span>Habilidades técnicas</a>
+    </nav>
 
-  <form class="form-grid" (ngSubmit)="guardar()">
+    <form class="form-grid" (ngSubmit)="guardar()">
     <section id="informacion" class="form-section">
       <h2><span class="section-icon">▤</span>1. Información general</h2>
       <label>
@@ -166,5 +175,6 @@
       <span>Los cambios se guardan automáticamente</span>
       <button class="save-button" type="submit">Guardar y continuar ›</button>
     </footer>
-  </form>
+    </form>
+  </section>
 </main>
