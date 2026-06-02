@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, Numeric, ForeignKey, Boolean, CheckConstraint, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, Date, DateTime, Numeric, ForeignKey, Boolean, CheckConstraint, UniqueConstraint, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -131,6 +131,9 @@ class Solicitud(Base):
     fecha_inicio_busqueda = Column(Date, nullable=True)
     fecha_cierre_busqueda = Column(Date, nullable=True)
     fecha_inicio_cliente = Column(Date, nullable=True)
+    # NUEVOS CAMPOS: Columnas de hora de inicio y fin de jornada laboral
+    hora_inicio_jornada = Column(Time, nullable=True)
+    hora_fin_jornada = Column(Time, nullable=True)
 
     # Claves Foráneas de Catálogos y Relacionales
     id_cargo = Column(Integer, ForeignKey("tbl_cargo.id_cargo"), nullable=False)
@@ -148,6 +151,11 @@ class Solicitud(Base):
         CheckConstraint(
             "salario_minimo IS NULL OR salario_maximo IS NULL OR salario_minimo <= salario_maximo",
             name="chk_salarios"
+        ),
+        # NUEVO CONSTRAINT: Valida que la hora de inicio sea anterior a la de fin si ambas están definidas
+        CheckConstraint(
+            "hora_inicio_jornada IS NULL OR hora_fin_jornada IS NULL OR hora_inicio_jornada < hora_fin_jornada",
+            name="chk_horario_jornada"
         ),
     )
 

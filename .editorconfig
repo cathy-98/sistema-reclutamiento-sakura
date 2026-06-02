@@ -1,0 +1,10 @@
+# Evita que base_inicial.sql se guarde en UTF-16 (PostgreSQL/Docker requieren UTF-8)
+root = true
+
+[base_inicial.sql]
+charset = utf-8
+end_of_line = lf
+
+[*.sql]
+charset = utf-8
+end_of_line = lf

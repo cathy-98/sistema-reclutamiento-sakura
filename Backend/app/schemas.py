@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
 
@@ -61,6 +61,9 @@ class SolicitudBase(BaseModel):
     fecha_inicio_cliente: Optional[date] = None
     id_estado_solicitud: int
     id_area: int
+    # NUEVOS CAMPOS: Formatos de tiempo (ej. "09:00:00" o "18:00:00")
+    hora_inicio_jornada: Optional[time] = None
+    hora_fin_jornada: Optional[time] = None
 
 class SolicitudCreate(SolicitudBase):
     # Permite recibir la lista de habilidades requeridas en el mismo formulario

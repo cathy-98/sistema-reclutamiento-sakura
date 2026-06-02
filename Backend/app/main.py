@@ -120,7 +120,16 @@ def crear_solicitud(solicitud_in: SolicitudCreate, db: Session = Depends(obtener
             detail="El salario mínimo no puede ser superior al salario máximo."
         )
 
-    # 2. Creación de la instancia principal de la solicitud
+    # 2. NUEVA VALIDACIÓN: Validar coherencia de horario laboral
+    if (solicitud_in.hora_inicio_jornada is not None and 
+            solicitud_in.hora_fin_jornada is not None and 
+            solicitud_in.hora_inicio_jornada >= solicitud_in.hora_fin_jornada):
+        raise HTTPException(
+            status_code=400,
+            detail="La hora de inicio de la jornada debe ser estrictamente anterior a la hora de término."
+        )
+
+    # 3. Creación de la instancia principal de la solicitud
     nueva_solicitud = Solicitud(
         titulo=solicitud_in.titulo,
         descripcion=solicitud_in.descripcion,
@@ -137,7 +146,10 @@ def crear_solicitud(solicitud_in: SolicitudCreate, db: Session = Depends(obtener
         fecha_cierre_busqueda=solicitud_in.fecha_cierre_busqueda,
         fecha_inicio_cliente=solicitud_in.fecha_inicio_cliente,
         id_estado_solicitud=solicitud_in.id_estado_solicitud,
-        id_area=solicitud_in.id_area
+        id_area=solicitud_in.id_area,
+        # Inyección de las nuevas columnas
+        hora_inicio_jornada=solicitud_in.hora_inicio_jornada,
+        hora_fin_jornada=solicitud_in.hora_fin_jornada
     )
     
     try:
@@ -211,6 +223,15 @@ def actualizar_solicitud(id: int, solicitud_in: SolicitudCreate, db: Session = D
         raise HTTPException(
             status_code=400,
             detail="El salario mínimo no puede ser superior al salario máximo."
+        )
+    
+    # NUEVA VALIDACIÓN: Validar coherencia de horario laboral en actualización
+    if (solicitud_in.hora_inicio_jornada is not None and 
+            solicitud_in.hora_fin_jornada is not None and 
+            solicitud_in.hora_inicio_jornada >= solicitud_in.hora_fin_jornada):
+        raise HTTPException(
+            status_code=400,
+            detail="La hora de inicio de la jornada debe ser estrictamente anterior a la hora de término."
         )
 
     # Actualizar campos de la cabecera, utilizando model_dump de Pydantic v2
