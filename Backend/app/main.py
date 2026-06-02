@@ -1,15 +1,20 @@
 from typing import List
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
-# Importaciones locales adaptadas de forma precisa
+# Importaciones locales
 from app.database import obtener_db
-from app.models import Usuario, Solicitud, SolicitudHabilidad
+from app.models import (
+    Usuario, Solicitud, SolicitudHabilidad,
+    Cliente, EstadoSolicitud, Prioridad, Cargo, Modalidad, Area, Habilidad, NivelHabilidad
+)
 from app.schemas import (
     LoginRequest, TokenResponse, 
-    SolicitudCreate, SolicitudResponse
+    SolicitudCreate, SolicitudResponse,
+    ClienteResponse, EstadoSolicitudResponse, PrioridadResponse,
+    CargoResponse, ModalidadResponse, AreaResponse, HabilidadResponse, NivelHabilidadResponse
 )
 from app.security import verificar_password, crear_token_acceso
 
@@ -102,6 +107,42 @@ def login(
     )
 
 # ==========================================
+# MÓDULO DE CATÁLOGOS MAESTROS
+# ==========================================
+
+@app.get("/api/catalogos/clientes", response_model=List[ClienteResponse], tags=["Catálogos"])
+def listar_clientes(db: Session = Depends(obtener_db)):
+    return db.query(Cliente).all()
+
+@app.get("/api/catalogos/estados-solicitud", response_model=List[EstadoSolicitudResponse], tags=["Catálogos"])
+def listar_estados_solicitud(db: Session = Depends(obtener_db)):
+    return db.query(EstadoSolicitud).all()
+
+@app.get("/api/catalogos/prioridades", response_model=List[PrioridadResponse], tags=["Catálogos"])
+def listar_prioridades(db: Session = Depends(obtener_db)):
+    return db.query(Prioridad).all()
+
+@app.get("/api/catalogos/cargos", response_model=List[CargoResponse], tags=["Catálogos"])
+def listar_cargos(db: Session = Depends(obtener_db)):
+    return db.query(Cargo).all()
+
+@app.get("/api/catalogos/modalidades", response_model=List[ModalidadResponse], tags=["Catálogos"])
+def listar_modalidades(db: Session = Depends(obtener_db)):
+    return db.query(Modalidad).all()
+
+@app.get("/api/catalogos/areas", response_model=List[AreaResponse], tags=["Catálogos"])
+def listar_areas(db: Session = Depends(obtener_db)):
+    return db.query(Area).all()
+
+@app.get("/api/catalogos/habilidades", response_model=List[HabilidadResponse], tags=["Catálogos"])
+def listar_habilidades(db: Session = Depends(obtener_db)):
+    return db.query(Habilidad).all()
+
+@app.get("/api/catalogos/niveles-habilidad", response_model=List[NivelHabilidadResponse], tags=["Catálogos"])
+def listar_niveles_habilidad(db: Session = Depends(obtener_db)):
+    return db.query(NivelHabilidad).all()
+
+# ==========================================
 # MÓDULO DE SOLICITUDES (Sprint 1)
 # ==========================================
 
@@ -183,18 +224,41 @@ def crear_solicitud(solicitud_in: SolicitudCreate, db: Session = Depends(obtener
 @app.get("/api/solicitudes", response_model=List[SolicitudResponse], tags=["Solicitudes"])
 def listar_solicitudes(db: Session = Depends(obtener_db)):
     """
-    Retorna el listado completo de solicitudes guardadas en la base de datos PostgreSQL,
-    ordenadas desde la más nueva (ID descendente).
+    Retorna el listado completo de solicitudes resolviendo todos sus catálogos
+    de forma ansiosa (joinedload) en una sola llamada SQL para alta performance.
     """
-    return db.query(Solicitud).order_by(Solicitud.id_solicitud.desc()).all()
+    return db.query(Solicitud).options(
+        joinedload(Solicitud.cargo),
+        joinedload(Solicitud.prioridad),
+        joinedload(Solicitud.cliente),
+        joinedload(Solicitud.solicitante),
+        joinedload(Solicitud.responsable),
+        joinedload(Solicitud.modalidad),
+        joinedload(Solicitud.estado),
+        joinedload(Solicitud.area),
+        joinedload(Solicitud.habilidades).joinedload(SolicitudHabilidad.habilidad),
+        joinedload(Solicitud.habilidades).joinedload(SolicitudHabilidad.nivel)
+    ).order_by(Solicitud.id_solicitud.desc()).all()
 
 
 @app.get("/api/solicitudes/{id}", response_model=SolicitudResponse, tags=["Solicitudes"])
 def obtener_solicitud(id: int, db: Session = Depends(obtener_db)):
     """
-    Busca de forma exacta los datos y las relaciones de una única solicitud por su ID.
+    Busca los datos y relaciones de una única solicitud por su ID.
     """
-    solicitud = db.query(Solicitud).filter(Solicitud.id_solicitud == id).first()
+    solicitud = db.query(Solicitud).options(
+        joinedload(Solicitud.cargo),
+        joinedload(Solicitud.prioridad),
+        joinedload(Solicitud.cliente),
+        joinedload(Solicitud.solicitante),
+        joinedload(Solicitud.responsable),
+        joinedload(Solicitud.modalidad),
+        joinedload(Solicitud.estado),
+        joinedload(Solicitud.area),
+        joinedload(Solicitud.habilidades).joinedload(SolicitudHabilidad.habilidad),
+        joinedload(Solicitud.habilidades).joinedload(SolicitudHabilidad.nivel)
+    ).filter(Solicitud.id_solicitud == id).first()
+    
     if not solicitud:
         raise HTTPException(
             status_code=404, 
