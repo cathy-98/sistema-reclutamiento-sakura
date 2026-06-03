@@ -176,6 +176,13 @@ class Solicitud(Base):
         cascade="all, delete-orphan"
     )
 
+    # Relación muchos a muchos con Candidatos a través de la tabla intermedia de postulación
+    postulaciones = relationship(
+        "SolicitudCandidato",
+        back_populates="solicitud",
+        cascade="all, delete-orphan"
+    )
+
 
 # ==========================================
 # 4. TABLA INTERMEDIA: SOLICITUD HABILIDADES
@@ -198,3 +205,56 @@ class SolicitudHabilidad(Base):
     solicitud = relationship("Solicitud", back_populates="habilidades")
     habilidad = relationship("Habilidad", back_populates="solicitud_habilidades")
     nivel = relationship("NivelHabilidad", back_populates="solicitud_habilidades")
+
+# ==========================================
+# 4. TABLA CENTRAL DE CANDIDATOS
+# ==========================================
+# Sincronizado exactamente con el nuevo script físico de tbl_candidato
+class Candidato(Base):
+    __tablename__ = "tbl_candidato"
+
+    id_candidato = Column(Integer, primary_key=True, autoincrement=True)
+    nombres = Column(String(100), nullable=False)
+    apellido_paterno = Column(String(100), nullable=False)
+    apellido_materno = Column(String(100), nullable=True)
+    correo_electronico = Column(String(150), unique=True, index=True, nullable=False)
+    telefono_contacto = Column(String(30), nullable=True)
+    rut_candidato = Column(String(20), unique=True, nullable=True)
+    fecha_nacimiento = Column(Date, nullable=True)
+    linkedin_url = Column(String(500), nullable=True)
+    github_url = Column(String(500), nullable=True)
+    pretension_renta = Column(Numeric(12, 2), nullable=True)
+    disponibilidad = Column(String(100), nullable=True)
+    resumen_profesional = Column(Text, nullable=True)
+    fecha_creacion = Column(DateTime, nullable=False, server_default=func.now())
+
+    # Relación muchos a muchos con Solicitudes a través de la intermedia de postulación
+    postulaciones = relationship(
+        "SolicitudCandidato",
+        back_populates="candidato",
+        cascade="all, delete-orphan"
+    )
+
+
+# ==========================================
+# 5. TABLA INTERMEDIA N:M (POSTULACIONES / RANKING)
+# ==========================================
+class SolicitudCandidato(Base):
+    __tablename__ = "tbl_solicitud_candidato"
+
+    id_solicitud_candidato = Column(Integer, primary_key=True, autoincrement=True)
+    id_solicitud = Column(Integer, ForeignKey("tbl_solicitud.id_solicitud", ondelete="CASCADE"), nullable=False)
+    id_candidato = Column(Integer, ForeignKey("tbl_candidato.id_candidato", ondelete="CASCADE"), nullable=False)
+    
+    # Atributos de la coincidencia calculados por la integración de IA
+    match_score = Column(Numeric(5, 2), nullable=True)
+    color_semaforo = Column(String(20), nullable=True)
+    estado_postulacion = Column(String(50), default="Nuevo", nullable=False)
+    fecha_postulacion = Column(DateTime, nullable=False, server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("id_solicitud", "id_candidato", name="uq_solicitud_candidato"),
+    )
+
+    solicitud = relationship("Solicitud", back_populates="postulaciones")
+    candidato = relationship("Candidato", back_populates="postulaciones")
