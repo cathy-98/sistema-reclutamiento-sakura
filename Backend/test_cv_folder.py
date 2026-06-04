@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 # Importamos la sesión de base de datos y modelos del proyecto
 from app.database import engine
 from app.models import Candidato
-from app.services.cv_service import extraer_texto_pdf, extraer_texto_docx, procesar_cv_con_ia
+from app.services.cv_service import extraer_texto_pdf, extraer_texto_docx, procesar_cv_con_python
 
 # Carpeta que escaneará el script (Ubicada en la raíz Backend/temp_cvs)
 FOLDER_PATH = "./temp_cvs"
@@ -33,23 +33,34 @@ async def procesar_archivo_local(file_path: str, db: Session):
             return
 
         print(f"⚙️ [PYTHON]: Analizando texto de '{file_name}' localmente con Regex...")
-        # Aunque la función se llame procesar_cv_con_ia por compatibilidad, ahora corre 100% en Python
-        candidato_esquema = await procesar_cv_con_ia(texto_extraido)
+        candidato_esquema = await procesar_cv_con_python(texto_extraido)
 
+        # Buscar si ya existe un candidato con el mismo correo electrónico
         existente = db.query(Candidato).filter(
             Candidato.correo_electronico == candidato_esquema.correo_electronico
         ).first()
 
         if existente:
-            print(f"⚠️ [DUPLICADO]: El correo '{candidato_esquema.correo_electronico}' de {candidato_esquema.nombres} ya existe en la BD. Saltando.")
-            return
-
-        nuevo_candidato = Candidato(**candidato_esquema.model_dump())
-        db.add(nuevo_candidato)
-        db.commit()
-        db.refresh(nuevo_candidato)
-
-        print(f"✅ [GUARDADO]: {nuevo_candidato.nombres} {nuevo_candidato.apellido_paterno} insertado exitosamente.")
+            print(f"🔄 [ACTUALIZANDO]: El correo '{candidato_esquema.correo_electronico}' ya existe en la BD.")
+            print(f"   Modificando ficha de: {existente.nombres} {existente.apellido_paterno} (ID: {existente.id_candidato})")
+            
+            # Actualizamos de forma inteligente solo los campos que no sean nulos en el nuevo análisis
+            datos_nuevos = candidato_esquema.model_dump()
+            for clave, valor in datos_nuevos.items():
+                if valor is not None:
+                    setattr(existente, clave, valor)
+            
+            db.commit()
+            db.refresh(existente)
+            print(f"✅ [ACTUALIZADO]: Ficha del candidato guardada exitosamente.")
+            
+        else:
+            # Si no existe, creamos el registro nuevo desde cero
+            nuevo_candidato = Candidato(**candidato_esquema.model_dump())
+            db.add(nuevo_candidato)
+            db.commit()
+            db.refresh(nuevo_candidato)
+            print(f"✅ [GUARDADO]: {nuevo_candidato.nombres} {nuevo_candidato.apellido_paterno} insertado como nuevo registro.")
 
     except Exception as e:
         db.rollback()

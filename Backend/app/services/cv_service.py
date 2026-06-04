@@ -57,7 +57,7 @@ def extraer_texto_docx(contenido_archivo: bytes) -> str:
             detail=f"No se pudo extraer el texto del archivo DOCX: {str(e)}"
         )
 
-async def procesar_cv_con_ia(texto_cv: str) -> CandidatoCreate:
+async def procesar_cv_con_python(texto_cv: str) -> CandidatoCreate:
     """
     Mantiene el nombre de la función por compatibilidad, pero procesa el 
     texto de forma 100% local usando expresiones regulares y lógica nativa de Python.

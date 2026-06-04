@@ -96,6 +96,11 @@ class UsuarioSimpleResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# ==========================================
+# ESQUEMAS DE ELIMINACIÓN MASIVA (Sprint 1)
+# ==========================================
+class EliminacionMasivaRequest(BaseModel):
+    ids: List[int] = Field(..., description="Lista de IDs a eliminar")
 
 # ==========================================
 # ESQUEMAS DE DETALLE: SOLICITUD HABILIDAD (Sprint 1)
