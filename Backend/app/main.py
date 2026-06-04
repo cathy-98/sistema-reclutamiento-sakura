@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
+from fastapi import File, UploadFile
 
 # Importaciones locales
 from app.database import obtener_db
@@ -12,12 +13,15 @@ from app.models import (
 )
 from app.schemas import (
     LoginRequest, TokenResponse, 
-    SolicitudCreate, SolicitudResponse,
+    SolicitudCreate, SolicitudResponse, EliminacionMasivaRequest,
     ClienteResponse, EstadoSolicitudResponse, PrioridadResponse,
     CargoResponse, ModalidadResponse, AreaResponse, HabilidadResponse, NivelHabilidadResponse,
     CandidatoCreate, CandidatoResponse, SolicitudCandidatoResponse
 )
 from app.security import verificar_password, crear_token_acceso
+# Importación del nuevo servicio de lectura asíncrona de CVs
+from app.services.cv_service import extraer_texto_pdf, extraer_texto_docx, procesar_cv_con_python
+
 
 app = FastAPI(
     title="Sakura Platform - Core API",
@@ -329,7 +333,7 @@ def actualizar_solicitud(id: int, solicitud_in: SolicitudCreate, db: Session = D
             detail=f"Error transaccional al intentar actualizar la solicitud: {str(e)}"
         )
 
-
+# metodo para eliminar una solicitud
 @app.delete("/api/solicitudes/{id}", tags=["Solicitudes"])
 def eliminar_solicitud(id: int, db: Session = Depends(obtener_db)):
     """
@@ -357,36 +361,127 @@ def eliminar_solicitud(id: int, db: Session = Depends(obtener_db)):
             detail=f"Error al intentar eliminar la solicitud de la Base de Datos: {str(e)}"
         )
 
+# metodo para eliminar una lista de solicitudes
+@app.delete("/api/solicitudes", tags=["Solicitudes"])
+def eliminar_solicitudes_masivo(payload: EliminacionMasivaRequest, db: Session = Depends(obtener_db)):
+    solicitudes = db.query(Solicitud).filter(Solicitud.id_solicitud.in_(payload.ids)).all()
+
+    if not solicitudes:
+        raise HTTPException(status_code=404, detail="No se encontraron solicitudes para eliminar.")
+
+    try:
+        for solicitud in solicitudes:
+            db.delete(solicitud)
+
+        db.commit()
+        return {
+            "status": "success",
+            "eliminadas": len(solicitudes),
+            "ids_solicitados": payload.ids
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar solicitudes: {str(e)}")
+
 # ==========================================
 # MÓDULO DE CANDIDATOS (Sprint 1 )
 # ==========================================
 
+
 @app.post("/api/candidatos", response_model=CandidatoResponse, status_code=201, tags=["Candidatos"])
 def crear_candidato(candidato_in: CandidatoCreate, db: Session = Depends(obtener_db)):
     """
-    Registra de forma permanente la ficha de un candidato nuevo.
+    Registra de forma permanente la ficha de un candidato nuevo de forma manual.
+    Soporta Upsert: si el email ya existe, se actualizan los datos de forma automática.
     """
-    # Validamos que el correo electrónico no esté registrado ya en el sistema
     existente = db.query(Candidato).filter(Candidato.correo_electronico == candidato_in.correo_electronico).first()
-    if existente:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Ya existe un candidato registrado con el correo electrónico '{candidato_in.correo_electronico}'."
-        )
-
-    nuevo_candidato = Candidato(**candidato_in.model_dump())
+    
     try:
-        db.add(nuevo_candidato)
-        db.commit()
-        db.refresh(nuevo_candidato)
-        return nuevo_candidato
+        if existente:
+            # Upsert: Actualizar campos no nulos
+            for clave, valor in candidato_in.model_dump().items():
+                if valor is not None:
+                    setattr(existente, clave, valor)
+            db.commit()
+            db.refresh(existente)
+            return existente
+        else:
+            # Creación estándar
+            nuevo_candidato = Candidato(**candidato_in.model_dump())
+            db.add(nuevo_candidato)
+            db.commit()
+            db.refresh(nuevo_candidato)
+            return nuevo_candidato
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f"Error de base de datos al guardar el candidato: {str(e)}"
+            detail=f"Error de base de datos al registrar/actualizar el candidato: {str(e)}"
         )
 
+
+@app.post("/api/candidatos/cargar-cv", response_model=CandidatoResponse, status_code=201, tags=["Candidatos"])
+async def cargar_y_procesar_cv(file: UploadFile = File(...), db: Session = Depends(obtener_db)):
+    """
+    Recibe un archivo PDF/DOCX de currículum, extrae el texto plano en memoria,
+    procesa la información con Python e inserta/actualiza al candidato.
+    SOPORTA UPSERT (Actualización inteligente si el correo electrónico ya existe).
+    """
+    filename_lower = file.filename.lower()
+    if not (filename_lower.endswith(".pdf") or filename_lower.endswith(".docx")):
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de archivo inválido. Solo se admiten archivos PDF o DOCX."
+        )
+        
+    try:
+        contenido_archivo = await file.read()
+        
+        # Extracción de texto según la extensión
+        if filename_lower.endswith(".pdf"):
+            texto_extraido = extraer_texto_pdf(contenido_archivo)
+        else:
+            texto_extraido = extraer_texto_docx(contenido_archivo)
+        
+        if not texto_extraido.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="El archivo parece estar vacío o no contiene texto legible."
+            )
+            
+        # Parseo local de datos en Python
+        candidato_creado_esquema = await procesar_cv_con_python(texto_extraido)
+        
+        # Validar colisión de correo en BD
+        existente = db.query(Candidato).filter(
+            Candidato.correo_electronico == candidato_creado_esquema.correo_electronico
+        ).first()
+        
+        if existente:
+            # Upsert Inteligente: Actualizamos campos detectados para no duplicar correos
+            datos_nuevos = candidato_creado_esquema.model_dump()
+            for clave, valor in datos_nuevos.items():
+                if valor is not None:
+                    setattr(existente, clave, valor)
+            db.commit()
+            db.refresh(existente)
+            return existente
+            
+        # Si no existe, insertar nuevo registro
+        nuevo_candidato = Candidato(**candidato_creado_esquema.model_dump())
+        db.add(nuevo_candidato)
+        db.commit()
+        db.refresh(nuevo_candidato)
+        return nuevo_candidato
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ocurrió un error inesperado al procesar y almacenar el CV: {str(e)}"
+        )
 
 @app.get("/api/candidatos", response_model=List[CandidatoResponse], tags=["Candidatos"])
 def listar_candidatos(db: Session = Depends(obtener_db)):
@@ -471,6 +566,31 @@ def eliminar_candidato(id: int, db: Session = Depends(obtener_db)):
             status_code=500,
             detail=f"Error al eliminar candidato: {str(e)}"
         )
+
+@app.delete("/api/candidatos", tags=["Candidatos"])
+def eliminar_candidatos_masivo(payload: EliminacionMasivaRequest, db: Session = Depends(obtener_db)):
+    """
+    Elimina físicamente una lista de candidatos por sus IDs en forma masiva.
+    Las filas en tbl_solicitud_candidato se borran de forma automática gracias al Cascade Delete.
+    """
+    candidatos = db.query(Candidato).filter(Candidato.id_candidato.in_(payload.ids)).all()
+
+    if not candidatos:
+        raise HTTPException(status_code=404, detail="No se encontraron candidatos para eliminar.")
+
+    try:
+        for candidato in candidatos:
+            db.delete(candidato)
+
+        db.commit()
+        return {
+            "status": "success",
+            "eliminados": len(candidatos),
+            "ids_solicitados": payload.ids
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar candidatos: {str(e)}")
 
 
 # ==========================================
