@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 2gDo8iCfUsCcVfsJ0TQQdjAYGG4XvjLWvCmIW9u952PU1fd2fQwKj9xWfEI637E
+\restrict e4rxbFNdid9hG7Ib0ttk9wezOPic8YWeuAG2zCk02O0vdFgbjuP3usmRKYNI9ya
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Debian 16.14-1.pgdg13+1)
@@ -831,6 +831,20 @@ CREATE TABLE public.tbl_usuario_cita_entrevista (
 ALTER TABLE public.tbl_usuario_cita_entrevista OWNER TO elitsoft_admin;
 
 --
+-- Name: tbl_usuario_usr_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
+--
+
+ALTER TABLE public.tbl_usuario ALTER COLUMN usr_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.tbl_usuario_usr_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Data for Name: tbl_area; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
@@ -1236,6 +1250,13 @@ COPY public.tbl_usuario (usr_id, usr_rol_id, usr_estado_usuario_id, usr_area_id,
 
 COPY public.tbl_usuario_cita_entrevista (usrce_cita_entrevista_id, usrce_usuario_id) FROM stdin;
 \.
+
+
+--
+-- Name: tbl_usuario_usr_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
+--
+
+SELECT pg_catalog.setval('public.tbl_usuario_usr_id_seq', 1, false);
 
 
 --
@@ -2081,5 +2102,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2gDo8iCfUsCcVfsJ0TQQdjAYGG4XvjLWvCmIW9u952PU1fd2fQwKj9xWfEI637E
+\unrestrict e4rxbFNdid9hG7Ib0ttk9wezOPic8YWeuAG2zCk02O0vdFgbjuP3usmRKYNI9ya
 
