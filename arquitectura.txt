@@ -1,0 +1,82 @@
+** arquitectura **
+
+Front End angular
+Backend Python/java
+	* construir conex hacia BD
+BD Postgres
+	* modelo relacional
+
+** procesos **
+
+A través del front gatillar procesos de N8N como rankear
+
+
+** Tarea
+
+- construir arq técnica en base a lo expuesto (diagrama de arquitectura) ** NOE ** listo
+- decir cuantas pantallas por req y hacer mockup de cada ** CATHE
+- tomar un estimativo por cada punto. consultar a la ia por tiempos por conocimientos de 1 año
+					semi senior
+					y senior
+- FELIPE. Cuantas tablas en total
+
+ ** pedir resumen de pantallas por req ** NOE
+ ** factibilidad de hacer enganchar ejecuciones de n8n a través de un dev en angular ** NOE
+
+
+
+
+** Video: bosquejo en Excel por modulo -- NOE
+
+rol: actúa como ingeniero informatico con mas de 20 años de experiencia full stack
+con manejo a nivel de frontend backend y BD con herramientas como angular, java, Python, postgres ,entre otros. Analiza y da respuesta en base a diseño de alto rendimiento y de fácil implementación.
+
+Contexto: analizar proyecto entregado en base a carpetas y documentos que se subieron con anterioridad, da respuestas en base específicamente a lo solicitado y sin entregar código a no ser que se solicite.
+
+Solicitud: generar listado de cada uno de los modulos que deberían existir y ordenalos orientado a la construcción de un menú.
+
+
+******
+
+fase 1: Solicitud . Cuando se crea la solicitud desde el área de administración..
+	la solicitud incluye : que profesional
+para que cliente
+sponsor cliente
+area
+fecha solicitud
+sponsor Elitsoft
+
+habilidades tecnicas
+
+
+
+estado
+fecha inicio selección
+fecha fin selección
+fecha inicio cliente
+
+horario laboral
+modalidad
+sueldo min.
+sueldo max.
+
+
+donde se ve esto, en el modulo de gestión de solicitudes
+
+fase 2: toma de solicitud por parte de Reclutador
+
+reclutador ingresa/crea las vacantes con preguntas pertinentes al cargo en las plataformas disponibles (LinkedIn, CompuTrabajo)
+candidatos ingresan a esa plataformas, subiendo sus cvs
+reclutador recibe cvs 
+
+
+
+
+
+
+
+
+
+
+
+
