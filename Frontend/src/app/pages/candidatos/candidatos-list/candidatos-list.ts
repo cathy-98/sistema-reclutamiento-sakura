@@ -129,6 +129,14 @@ export class CandidatosList {
   ];
 
   constructor(private authService: AuthService) {
+    this.actualizarDatosSesion();
+
+    this.authService.cargarPerfilUsuario().subscribe(() => {
+      this.actualizarDatosSesion();
+    });
+  }
+
+  private actualizarDatosSesion() {
     this.nombreUsuario = this.authService.obtenerNombreVisible();
     this.rolUsuario = this.authService.obtenerRolVisible();
   }

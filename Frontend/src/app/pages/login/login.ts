@@ -13,6 +13,7 @@ export class Login {
   email = '';
   password = '';
   cargando = false;
+  error = '';
 
   constructor(
     private authService: AuthService,
@@ -21,19 +22,19 @@ export class Login {
 
   ingresar() {
     this.cargando = true;
+    this.error = '';
 
     this.authService.login({
       email: this.email,
       password: this.password,
     }).subscribe({
-      next: (respuesta) => {
-        this.authService.guardarSesion(respuesta);
+      next: () => {
         this.cargando = false;
         this.router.navigate(['/dashboard']);
       },
       error: () => {
         this.cargando = false;
-        alert('Correo o contraseña incorrectos');
+        this.error = 'Correo o contraseña incorrectos';
       },
     });
   }

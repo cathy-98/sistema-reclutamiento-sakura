@@ -77,6 +77,11 @@
       </ng-container>
     </nav>
 
+    <button class="sidebar-logout" type="button" (click)="cerrarSesion()">
+      <span class="sidebar-label">Cerrar sesión</span>
+      <span class="sidebar-tooltip">Cerrar sesión</span>
+    </button>
+
     <ng-template #menuIcon let-icon="icon">
       <span class="sidebar-icon" [ngSwitch]="icon" aria-hidden="true">
         <svg *ngSwitchCase="'home'" viewBox="0 0 24 24">

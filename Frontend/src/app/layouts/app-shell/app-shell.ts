@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 interface MenuItem {
   label: string;
@@ -23,6 +24,11 @@ interface SubMenuItem {
 export class AppShell {
   menuAbierto = true;
   submenuAbierto: string | null = null;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   menuItems: MenuItem[] = [
     {
@@ -76,5 +82,10 @@ export class AppShell {
 
   estaSubmenuAbierto(item: MenuItem) {
     return this.submenuAbierto === item.label;
+  }
+
+  cerrarSesion() {
+    this.authService.eliminarToken();
+    this.router.navigate(['/login']);
   }
 }
