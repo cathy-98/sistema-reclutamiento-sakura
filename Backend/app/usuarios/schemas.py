@@ -13,7 +13,6 @@ class UsuarioBase(BaseModel):
     usr_telefono: Optional[str] = Field(None, max_length=15, description="Teléfono de contacto")
     usr_email: EmailStr = Field(..., max_length=30, description="Correo electrónico único")
     
-    # IDs de relaciones (Permiten nulos temporalmente si se requiere)
     usr_rol_id: Optional[int] = Field(None, description="ID del rol asociado")
     usr_estado_usuario_id: Optional[int] = Field(None, description="ID del estado actual")
     usr_area_id: Optional[int] = Field(None, description="ID del área a la que pertenece")
@@ -33,10 +32,8 @@ class UsuarioUpdate(BaseModel):
     usr_nombres: Optional[str] = Field(None, min_length=1, max_length=15)
     usr_apellido_paterno: Optional[str] = Field(None, min_length=1, max_length=15)
     usr_apellido_materno: Optional[str] = Field(None, min_length=1, max_length=15)
-
     usr_rut_sin_dv: Optional[str] = Field(None, max_length=15)
     usr_dv: Optional[str] = Field(None, max_length=1)
-    
     usr_telefono: Optional[str] = Field(None, max_length=15)
     usr_email: Optional[EmailStr] = None
     usr_contrasena: Optional[str] = Field(None, min_length=6)
@@ -46,7 +43,6 @@ class UsuarioUpdate(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 
 # ==========================================
@@ -68,6 +64,15 @@ class AreaSimpleResponse(BaseModel):
         from_attributes = True
 
 
+class EstadoUsuarioResponse(BaseModel):
+    esusr_id: int
+    esusr_nombre: str
+    esusr_descripcion: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 # ==========================================
 # 5. Esquema de Salida (Lectura de Usuario)
 # ==========================================
@@ -83,21 +88,18 @@ class UsuarioResponse(BaseModel):
     
     rol: Optional[RolSimpleResponse] = None
     area: Optional[AreaSimpleResponse] = None
+    estado: Optional[EstadoUsuarioResponse] = None
     
-    # Campo computado que contendrá la lista plana de strings (ej: ["USR_CREATE", "SOL_VIEW"])
     permisos: list[str] = []
 
     class Config:
         from_attributes = True
 
-    # Este validador extrae automáticamente los nombres de los permisos del rol del usuario
     @model_validator(mode='before')
     @classmethod
     def extraer_permisos(cls, data: any) -> any:
-        # Si la data viene de un objeto SQLAlchemy (instancia del modelo)
         if hasattr(data, "rol") and data.rol and hasattr(data.rol, "permisos"):
             data.permisos = [p.per_nombre for p in data.rol.permisos]
-        # Si la data viene de un diccionario (mock o fallback)
         elif isinstance(data, dict):
             rol = data.get("rol")
             if rol:
@@ -110,10 +112,10 @@ class UsuarioResponse(BaseModel):
                     ]
         return data
 
+
 # ==========================================
 # 6. Esquemas para Permisos y Roles Enriquecidos
 # ==========================================
-
 class PermisoResponse(BaseModel):
     per_id: int
     per_nombre: str
@@ -127,10 +129,7 @@ class RolWithPermisosResponse(BaseModel):
     rol_id: int
     rol_nombre: str
     rol_descripcion: Optional[str] = None
-    permisos: list[PermisoResponse] = []  # SQLAlchemy traerá esta lista automáticamente
+    permisos: list[PermisoResponse] = []
 
     class Config:
         from_attributes = True
-
-
-

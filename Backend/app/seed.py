@@ -109,7 +109,7 @@ def sembrar_datos():
         existe_admin = db.query(Usuario).filter(Usuario.usr_email == admin_email).first()
         if not existe_admin:
             admin_usuario = Usuario(
-                usr_id=1,
+                ## usr_id=1,
                 usr_rol_id=1,            # Administrador
                 usr_estado_usuario_id=1, # Activo
                 usr_area_id=1,           # Tecnología
