@@ -1,0 +1,256 @@
+<main class="candidates-page">
+  <section class="welcome-panel">
+    <div>
+      <h1>Bienvenido, {{ nombreUsuario }}</h1>
+      <p class="session-role" *ngIf="rolUsuario">{{ rolUsuario }}</p>
+      <p>Gestión listado de candidatos</p>
+    </div>
+    <img src="/images/Logos/logo_sakura.png" alt="Perfil" />
+  </section>
+
+  <section class="action-strip" aria-label="Acciones de candidatos">
+    <button class="primary-button" type="button">
+      <span aria-hidden="true">↗</span>
+      Cargar CVs
+    </button>
+    <button class="secondary-button" type="button">Realizar match</button>
+  </section>
+
+  <section class="filters-panel" aria-label="Filtros de candidatos">
+    <header class="filters-header">
+      <div>
+        <h3>Buscar y filtrar</h3>
+        <p>Usa uno o más campos para encontrar candidatos.</p>
+      </div>
+      <label class="quick-search">
+        Búsqueda rápida
+        <input
+          [(ngModel)]="busquedaRapida"
+          type="search"
+          placeholder="Nombre, correo, cargo o solicitud"
+          (ngModelChange)="buscar()"
+        />
+      </label>
+    </header>
+
+    <div class="filters-grid">
+      <label>
+        ID solicitud
+        <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Req-021" />
+      </label>
+      <label>
+        Cargo postulado
+        <input [(ngModel)]="filtros.cargo" type="text" placeholder="Frontend" />
+      </label>
+      <label>
+        Nombre completo
+        <input [(ngModel)]="filtros.nombre" type="text" placeholder="Todos" />
+      </label>
+      <label>
+        Correo electrónico
+        <input [(ngModel)]="filtros.correo" type="email" placeholder="Todos" />
+      </label>
+      <label>
+        Número de teléfono
+        <input [(ngModel)]="filtros.telefono" type="text" placeholder="Numeración" />
+      </label>
+      <label>
+        Estado del candidato
+        <select [(ngModel)]="filtros.estado">
+          <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
+        </select>
+      </label>
+      <label>
+        Disponibilidad
+        <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Todos" />
+      </label>
+      <label>
+        Pretensión de renta
+        <input [(ngModel)]="filtros.renta" type="number" min="0" placeholder="Numérico" />
+      </label>
+      <label>
+        Match
+        <input [(ngModel)]="filtros.match" type="number" min="0" max="100" placeholder="Ingresa num." />
+      </label>
+      <label>
+        Nivel
+        <select [(ngModel)]="filtros.nivel">
+          <option value="">Todos</option>
+          <option *ngFor="let nivel of niveles" [ngValue]="nivel">{{ nivel }}</option>
+        </select>
+      </label>
+      <label>
+        Años de experiencia
+        <input [(ngModel)]="filtros.experiencia" type="number" min="0" placeholder="0,00" />
+      </label>
+    </div>
+
+    <div class="filter-actions">
+      <button class="ghost-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+      <button class="primary-small-button" type="button" (click)="buscar()">Buscar</button>
+    </div>
+  </section>
+
+  <section class="bulk-actions" aria-label="Acciones masivas">
+    <button type="button" [disabled]="seleccionados.size === 0">
+      <span aria-hidden="true">✓</span>
+      Enviar correo
+    </button>
+    <button type="button" [disabled]="seleccionados.size === 0">
+      <span aria-hidden="true">✦</span>
+      Agendar entrevistas
+    </button>
+    <p *ngIf="seleccionados.size === 0">Selecciona candidatos para habilitar acciones masivas.</p>
+    <p *ngIf="seleccionados.size > 0">{{ seleccionados.size }} candidatos seleccionados.</p>
+  </section>
+
+  <section class="table-panel" aria-label="Listado de candidatos">
+    <header class="table-header">
+      <div>
+        <h3>Listado de candidatos</h3>
+        <p>{{ candidatosFiltrados.length }} registros encontrados.</p>
+      </div>
+    </header>
+
+    <div class="empty-state" *ngIf="candidatosFiltrados.length === 0">
+      <strong>No hay candidatos para mostrar</strong>
+      <span>Ajusta los filtros o limpia la búsqueda para volver al listado completo.</span>
+      <button class="ghost-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+    </div>
+
+    <div class="table-scroll" *ngIf="candidatosFiltrados.length > 0">
+      <table>
+        <colgroup>
+          <col class="select-col" />
+          <col class="id-col" />
+          <col class="match-col" />
+          <col class="name-col" />
+          <col class="email-col" />
+          <col class="phone-col" />
+          <col class="role-col" />
+          <col class="state-col" />
+          <col class="availability-col" />
+          <col class="salary-col" />
+          <col class="skills-col" />
+          <col class="actions-col" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="select-column">
+              <input
+                type="checkbox"
+                aria-label="Seleccionar todos los candidatos visibles"
+                [checked]="seleccionadosEnPagina"
+                (change)="alternarSeleccionPagina($any($event.target).checked)"
+              />
+            </th>
+            <th class="id-column">ID solicitud</th>
+            <th>Match</th>
+            <th>Nombre completo</th>
+            <th>Correo electrónico</th>
+            <th>Teléfono de contacto</th>
+            <th>Cargo postulado</th>
+            <th>Estado del candidato</th>
+            <th>Disponibilidad</th>
+            <th>Pretensión de renta</th>
+            <th>Habilidades técnicas</th>
+            <th class="actions-column">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let candidato of candidatosPaginados; trackBy: trackCandidato">
+            <td class="select-column">
+              <input
+                type="checkbox"
+                [checked]="estaSeleccionado(candidato)"
+                [attr.aria-label]="'Seleccionar ' + candidato.nombre"
+                (change)="alternarSeleccion(candidato, $any($event.target).checked)"
+              />
+            </td>
+            <td class="id-column">{{ candidato.idSolicitud }}</td>
+            <td>
+              <span class="match" [class]="matchClase(candidato.match)">{{ candidato.match }}%</span>
+            </td>
+            <td>
+              <div class="candidate-cell">
+                <span class="avatar" aria-hidden="true">{{ iniciales(candidato.nombre) }}</span>
+                <strong>{{ candidato.nombre }}</strong>
+              </div>
+            </td>
+            <td>{{ candidato.correo }}</td>
+            <td>{{ candidato.telefono }}</td>
+            <td>{{ candidato.cargo }}</td>
+            <td>
+              <span class="status" [class]="'status ' + estadoClase(candidato.estado)">
+                {{ candidato.estado }}
+              </span>
+            </td>
+            <td>{{ candidato.disponibilidad }}</td>
+            <td>{{ formatearRenta(candidato.renta) }}</td>
+            <td>
+              <div class="skills-cell">
+                <span>{{ candidato.nivel }}</span>
+                <small>{{ candidato.experiencia }} años de experiencia</small>
+              </div>
+            </td>
+            <td class="actions-column">
+              <div class="row-actions">
+                <button type="button" aria-label="Ver candidato">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
+                    <circle cx="12" cy="12" r="2.2" />
+                  </svg>
+                </button>
+                <button type="button" aria-label="Descargar CV">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 4v10" />
+                    <path d="m8 10 4 4 4-4" />
+                    <path d="M5 20h14" />
+                  </svg>
+                </button>
+                <button type="button" aria-label="Agendar entrevista">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 5h14v16H5z" />
+                    <path d="M8 3v4M16 3v4M5 10h14" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="table-footer" *ngIf="candidatosFiltrados.length > 0">
+      <span>Mostrando {{ candidatosPaginados.length }} de {{ candidatosFiltrados.length }} registros</span>
+      <div class="pagination">
+        <label>
+          Registros por página:
+          <select [(ngModel)]="registrosPorPagina" aria-label="Registros por página" (change)="cambiarPagina(1)">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          aria-label="Página anterior"
+          [disabled]="paginaActual === 1"
+          (click)="cambiarPagina(paginaActual - 1)"
+        >
+          ‹
+        </button>
+        <button class="is-active" type="button">{{ paginaActual }}</button>
+        <span>de {{ totalPaginas }}</span>
+        <button
+          type="button"
+          aria-label="Página siguiente"
+          [disabled]="paginaActual === totalPaginas"
+          (click)="cambiarPagina(paginaActual + 1)"
+        >
+          ›
+        </button>
+      </div>
+    </footer>
+  </section>
+</main>

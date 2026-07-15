@@ -21,6 +21,10 @@ export class AuthService {
   private readonly tokenKey = 'sakura_access_token';
   private readonly usuarioKey = 'sakura_usuario';
   private readonly rolKey = 'sakura_rol';
+  private readonly nombresVisibles: Record<string, string> = {
+    fvaldesm: 'Felipe Valdes',
+    cathy98: 'Cathy',
+  };
 
   constructor(private http: HttpClient) {}
 
@@ -48,6 +52,20 @@ export class AuthService {
 
   obtenerRol() {
     return localStorage.getItem(this.rolKey);
+  }
+
+  obtenerNombreVisible() {
+    const usuario = this.obtenerUsuario();
+
+    if (!usuario) {
+      return 'usuario';
+    }
+
+    return this.nombresVisibles[usuario] ?? usuario;
+  }
+
+  obtenerRolVisible() {
+    return this.obtenerRol() ?? '';
   }
 
   eliminarToken() {

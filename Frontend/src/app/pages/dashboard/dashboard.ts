@@ -13,7 +13,7 @@ export class Dashboard {
   rol = '';
 
   constructor(private authService: AuthService) {
-    this.usuario = this.authService.obtenerUsuario() ?? 'usuario';
-    this.rol = this.authService.obtenerRol() ?? '';
+    this.usuario = this.authService.obtenerNombreVisible();
+    this.rol = this.authService.obtenerRolVisible();
   }
 }

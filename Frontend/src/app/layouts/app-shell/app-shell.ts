@@ -22,7 +22,7 @@ interface SubMenuItem {
 })
 export class AppShell {
   menuAbierto = true;
-  submenuAbierto: string | null = 'Gestion de solicitudes';
+  submenuAbierto: string | null = null;
 
   menuItems: MenuItem[] = [
     {
@@ -33,19 +33,21 @@ export class AppShell {
     {
       label: 'Gestion de cuestionarios',
       icon: 'questionnaire',
+      children: [
+        { label: 'Creacion de test' },
+      ],
     },
     {
       label: 'Gestion de solicitudes',
       icon: 'requests',
       children: [
         { label: 'Listado de solicitudes', route: '/solicitudes' },
-        { label: 'Informes' },
-        { label: 'Creacion de test' },
       ],
     },
     {
       label: 'Candidatos',
       icon: 'users',
+      route: '/candidatos',
     },
     {
       label: 'Gestion de entrevistas',
