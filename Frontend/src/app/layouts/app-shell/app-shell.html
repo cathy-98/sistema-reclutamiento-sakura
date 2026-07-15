@@ -8,43 +8,108 @@
     <p class="sidebar-section">Principal</p>
 
     <nav class="sidebar-nav">
-      <a
-        *ngFor="let item of menuItems"
-        class="sidebar-link"
-        [routerLink]="item.route"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
-        (click)="abrirMenuSiEstaCerrado()"
-      >
-        <span class="sidebar-icon" [ngSwitch]="item.icon" aria-hidden="true">
-          <svg *ngSwitchCase="'home'" viewBox="0 0 24 24">
-            <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" />
-          </svg>
-          <svg *ngSwitchCase="'requests'" viewBox="0 0 24 24">
-            <path d="M6 3h9l3 3v15H6z" />
-            <path d="M9 10h6M9 14h6M9 18h4" />
-          </svg>
-          <svg *ngSwitchCase="'reports'" viewBox="0 0 24 24">
-            <path d="M5 20V4h14v16z" />
-            <path d="M8 16v-4M12 16V8M16 16v-6" />
-          </svg>
-          <svg *ngSwitchCase="'tools'" viewBox="0 0 24 24">
-            <path d="m14 7 3 3M5 19l9-9 3 3-9 9H5z" />
-            <path d="M13 5h6v6" />
-          </svg>
-          <svg *ngSwitchCase="'users'" viewBox="0 0 24 24">
-            <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
-            <path d="M3 21a6 6 0 0 1 12 0" />
-            <path d="M16 11a3 3 0 0 0 0-6M18 21a5 5 0 0 0-3-4.5" />
-          </svg>
-          <svg *ngSwitchCase="'calendar'" viewBox="0 0 24 24">
-            <path d="M5 5h14v16H5z" />
-            <path d="M8 3v4M16 3v4M5 10h14" />
-          </svg>
-        </span>
-        <span class="sidebar-label">{{ item.label }}</span>
-      </a>
+      <ng-container *ngFor="let item of menuItems">
+        <button
+          *ngIf="item.children?.length; else menuWithoutChildren"
+          class="sidebar-link sidebar-link-module"
+          type="button"
+          [class.has-open-submenu]="estaSubmenuAbierto(item)"
+          [attr.aria-expanded]="estaSubmenuAbierto(item)"
+          (click)="alternarSubmenu(item)"
+        >
+          <ng-container
+            [ngTemplateOutlet]="menuIcon"
+            [ngTemplateOutletContext]="{ icon: item.icon }"
+          ></ng-container>
+          <span class="sidebar-label">{{ item.label }}</span>
+          <span class="sidebar-chevron" aria-hidden="true">›</span>
+          <span class="sidebar-tooltip">{{ item.label }}</span>
+        </button>
+
+        <div class="sidebar-submenu" *ngIf="item.children?.length && estaSubmenuAbierto(item)">
+          <ng-container *ngFor="let child of item.children">
+            <a
+              *ngIf="child.route; else submenuButton"
+              class="sidebar-submenu-link"
+              [routerLink]="child.route"
+              routerLinkActive="is-active"
+              (click)="abrirMenuSiEstaCerrado()"
+            >
+              {{ child.label }}
+            </a>
+
+            <ng-template #submenuButton>
+              <button class="sidebar-submenu-link is-readonly" type="button">
+                {{ child.label }}
+              </button>
+            </ng-template>
+          </ng-container>
+        </div>
+
+        <ng-template #menuWithoutChildren>
+        <a
+          *ngIf="item.route; else menuButton"
+          class="sidebar-link sidebar-link-module"
+          [routerLink]="item.route"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+          (click)="abrirMenuSiEstaCerrado()"
+        >
+          <ng-container
+            [ngTemplateOutlet]="menuIcon"
+            [ngTemplateOutletContext]="{ icon: item.icon }"
+          ></ng-container>
+          <span class="sidebar-label">{{ item.label }}</span>
+          <span class="sidebar-tooltip">{{ item.label }}</span>
+        </a>
+
+        <ng-template #menuButton>
+          <button class="sidebar-link sidebar-link-module" type="button">
+            <ng-container
+              [ngTemplateOutlet]="menuIcon"
+              [ngTemplateOutletContext]="{ icon: item.icon }"
+            ></ng-container>
+            <span class="sidebar-label">{{ item.label }}</span>
+            <span class="sidebar-tooltip">{{ item.label }}</span>
+          </button>
+        </ng-template>
+        </ng-template>
+      </ng-container>
     </nav>
+
+    <button class="sidebar-logout" type="button" (click)="cerrarSesion()">
+      <span class="sidebar-label">Cerrar sesión</span>
+      <span class="sidebar-tooltip">Cerrar sesión</span>
+    </button>
+
+    <ng-template #menuIcon let-icon="icon">
+      <span class="sidebar-icon" [ngSwitch]="icon" aria-hidden="true">
+        <svg *ngSwitchCase="'home'" viewBox="0 0 24 24">
+          <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" />
+        </svg>
+        <svg *ngSwitchCase="'questionnaire'" viewBox="0 0 24 24">
+          <path d="M5 4h14v16H5z" />
+          <path d="M8 8h8M8 12h5M8 16h7" />
+        </svg>
+        <svg *ngSwitchCase="'requests'" viewBox="0 0 24 24">
+          <path d="M6 3h9l3 3v15H6z" />
+          <path d="M9 10h6M9 14h6M9 18h4" />
+        </svg>
+        <svg *ngSwitchCase="'tools'" viewBox="0 0 24 24">
+          <path d="m14 7 3 3M5 19l9-9 3 3-9 9H5z" />
+          <path d="M13 5h6v6" />
+        </svg>
+        <svg *ngSwitchCase="'users'" viewBox="0 0 24 24">
+          <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+          <path d="M3 21a6 6 0 0 1 12 0" />
+          <path d="M16 11a3 3 0 0 0 0-6M18 21a5 5 0 0 0-3-4.5" />
+        </svg>
+        <svg *ngSwitchCase="'calendar'" viewBox="0 0 24 24">
+          <path d="M5 5h14v16H5z" />
+          <path d="M8 3v4M16 3v4M5 10h14" />
+        </svg>
+      </span>
+    </ng-template>
   </aside>
 
   <button

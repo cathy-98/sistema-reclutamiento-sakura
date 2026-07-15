@@ -145,6 +145,17 @@
   text-decoration: none;
 }
 
+.login-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(164, 82, 82, 0.28);
+  border-radius: 7px;
+  background: rgba(164, 82, 82, 0.08);
+  color: var(--color-sakura);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 button {
   min-height: 42px;
   margin-top: 2px;

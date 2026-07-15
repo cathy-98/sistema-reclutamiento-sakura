@@ -1,11 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 interface MenuItem {
   label: string;
-  route: string;
+  route?: string;
   icon: string;
+  children?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  label: string;
+  route?: string;
 }
 
 @Component({
@@ -16,14 +23,42 @@ interface MenuItem {
 })
 export class AppShell {
   menuAbierto = true;
+  submenuAbierto: string | null = null;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   menuItems: MenuItem[] = [
-    { label: 'Bienvenida', route: '/dashboard', icon: 'home' },
-    { label: 'Gestion de solicitudes', route: '/admin/solicitudes', icon: 'requests' },
-    { label: 'Informes', route: '/informes', icon: 'reports' },
-    { label: 'Creacion de test', route: '/tests', icon: 'tools' },
-    { label: 'Candidatos', route: '/candidatos', icon: 'users' },
-    { label: 'Gestion de entrevistas', route: '/entrevistas', icon: 'calendar' },
+    {
+      label: 'Inicio',
+      icon: 'home',
+      route: '/dashboard',
+    },
+    {
+      label: 'Gestion de cuestionarios',
+      icon: 'questionnaire',
+      children: [
+        { label: 'Creacion de test' },
+      ],
+    },
+    {
+      label: 'Gestion de solicitudes',
+      icon: 'requests',
+      children: [
+        { label: 'Listado de solicitudes', route: '/solicitudes' },
+      ],
+    },
+    {
+      label: 'Candidatos',
+      icon: 'users',
+      route: '/candidatos',
+    },
+    {
+      label: 'Gestion de entrevistas',
+      icon: 'calendar',
+    },
   ];
 
   alternarMenu() {
@@ -34,5 +69,23 @@ export class AppShell {
     if (!this.menuAbierto) {
       this.menuAbierto = true;
     }
+  }
+
+  alternarSubmenu(item: MenuItem) {
+    if (!item.children?.length) {
+      return;
+    }
+
+    this.abrirMenuSiEstaCerrado();
+    this.submenuAbierto = this.submenuAbierto === item.label ? null : item.label;
+  }
+
+  estaSubmenuAbierto(item: MenuItem) {
+    return this.submenuAbierto === item.label;
+  }
+
+  cerrarSesion() {
+    this.authService.eliminarToken();
+    this.router.navigate(['/login']);
   }
 }
