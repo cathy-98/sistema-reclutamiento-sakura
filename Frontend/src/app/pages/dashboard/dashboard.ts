@@ -13,7 +13,15 @@ export class Dashboard {
   rol = '';
 
   constructor(private authService: AuthService) {
-    this.usuario = this.authService.obtenerUsuario() ?? 'usuario';
-    this.rol = this.authService.obtenerRol() ?? '';
+    this.actualizarDatosSesion();
+
+    this.authService.cargarPerfilUsuario().subscribe(() => {
+      this.actualizarDatosSesion();
+    });
+  }
+
+  private actualizarDatosSesion() {
+    this.usuario = this.authService.obtenerNombreVisible();
+    this.rol = this.authService.obtenerRolVisible();
   }
 }
