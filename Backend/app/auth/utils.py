@@ -4,7 +4,7 @@ from typing import Union
 import bcrypt
 import jwt
 
-# 2. Configuración para la generación de JSON Web Tokens (JWT)
+# Configuración para la generación de JSON Web Tokens (JWT)
 # En un entorno de producción real, estos valores deben ser leídos desde variables de entorno.
 SECRET_KEY = "tu_super_secreto_para_el_token_ats_2026"
 ALGORITHM = "HS256"
