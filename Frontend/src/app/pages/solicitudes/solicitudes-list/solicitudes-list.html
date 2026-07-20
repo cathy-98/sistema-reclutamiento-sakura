@@ -490,6 +490,14 @@
             <input type="number" min="0" [(ngModel)]="nuevaHabilidad.anios_experiencia" />
           </label>
 
+          <label class="form-field skill-check-field">
+            Excluyente
+            <span class="skill-check-control">
+              <input type="checkbox" [(ngModel)]="nuevaHabilidad.es_excluyente" />
+              <span>Obligatoria</span>
+            </span>
+          </label>
+
           <button class="add-skill-button" type="button" (click)="agregarHabilidad()">
             + Agregar
           </button>
@@ -506,6 +514,9 @@
               {{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }} ·
               {{ habilidad.anios_experiencia }} años
             </span>
+            <small class="skill-importance" [ngClass]="habilidadExcluyenteClase(habilidad.es_excluyente)">
+              {{ habilidad.es_excluyente ? 'Excluyente' : 'No excluyente' }}
+            </small>
           </div>
           <button type="button" aria-label="Eliminar habilidad" (click)="eliminarHabilidad(i)">
             Eliminar

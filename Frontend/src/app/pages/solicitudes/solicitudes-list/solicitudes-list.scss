@@ -929,9 +929,33 @@ tbody tr:hover .actions-column::before {
 
 .skills-form-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 140px 120px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) 130px 120px 120px;
   gap: 14px 16px;
   align-items: end;
+}
+
+.skill-check-field {
+  min-height: 60px;
+}
+
+.skill-check-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: #fff;
+  color: #4a4444;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.skill-check-control input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-sakura);
 }
 
 .skills-preview {
@@ -958,6 +982,29 @@ tbody tr:hover .actions-column::before {
 .skills-preview span {
   color: var(--color-muted);
   font-size: 11px;
+}
+
+.skill-importance {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-height: 22px;
+  width: fit-content;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.skill-importance.excluyente {
+  background: #fff0f0;
+  color: #de3d3d;
+}
+
+.skill-importance.no-excluyente {
+  background: #edf8f2;
+  color: #14804a;
 }
 
 .skills-preview button {

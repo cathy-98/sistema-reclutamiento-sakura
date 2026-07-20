@@ -6,6 +6,7 @@ interface HabilidadSolicitud {
   id_habilidad: number | null;
   id_nivel_habilidad: number | null;
   anios_experiencia: number;
+  es_excluyente: boolean;
 }
 
 @Component({
@@ -31,6 +32,7 @@ export class SolicitudesList {
     id_habilidad: null as number | null,
     id_nivel_habilidad: null as number | null,
     anios_experiencia: 0,
+    es_excluyente: false,
   };
 
   catalogoActivo = '';
@@ -180,12 +182,14 @@ export class SolicitudesList {
       id_habilidad: this.nuevaHabilidad.id_habilidad,
       id_nivel_habilidad: this.nuevaHabilidad.id_nivel_habilidad,
       anios_experiencia: Number(this.nuevaHabilidad.anios_experiencia) || 0,
+      es_excluyente: this.nuevaHabilidad.es_excluyente,
     });
 
     this.nuevaHabilidad = {
       id_habilidad: null,
       id_nivel_habilidad: null,
       anios_experiencia: 0,
+      es_excluyente: false,
     };
   }
 
@@ -207,6 +211,10 @@ export class SolicitudesList {
 
   prioridadClase(prioridad: string) {
     return prioridad.toLowerCase();
+  }
+
+  habilidadExcluyenteClase(esExcluyente: boolean) {
+    return esExcluyente ? 'excluyente' : 'no-excluyente';
   }
 
   formularioSolicitud = {
