@@ -7,7 +7,7 @@ class Area(Base):
     """Mapea la tabla tbl_area necesaria para la FK de usuario"""
     __tablename__ = "tbl_area"
 
-    area_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    area_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     area_nombre: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True)
     area_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
@@ -19,7 +19,7 @@ class Permiso(Base):
     """Mapea los permisos individuales del sistema (ej: 'CREAR_USUARIO')"""
     __tablename__ = "tbl_permiso"
 
-    per_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    per_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     per_nombre: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     per_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
@@ -45,7 +45,7 @@ class Rol(Base):
     """Mapea los roles del sistema (ej: 'Administrador', 'Reclutador')"""
     __tablename__ = "tbl_rol"
 
-    rol_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rol_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     rol_nombre: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     rol_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
@@ -60,7 +60,7 @@ class EstadoUsuario(Base):
     """Mapea los estados que puede tener un usuario (ej: 'Activo', 'Inactivo')"""
     __tablename__ = "tbl_estado_usuario"
 
-    esusr_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    esusr_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     esusr_nombre: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     esusr_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
