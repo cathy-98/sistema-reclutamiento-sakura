@@ -382,6 +382,15 @@ tbody tr:hover .actions-column {
   color: var(--color-muted);
   font-size: 10px;
 }
+
+.observation-cell {
+  display: block;
+  overflow: hidden;
+  color: #5d5656;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status,
 .priority {
   display: inline-flex;
