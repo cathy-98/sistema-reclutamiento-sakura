@@ -110,6 +110,7 @@
           <col class="date-col" />
           <col class="priority-col" />
           <col class="state-col" />
+          <col class="observation-col" />
           <col class="actions-col" />
         </colgroup>
         <thead>
@@ -126,6 +127,7 @@
             <th>Inicio empleo</th>
             <th>Prioridad</th>
             <th>Estado</th>
+            <th>Observación</th>
             <th class="actions-column">Acciones</th>
           </tr>
         </thead>
@@ -156,6 +158,11 @@
             <td>
               <span class="status" [class]="'status ' + estadoClase(solicitud.estado)">
                 {{ solicitud.estado }}
+              </span>
+            </td>
+            <td>
+              <span class="observation-cell" [title]="solicitud.observacion">
+                {{ solicitud.observacion }}
               </span>
             </td>
             <td class="actions-column">

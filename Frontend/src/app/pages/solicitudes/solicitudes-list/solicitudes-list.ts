@@ -251,6 +251,7 @@ export class SolicitudesList {
       inicioEmpleo: '15/07/2026',
       prioridad: 'Alta',
       estado: 'Pendiente',
+      observacion: 'Perfil crítico para continuidad del equipo backend.',
     },
 
     {
@@ -264,6 +265,7 @@ export class SolicitudesList {
       inicioEmpleo: '15/07/2026',
       prioridad: 'Media',
       estado: 'En curso',
+      observacion: 'Requiere disponibilidad para onboarding durante julio.',
     },
     {
       id: 'Req-003',
@@ -276,6 +278,7 @@ export class SolicitudesList {
       inicioEmpleo: '05/08/2026',
       prioridad: 'Baja',
       estado: 'Cerrada',
+      observacion: 'Solicitud cubierta con candidato interno.',
     },
   ];
 

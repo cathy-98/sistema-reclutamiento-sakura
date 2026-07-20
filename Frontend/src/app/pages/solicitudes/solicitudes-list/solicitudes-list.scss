@@ -460,7 +460,7 @@ tbody tr:hover .actions-column {
 }
 
 table {
-  min-width: 1500px;
+  min-width: 1700px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -483,6 +483,10 @@ table {
 
 .date-col {
   width: 190px;
+}
+
+.observation-col {
+  width: 220px;
 }
 
 th,
