@@ -69,6 +69,35 @@
   padding: 24px;
 }
 
+.modal-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #fbfaf9;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.modal-loading span {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e5dedb;
+  border-top-color: var(--color-sakura);
+  border-radius: 50%;
+  animation: modal-spin 0.8s linear infinite;
+}
+
+@keyframes modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .form-stepper {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -186,6 +215,18 @@
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 500;
+}
+
+.form-field .form-error,
+.form-error {
+  justify-self: start;
+  color: #de3d3d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.form-error--full {
+  grid-column: 1 / -1;
 }
 
 input:not([type="checkbox"]),

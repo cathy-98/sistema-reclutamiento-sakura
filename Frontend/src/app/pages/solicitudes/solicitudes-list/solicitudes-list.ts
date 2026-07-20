@@ -12,6 +12,8 @@ export class SolicitudesList {
   cargando = false;
   error = '';
   mostrarFormulario = false;
+  solicitudSeleccionadaId: string | null = null;
+  modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
 
   estadoClase(estado: string) {
     return estado.toLowerCase().replace(/\s+/g, '-');
@@ -65,11 +67,27 @@ export class SolicitudesList {
   ];
 
   abrirFormulario() {
+    this.solicitudSeleccionadaId = null;
+    this.modoFormulario = 'crear';
+    this.mostrarFormulario = true;
+  }
+
+  abrirDetalleSolicitud(id: string) {
+    this.solicitudSeleccionadaId = id;
+    this.modoFormulario = 'ver';
+    this.mostrarFormulario = true;
+  }
+
+  abrirEdicionSolicitud(id: string) {
+    this.solicitudSeleccionadaId = id;
+    this.modoFormulario = 'editar';
     this.mostrarFormulario = true;
   }
 
   cerrarFormulario() {
     this.mostrarFormulario = false;
+    this.solicitudSeleccionadaId = null;
+    this.modoFormulario = 'crear';
   }
 }
 

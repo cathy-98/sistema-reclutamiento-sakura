@@ -1,6 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  AbstractControl,
+  ReactiveFormsModule,
+  UntypedFormArray,
+  UntypedFormControl,
+  UntypedFormGroup,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 
 interface HabilidadSolicitud {
   id_habilidad: number | null;
@@ -9,16 +17,24 @@ interface HabilidadSolicitud {
   es_excluyente: boolean;
 }
 
+type CatalogoActivo = '' | 'cargo' | 'area' | 'cliente' | 'habilidad';
+
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })
-export class SolicitudFormModal {
+export class SolicitudFormModal implements OnInit {
+  @Input() idSolicitud: string | null = null;
+  @Input() modo: 'crear' | 'ver' | 'editar' = 'crear';
   @Output() cerrar = new EventEmitter<void>();
 
+  cargandoDetalle = false;
   tabFormulario = 'general';
+  catalogoActivo: CatalogoActivo = '';
+  nuevoValorCatalogo = new UntypedFormControl('');
+
   pasosFormulario = [
     { clave: 'general', numero: 1, titulo: 'Información general' },
     { clave: 'condiciones', numero: 2, titulo: 'Condiciones' },
@@ -27,15 +43,13 @@ export class SolicitudFormModal {
     { clave: 'habilidades', numero: 5, titulo: 'Habilidades' },
   ];
 
-  nuevaHabilidad = {
-    id_habilidad: null as number | null,
-    id_nivel_habilidad: null as number | null,
-    anios_experiencia: 0,
-    es_excluyente: false,
+  camposPorPaso: Record<string, string[]> = {
+    general: ['titulo', 'id_cargo', 'id_area', 'id_cliente', 'id_usuario_solicitante'],
+    condiciones: ['id_prioridad', 'cantidad_vacantes', 'id_modalidad', 'id_estado_solicitud'],
+    cronograma: [],
+    descripcion: [],
+    habilidades: [],
   };
-
-  catalogoActivo = '';
-  nuevoValorCatalogo = '';
 
   cargosCatalogo = [
     { id: 1, nombre: 'Desarrollador Python' },
@@ -67,29 +81,208 @@ export class SolicitudFormModal {
     { id: 4, nombre: 'Senior' },
   ];
 
-  formularioSolicitud = {
-    titulo: '',
-    descripcion: '',
-    id_cargo: null as number | null,
-    id_prioridad: null as number | null,
-    cantidad_vacantes: 1,
-    id_cliente: null as number | null,
-    id_usuario_solicitante: null as number | null,
-    id_usuario_responsable: null as number | null,
-    id_modalidad: null as number | null,
-    salario_minimo: null as number | null,
-    salario_maximo: null as number | null,
-    fecha_inicio_busqueda: '',
-    fecha_cierre_busqueda: '',
-    fecha_inicio_cliente: '',
-    id_estado_solicitud: null as number | null,
-    id_area: null as number | null,
-    hora_inicio_jornada: '',
-    hora_fin_jornada: '',
-    habilidades: [] as HabilidadSolicitud[],
-  };
+  formularioSolicitud = new UntypedFormGroup(
+    {
+      titulo: new UntypedFormControl('', Validators.required),
+      descripcion: new UntypedFormControl(''),
+      id_cargo: new UntypedFormControl(null, Validators.required),
+      id_prioridad: new UntypedFormControl(null, Validators.required),
+      cantidad_vacantes: new UntypedFormControl(1, [Validators.required, Validators.min(1)]),
+      id_cliente: new UntypedFormControl(null, Validators.required),
+      id_usuario_solicitante: new UntypedFormControl(null, Validators.required),
+      id_usuario_responsable: new UntypedFormControl(null),
+      id_modalidad: new UntypedFormControl(null, Validators.required),
+      salario_minimo: new UntypedFormControl(null),
+      salario_maximo: new UntypedFormControl(null),
+      fecha_inicio_busqueda: new UntypedFormControl(''),
+      fecha_cierre_busqueda: new UntypedFormControl(''),
+      fecha_inicio_cliente: new UntypedFormControl(''),
+      id_estado_solicitud: new UntypedFormControl(null, Validators.required),
+      id_area: new UntypedFormControl(null, Validators.required),
+      hora_inicio_jornada: new UntypedFormControl(''),
+      hora_fin_jornada: new UntypedFormControl(''),
+      habilidades: new UntypedFormArray([]),
+    },
+    { validators: this.validarRangoSalario },
+  );
+
+  nuevaHabilidad = new UntypedFormGroup({
+    id_habilidad: new UntypedFormControl(null, Validators.required),
+    id_nivel_habilidad: new UntypedFormControl(null, Validators.required),
+    anios_experiencia: new UntypedFormControl(0, [Validators.required, Validators.min(0)]),
+    es_excluyente: new UntypedFormControl(false),
+  });
+
+  solicitudesDemo = [
+    {
+      id: 'Req-001',
+      titulo: 'Desarrollador Python Senior',
+      descripcion: 'Perfil crítico para continuidad del equipo backend.',
+      id_cargo: 1,
+      id_prioridad: 1,
+      cantidad_vacantes: 2,
+      id_cliente: 1,
+      id_usuario_solicitante: 3,
+      id_usuario_responsable: 3,
+      id_modalidad: 2,
+      salario_minimo: 1800000,
+      salario_maximo: 2400000,
+      fecha_inicio_busqueda: '2026-06-01',
+      fecha_cierre_busqueda: '2026-06-30',
+      fecha_inicio_cliente: '2026-07-15',
+      id_estado_solicitud: 1,
+      id_area: 1,
+      hora_inicio_jornada: '09:00',
+      hora_fin_jornada: '18:00',
+      habilidades: [
+        { id_habilidad: 1, id_nivel_habilidad: 4, anios_experiencia: 4, es_excluyente: true },
+      ] as HabilidadSolicitud[],
+    },
+    {
+      id: 'Req-002',
+      titulo: 'Desarrollador Python Junior',
+      descripcion: 'Requiere disponibilidad para onboarding durante julio.',
+      id_cargo: 1,
+      id_prioridad: 2,
+      cantidad_vacantes: 2,
+      id_cliente: 1,
+      id_usuario_solicitante: 3,
+      id_usuario_responsable: 3,
+      id_modalidad: 3,
+      salario_minimo: 900000,
+      salario_maximo: 1300000,
+      fecha_inicio_busqueda: '2026-06-01',
+      fecha_cierre_busqueda: '2026-06-30',
+      fecha_inicio_cliente: '2026-07-15',
+      id_estado_solicitud: 2,
+      id_area: 1,
+      hora_inicio_jornada: '09:00',
+      hora_fin_jornada: '18:00',
+      habilidades: [
+        { id_habilidad: 1, id_nivel_habilidad: 2, anios_experiencia: 1, es_excluyente: true },
+        { id_habilidad: 4, id_nivel_habilidad: 2, anios_experiencia: 1, es_excluyente: false },
+      ] as HabilidadSolicitud[],
+    },
+    {
+      id: 'Req-003',
+      titulo: 'Analista QA',
+      descripcion: 'Solicitud cubierta con candidato interno.',
+      id_cargo: 3,
+      id_prioridad: 3,
+      cantidad_vacantes: 1,
+      id_cliente: 1,
+      id_usuario_solicitante: 1,
+      id_usuario_responsable: 1,
+      id_modalidad: 1,
+      salario_minimo: 1000000,
+      salario_maximo: 1500000,
+      fecha_inicio_busqueda: '2026-07-10',
+      fecha_cierre_busqueda: '2026-07-30',
+      fecha_inicio_cliente: '2026-08-05',
+      id_estado_solicitud: 3,
+      id_area: 1,
+      hora_inicio_jornada: '09:00',
+      hora_fin_jornada: '18:00',
+      habilidades: [
+        { id_habilidad: 2, id_nivel_habilidad: 3, anios_experiencia: 2, es_excluyente: true },
+      ] as HabilidadSolicitud[],
+    },
+  ];
+
+  ngOnInit() {
+    if (this.idSolicitud) {
+      this.cargarSolicitud(this.idSolicitud);
+      return;
+    }
+
+    this.aplicarModoFormulario();
+  }
+
+  get habilidadesFormArray() {
+    return this.formularioSolicitud.get('habilidades') as UntypedFormArray;
+  }
+
+  get habilidadesSolicitud() {
+    return this.habilidadesFormArray.getRawValue() as HabilidadSolicitud[];
+  }
+
+  get descripcionLength() {
+    return String(this.formularioSolicitud.get('descripcion')?.value ?? '').length;
+  }
+
+  control(nombre: string) {
+    return this.formularioSolicitud.get(nombre);
+  }
+
+  get tituloModal() {
+    if (this.modo === 'ver') {
+      return 'Detalle de la solicitud';
+    }
+
+    if (this.modo === 'editar') {
+      return 'Editar solicitud de vacante';
+    }
+
+    return 'Nueva solicitud de vacante';
+  }
+
+  get subtituloModal() {
+    if (this.idSolicitud) {
+      return `Solicitud ${this.idSolicitud}`;
+    }
+
+    return 'Completa la información para crear una solicitud.';
+  }
+
+  validarRangoSalario(control: AbstractControl): ValidationErrors | null {
+    const salarioMinimo = Number(control.get('salario_minimo')?.value);
+    const salarioMaximo = Number(control.get('salario_maximo')?.value);
+
+    if (!salarioMinimo || !salarioMaximo) {
+      return null;
+    }
+
+    return salarioMinimo <= salarioMaximo ? null : { rangoSalarioInvalido: true };
+  }
+
+  cargarSolicitud(id: string) {
+    this.cargandoDetalle = true;
+
+    window.setTimeout(() => {
+      const solicitud = this.solicitudesDemo.find((item) => item.id === id);
+
+      if (solicitud) {
+        const { id: _id, habilidades, ...datosFormulario } = solicitud;
+        this.formularioSolicitud.patchValue(datosFormulario);
+        this.habilidadesFormArray.clear();
+        habilidades.forEach((habilidad) => this.habilidadesFormArray.push(this.crearHabilidadForm(habilidad)));
+      }
+
+      this.cargandoDetalle = false;
+      this.aplicarModoFormulario();
+    }, 300);
+  }
+
+  aplicarModoFormulario() {
+    if (this.modo === 'ver') {
+      this.formularioSolicitud.disable();
+      this.nuevaHabilidad.disable();
+      this.nuevoValorCatalogo.disable();
+      return;
+    }
+
+    this.formularioSolicitud.enable();
+    this.nuevaHabilidad.enable();
+    this.nuevoValorCatalogo.enable();
+  }
 
   cambiarTabFormulario(tab: string) {
+    const indiceDestino = this.pasosFormulario.findIndex((paso) => paso.clave === tab);
+
+    if (indiceDestino > this.pasoActualIndice() && !this.validarPaso(this.tabFormulario)) {
+      return;
+    }
+
     this.tabFormulario = tab;
   }
 
@@ -113,6 +306,10 @@ export class SolicitudFormModal {
   siguientePaso() {
     const indiceActual = this.pasoActualIndice();
 
+    if (!this.validarPaso(this.tabFormulario)) {
+      return;
+    }
+
     if (indiceActual < this.pasosFormulario.length - 1) {
       this.tabFormulario = this.pasosFormulario[indiceActual + 1].clave;
     }
@@ -123,36 +320,53 @@ export class SolicitudFormModal {
   }
 
   guardarSolicitud() {
-    console.log('Guardar solicitud', this.formularioSolicitud);
+    if (this.formularioSolicitud.invalid) {
+      this.formularioSolicitud.markAllAsTouched();
+      return;
+    }
+
+    console.log('Guardar solicitud', this.formularioSolicitud.getRawValue());
   }
 
-  manejarSeleccionCatalogo(catalogo: string, valor: string | number | null) {
+  validarPaso(clave: string) {
+    const controles = this.camposPorPaso[clave] ?? [];
+
+    controles.forEach((nombre) => this.control(nombre)?.markAsTouched());
+
+    if (clave === 'condiciones') {
+      this.formularioSolicitud.updateValueAndValidity();
+    }
+
+    return controles.every((nombre) => this.control(nombre)?.valid) && !this.formularioSolicitud.hasError('rangoSalarioInvalido');
+  }
+
+  manejarSeleccionCatalogo(catalogo: CatalogoActivo, valor: string | number | null) {
     if (valor !== 'crear') {
       return;
     }
 
     this.catalogoActivo = catalogo;
-    this.nuevoValorCatalogo = '';
+    this.nuevoValorCatalogo.setValue('');
 
     if (catalogo === 'cargo') {
-      this.formularioSolicitud.id_cargo = null;
+      this.formularioSolicitud.get('id_cargo')?.setValue(null);
     }
 
     if (catalogo === 'area') {
-      this.formularioSolicitud.id_area = null;
+      this.formularioSolicitud.get('id_area')?.setValue(null);
     }
 
     if (catalogo === 'cliente') {
-      this.formularioSolicitud.id_cliente = null;
+      this.formularioSolicitud.get('id_cliente')?.setValue(null);
     }
 
     if (catalogo === 'habilidad') {
-      this.nuevaHabilidad.id_habilidad = null;
+      this.nuevaHabilidad.get('id_habilidad')?.setValue(null);
     }
   }
 
   guardarNuevoCatalogo() {
-    const nombre = this.nuevoValorCatalogo.trim();
+    const nombre = String(this.nuevoValorCatalogo.value ?? '').trim();
 
     if (!nombre) {
       return;
@@ -161,25 +375,25 @@ export class SolicitudFormModal {
     if (this.catalogoActivo === 'cargo') {
       const nuevoId = this.siguienteId(this.cargosCatalogo);
       this.cargosCatalogo.push({ id: nuevoId, nombre });
-      this.formularioSolicitud.id_cargo = nuevoId;
+      this.formularioSolicitud.get('id_cargo')?.setValue(nuevoId);
     }
 
     if (this.catalogoActivo === 'area') {
       const nuevoId = this.siguienteId(this.areasCatalogo);
       this.areasCatalogo.push({ id: nuevoId, nombre });
-      this.formularioSolicitud.id_area = nuevoId;
+      this.formularioSolicitud.get('id_area')?.setValue(nuevoId);
     }
 
     if (this.catalogoActivo === 'cliente') {
       const nuevoId = this.siguienteId(this.clientesCatalogo);
       this.clientesCatalogo.push({ id: nuevoId, nombre });
-      this.formularioSolicitud.id_cliente = nuevoId;
+      this.formularioSolicitud.get('id_cliente')?.setValue(nuevoId);
     }
 
     if (this.catalogoActivo === 'habilidad') {
       const nuevoId = this.siguienteId(this.habilidadesCatalogo);
       this.habilidadesCatalogo.push({ id: nuevoId, nombre });
-      this.nuevaHabilidad.id_habilidad = nuevoId;
+      this.nuevaHabilidad.get('id_habilidad')?.setValue(nuevoId);
     }
 
     this.cancelarNuevoCatalogo();
@@ -187,7 +401,7 @@ export class SolicitudFormModal {
 
   cancelarNuevoCatalogo() {
     this.catalogoActivo = '';
-    this.nuevoValorCatalogo = '';
+    this.nuevoValorCatalogo.setValue('');
   }
 
   siguienteId(catalogo: { id: number; nombre: string }[]) {
@@ -195,27 +409,35 @@ export class SolicitudFormModal {
   }
 
   agregarHabilidad() {
-    if (!this.nuevaHabilidad.id_habilidad || !this.nuevaHabilidad.id_nivel_habilidad) {
+    if (this.nuevaHabilidad.invalid || this.modo === 'ver') {
+      this.nuevaHabilidad.markAllAsTouched();
       return;
     }
 
-    this.formularioSolicitud.habilidades.push({
-      id_habilidad: this.nuevaHabilidad.id_habilidad,
-      id_nivel_habilidad: this.nuevaHabilidad.id_nivel_habilidad,
-      anios_experiencia: Number(this.nuevaHabilidad.anios_experiencia) || 0,
-      es_excluyente: this.nuevaHabilidad.es_excluyente,
-    });
-
-    this.nuevaHabilidad = {
+    this.habilidadesFormArray.push(this.crearHabilidadForm(this.nuevaHabilidad.getRawValue()));
+    this.nuevaHabilidad.reset({
       id_habilidad: null,
       id_nivel_habilidad: null,
       anios_experiencia: 0,
       es_excluyente: false,
-    };
+    });
   }
 
   eliminarHabilidad(indice: number) {
-    this.formularioSolicitud.habilidades.splice(indice, 1);
+    if (this.modo === 'ver') {
+      return;
+    }
+
+    this.habilidadesFormArray.removeAt(indice);
+  }
+
+  crearHabilidadForm(habilidad: HabilidadSolicitud) {
+    return new UntypedFormGroup({
+      id_habilidad: new UntypedFormControl(habilidad.id_habilidad),
+      id_nivel_habilidad: new UntypedFormControl(habilidad.id_nivel_habilidad),
+      anios_experiencia: new UntypedFormControl(habilidad.anios_experiencia),
+      es_excluyente: new UntypedFormControl(habilidad.es_excluyente),
+    });
   }
 
   obtenerNombreHabilidad(id: number | null) {
