@@ -4,7 +4,7 @@ import { Dashboard } from './pages/dashboard/dashboard';
 import { authGuard } from './guards/auth.guard';
 import { AppShell } from './layouts/app-shell/app-shell';
 import { CandidatosList } from './pages/candidatos/candidatos-list/candidatos-list';
-import { SolicitudesList } from './pages/Solicitudes/solicitudes-list/solicitudes-list';
+import { SolicitudesList } from './pages/solicitudes/solicitudes-list/solicitudes-list';
 export const routes: Routes = [
   {
     path: '',
