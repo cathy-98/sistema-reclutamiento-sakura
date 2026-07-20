@@ -37,6 +37,10 @@
 
       <a class="forgot-password">¿Olvidaste tu contraseña?</a>
 
+      @if (error) {
+        <p class="login-error">{{ error }}</p>
+      }
+
       <button type="submit" [disabled]="cargando">
         {{ cargando ? 'Ingresando...' : 'Ingresar' }}
       </button>

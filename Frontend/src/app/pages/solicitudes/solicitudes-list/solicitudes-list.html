@@ -1,0 +1,533 @@
+<main class="requests-page">
+  <section class="welcome-panel">
+    <div>
+      <h1>Listado de solicitudes</h1>
+      <p>Gestión listado de solicitudes</p>
+    </div>
+  </section>
+  <section class="action-strip" aria-label="Acciones de solicitudes">
+    <button class="primary-button" type="button" (click)="abrirFormulario()">
+      <span aria-hidden="true">+</span>
+      Crear nueva solicitud
+    </button>
+  </section>
+  <section class="filters-panel" aria-label="Filtros de solicitudes">
+    <header class="filters-header">
+      <div>
+        <h3>Buscar y filtrar</h3>
+        <p>Usa uno o más campos para encontrar solicitudes.</p>
+      </div>
+
+      <label class="quick-search">
+        Búsqueda rápida
+        <input type="search" placeholder="Solicitud, cliente, cargo o responsable" />
+      </label>
+    </header>
+    <div class="table-message" *ngIf="cargando">
+      Cargando solicitudes...
+    </div>
+
+    <div class="table-message table-message--error" *ngIf="error">
+      {{ error }}
+    </div>
+    <div class="filters-grid">
+      <label>
+        ID solicitud
+        <input type="text" placeholder="Req-021" />
+      </label>
+
+      <label>
+        Nombre de solicitud
+        <input type="text" placeholder="Todos" />
+      </label>
+
+      <label>
+        Cliente
+        <input type="text" placeholder="Todos" />
+      </label>
+
+      <label>
+        Cargo solicitado
+        <input type="text" placeholder="Frontend" />
+      </label>
+
+      <label>
+        Responsable
+        <input type="text" placeholder="Todos" />
+      </label>
+
+      <label>
+        Prioridad
+        <select>
+          <option>Todas</option>
+          <option>Alta</option>
+          <option>Media</option>
+          <option>Baja</option>
+        </select>
+      </label>
+
+      <label>
+        Estado
+        <select>
+          <option>Todos</option>
+          <option>Pendiente</option>
+          <option>En curso</option>
+          <option>Cerrada</option>
+          <option>Cancelada</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="filter-actions">
+      <button class="ghost-button" type="button">Limpiar filtros</button>
+      <button class="primary-small-button" type="button">Buscar</button>
+    </div>
+  </section>
+  <section class="table-panel" aria-label="Listado de solicitudes">
+    <header class="table-header">
+      <div>
+        <h3>Listado de solicitudes</h3>
+        <p>{{ solicitudes.length }} registros encontrados.</p>
+      </div>
+    </header>
+
+    <div class="empty-state" *ngIf="solicitudes.length === 0">
+      <strong>No hay solicitudes para mostrar</strong>
+      <span>Ajusta los filtros o limpia la búsqueda para volver al listado completo.</span>
+      <button class="ghost-button" type="button">Limpiar filtros</button>
+    </div>
+
+    <div class="table-scroll" *ngIf="solicitudes.length > 0">
+      <table>
+        <colgroup>
+          <col class="select-col" />
+          <col class="id-col" />
+          <col class="request-col" />
+          <col class="client-col" />
+          <col class="role-col" />
+          <col class="owner-col" />
+          <col class="date-col" />
+          <col class="date-col" />
+          <col class="priority-col" />
+          <col class="state-col" />
+          <col class="actions-col" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="select-column">
+              <input type="checkbox" aria-label="Seleccionar todas las solicitudes" />
+            </th>
+            <th class="id-column">ID solicitud</th>
+            <th>Nombre de solicitud</th>
+            <th>Cliente</th>
+            <th>Cargo / vacantes</th>
+            <th>Responsable</th>
+            <th>Inicio y fin selección</th>
+            <th>Inicio empleo</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+            <th class="actions-column">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let solicitud of solicitudes">
+            <td class="select-column">
+              <input type="checkbox" [attr.aria-label]="'Seleccionar ' + solicitud.id" />
+            </td>
+            <td class="id-column">{{ solicitud.id }}</td>
+            <td>
+              <div class="request-cell">
+                <strong>{{ solicitud.nombre }}</strong>
+                <small>{{ solicitud.vacantes }} vacantes</small>
+              </div>
+            </td>
+            <td>{{ solicitud.cliente }}</td>
+            <td>{{ solicitud.cargo }} / {{ solicitud.vacantes }}</td>
+            <td>{{ solicitud.responsable }}</td>
+            <td>{{ solicitud.seleccion }}</td>
+            <td>{{ solicitud.inicioEmpleo }}</td>
+            <td>
+              <span class="priority" [class]="'priority ' + prioridadClase(solicitud.prioridad)">
+                {{ solicitud.prioridad }}
+              </span>
+            </td>
+
+            <td>
+              <span class="status" [class]="'status ' + estadoClase(solicitud.estado)">
+                {{ solicitud.estado }}
+              </span>
+            </td>
+            <td class="actions-column">
+              <div class="row-actions">
+                <button type="button" aria-label="Ver solicitud">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
+                    <circle cx="12" cy="12" r="2.2" />
+                  </svg>
+                </button>
+                <button type="button" aria-label="Editar solicitud">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+    <footer class="table-footer" *ngIf="solicitudes.length > 0">
+      <span>Mostrando {{ solicitudes.length }} de {{ solicitudes.length }} registros</span>
+
+      <div class="pagination">
+        <label>
+          Registros por página:
+          <select aria-label="Registros por página">
+            <option>5</option>
+            <option selected>10</option>
+            <option>25</option>
+          </select>
+        </label>
+
+        <button type="button" aria-label="Página anterior">‹</button>
+        <button class="is-active" type="button">1</button>
+        <span>de 1</span>
+        <button type="button" aria-label="Página siguiente">›</button>
+      </div>
+    </footer>
+  </section>
+</main>
+<div class="modal-backdrop" *ngIf="mostrarFormulario">
+  <section class="request-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <header class="modal-header">
+      <div>
+        <h2 id="modal-title">Nueva solicitud de vacante</h2>
+        <p>Completa la información para crear una solicitud.</p>
+      </div>
+
+      <button class="modal-close" type="button" aria-label="Cerrar formulario" (click)="cerrarFormulario()">
+        ×
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <nav class="form-stepper" aria-label="Pasos del formulario">
+        <button
+          *ngFor="let paso of pasosFormulario"
+          type="button"
+          [class.is-active]="tabFormulario === paso.clave"
+          [class.is-complete]="pasoCompletado(paso.clave)"
+          (click)="cambiarTabFormulario(paso.clave)"
+        >
+          <span>{{ paso.numero }}</span>
+          {{ paso.titulo }}
+        </button>
+      </nav>
+
+      <section class="form-section" *ngIf="tabFormulario === 'general'">
+        <header class="form-section-header">
+          <span>1</span>
+          <div>
+            <h3>Información general</h3>
+            <p>Datos principales de la solicitud.</p>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="form-field form-field--full">
+            Nombre de la solicitud *
+            <input
+              type="text"
+              placeholder="Ej. Desarrollador Frontend para Latam"
+              [(ngModel)]="formularioSolicitud.titulo"
+            />
+          </label>
+
+          <label class="form-field">
+            Cargo solicitado *
+            <select
+              *ngIf="catalogoActivo !== 'cargo'"
+              [(ngModel)]="formularioSolicitud.id_cargo"
+              (ngModelChange)="manejarSeleccionCatalogo('cargo', $event)"
+            >
+              <option [ngValue]="null">Selecciona un cargo</option>
+              <option *ngFor="let cargo of cargosCatalogo" [ngValue]="cargo.id">
+                {{ cargo.nombre }}
+              </option>
+              <option [ngValue]="'crear'">+ Crear nuevo cargo</option>
+            </select>
+
+            <div class="inline-create" *ngIf="catalogoActivo === 'cargo'">
+              <input type="text" placeholder="Nuevo cargo" [(ngModel)]="nuevoValorCatalogo" />
+              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
+              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
+            </div>
+          </label>
+
+          <label class="form-field">
+            Área / Departamento *
+            <select
+              *ngIf="catalogoActivo !== 'area'"
+              [(ngModel)]="formularioSolicitud.id_area"
+              (ngModelChange)="manejarSeleccionCatalogo('area', $event)"
+            >
+              <option [ngValue]="null">Selecciona un área</option>
+              <option *ngFor="let area of areasCatalogo" [ngValue]="area.id">
+                {{ area.nombre }}
+              </option>
+              <option [ngValue]="'crear'">+ Crear nueva área</option>
+            </select>
+
+            <div class="inline-create" *ngIf="catalogoActivo === 'area'">
+              <input type="text" placeholder="Nueva área" [(ngModel)]="nuevoValorCatalogo" />
+              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
+              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
+            </div>
+          </label>
+
+          <label class="form-field">
+            Cliente *
+            <select
+              *ngIf="catalogoActivo !== 'cliente'"
+              [(ngModel)]="formularioSolicitud.id_cliente"
+              (ngModelChange)="manejarSeleccionCatalogo('cliente', $event)"
+            >
+              <option [ngValue]="null">Selecciona un cliente</option>
+              <option *ngFor="let cliente of clientesCatalogo" [ngValue]="cliente.id">
+                {{ cliente.nombre }}
+              </option>
+              <option [ngValue]="'crear'">+ Crear nuevo cliente</option>
+            </select>
+
+            <div class="inline-create" *ngIf="catalogoActivo === 'cliente'">
+              <input type="text" placeholder="Nuevo cliente" [(ngModel)]="nuevoValorCatalogo" />
+              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
+              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
+            </div>
+          </label>
+
+          <label class="form-field">
+            Solicitante *
+            <select [(ngModel)]="formularioSolicitud.id_usuario_solicitante">
+              <option [ngValue]="null">Selecciona solicitante</option>
+              <option [ngValue]="1">Felipe Valdes</option>
+              <option [ngValue]="3">Cathy</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            Responsable
+            <select [(ngModel)]="formularioSolicitud.id_usuario_responsable">
+              <option [ngValue]="null">Sin asignar</option>
+              <option [ngValue]="1">Felipe Valdes</option>
+              <option [ngValue]="3">Cathy</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section" *ngIf="tabFormulario === 'condiciones'">
+        <header class="form-section-header">
+          <span>2</span>
+          <div>
+            <h3>Condiciones de la vacante</h3>
+            <p>Define prioridad, modalidad, salario y jornada.</p>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="form-field">
+            Prioridad *
+            <select [(ngModel)]="formularioSolicitud.id_prioridad">
+              <option [ngValue]="null">Selecciona prioridad</option>
+              <option [ngValue]="1">Alta</option>
+              <option [ngValue]="2">Media</option>
+              <option [ngValue]="3">Baja</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            Cantidad de vacantes *
+            <input type="number" min="1" [(ngModel)]="formularioSolicitud.cantidad_vacantes" />
+          </label>
+
+          <label class="form-field">
+            Modalidad *
+            <select [(ngModel)]="formularioSolicitud.id_modalidad">
+              <option [ngValue]="null">Selecciona modalidad</option>
+              <option [ngValue]="1">Presencial</option>
+              <option [ngValue]="2">Remoto</option>
+              <option [ngValue]="3">Híbrido</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            Estado *
+            <select [(ngModel)]="formularioSolicitud.id_estado_solicitud">
+              <option [ngValue]="null">Selecciona estado</option>
+              <option [ngValue]="1">Pendiente</option>
+              <option [ngValue]="2">En Curso</option>
+              <option [ngValue]="3">Cerrada</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            Salario mínimo
+            <input type="number" min="0" placeholder="Ej. 1200000" [(ngModel)]="formularioSolicitud.salario_minimo" />
+          </label>
+
+          <label class="form-field">
+            Salario máximo
+            <input type="number" min="0" placeholder="Ej. 1800000" [(ngModel)]="formularioSolicitud.salario_maximo" />
+          </label>
+
+          <label class="form-field">
+            Hora inicio jornada
+            <input type="time" [(ngModel)]="formularioSolicitud.hora_inicio_jornada" />
+          </label>
+
+          <label class="form-field">
+            Hora fin jornada
+            <input type="time" [(ngModel)]="formularioSolicitud.hora_fin_jornada" />
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section" *ngIf="tabFormulario === 'cronograma'">
+        <header class="form-section-header">
+          <span>3</span>
+          <div>
+            <h3>Cronograma</h3>
+            <p>Fechas principales del proceso.</p>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="form-field">
+            Inicio selección
+            <input type="date" [(ngModel)]="formularioSolicitud.fecha_inicio_busqueda" />
+          </label>
+
+          <label class="form-field">
+            Fin selección
+            <input type="date" [(ngModel)]="formularioSolicitud.fecha_cierre_busqueda" />
+          </label>
+
+          <label class="form-field">
+            Inicio empleo
+            <input type="date" [(ngModel)]="formularioSolicitud.fecha_inicio_cliente" />
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section" *ngIf="tabFormulario === 'descripcion'">
+        <header class="form-section-header">
+          <span>4</span>
+          <div>
+            <h3>Descripción</h3>
+            <p>Observaciones y detalle de la vacante.</p>
+          </div>
+        </header>
+
+        <label class="form-field">
+          Descripción / observaciones
+          <textarea
+            rows="8"
+            maxlength="500"
+            placeholder="Añade requisitos, contexto del equipo o detalles relevantes."
+            [(ngModel)]="formularioSolicitud.descripcion"
+          ></textarea>
+          <small>{{ formularioSolicitud.descripcion.length }}/500</small>
+        </label>
+      </section>
+
+      <section class="form-section" *ngIf="tabFormulario === 'habilidades'">
+        <header class="form-section-header">
+          <span>5</span>
+          <div>
+            <h3>Habilidades técnicas</h3>
+            <p>Define tecnologías, nivel y años de experiencia.</p>
+          </div>
+        </header>
+
+        <div class="skills-form-grid">
+          <label class="form-field">
+            Tecnología
+            <select
+              *ngIf="catalogoActivo !== 'habilidad'"
+              [(ngModel)]="nuevaHabilidad.id_habilidad"
+              (ngModelChange)="manejarSeleccionCatalogo('habilidad', $event)"
+            >
+              <option [ngValue]="null">Selecciona habilidad</option>
+              <option *ngFor="let habilidad of habilidadesCatalogo" [ngValue]="habilidad.id">
+                {{ habilidad.nombre }}
+              </option>
+              <option [ngValue]="'crear'">+ Crear nueva habilidad</option>
+            </select>
+
+            <div class="inline-create inline-create--wide" *ngIf="catalogoActivo === 'habilidad'">
+              <input type="text" placeholder="Nueva habilidad" [(ngModel)]="nuevoValorCatalogo" />
+              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
+              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
+            </div>
+          </label>
+
+          <label class="form-field">
+            Nivel técnico
+            <select [(ngModel)]="nuevaHabilidad.id_nivel_habilidad">
+              <option [ngValue]="null">Selecciona nivel</option>
+              <option *ngFor="let nivel of nivelesHabilidadCatalogo" [ngValue]="nivel.id">
+                {{ nivel.nombre }}
+              </option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            Años experiencia
+            <input type="number" min="0" [(ngModel)]="nuevaHabilidad.anios_experiencia" />
+          </label>
+
+          <button class="add-skill-button" type="button" (click)="agregarHabilidad()">
+            + Agregar
+          </button>
+        </div>
+
+        <div class="skills-empty" *ngIf="formularioSolicitud.habilidades.length === 0">
+          Todavía no agregaste habilidades.
+        </div>
+
+        <div class="skills-preview" *ngFor="let habilidad of formularioSolicitud.habilidades; let i = index">
+          <div>
+            <strong>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</strong>
+            <span>
+              {{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }} ·
+              {{ habilidad.anios_experiencia }} años
+            </span>
+          </div>
+          <button type="button" aria-label="Eliminar habilidad" (click)="eliminarHabilidad(i)">
+            Eliminar
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="modal-footer">
+      <button class="ghost-button" type="button" (click)="cerrarFormulario()">Cancelar</button>
+
+      <div class="modal-footer-actions">
+        <button class="ghost-button" type="button" [disabled]="pasoActualIndice() === 0" (click)="volverPaso()">
+          Volver
+        </button>
+        <button class="primary-small-button" type="button" *ngIf="!esUltimoPaso()" (click)="siguientePaso()">
+          Siguiente
+        </button>
+        <button class="primary-small-button" type="button" *ngIf="esUltimoPaso()" (click)="guardarSolicitud()">
+          Guardar solicitud
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>
