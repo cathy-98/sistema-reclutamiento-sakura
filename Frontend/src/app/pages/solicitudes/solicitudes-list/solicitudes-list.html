@@ -5,12 +5,14 @@
       <p>Gestión listado de solicitudes</p>
     </div>
   </section>
+
   <section class="action-strip" aria-label="Acciones de solicitudes">
     <button class="primary-button" type="button" (click)="abrirFormulario()">
       <span aria-hidden="true">+</span>
       Crear nueva solicitud
     </button>
   </section>
+
   <section class="filters-panel" aria-label="Filtros de solicitudes">
     <header class="filters-header">
       <div>
@@ -23,6 +25,7 @@
         <input type="search" placeholder="Solicitud, cliente, cargo o responsable" />
       </label>
     </header>
+
     <div class="table-message" *ngIf="cargando">
       Cargando solicitudes...
     </div>
@@ -30,6 +33,7 @@
     <div class="table-message table-message--error" *ngIf="error">
       {{ error }}
     </div>
+
     <div class="filters-grid">
       <label>
         ID solicitud
@@ -83,6 +87,7 @@
       <button class="primary-small-button" type="button">Buscar</button>
     </div>
   </section>
+
   <section class="table-panel" aria-label="Listado de solicitudes">
     <header class="table-header">
       <div>
@@ -154,7 +159,6 @@
                 {{ solicitud.prioridad }}
               </span>
             </td>
-
             <td>
               <span class="status" [class]="'status ' + estadoClase(solicitud.estado)">
                 {{ solicitud.estado }}
@@ -182,10 +186,10 @@
               </div>
             </td>
           </tr>
-
         </tbody>
       </table>
     </div>
+
     <footer class="table-footer" *ngIf="solicitudes.length > 0">
       <span>Mostrando {{ solicitudes.length }} de {{ solicitudes.length }} registros</span>
 
@@ -207,345 +211,8 @@
     </footer>
   </section>
 </main>
-<div class="modal-backdrop" *ngIf="mostrarFormulario">
-  <section class="request-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <header class="modal-header">
-      <div>
-        <h2 id="modal-title">Nueva solicitud de vacante</h2>
-        <p>Completa la información para crear una solicitud.</p>
-      </div>
 
-      <button class="modal-close" type="button" aria-label="Cerrar formulario" (click)="cerrarFormulario()">
-        ×
-      </button>
-    </header>
-
-    <div class="modal-body">
-      <nav class="form-stepper" aria-label="Pasos del formulario">
-        <button
-          *ngFor="let paso of pasosFormulario"
-          type="button"
-          [class.is-active]="tabFormulario === paso.clave"
-          [class.is-complete]="pasoCompletado(paso.clave)"
-          (click)="cambiarTabFormulario(paso.clave)"
-        >
-          <span>{{ paso.numero }}</span>
-          {{ paso.titulo }}
-        </button>
-      </nav>
-
-      <section class="form-section" *ngIf="tabFormulario === 'general'">
-        <header class="form-section-header">
-          <span>1</span>
-          <div>
-            <h3>Información general</h3>
-            <p>Datos principales de la solicitud.</p>
-          </div>
-        </header>
-
-        <div class="form-grid">
-          <label class="form-field form-field--full">
-            Nombre de la solicitud *
-            <input
-              type="text"
-              placeholder="Ej. Desarrollador Frontend para Latam"
-              [(ngModel)]="formularioSolicitud.titulo"
-            />
-          </label>
-
-          <label class="form-field">
-            Cargo solicitado *
-            <select
-              *ngIf="catalogoActivo !== 'cargo'"
-              [(ngModel)]="formularioSolicitud.id_cargo"
-              (ngModelChange)="manejarSeleccionCatalogo('cargo', $event)"
-            >
-              <option [ngValue]="null">Selecciona un cargo</option>
-              <option *ngFor="let cargo of cargosCatalogo" [ngValue]="cargo.id">
-                {{ cargo.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nuevo cargo</option>
-            </select>
-
-            <div class="inline-create" *ngIf="catalogoActivo === 'cargo'">
-              <input type="text" placeholder="Nuevo cargo" [(ngModel)]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
-            </div>
-          </label>
-
-          <label class="form-field">
-            Área / Departamento *
-            <select
-              *ngIf="catalogoActivo !== 'area'"
-              [(ngModel)]="formularioSolicitud.id_area"
-              (ngModelChange)="manejarSeleccionCatalogo('area', $event)"
-            >
-              <option [ngValue]="null">Selecciona un área</option>
-              <option *ngFor="let area of areasCatalogo" [ngValue]="area.id">
-                {{ area.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nueva área</option>
-            </select>
-
-            <div class="inline-create" *ngIf="catalogoActivo === 'area'">
-              <input type="text" placeholder="Nueva área" [(ngModel)]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
-            </div>
-          </label>
-
-          <label class="form-field">
-            Cliente *
-            <select
-              *ngIf="catalogoActivo !== 'cliente'"
-              [(ngModel)]="formularioSolicitud.id_cliente"
-              (ngModelChange)="manejarSeleccionCatalogo('cliente', $event)"
-            >
-              <option [ngValue]="null">Selecciona un cliente</option>
-              <option *ngFor="let cliente of clientesCatalogo" [ngValue]="cliente.id">
-                {{ cliente.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nuevo cliente</option>
-            </select>
-
-            <div class="inline-create" *ngIf="catalogoActivo === 'cliente'">
-              <input type="text" placeholder="Nuevo cliente" [(ngModel)]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
-            </div>
-          </label>
-
-          <label class="form-field">
-            Solicitante *
-            <select [(ngModel)]="formularioSolicitud.id_usuario_solicitante">
-              <option [ngValue]="null">Selecciona solicitante</option>
-              <option [ngValue]="1">Felipe Valdes</option>
-              <option [ngValue]="3">Cathy</option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            Responsable
-            <select [(ngModel)]="formularioSolicitud.id_usuario_responsable">
-              <option [ngValue]="null">Sin asignar</option>
-              <option [ngValue]="1">Felipe Valdes</option>
-              <option [ngValue]="3">Cathy</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="form-section" *ngIf="tabFormulario === 'condiciones'">
-        <header class="form-section-header">
-          <span>2</span>
-          <div>
-            <h3>Condiciones de la vacante</h3>
-            <p>Define prioridad, modalidad, salario y jornada.</p>
-          </div>
-        </header>
-
-        <div class="form-grid">
-          <label class="form-field">
-            Prioridad *
-            <select [(ngModel)]="formularioSolicitud.id_prioridad">
-              <option [ngValue]="null">Selecciona prioridad</option>
-              <option [ngValue]="1">Alta</option>
-              <option [ngValue]="2">Media</option>
-              <option [ngValue]="3">Baja</option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            Cantidad de vacantes *
-            <input type="number" min="1" [(ngModel)]="formularioSolicitud.cantidad_vacantes" />
-          </label>
-
-          <label class="form-field">
-            Modalidad *
-            <select [(ngModel)]="formularioSolicitud.id_modalidad">
-              <option [ngValue]="null">Selecciona modalidad</option>
-              <option [ngValue]="1">Presencial</option>
-              <option [ngValue]="2">Remoto</option>
-              <option [ngValue]="3">Híbrido</option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            Estado *
-            <select [(ngModel)]="formularioSolicitud.id_estado_solicitud">
-              <option [ngValue]="null">Selecciona estado</option>
-              <option [ngValue]="1">Pendiente</option>
-              <option [ngValue]="2">En Curso</option>
-              <option [ngValue]="3">Cerrada</option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            Salario mínimo
-            <input type="number" min="0" placeholder="Ej. 1200000" [(ngModel)]="formularioSolicitud.salario_minimo" />
-          </label>
-
-          <label class="form-field">
-            Salario máximo
-            <input type="number" min="0" placeholder="Ej. 1800000" [(ngModel)]="formularioSolicitud.salario_maximo" />
-          </label>
-
-          <label class="form-field">
-            Hora inicio jornada
-            <input type="time" [(ngModel)]="formularioSolicitud.hora_inicio_jornada" />
-          </label>
-
-          <label class="form-field">
-            Hora fin jornada
-            <input type="time" [(ngModel)]="formularioSolicitud.hora_fin_jornada" />
-          </label>
-        </div>
-      </section>
-
-      <section class="form-section" *ngIf="tabFormulario === 'cronograma'">
-        <header class="form-section-header">
-          <span>3</span>
-          <div>
-            <h3>Cronograma</h3>
-            <p>Fechas principales del proceso.</p>
-          </div>
-        </header>
-
-        <div class="form-grid">
-          <label class="form-field">
-            Inicio selección
-            <input type="date" [(ngModel)]="formularioSolicitud.fecha_inicio_busqueda" />
-          </label>
-
-          <label class="form-field">
-            Fin selección
-            <input type="date" [(ngModel)]="formularioSolicitud.fecha_cierre_busqueda" />
-          </label>
-
-          <label class="form-field">
-            Inicio empleo
-            <input type="date" [(ngModel)]="formularioSolicitud.fecha_inicio_cliente" />
-          </label>
-        </div>
-      </section>
-
-      <section class="form-section" *ngIf="tabFormulario === 'descripcion'">
-        <header class="form-section-header">
-          <span>4</span>
-          <div>
-            <h3>Descripción</h3>
-            <p>Observaciones y detalle de la vacante.</p>
-          </div>
-        </header>
-
-        <label class="form-field">
-          Descripción / observaciones
-          <textarea
-            rows="8"
-            maxlength="500"
-            placeholder="Añade requisitos, contexto del equipo o detalles relevantes."
-            [(ngModel)]="formularioSolicitud.descripcion"
-          ></textarea>
-          <small>{{ formularioSolicitud.descripcion.length }}/500</small>
-        </label>
-      </section>
-
-      <section class="form-section" *ngIf="tabFormulario === 'habilidades'">
-        <header class="form-section-header">
-          <span>5</span>
-          <div>
-            <h3>Habilidades técnicas</h3>
-            <p>Define tecnologías, nivel y años de experiencia.</p>
-          </div>
-        </header>
-
-        <div class="skills-form-grid">
-          <label class="form-field">
-            Tecnología
-            <select
-              *ngIf="catalogoActivo !== 'habilidad'"
-              [(ngModel)]="nuevaHabilidad.id_habilidad"
-              (ngModelChange)="manejarSeleccionCatalogo('habilidad', $event)"
-            >
-              <option [ngValue]="null">Selecciona habilidad</option>
-              <option *ngFor="let habilidad of habilidadesCatalogo" [ngValue]="habilidad.id">
-                {{ habilidad.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nueva habilidad</option>
-            </select>
-
-            <div class="inline-create inline-create--wide" *ngIf="catalogoActivo === 'habilidad'">
-              <input type="text" placeholder="Nueva habilidad" [(ngModel)]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
-            </div>
-          </label>
-
-          <label class="form-field">
-            Nivel técnico
-            <select [(ngModel)]="nuevaHabilidad.id_nivel_habilidad">
-              <option [ngValue]="null">Selecciona nivel</option>
-              <option *ngFor="let nivel of nivelesHabilidadCatalogo" [ngValue]="nivel.id">
-                {{ nivel.nombre }}
-              </option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            Años experiencia
-            <input type="number" min="0" [(ngModel)]="nuevaHabilidad.anios_experiencia" />
-          </label>
-
-          <label class="form-field skill-check-field">
-            Excluyente
-            <span class="skill-check-control">
-              <input type="checkbox" [(ngModel)]="nuevaHabilidad.es_excluyente" />
-              <span>Obligatoria</span>
-            </span>
-          </label>
-
-          <button class="add-skill-button" type="button" (click)="agregarHabilidad()">
-            + Agregar
-          </button>
-        </div>
-
-        <div class="skills-empty" *ngIf="formularioSolicitud.habilidades.length === 0">
-          Todavía no agregaste habilidades.
-        </div>
-
-        <div class="skills-preview" *ngFor="let habilidad of formularioSolicitud.habilidades; let i = index">
-          <div>
-            <strong>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</strong>
-            <span>
-              {{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }} ·
-              {{ habilidad.anios_experiencia }} años
-            </span>
-            <small class="skill-importance" [ngClass]="habilidadExcluyenteClase(habilidad.es_excluyente)">
-              {{ habilidad.es_excluyente ? 'Excluyente' : 'No excluyente' }}
-            </small>
-          </div>
-          <button type="button" aria-label="Eliminar habilidad" (click)="eliminarHabilidad(i)">
-            Eliminar
-          </button>
-        </div>
-      </section>
-    </div>
-
-    <footer class="modal-footer">
-      <button class="ghost-button" type="button" (click)="cerrarFormulario()">Cancelar</button>
-
-      <div class="modal-footer-actions">
-        <button class="ghost-button" type="button" [disabled]="pasoActualIndice() === 0" (click)="volverPaso()">
-          Volver
-        </button>
-        <button class="primary-small-button" type="button" *ngIf="!esUltimoPaso()" (click)="siguientePaso()">
-          Siguiente
-        </button>
-        <button class="primary-small-button" type="button" *ngIf="esUltimoPaso()" (click)="guardarSolicitud()">
-          Guardar solicitud
-        </button>
-      </div>
-    </footer>
-  </section>
-</div>
+<app-solicitud-form-modal
+  *ngIf="mostrarFormulario"
+  (cerrar)="cerrarFormulario()"
+></app-solicitud-form-modal>
