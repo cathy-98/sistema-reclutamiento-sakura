@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZxIBgugkwdjeObN54YeA66IyS5V6JAsOX2Xuirrz31l1sPdVWwggh25Bz6pcjuw
+\restrict bgcFlw1rjX8lJDnn00fmtEH2LJeKd2mhgwsyuPBehRloNzuohV3Lxi8KThSc4yD
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Debian 16.14-1.pgdg13+1)
@@ -46,6 +46,20 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: unaccent; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION unaccent; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
 
 
 SET default_tablespace = '';
@@ -1540,15 +1554,15 @@ ALTER TABLE public.tbl_usuario ALTER COLUMN usr_id ADD GENERATED ALWAYS AS IDENT
 --
 
 COPY public.tbl_area (area_id, area_nombre, area_descripcion) FROM stdin;
-1	Directorio	├ôrgano responsable de definir la estrategia, el gobierno corporativo y la direcci├│n general de la organizaci├│n.
-2	Gerencia General	Lidera la gesti├│n integral de la empresa y supervisa el cumplimiento de los objetivos estrat├®gicos.
-3	Asistencia de Gerencia	Brinda apoyo administrativo y operativo a la Gerencia General en la coordinaci├│n de sus actividades.
-4	Asesor├¡a Legal	Proporciona asesoramiento jur├¡dico y vela por el cumplimiento de la normativa vigente.
-5	Control Interno	Supervisa los procesos internos para asegurar el cumplimiento de pol├¡ticas, normas y controles.
-6	Gerencia de Adm. y Finanzas	Administra los recursos financieros, contables y administrativos de la organizaci├│n.
+1	Directorio	Organo responsable de definir la estrategia, el gobierno corporativo y la direccion general de la organizacion.
+2	Gerencia General	Lidera la gestion integral de la empresa y supervisa el cumplimiento de los objetivos estrategicos.
+3	Asistencia de Gerencia	Brinda apoyo administrativo y operativo a la Gerencia General en la coordinacion de sus actividades.
+4	Asesoria Legal	Proporciona asesoramiento juridico y vela por el cumplimiento de la normativa vigente.
+5	Control Interno	Supervisa los procesos internos para asegurar el cumplimiento de politicas, normas y controles.
+6	Gerencia de Adm. y Finanzas	Administra los recursos financieros, contables y administrativos de la organizacion.
 7	Gerencia de Operaciones	Gestiona y optimiza los procesos operativos para garantizar la eficiencia y continuidad del negocio.
-8	Gerencia Comercial	Dirige las estrategias comerciales, ventas y desarrollo de clientes para impulsar el crecimiento de la organizaci├│n.
-9	Departamento de RR.HH.	Gestiona el talento humano, incluyendo reclutamiento, selecci├│n, desarrollo y bienestar de los colaboradores.
+8	Gerencia Comercial	Dirige las estrategias comerciales, ventas y desarrollo de clientes para impulsar el crecimiento de la organizacion.
+9	Departamento de RR.HH.	Gestiona el talento humano, incluyendo reclutamiento, seleccion, desarrollo y bienestar de los colaboradores.
 \.
 
 
@@ -1581,27 +1595,27 @@ COPY public.tbl_candidato_habilidad (cdhb_id, cdhb_candidato_id, cdhb_habilidad_
 --
 
 COPY public.tbl_cargo (crgo_id, crgo_nombre, crgo_descripcion) FROM stdin;
-1	Desarrollador Backend	Desarrolla la l├│gica de negocio y los servicios del lado del servidor.
+1	Desarrollador Backend	Desarrolla la logica de negocio y los servicios del lado del servidor.
 2	Desarrollador Frontend	Desarrolla la interfaz de usuario y la experiencia visual de las aplicaciones.
 3	Desarrollador Full Stack	Desarrolla tanto el frontend como el backend de las aplicaciones.
-4	Desarrollador Mobile	Desarrolla aplicaciones para dispositivos m├│viles Android e iOS.
-5	Analista QA	Dise├▒a y ejecuta pruebas para asegurar la calidad del software.
-6	Ingeniero QA Automation	Automatiza pruebas funcionales y de regresi├│n.
-7	Scrum Master	Facilita la metodolog├¡a Scrum y elimina impedimentos del equipo.
+4	Desarrollador Mobile	Desarrolla aplicaciones para dispositivos moviles Android e iOS.
+5	Analista QA	Disena y ejecuta pruebas para asegurar la calidad del software.
+6	Ingeniero QA Automation	Automatiza pruebas funcionales y de regresion.
+7	Scrum Master	Facilita la metodologia Scrum y elimina impedimentos del equipo.
 8	Product Owner	Gestiona el backlog del producto y prioriza los requerimientos del negocio.
 9	Analista Funcional	Levanta, analiza y documenta requerimientos funcionales.
-10	Analista de Sistemas	Analiza procesos y propone soluciones tecnol├│gicas.
-11	Arquitecto de Software	Define la arquitectura t├®cnica de las aplicaciones.
+10	Analista de Sistemas	Analiza procesos y propone soluciones tecnologicas.
+11	Arquitecto de Software	Define la arquitectura tecnica de las aplicaciones.
 12	DevOps Engineer	Automatiza despliegues y administra la infraestructura de desarrollo.
-13	Ingeniero de Datos	Dise├▒a y mantiene pipelines y plataformas de datos.
-14	Cient├¡fico de Datos	Analiza grandes vol├║menes de datos mediante modelos estad├¡sticos y de inteligencia artificial.
+13	Ingeniero de Datos	Disena y mantiene pipelines y plataformas de datos.
+14	Cientifico de Datos	Analiza grandes volumenes de datos mediante modelos estadisticos y de inteligencia artificial.
 15	Analista BI	Desarrolla indicadores, reportes y dashboards para apoyar la toma de decisiones.
 16	Administrador de Base de Datos (DBA)	Administra, optimiza y asegura el correcto funcionamiento de las bases de datos.
-17	Administrador de Sistemas	Gestiona servidores, sistemas operativos y plataformas tecnol├│gicas.
-18	Especialista en Ciberseguridad	Protege la infraestructura tecnol├│gica y la informaci├│n de la organizaci├│n.
-19	Soporte TI	Brinda soporte t├®cnico a usuarios y equipos tecnol├│gicos.
-20	L├¡der T├®cnico	Coordina t├®cnicamente al equipo de desarrollo y promueve las buenas pr├ícticas.
-21	Jefe de Proyecto TI	Planifica, coordina y controla la ejecuci├│n de proyectos tecnol├│gicos.
+17	Administrador de Sistemas	Gestiona servidores, sistemas operativos y plataformas tecnologicas.
+18	Especialista en Ciberseguridad	Protege la infraestructura tecnologica y la informacion de la organizacion.
+19	Soporte TI	Brinda soporte tecnico a usuarios y equipos tecnologicos.
+20	Lider Tecnico	Coordina tecnicamente al equipo de desarrollo y promueve las buenas practicas.
+21	Jefe de Proyecto TI	Planifica, coordina y controla la ejecucion de proyectos tecnologicos.
 \.
 
 
@@ -1723,12 +1737,12 @@ COPY public.tbl_estado_entrevista (esev_id, esev_nombre, esev_descripcion) FROM 
 --
 
 COPY public.tbl_estado_solicitud (essl_id, essl_nombre, essl_descripcion) FROM stdin;
-1	Pendiente	La solicitud fue creada por un administrador y est├í pendiente de ser tomada por un reclutador.
-2	En Curso	La vacante est├í activa, publicada y recibiendo postulaciones. Es administrada por el reclutador asignado.
-3	En Entrevistas	La recepci├│n de postulaciones finaliz├│ y los candidatos seleccionados se encuentran en proceso de entrevistas y evaluaci├│n.
-4	Cancelado	El proceso de selecci├│n fue cancelado por decisi├│n del cliente, cambios presupuestarios u otras razones.
-5	Cerrado	La vacante fue cubierta exitosamente mediante la contrataci├│n de un candidato.
-6	Pausado	El proceso de selecci├│n se encuentra suspendido temporalmente y podr├í reanudarse posteriormente.
+1	Pendiente	La solicitud fue creada por un administrador y esta pendiente de ser tomada por un reclutador.
+2	En Curso	La vacante esta activa, publicada y recibiendo postulaciones. Es administrada por el reclutador asignado.
+3	En Entrevistas	La recepcion de postulaciones finalizo y los candidatos seleccionados se encuentran en proceso de entrevistas y evaluacion.
+4	Cancelado	El proceso de seleccion fue cancelado por decision del cliente, cambios presupuestarios u otras razones.
+5	Cerrado	La vacante fue cubierta exitosamente mediante la contratacion de un candidato.
+6	Pausado	El proceso de seleccion se encuentra suspendido temporalmente y podra reanudarse posteriormente.
 \.
 
 
@@ -1746,9 +1760,9 @@ COPY public.tbl_estado_solicitud_candidato (essc_id, essc_nombre, essc_descripci
 
 COPY public.tbl_estado_usuario (esusr_id, esusr_nombre, esusr_descripcion) FROM stdin;
 1	Activo	Usuario habilitado para operar plenamente en la plataforma.
-2	Inactivo	Usuario deshabilitado temporalmente; no puede iniciar sesi├│n.
-3	Bloqueado	Cuenta suspendida autom├íticamente por exceso de intentos fallidos de inicio de sesi├│n.
-4	Eliminado	Usuario eliminado de forma l├│gica para conservar la informaci├│n y la auditor├¡a hist├│rica.
+2	Inactivo	Usuario deshabilitado temporalmente; no puede iniciar sesion.
+3	Bloqueado	Cuenta suspendida automaticamente por exceso de intentos fallidos de inicio de sesion.
+4	Eliminado	Usuario eliminado de forma logica para conservar la informacion y la auditoria historica.
 \.
 
 
@@ -1881,7 +1895,7 @@ COPY public.tbl_permiso (per_id, per_nombre, per_descripcion) FROM stdin;
 7	SOL_UPDATE	Modificar solicitudes
 8	SOL_DELETE	Cerrar o eliminar solicitudes
 9	CAN_VIEW	Ver candidatos
-10	CAN_UPDATE	Actualizar informaci├│n o estado del candidato
+10	CAN_UPDATE	Actualizar informacion o estado del candidato
 11	CAN_DELETE	Eliminar o desactivar candidato
 12	CUEST_CREATE	Crear cuestionarios
 13	CUEST_ASSIGN	Asignar cuestionarios
@@ -1889,9 +1903,9 @@ COPY public.tbl_permiso (per_id, per_nombre, per_descripcion) FROM stdin;
 15	INT_CREATE	Agendar entrevistas
 16	INT_VIEW	Ver entrevistas
 17	INT_UPDATE	Modificar entrevistas
-18	INT_EVALUATE	Registrar evaluaci├│n de entrevista
-19	CAT_ADMIN	Administrar cat├ílogos maestros
-20	REP_VIEW	Consultar reportes y m├®tricas
+18	INT_EVALUATE	Registrar evaluacion de entrevista
+19	CAT_ADMIN	Administrar catalogos maestros
+20	REP_VIEW	Consultar reportes y metricas
 \.
 
 
@@ -1916,9 +1930,9 @@ COPY public.tbl_pregunta_cuestionario (prcu_pregunta_id, prcu_cuestionario_id, p
 --
 
 COPY public.tbl_prioridad_solicitud (prsol_id, prsol_nombre, prsol_descripcion) FROM stdin;
-1	Alta	Vacantes cr├¡ticas que requieren cobertura en menos de 15 d├¡as
-2	Media	Procesos est├índar con un tiempo estimado de cobertura de 30 d├¡as
-3	Baja	B├║squedas preventivas o planes de expansi├│n sin fecha l├¡mite estricta
+1	Alta	Vacantes criticas que requieren cobertura en menos de 15 dias
+2	Media	Procesos estandar con un tiempo estimado de cobertura de 30 dias
+3	Baja	Busquedas preventivas o planes de expansion sin fecha limite estricta
 \.
 
 
@@ -1943,10 +1957,10 @@ COPY public.tbl_respuesta_pregunta (rspr_id, rspr_candidato_cuestionario_id, rsp
 --
 
 COPY public.tbl_rol (rol_id, rol_nombre, rol_descripcion) FROM stdin;
-1	Administrador	Administrador total del sistema con acceso global a todos los m├│dulos.
+1	Administrador	Administrador total del sistema con acceso global a todos los modulos.
 2	Reclutador	Usuario que realiza el proceso de reclutamiento.
 3	Candidato	Postulante externo que aplica a las ofertas laborales y responde cuestionarios.
-4	Entrevistador	Colaborador t├®cnico o l├¡der de ├írea encargado de realizar entrevistas a los candidatos.
+4	Entrevistador	Colaborador tecnico o lider de area encargado de realizar entrevistas a los candidatos.
 \.
 
 
@@ -1997,7 +2011,7 @@ COPY public.tbl_rol_permiso (rlpm_rol_id, rlpm_permiso_id) FROM stdin;
 --
 
 COPY public.tbl_solicitud (sol_id, sol_codigo, sol_titulo, sol_cargo_id, sol_descripcion, sol_prioridad_id, sol_cantidad_vacantes, sol_cliente_id, sol_usuario_creador_id, sol_usuario_asignado_id, sol_modalidad_id, sol_salario_min, sol_salario_max, sol_fecha_creacion, sol_fecha_inicio_busqueda, sol_fecha_cierre_busqueda, sol_fecha_inicio_cliente, sol_estado_solicitud_id, sol_hora_inicio_jornada, sol_hora_fin_jornada, sol_tipo_contrato_id, sol_observacion) FROM stdin;
-1	SOL-001	Desarrollador Senior Backend Python (Presencial)	1	Buscamos un Ingeniero Full Stack o Backend con m├ís de 5 a├▒os de experiencia dise├▒ando arquitecturas basadas en microservicios, APIs REST con FastAPI y optimizaci├│n de consultas SQL nativas en PostgreSQL bajo entornos Docker.	2	2	1	1	3	2	2500000	3000000	2026-07-21 11:00:00	2026-07-21 11:00:00	2026-07-21 18:00:00	2026-07-21 11:00:00	2	09:00:00	18:00:00	2	Solicitud de prueba.
+1	SOL-001	Desarrollador Senior Backend Python (Presencial)	1	Buscamos un Ingeniero Full Stack o Backend con mas de 5 anos de experiencia disenando arquitecturas basadas en microservicios, APIs REST con FastAPI y optimizacion de consultas SQL nativas en PostgreSQL bajo entornos Docker.	2	2	1	1	3	2	2500000	3000000	2026-07-21 11:00:00	2026-07-21 11:00:00	2026-07-21 18:00:00	2026-07-21 11:00:00	2	09:00:00	18:00:00	2	Solicitud de prueba.
 \.
 
 
@@ -2022,11 +2036,11 @@ COPY public.tbl_solicitud_habilidad (solhb_id, solhb_solicitud_id, solhb_habilid
 --
 
 COPY public.tbl_tipo_contrato (tpct_id, tpct_nombre, tpct_descripcion) FROM stdin;
-1	Indefinido	Contrato laboral sin fecha de t├®rmino, vigente hasta que una de las partes lo finalice conforme a la legislaci├│n.
-2	Plazo Fijo	Contrato laboral con una fecha de inicio y una fecha de t├®rmino previamente establecidas.
-3	Por Proyecto	Contrato cuya duraci├│n est├í vinculada a la ejecuci├│n de un proyecto o una tarea espec├¡fica. Finaliza una vez concluido el proyecto.
-4	Pr├íctica Profesional	Acuerdo destinado a estudiantes o egresados para desarrollar experiencia pr├íctica relacionada con su formaci├│n acad├®mica.
-5	Honorarios	Prestaci├│n de servicios independiente, sin v├¡nculo laboral directo, regulada mediante la emisi├│n de boletas de honorarios.
+1	Indefinido	Contrato laboral sin fecha de termino, vigente hasta que una de las partes lo finalice conforme a la legislacion.
+2	Plazo Fijo	Contrato laboral con una fecha de inicio y una fecha de termino previamente establecidas.
+3	Por Proyecto	Contrato cuya duracion esta vinculada a la ejecucion de un proyecto o una tarea especifica. Finaliza una vez concluido el proyecto.
+4	Practica Profesional	Acuerdo destinado a estudiantes o egresados para desarrollar experiencia practica relacionada con su formacion academica.
+5	Honorarios	Prestacion de servicios independiente, sin vinculo laboral directo, regulada mediante la emision de boletas de honorarios.
 \.
 
 
@@ -4673,5 +4687,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZxIBgugkwdjeObN54YeA66IyS5V6JAsOX2Xuirrz31l1sPdVWwggh25Bz6pcjuw
+\unrestrict bgcFlw1rjX8lJDnn00fmtEH2LJeKd2mhgwsyuPBehRloNzuohV3Lxi8KThSc4yD
 
