@@ -9,6 +9,8 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { Modal } from '../../../shared/components/modal/modal';
+import { Stepper } from '../../../shared/components/stepper/stepper';
 
 interface HabilidadSolicitud {
   id_habilidad: number | null;
@@ -21,7 +23,7 @@ type CatalogoActivo = '' | 'cargo' | 'area' | 'cliente' | 'habilidad';
 
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, Modal, Stepper],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })
@@ -208,6 +210,12 @@ export class SolicitudFormModal implements OnInit {
 
   get descripcionLength() {
     return String(this.formularioSolicitud.get('descripcion')?.value ?? '').length;
+  }
+
+  get pasosCompletados() {
+    return this.pasosFormulario
+      .filter((paso) => this.pasoCompletado(paso.clave))
+      .map((paso) => paso.clave);
   }
 
   control(nombre: string) {

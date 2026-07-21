@@ -1,0 +1,20 @@
+<div class="modal-backdrop">
+  <section class="app-modal" [ngClass]="ancho" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <header class="modal-header">
+      <div>
+        <h2 id="modal-title">{{ titulo }}</h2>
+        <p *ngIf="subtitulo">{{ subtitulo }}</p>
+      </div>
+
+      <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrar.emit()">
+        ×
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <ng-content></ng-content>
+    </div>
+
+    <ng-content select="[modal-footer]"></ng-content>
+  </section>
+</div>

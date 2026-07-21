@@ -183,6 +183,13 @@
                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                   </svg>
                 </button>
+                <button type="button" aria-label="Cancelar solicitud" (click)="abrirConfirmacionCancelacion(solicitud.id)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="m9 9 6 6" />
+                    <path d="m15 9-6 6" />
+                  </svg>
+                </button>
               </div>
             </td>
           </tr>
@@ -218,3 +225,15 @@
   [modo]="modoFormulario"
   (cerrar)="cerrarFormulario()"
 ></app-solicitud-form-modal>
+
+<app-confirm-dialog
+  *ngIf="mostrarConfirmacionCancelacion"
+  titulo="Cancelar solicitud"
+  mensaje="Esta acción cambiará el estado de la solicitud a Cancelada."
+  [detalle]="'Solicitud seleccionada: ' + solicitudSeleccionadaId"
+  textoCancelar="Volver"
+  textoConfirmar="Confirmar cancelación"
+  variante="danger"
+  (cancelar)="cerrarConfirmacionCancelacion()"
+  (confirmar)="confirmarCancelacionSolicitud()"
+></app-confirm-dialog>

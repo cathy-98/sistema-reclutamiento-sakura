@@ -1,74 +1,10 @@
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(20, 20, 20, 0.55);
-}
-
-.request-modal {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  overflow: hidden;
-  width: min(100%, 980px);
-  height: min(90vh, 720px);
-  max-height: 90vh;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 22px 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-header h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.modal-header p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 12px;
-}
-
-.modal-close {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: #4f4a4a;
-  cursor: pointer;
-  font-size: 26px;
-  line-height: 1;
-}
-
-.modal-close:hover {
-  background: #f4eeee;
-  color: var(--color-sakura);
-}
-
-.modal-body {
+.request-modal-body {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 16px;
   min-height: 0;
-  overflow: auto;
   padding: 24px;
 }
-
 .modal-loading {
   display: inline-flex;
   align-items: center;
@@ -96,62 +32,6 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-.form-stepper {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.form-stepper button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: #f7f5f4;
-  color: #6b6262;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.form-stepper button span {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  background: #e5dedb;
-  color: #6b6262;
-  font-size: 11px;
-}
-
-.form-stepper button:hover {
-  border-color: var(--color-sakura);
-  background: #fff;
-  color: var(--color-sakura);
-}
-
-.form-stepper button.is-active {
-  border-color: var(--color-sakura);
-  background: var(--color-sakura);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(164, 82, 82, 0.2);
-}
-
-.form-stepper button.is-active span,
-.form-stepper button.is-complete span {
-  background: #fff;
-  color: var(--color-sakura);
-}
-
-.form-stepper button.is-complete {
-  border-color: rgba(164, 82, 82, 0.35);
-  color: var(--color-sakura);
 }
 
 .form-section {

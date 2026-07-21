@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal';
 
 @Component({
   selector: 'app-solicitudes-list',
-  imports: [CommonModule, SolicitudFormModal],
+  imports: [CommonModule, SolicitudFormModal, ConfirmDialog],
   templateUrl: './solicitudes-list.html',
   styleUrl: './solicitudes-list.scss',
 })
@@ -12,6 +13,7 @@ export class SolicitudesList {
   cargando = false;
   error = '';
   mostrarFormulario = false;
+  mostrarConfirmacionCancelacion = false;
   solicitudSeleccionadaId: string | null = null;
   modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
 
@@ -82,6 +84,30 @@ export class SolicitudesList {
     this.solicitudSeleccionadaId = id;
     this.modoFormulario = 'editar';
     this.mostrarFormulario = true;
+  }
+
+  abrirConfirmacionCancelacion(id: string) {
+    this.solicitudSeleccionadaId = id;
+    this.mostrarConfirmacionCancelacion = true;
+  }
+
+  cerrarConfirmacionCancelacion() {
+    this.mostrarConfirmacionCancelacion = false;
+    this.solicitudSeleccionadaId = null;
+  }
+
+  confirmarCancelacionSolicitud() {
+    if (!this.solicitudSeleccionadaId) {
+      return;
+    }
+
+    this.solicitudes = this.solicitudes.map((solicitud) =>
+      solicitud.id === this.solicitudSeleccionadaId
+        ? { ...solicitud, estado: 'Cancelada', observacion: 'Solicitud cancelada por confirmación del usuario.' }
+        : solicitud,
+    );
+
+    this.cerrarConfirmacionCancelacion();
   }
 
   cerrarFormulario() {

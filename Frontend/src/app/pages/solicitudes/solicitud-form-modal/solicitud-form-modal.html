@@ -1,35 +1,17 @@
-<div class="modal-backdrop">
-  <section class="request-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <header class="modal-header">
-      <div>
-        <h2 id="modal-title">{{ tituloModal }}</h2>
-        <p>{{ subtituloModal }}</p>
-      </div>
-
-      <button class="modal-close" type="button" aria-label="Cerrar formulario" (click)="cerrar.emit()">
-        ×
-      </button>
-    </header>
-
-    <div class="modal-body">
+<app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
+    <div class="request-modal-body">
       <div class="modal-loading" *ngIf="cargandoDetalle">
         <span></span>
         Cargando datos de la solicitud...
       </div>
 
       <form class="modal-form" [formGroup]="formularioSolicitud">
-      <nav class="form-stepper" aria-label="Pasos del formulario">
-        <button
-          *ngFor="let paso of pasosFormulario"
-          type="button"
-          [class.is-active]="tabFormulario === paso.clave"
-          [class.is-complete]="pasoCompletado(paso.clave)"
-          (click)="cambiarTabFormulario(paso.clave)"
-        >
-          <span>{{ paso.numero }}</span>
-          {{ paso.titulo }}
-        </button>
-      </nav>
+      <app-stepper
+        [pasos]="pasosFormulario"
+        [pasoActivo]="tabFormulario"
+        [pasosCompletados]="pasosCompletados"
+        (cambiarPaso)="cambiarTabFormulario($event)"
+      ></app-stepper>
 
       <section class="form-section" *ngIf="tabFormulario === 'general'">
         <header class="form-section-header">
@@ -361,7 +343,7 @@
       </form>
     </div>
 
-    <footer class="modal-footer">
+    <footer modal-footer class="modal-footer">
       <button class="ghost-button" type="button" (click)="cerrar.emit()">Cancelar</button>
 
       <div class="modal-footer-actions">
@@ -376,5 +358,4 @@
         </button>
       </div>
     </footer>
-  </section>
-</div>
+</app-modal>
