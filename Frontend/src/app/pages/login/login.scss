@@ -120,20 +120,6 @@
 
 .password-field {
   position: relative;
-
-  span {
-    position: absolute;
-    top: 50%;
-    right: 14px;
-    transform: translateY(-50%);
-    color: var(--color-input-placeholder);
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  input {
-    padding-right: 42px;
-  }
 }
 
 .forgot-password {

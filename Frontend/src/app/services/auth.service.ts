@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { catchError, map, of, switchMap, tap, timeout } from 'rxjs';
 
 export interface LoginRequest {
   email: string;
@@ -49,6 +49,7 @@ export class AuthService {
 
   login(credenciales: LoginRequest) {
     return this.http.post<LoginResponse>(this.apiUrl, credenciales).pipe(
+      timeout(6000),
       tap((respuesta) => this.guardarSesion(respuesta)),
       switchMap((respuesta) => this.cargarPerfilUsuario().pipe(map(() => respuesta)))
     );

@@ -22,12 +22,20 @@ export class Login {
   ) {}
 
   ingresar() {
+    const email = this.email.trim();
+    const password = this.password.trim();
+
+    if (!email || !password) {
+      this.error = 'Ingresa correo y contraseña para continuar';
+      return;
+    }
+
     this.cargando = true;
     this.error = '';
 
     this.authService.login({
-      email: this.email,
-      password: this.password,
+      email,
+      password,
     }).subscribe({
       next: () => {
         this.cargando = false;
