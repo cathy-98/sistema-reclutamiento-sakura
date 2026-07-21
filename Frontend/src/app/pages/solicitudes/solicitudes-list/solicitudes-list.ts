@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { Alert } from '../../../shared/components/alert/alert';
 import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal';
 
 @Component({
   selector: 'app-solicitudes-list',
-  imports: [CommonModule, SolicitudFormModal, ConfirmDialog],
+  imports: [CommonModule, SolicitudFormModal, ConfirmDialog, Alert],
   templateUrl: './solicitudes-list.html',
   styleUrl: './solicitudes-list.scss',
 })

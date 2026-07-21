@@ -1,0 +1,13 @@
+<section *ngIf="visible" class="app-alert" [ngClass]="clases" role="alert">
+  <span *ngIf="mostrarIcono" class="alert-icon" aria-hidden="true">{{ icono }}</span>
+
+  <div class="alert-content">
+    <strong *ngIf="titulo">{{ titulo }}</strong>
+    <p *ngIf="mensaje">{{ mensaje }}</p>
+    <ng-content></ng-content>
+  </div>
+
+  <button *ngIf="cerrable" class="alert-close" type="button" aria-label="Cerrar alerta" (click)="cerrarAlerta()">
+    ×
+  </button>
+</section>

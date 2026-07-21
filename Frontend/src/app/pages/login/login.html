@@ -38,7 +38,7 @@
       <a class="forgot-password">¿Olvidaste tu contraseña?</a>
 
       @if (error) {
-        <p class="login-error">{{ error }}</p>
+        <app-alert tipo="danger" variante="soft" [mensaje]="error" [cerrable]="true" (cerrar)="error = ''"></app-alert>
       }
 
       <button type="submit" [disabled]="cargando">

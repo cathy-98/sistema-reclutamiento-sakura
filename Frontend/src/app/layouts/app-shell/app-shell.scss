@@ -24,7 +24,7 @@
   border: 1px solid var(--color-border);
   border-radius: 16px;
   background: var(--color-card-bg);
-  box-shadow: 0 18px 45px rgba(55, 37, 37, 0.08);
+  box-shadow: var(--shadow-sidebar);
 }
 
 .sidebar-header {
@@ -78,7 +78,7 @@
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #5c5555;
+  color: var(--color-text-muted-strong);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -93,18 +93,18 @@
 }
 
 .sidebar-link:hover {
-  background: rgba(164, 82, 82, 0.08);
+  background: var(--color-sakura-soft);
   color: var(--color-sakura);
 }
 
 .sidebar-link.is-active {
-  background: rgba(164, 82, 82, 0.14);
+  background: var(--color-sakura-soft-strong);
   color: var(--color-sakura);
   box-shadow: inset 3px 0 0 var(--color-sakura);
 }
 
 .sidebar-link.has-open-submenu {
-  background: rgba(164, 82, 82, 0.08);
+  background: var(--color-sakura-soft);
   color: var(--color-sakura);
 }
 
@@ -147,7 +147,7 @@
   padding: 8px 10px;
   border-radius: 8px;
   background: var(--color-text);
-  color: #ffffff;
+  color: var(--color-white);
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
@@ -176,7 +176,7 @@
   display: grid;
   margin: 4px 0 4px 31px;
   padding-left: 8px;
-  border-left: 1px solid rgba(164, 82, 82, 0.16);
+  border-left: 1px solid var(--color-sakura-border);
 }
 
 .sidebar-submenu-link {
@@ -185,7 +185,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #6f6767;
+  color: var(--color-text-subtle);
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -195,7 +195,7 @@
 
 .sidebar-submenu-link:hover,
 .sidebar-submenu-link.is-active {
-  background: rgba(164, 82, 82, 0.08);
+  background: var(--color-sakura-soft);
   color: var(--color-sakura);
 }
 
@@ -204,9 +204,9 @@
   min-height: 40px;
   margin-top: auto;
   padding: 0 12px;
-  border: 1px solid rgba(164, 82, 82, 0.18);
+  border: 1px solid var(--color-sakura-border);
   border-radius: 9px;
-  background: rgba(164, 82, 82, 0.06);
+  background: var(--color-sakura-soft);
   color: var(--color-sakura);
   cursor: pointer;
   font: inherit;
@@ -216,7 +216,7 @@
 }
 
 .sidebar-logout:hover {
-  background: rgba(164, 82, 82, 0.12);
+  background: var(--color-sakura-soft-strong);
 }
 
 .menu-toggle {

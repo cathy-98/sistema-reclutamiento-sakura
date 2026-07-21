@@ -12,7 +12,7 @@
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: var(--color-card-bg);
-  box-shadow: 0 16px 42px rgba(55, 37, 37, 0.08);
+  box-shadow: var(--shadow-card-soft);
 }
 
 .welcome-panel {
@@ -65,7 +65,7 @@
 .primary-small-button {
   border: 1px solid var(--color-sakura);
   background: var(--color-sakura);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .primary-button {
@@ -76,7 +76,7 @@
 .ghost-button {
   min-width: 92px;
   border: 1px solid var(--color-sakura);
-  background: #fff;
+  background: var(--color-white);
   color: var(--color-sakura);
 }
 
@@ -112,7 +112,7 @@
 .quick-search {
   display: grid;
   gap: 7px;
-  color: #4a4444;
+  color: var(--color-text-soft);
   font-size: 11px;
   font-weight: 700;
 }
@@ -195,8 +195,8 @@ td {
 }
 
 th {
-  background: #e7e5e3;
-  color: #484343;
+  background: var(--color-table-header);
+  color: var(--color-text-soft);
   font-size: 11px;
   font-weight: 700;
 }
@@ -205,21 +205,21 @@ tbody tr:nth-child(odd),
 tbody tr:nth-child(odd) .select-column,
 tbody tr:nth-child(odd) .id-column,
 tbody tr:nth-child(odd) .actions-column {
-  background: #f6f5f4;
+  background: var(--color-surface-soft);
 }
 
 tbody tr:nth-child(even),
 tbody tr:nth-child(even) .select-column,
 tbody tr:nth-child(even) .id-column,
 tbody tr:nth-child(even) .actions-column {
-  background: #fff;
+  background: var(--color-white);
 }
 
 tbody tr:hover,
 tbody tr:hover .select-column,
 tbody tr:hover .id-column,
 tbody tr:hover .actions-column {
-  background: #fff8f8;
+  background: var(--color-white)8f8;
 }
 
 .select-col,
@@ -273,26 +273,26 @@ tbody tr:hover .actions-column {
   padding-right: 0;
   padding-left: 0;
   text-align: center;
-  border-right: 1px solid #e3ddda;
+  border-right: 1px solid var(--color-border-table);
 }
 
 .id-column {
   left: 52px;
-  border-right: 1px solid #ddd6d2;
+  border-right: 1px solid var(--color-border-strong);
 }
 
 .actions-column {
   right: 0;
   overflow: visible;
   text-align: center;
-  border-left: 1px solid #ddd6d2;
+  border-left: 1px solid var(--color-border-strong);
 }
 
 th.select-column,
 th.id-column,
 th.actions-column {
   z-index: 4;
-  background: #e7e5e3;
+  background: var(--color-table-header);
 }
 
 .id-column::after,
@@ -307,20 +307,20 @@ th.actions-column {
 
 .id-column::after {
   right: -18px;
-  background: linear-gradient(90deg, rgba(246, 245, 244, 0.95), rgba(246, 245, 244, 0));
+  background: var(--scroll-shadow-soft-left);
 }
 
 .actions-column::before {
   left: -18px;
-  background: linear-gradient(270deg, rgba(246, 245, 244, 0.95), rgba(246, 245, 244, 0));
+  background: var(--scroll-shadow-soft-right);
 }
 
 th.id-column::after {
-  background: linear-gradient(90deg, rgba(231, 229, 227, 0.98), rgba(231, 229, 227, 0));
+  background: var(--scroll-shadow-header-left);
 }
 
 th.actions-column::before {
-  background: linear-gradient(270deg, rgba(231, 229, 227, 0.98), rgba(231, 229, 227, 0));
+  background: var(--scroll-shadow-header-right);
 }
 
 .request-cell {
@@ -336,7 +336,7 @@ th.actions-column::before {
 }
 
 .observation-cell {
-  color: #5d5656;
+  color: var(--color-text-muted-strong);
 }
 
 .status,
@@ -358,21 +358,21 @@ th.actions-column::before {
 
 .alta,
 .cancelada {
-  color: #de3d3d;
+  color: var(--color-danger);
 }
 
 .media,
 .pendiente {
-  color: #f08a1c;
+  color: var(--color-warning);
 }
 
 .baja,
 .en-curso {
-  color: #356fd6;
+  color: var(--color-info);
 }
 
 .cerrada {
-  color: #14804a;
+  color: var(--color-success);
 }
 
 .row-actions {
@@ -392,8 +392,8 @@ th.actions-column::before {
   padding: 0;
   border: 1px solid transparent;
   border-radius: 6px;
-  background: #fff;
-  color: #302c2c;
+  background: var(--color-white);
+  color: var(--color-text);
   cursor: pointer;
 }
 
@@ -430,8 +430,8 @@ th.actions-column::before {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 18px;
-  background: #ddd9d6;
-  color: #4e4949;
+  background: var(--color-table-footer);
+  color: var(--color-text-soft);
   font-size: 11px;
 }
 
@@ -448,8 +448,8 @@ th.actions-column::before {
   height: 28px;
   border: 1px solid transparent;
   border-radius: 6px;
-  background: #fff;
-  color: #5d5555;
+  background: var(--color-white);
+  color: var(--color-text-muted-strong);
 }
 
 .pagination button {
@@ -458,21 +458,21 @@ th.actions-column::before {
 
 .pagination .is-active {
   background: var(--color-sakura);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .table-message {
   margin: 14px 18px 0;
   padding: 12px 14px;
   border-radius: 8px;
-  background: #f6f5f4;
-  color: #554f4f;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted-strong);
   font-size: 12px;
 }
 
 .table-message--error {
-  background: #fff1f1;
-  color: #b83b3b;
+  background: var(--color-white)1f1;
+  color: var(--color-danger-dark);
 }
 
 @media (max-width: 900px) {

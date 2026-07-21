@@ -30,9 +30,14 @@
       Cargando solicitudes...
     </div>
 
-    <div class="table-message table-message--error" *ngIf="error">
-      {{ error }}
-    </div>
+    <app-alert
+      *ngIf="error"
+      tipo="danger"
+      variante="soft"
+      [mensaje]="error"
+      [cerrable]="true"
+      (cerrar)="error = ''"
+    ></app-alert>
 
     <div class="filters-grid">
       <label>

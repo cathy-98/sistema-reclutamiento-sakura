@@ -13,7 +13,7 @@
   padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #fbfaf9;
+  background: var(--color-page-bg);
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 700;
@@ -22,7 +22,7 @@
 .modal-loading span {
   width: 14px;
   height: 14px;
-  border: 2px solid #e5dedb;
+  border: 2px solid var(--color-border);
   border-top-color: var(--color-sakura);
   border-radius: 50%;
   animation: modal-spin 0.8s linear infinite;
@@ -39,7 +39,7 @@
   padding: 18px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--color-white);
 }
 
 .form-section-header {
@@ -56,7 +56,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--color-sakura);
-  color: #fff;
+  color: var(--color-white);
   font-size: 13px;
   font-weight: 700;
 }
@@ -81,7 +81,7 @@
 .form-field {
   display: grid;
   gap: 7px;
-  color: #3f3939;
+  color: var(--color-text-soft);
   font-size: 12px;
   font-weight: 700;
 }
@@ -100,7 +100,7 @@
 .form-field .form-error,
 .form-error {
   justify-self: start;
-  color: #de3d3d;
+  color: var(--color-danger);
   font-size: 11px;
   font-weight: 700;
 }
@@ -151,14 +151,14 @@ textarea::placeholder {
 
 .ghost-button {
   border: 1px solid var(--color-sakura);
-  background: #fff;
+  background: var(--color-white);
   color: var(--color-sakura);
 }
 
 .primary-small-button {
   border: 1px solid var(--color-sakura);
   background: var(--color-sakura);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .add-skill-button {
@@ -167,7 +167,7 @@ textarea::placeholder {
   place-items: center;
   border: 1px solid var(--color-sakura);
   border-radius: 7px;
-  background: #fff;
+  background: var(--color-white);
   color: var(--color-sakura);
   cursor: pointer;
   font-size: 13px;
@@ -176,7 +176,7 @@ textarea::placeholder {
 
 .add-skill-button:hover {
   background: var(--color-sakura);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .inline-create {
@@ -186,7 +186,7 @@ textarea::placeholder {
   padding: 10px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #fbfaf9;
+  background: var(--color-page-bg);
 }
 
 .inline-create button {
@@ -196,8 +196,8 @@ textarea::placeholder {
   padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
-  background: #fff;
-  color: #4a4444;
+  background: var(--color-white);
+  color: var(--color-text-soft);
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
@@ -206,7 +206,7 @@ textarea::placeholder {
 .inline-create button:first-of-type {
   border-color: var(--color-sakura);
   background: var(--color-sakura);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .inline-create--wide {
@@ -232,8 +232,8 @@ textarea::placeholder {
   padding: 0 10px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
-  background: #fff;
-  color: #4a4444;
+  background: var(--color-white);
+  color: var(--color-text-soft);
   font-size: 12px;
   font-weight: 700;
 }
@@ -253,7 +253,7 @@ textarea::placeholder {
   padding: 12px 14px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #f8f6f5;
+  background: var(--color-surface-soft);
 }
 
 .skills-preview div {
@@ -284,20 +284,20 @@ textarea::placeholder {
 }
 
 .skill-importance.excluyente {
-  background: #fff0f0;
-  color: #de3d3d;
+  background: var(--color-white)0f0;
+  color: var(--color-danger);
 }
 
 .skill-importance.no-excluyente {
-  background: #edf8f2;
-  color: #14804a;
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .skills-preview button {
   min-height: 30px;
   border: 0;
   background: transparent;
-  color: #de3d3d;
+  color: var(--color-danger);
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
@@ -308,7 +308,7 @@ textarea::placeholder {
   padding: 18px;
   border: 1px dashed var(--color-border);
   border-radius: 8px;
-  background: #fbfaf9;
+  background: var(--color-page-bg);
   color: var(--color-muted);
   text-align: center;
   font-size: 12px;
@@ -321,7 +321,7 @@ textarea::placeholder {
   gap: 16px;
   padding: 16px 24px;
   border-top: 1px solid var(--color-border);
-  background: #fff;
+  background: var(--color-white);
 }
 
 .modal-footer-actions {
