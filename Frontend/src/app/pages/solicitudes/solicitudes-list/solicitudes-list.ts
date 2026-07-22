@@ -4,6 +4,12 @@ import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { Alert } from '../../../shared/components/alert/alert';
 import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
+import {
+  DataTable,
+  DataTableAction,
+  DataTableActionEvent,
+  DataTableColumn,
+} from '../../../shared/components/data-table/data-table';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
@@ -11,7 +17,7 @@ import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal
 
 @Component({
   selector: 'app-solicitudes-list',
-  imports: [CommonModule, SolicitudFormModal, ConfirmDialog, Alert],
+  imports: [CommonModule, SolicitudFormModal, ConfirmDialog, Alert, DataTable],
   templateUrl: './solicitudes-list.html',
   styleUrl: './solicitudes-list.scss',
 })
@@ -23,6 +29,72 @@ export class SolicitudesList implements OnInit {
   solicitudSeleccionadaId: string | null = null;
   modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
   solicitudes: SolicitudResumen[] = [];
+  seleccionados = new Set<string>();
+  paginaActual = 1;
+  registrosPorPagina = 5;
+
+  readonly columnas: DataTableColumn<SolicitudResumen>[] = [
+    {
+      key: 'id',
+      label: 'ID solicitud',
+      width: 112,
+      sticky: 'left',
+    },
+    {
+      key: 'nombre',
+      label: 'Nombre de solicitud',
+      width: 260,
+      type: 'stack',
+      value: (solicitud) => solicitud.nombre,
+      secondaryValue: (solicitud) => `${solicitud.vacantes} vacantes`,
+    },
+    {
+      key: 'cliente',
+      label: 'Cliente',
+      width: 180,
+    },
+    {
+      key: 'cargo',
+      label: 'Cargo / vacantes',
+      width: 155,
+      value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
+    },
+    {
+      key: 'responsable',
+      label: 'Responsable',
+      width: 155,
+    },
+    {
+      key: 'seleccion',
+      label: 'Inicio y fin selección',
+      width: 190,
+    },
+    {
+      key: 'inicioEmpleo',
+      label: 'Inicio empleo',
+      width: 190,
+    },
+    {
+      key: 'prioridad',
+      label: 'Prioridad',
+      width: 155,
+      type: 'badge',
+      className: (solicitud) => this.prioridadClase(solicitud.prioridad),
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      width: 155,
+      type: 'badge',
+      className: (solicitud) => this.estadoClase(solicitud.estado),
+    },
+    {
+      key: 'observacion',
+      label: 'Observación',
+      width: 220,
+      title: (solicitud) => solicitud.observacion,
+    },
+  ];
 
   constructor(
     private authService: AuthService,
@@ -45,6 +117,33 @@ export class SolicitudesList implements OnInit {
     return this.authService.tieneRol(['Administrador']);
   }
 
+  get solicitudesPaginadas() {
+    const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
+    return this.solicitudes.slice(inicio, inicio + this.registrosPorPagina);
+  }
+
+  get acciones(): DataTableAction<SolicitudResumen>[] {
+    return [
+      {
+        id: 'ver',
+        label: 'Ver solicitud',
+        icon: 'eye',
+      },
+      {
+        id: 'editar',
+        label: 'Editar solicitud',
+        icon: 'edit',
+        visible: () => this.puedeEditarSolicitud,
+      },
+      {
+        id: 'cancelar',
+        label: 'Cancelar solicitud',
+        icon: 'cancel',
+        visible: () => this.puedeCancelarSolicitud,
+      },
+    ];
+  }
+
   estadoClase(estado: string) {
     return estado.toLowerCase().replace(/\s+/g, '-');
   }
@@ -60,6 +159,7 @@ export class SolicitudesList implements OnInit {
     this.solicitudesService.listar().subscribe({
       next: (solicitudes) => {
         this.solicitudes = solicitudes;
+        this.paginaActual = 1;
         this.cargando = false;
       },
       error: (error) => {
@@ -109,6 +209,32 @@ export class SolicitudesList implements OnInit {
 
     this.solicitudSeleccionadaId = id;
     this.mostrarConfirmacionCancelacion = true;
+  }
+
+  cambiarPagina(pagina: number) {
+    const totalPaginas = Math.max(1, Math.ceil(this.solicitudes.length / this.registrosPorPagina));
+    this.paginaActual = Math.min(Math.max(pagina, 1), totalPaginas);
+  }
+
+  cambiarRegistrosPorPagina(registros: number) {
+    this.registrosPorPagina = registros;
+    this.paginaActual = 1;
+  }
+
+  manejarAccionTabla(evento: DataTableActionEvent<SolicitudResumen>) {
+    if (evento.action === 'ver') {
+      this.abrirDetalleSolicitud(evento.row.id);
+      return;
+    }
+
+    if (evento.action === 'editar') {
+      this.abrirEdicionSolicitud(evento.row.id);
+      return;
+    }
+
+    if (evento.action === 'cancelar') {
+      this.abrirConfirmacionCancelacion(evento.row.id);
+    }
   }
 
   cerrarConfirmacionCancelacion() {
@@ -163,6 +289,10 @@ export class SolicitudesList implements OnInit {
       variante: 'soft',
       mensaje: 'No tienes permisos para realizar esta acción.',
     };
+  }
+
+  obtenerIdSolicitud(solicitud: SolicitudResumen) {
+    return solicitud.id;
   }
 }
 

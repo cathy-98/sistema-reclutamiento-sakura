@@ -5,8 +5,7 @@
 }
 
 .welcome-panel,
-.filters-panel,
-.table-panel {
+.filters-panel {
   width: min(100%, 1180px);
   margin: 0 auto 22px;
   border: 1px solid var(--color-border);
@@ -20,8 +19,7 @@
 }
 
 .welcome-panel h1,
-.filters-header h3,
-.table-header h3 {
+.filters-header h3 {
   margin: 0 0 5px;
 }
 
@@ -31,10 +29,7 @@
 }
 
 .welcome-panel p,
-.filters-header p,
-.table-header p,
-.request-cell small,
-.empty-state span {
+.filters-header p {
   margin: 0;
   color: var(--color-muted);
   font-size: 12px;
@@ -92,9 +87,7 @@
   margin-bottom: 18px;
 }
 
-.filters-header h3,
-.table-header h3,
-.empty-state strong {
+.filters-header h3 {
   font-size: 16px;
 }
 
@@ -141,7 +134,6 @@ select {
 }
 
 input[type="checkbox"] {
-  box-sizing: border-box;
   width: 12px;
   height: 12px;
   margin: 0;
@@ -160,307 +152,6 @@ input::placeholder {
   margin-top: 22px;
 }
 
-.table-panel {
-  overflow: hidden;
-}
-
-.table-header {
-  padding: 18px 18px 0;
-}
-
-.table-scroll {
-  position: relative;
-  width: 100%;
-  overflow-x: auto;
-  padding-top: 14px;
-}
-
-table {
-  width: 100%;
-  min-width: 1700px;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-  font-size: 12px;
-}
-
-th,
-td {
-  overflow: hidden;
-  padding: 14px 12px;
-  text-align: left;
-  text-overflow: ellipsis;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-th {
-  background: var(--color-table-header);
-  color: var(--color-text-soft);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-tbody tr:nth-child(odd),
-tbody tr:nth-child(odd) .select-column,
-tbody tr:nth-child(odd) .id-column,
-tbody tr:nth-child(odd) .actions-column {
-  background: var(--color-surface-soft);
-}
-
-tbody tr:nth-child(even),
-tbody tr:nth-child(even) .select-column,
-tbody tr:nth-child(even) .id-column,
-tbody tr:nth-child(even) .actions-column {
-  background: var(--color-white);
-}
-
-tbody tr:hover,
-tbody tr:hover .select-column,
-tbody tr:hover .id-column,
-tbody tr:hover .actions-column {
-  background: var(--color-white)8f8;
-}
-
-.select-col,
-.select-column {
-  width: 52px;
-}
-
-.id-col,
-.id-column {
-  width: 112px;
-}
-
-.request-col {
-  width: 260px;
-}
-
-.client-col {
-  width: 180px;
-}
-
-.role-col,
-.owner-col,
-.priority-col,
-.state-col {
-  width: 155px;
-}
-
-.date-col {
-  width: 190px;
-}
-
-.observation-col {
-  width: 220px;
-}
-
-.actions-col,
-.actions-column {
-  width: 128px;
-}
-
-.select-column,
-.id-column,
-.actions-column {
-  position: sticky;
-  z-index: 3;
-  background: inherit;
-}
-
-.select-column {
-  left: 0;
-  padding-right: 0;
-  padding-left: 0;
-  text-align: center;
-  border-right: 1px solid var(--color-border-table);
-}
-
-.id-column {
-  left: 52px;
-  border-right: 1px solid var(--color-border-strong);
-}
-
-.actions-column {
-  right: 0;
-  overflow: visible;
-  text-align: center;
-  border-left: 1px solid var(--color-border-strong);
-}
-
-th.select-column,
-th.id-column,
-th.actions-column {
-  z-index: 4;
-  background: var(--color-table-header);
-}
-
-.id-column::after,
-.actions-column::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 18px;
-  pointer-events: none;
-}
-
-.id-column::after {
-  right: -18px;
-  background: var(--scroll-shadow-soft-left);
-}
-
-.actions-column::before {
-  left: -18px;
-  background: var(--scroll-shadow-soft-right);
-}
-
-th.id-column::after {
-  background: var(--scroll-shadow-header-left);
-}
-
-th.actions-column::before {
-  background: var(--scroll-shadow-header-right);
-}
-
-.request-cell {
-  display: grid;
-  gap: 4px;
-}
-
-.request-cell strong,
-.observation-cell {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.observation-cell {
-  color: var(--color-text-muted-strong);
-}
-
-.status,
-.priority {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 700;
-}
-
-.status::before,
-.priority::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.alta,
-.cancelada {
-  color: var(--color-danger);
-}
-
-.media,
-.pendiente {
-  color: var(--color-warning);
-}
-
-.baja,
-.en-curso {
-  color: var(--color-info);
-}
-
-.cerrada {
-  color: var(--color-success);
-}
-
-.row-actions {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.row-actions button {
-  display: inline-grid;
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
-  place-items: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.row-actions button:hover {
-  border-color: var(--color-sakura);
-  color: var(--color-sakura);
-}
-
-.row-actions svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.empty-state {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 42px 20px 46px;
-  text-align: center;
-}
-
-.empty-state span {
-  max-width: 360px;
-}
-
-.table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 18px;
-  background: var(--color-table-footer);
-  color: var(--color-text-soft);
-  font-size: 11px;
-}
-
-.pagination,
-.pagination label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination select,
-.pagination button {
-  min-width: 28px;
-  height: 28px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-text-muted-strong);
-}
-
-.pagination button {
-  cursor: pointer;
-}
-
-.pagination .is-active {
-  background: var(--color-sakura);
-  color: var(--color-white);
-}
-
 .table-message {
   margin: 14px 18px 0;
   padding: 12px 14px;
@@ -470,15 +161,9 @@ th.actions-column::before {
   font-size: 12px;
 }
 
-.table-message--error {
-  background: var(--color-white)1f1;
-  color: var(--color-danger-dark);
-}
-
 @media (max-width: 900px) {
   .action-strip,
-  .filters-header,
-  .table-footer {
+  .filters-header {
     align-items: stretch;
     flex-direction: column;
   }
@@ -500,8 +185,7 @@ th.actions-column::before {
   }
 
   .welcome-panel,
-  .filters-panel,
-  .table-panel {
+  .filters-panel {
     border-radius: 10px;
   }
 

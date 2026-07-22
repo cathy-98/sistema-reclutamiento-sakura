@@ -189,6 +189,29 @@ input[type="checkbox"] {
   color: var(--color-danger-dark);
 }
 
+.alta,
+.cancelada,
+.descartado {
+  color: var(--color-danger);
+}
+
+.media,
+.pendiente,
+.en-revision {
+  color: var(--color-warning);
+}
+
+.baja,
+.en-curso,
+.contactado {
+  color: var(--color-info);
+}
+
+.cerrada,
+.entrevista {
+  color: var(--color-success);
+}
+
 .person-cell {
   display: inline-flex;
   align-items: center;
