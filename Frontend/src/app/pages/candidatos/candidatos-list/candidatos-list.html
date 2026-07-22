@@ -96,7 +96,11 @@
     </div>
   </section>
 
-  <section class="bulk-actions" aria-label="Acciones masivas">
+  <section
+    class="bulk-actions"
+    aria-label="Acciones masivas"
+    *ngIf="!cargando && !errorCarga && candidatosFiltrados.length > 0"
+  >
     <button type="button" [disabled]="seleccionados.size === 0">
       <span aria-hidden="true">✓</span>
       Enviar correo
@@ -116,6 +120,9 @@
     [total]="candidatosFiltrados.length"
     [page]="paginaActual"
     [pageSize]="registrosPorPagina"
+    [loading]="cargando"
+    [errorMessage]="errorCarga"
+    loadingMessage="Cargando candidatos..."
     [rowId]="obtenerIdCandidato"
     [actions]="acciones"
     [selectedIds]="seleccionados"
@@ -126,5 +133,6 @@
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"
     (actionClick)="manejarAccionTabla($event)"
     (clear)="limpiarFiltros()"
+    (retry)="cargarCandidatos()"
   ></app-data-table>
 </main>

@@ -24,6 +24,7 @@ import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal
 })
 export class SolicitudesList implements OnInit {
   cargando = false;
+  errorCarga = '';
   alerta: AlertaUi | null = null;
   mostrarFormulario = false;
   mostrarConfirmacionCancelacion = false;
@@ -156,6 +157,7 @@ export class SolicitudesList implements OnInit {
 
   cargarSolicitudes() {
     this.cargando = true;
+    this.errorCarga = '';
     this.alerta = null;
     this.limpiarTimeoutCarga();
     this.cargaTimeoutId = setTimeout(() => {
@@ -165,11 +167,7 @@ export class SolicitudesList implements OnInit {
 
       this.cargando = false;
       this.solicitudes = [];
-      this.alerta = {
-        tipo: 'danger',
-        variante: 'soft',
-        mensaje: 'El servidor tardó demasiado en responder. Intenta recargar el listado.',
-      };
+      this.errorCarga = 'El servidor tardó demasiado en responder. Intenta recargar el listado.';
     }, 10000);
 
     this.solicitudesService
@@ -183,20 +181,17 @@ export class SolicitudesList implements OnInit {
           this.solicitudes = solicitudes;
           this.paginaActual = 1;
           this.cargando = false;
+          this.errorCarga = '';
           this.limpiarTimeoutCarga();
         },
         error: (error) => {
           this.solicitudes = [];
           this.cargando = false;
           this.limpiarTimeoutCarga();
-          this.alerta = {
-            tipo: 'danger',
-            variante: 'soft',
-            mensaje:
-              error.name === 'TimeoutError'
-                ? 'El servidor tardó demasiado en responder. Intenta recargar el listado.'
-                : obtenerMensajeError(error, 'No se pudieron cargar las solicitudes.'),
-          };
+          this.errorCarga =
+            error.name === 'TimeoutError'
+              ? 'El servidor tardó demasiado en responder. Intenta recargar el listado.'
+              : obtenerMensajeError(error, 'No se pudieron cargar las solicitudes.');
         },
       });
   }

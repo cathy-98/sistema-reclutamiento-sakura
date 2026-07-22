@@ -50,6 +50,8 @@ interface FiltrosCandidatos {
 export class CandidatosList {
   nombreUsuario = 'usuario';
   rolUsuario = '';
+  cargando = false;
+  errorCarga = '';
   paginaActual = 1;
   registrosPorPagina = 5;
   busquedaRapida = '';
@@ -226,6 +228,12 @@ export class CandidatosList {
     this.authService.cargarPerfilUsuario().subscribe(() => {
       this.actualizarDatosSesion();
     });
+  }
+
+  cargarCandidatos() {
+    this.cargando = false;
+    this.errorCarga = '';
+    this.paginaActual = 1;
   }
 
   private actualizarDatosSesion() {

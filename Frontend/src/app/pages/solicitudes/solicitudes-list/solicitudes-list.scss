@@ -24,7 +24,7 @@
 }
 
 .welcome-panel h1 {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 500;
 }
 
@@ -32,7 +32,8 @@
 .filters-header p {
   margin: 0;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .action-strip {
@@ -48,11 +49,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  min-height: 42px;
   padding: 0 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -88,7 +89,7 @@
 }
 
 .filters-header h3 {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .quick-search {
@@ -106,7 +107,7 @@
   display: grid;
   gap: 7px;
   color: var(--color-text-soft);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -122,20 +123,20 @@
 input:not([type="checkbox"]),
 select {
   width: 100%;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
   background: var(--color-input-bg);
   color: var(--color-text);
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   outline: none;
 }
 
 input[type="checkbox"] {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
   margin: 0;
   accent-color: var(--color-sakura);
   cursor: pointer;
@@ -143,6 +144,13 @@ input[type="checkbox"] {
 
 input::placeholder {
   color: var(--color-input-placeholder);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .filter-actions {

@@ -2,7 +2,15 @@
   <header class="table-header">
     <div>
       <h3>{{ title }}</h3>
-      <p>{{ loading ? loadingMessage : subtitle || total + ' registros encontrados.' }}</p>
+      <p>
+        {{
+          loading
+            ? loadingMessage
+            : errorMessage
+              ? 'No se pudo cargar la información.'
+              : subtitle || total + ' registros encontrados.'
+        }}
+      </p>
     </div>
   </header>
 
@@ -12,13 +20,19 @@
     <span>Estamos preparando la información para mostrarla en la tabla.</span>
   </div>
 
-  <div class="empty-state" *ngIf="!loading && total === 0">
+  <div class="error-state" *ngIf="!loading && errorMessage">
+    <strong>No se pudo cargar la información</strong>
+    <span>{{ errorMessage }}</span>
+    <button class="ghost-button" type="button" (click)="retry.emit()">Reintentar</button>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !errorMessage && total === 0">
     <strong>{{ emptyTitle }}</strong>
     <span>{{ emptyMessage }}</span>
     <button class="ghost-button" type="button" (click)="clear.emit()">Limpiar filtros</button>
   </div>
 
-  <div class="table-scroll" *ngIf="!loading && total > 0">
+  <div class="table-scroll" *ngIf="!loading && !errorMessage && total > 0">
     <table [style.min-width]="tableMinWidth">
       <colgroup>
         <col *ngIf="selectable" class="select-col" />
@@ -133,7 +147,7 @@
     </table>
   </div>
 
-  <footer class="table-footer" *ngIf="!loading && total > 0">
+  <footer class="table-footer" *ngIf="!loading && !errorMessage && total > 0">
     <span>Mostrando {{ rows.length }} de {{ total }} registros</span>
     <div class="pagination">
       <label>

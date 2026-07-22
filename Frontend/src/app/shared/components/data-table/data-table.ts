@@ -43,6 +43,7 @@ export class DataTable<T> {
   @Input() emptyMessage = 'Ajusta los filtros o limpia la búsqueda para volver al listado completo.';
   @Input() loading = false;
   @Input() loadingMessage = 'Cargando registros...';
+  @Input() errorMessage = '';
   @Input() columns: DataTableColumn<T>[] = [];
   @Input() rows: T[] = [];
   @Input() total = 0;
@@ -59,6 +60,7 @@ export class DataTable<T> {
   @Output() pageSizeChange = new EventEmitter<number>();
   @Output() actionClick = new EventEmitter<DataTableActionEvent<T>>();
   @Output() clear = new EventEmitter<void>();
+  @Output() retry = new EventEmitter<void>();
 
   get visibleColumns() {
     return this.columns;
@@ -78,7 +80,7 @@ export class DataTable<T> {
 
   get tableMinWidth() {
     const selectableWidth = this.selectable ? 52 : 0;
-    const actionsWidth = this.hasActions ? 128 : 0;
+    const actionsWidth = this.hasActions ? 156 : 0;
     const columnsWidth = this.columns.reduce((total, column) => total + column.width, 0);
     return `${selectableWidth + columnsWidth + actionsWidth}px`;
   }
@@ -134,9 +136,9 @@ export class DataTable<T> {
 
   actionsColumnStyle() {
     return {
-      width: '128px',
-      minWidth: '128px',
-      maxWidth: '128px',
+      width: '156px',
+      minWidth: '156px',
+      maxWidth: '156px',
       right: '0',
     };
   }
@@ -208,7 +210,7 @@ export class DataTable<T> {
   }
 
   private rightOffset(column: DataTableColumn<T>) {
-    const actionsWidth = this.hasActions ? 128 : 0;
+    const actionsWidth = this.hasActions ? 156 : 0;
     const index = this.columns.indexOf(column);
     const nextSticky = this.columns.slice(index + 1).filter((item) => item.sticky === 'right');
     return actionsWidth + nextSticky.reduce((total, item) => total + item.width, 0);
