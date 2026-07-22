@@ -104,153 +104,22 @@
     <p *ngIf="seleccionados.size > 0">{{ seleccionados.size }} candidatos seleccionados.</p>
   </section>
 
-  <section class="table-panel" aria-label="Listado de candidatos">
-    <header class="table-header">
-      <div>
-        <h3>Listado de candidatos</h3>
-        <p>{{ candidatosFiltrados.length }} registros encontrados.</p>
-      </div>
-    </header>
-
-    <div class="empty-state" *ngIf="candidatosFiltrados.length === 0">
-      <strong>No hay candidatos para mostrar</strong>
-      <span>Ajusta los filtros o limpia la búsqueda para volver al listado completo.</span>
-      <button class="ghost-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
-    </div>
-
-    <div class="table-scroll" *ngIf="candidatosFiltrados.length > 0">
-      <table>
-        <colgroup>
-          <col class="select-col" />
-          <col class="id-col" />
-          <col class="match-col" />
-          <col class="name-col" />
-          <col class="email-col" />
-          <col class="phone-col" />
-          <col class="role-col" />
-          <col class="state-col" />
-          <col class="availability-col" />
-          <col class="salary-col" />
-          <col class="skills-col" />
-          <col class="actions-col" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th class="select-column">
-              <input
-                type="checkbox"
-                aria-label="Seleccionar todos los candidatos visibles"
-                [checked]="seleccionadosEnPagina"
-                (change)="alternarSeleccionPagina($any($event.target).checked)"
-              />
-            </th>
-            <th class="id-column">ID solicitud</th>
-            <th>Match</th>
-            <th>Nombre completo</th>
-            <th>Correo electrónico</th>
-            <th>Teléfono de contacto</th>
-            <th>Cargo postulado</th>
-            <th>Estado del candidato</th>
-            <th>Disponibilidad</th>
-            <th>Pretensión de renta</th>
-            <th>Habilidades técnicas</th>
-            <th class="actions-column">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let candidato of candidatosPaginados; trackBy: trackCandidato">
-            <td class="select-column">
-              <input
-                type="checkbox"
-                [checked]="estaSeleccionado(candidato)"
-                [attr.aria-label]="'Seleccionar ' + candidato.nombre"
-                (change)="alternarSeleccion(candidato, $any($event.target).checked)"
-              />
-            </td>
-            <td class="id-column">{{ candidato.idSolicitud }}</td>
-            <td>
-              <span class="match" [class]="matchClase(candidato.match)">{{ candidato.match }}%</span>
-            </td>
-            <td>
-              <div class="candidate-cell">
-                <span class="avatar" aria-hidden="true">{{ iniciales(candidato.nombre) }}</span>
-                <strong>{{ candidato.nombre }}</strong>
-              </div>
-            </td>
-            <td>{{ candidato.correo }}</td>
-            <td>{{ candidato.telefono }}</td>
-            <td>{{ candidato.cargo }}</td>
-            <td>
-              <span class="status" [class]="'status ' + estadoClase(candidato.estado)">
-                {{ candidato.estado }}
-              </span>
-            </td>
-            <td>{{ candidato.disponibilidad }}</td>
-            <td>{{ formatearRenta(candidato.renta) }}</td>
-            <td>
-              <div class="skills-cell">
-                <span>{{ candidato.nivel }}</span>
-                <small>{{ candidato.experiencia }} años de experiencia</small>
-              </div>
-            </td>
-            <td class="actions-column">
-              <div class="row-actions">
-                <button type="button" aria-label="Ver candidato">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
-                    <circle cx="12" cy="12" r="2.2" />
-                  </svg>
-                </button>
-                <button type="button" aria-label="Descargar CV">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 4v10" />
-                    <path d="m8 10 4 4 4-4" />
-                    <path d="M5 20h14" />
-                  </svg>
-                </button>
-                <button type="button" aria-label="Agendar entrevista">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M5 5h14v16H5z" />
-                    <path d="M8 3v4M16 3v4M5 10h14" />
-                  </svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <footer class="table-footer" *ngIf="candidatosFiltrados.length > 0">
-      <span>Mostrando {{ candidatosPaginados.length }} de {{ candidatosFiltrados.length }} registros</span>
-      <div class="pagination">
-        <label>
-          Registros por página:
-          <select [(ngModel)]="registrosPorPagina" aria-label="Registros por página" (change)="cambiarPagina(1)">
-            <option [ngValue]="5">5</option>
-            <option [ngValue]="10">10</option>
-            <option [ngValue]="25">25</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          aria-label="Página anterior"
-          [disabled]="paginaActual === 1"
-          (click)="cambiarPagina(paginaActual - 1)"
-        >
-          ‹
-        </button>
-        <button class="is-active" type="button">{{ paginaActual }}</button>
-        <span>de {{ totalPaginas }}</span>
-        <button
-          type="button"
-          aria-label="Página siguiente"
-          [disabled]="paginaActual === totalPaginas"
-          (click)="cambiarPagina(paginaActual + 1)"
-        >
-          ›
-        </button>
-      </div>
-    </footer>
-  </section>
+  <app-data-table
+    title="Listado de candidatos"
+    [columns]="columnas"
+    [rows]="candidatosPaginados"
+    [total]="candidatosFiltrados.length"
+    [page]="paginaActual"
+    [pageSize]="registrosPorPagina"
+    [rowId]="obtenerIdCandidato"
+    [actions]="acciones"
+    [selectedIds]="seleccionados"
+    emptyTitle="No hay candidatos para mostrar"
+    emptyMessage="Ajusta los filtros o limpia la búsqueda para volver al listado completo."
+    (selectedIdsChange)="seleccionados = $event"
+    (pageChange)="cambiarPagina($event)"
+    (pageSizeChange)="cambiarRegistrosPorPagina($event)"
+    (actionClick)="manejarAccionTabla($event)"
+    (clear)="limpiarFiltros()"
+  ></app-data-table>
 </main>

@@ -2,6 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import {
+  DataTable,
+  DataTableAction,
+  DataTableActionEvent,
+  DataTableColumn,
+} from '../../../shared/components/data-table/data-table';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
@@ -36,7 +42,7 @@ interface FiltrosCandidatos {
 
 @Component({
   selector: 'app-candidatos-list',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DataTable],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
@@ -49,6 +55,90 @@ export class CandidatosList {
   seleccionados = new Set<string>();
 
   filtros: FiltrosCandidatos = this.filtrosIniciales();
+
+  readonly columnas: DataTableColumn<Candidato>[] = [
+    {
+      key: 'idSolicitud',
+      label: 'ID solicitud',
+      width: 112,
+      sticky: 'left',
+    },
+    {
+      key: 'match',
+      label: 'Match',
+      width: 90,
+      type: 'match',
+      value: (candidato) => `${candidato.match}%`,
+      className: (candidato) => this.matchClase(candidato.match),
+    },
+    {
+      key: 'nombre',
+      label: 'Nombre completo',
+      width: 220,
+      type: 'person',
+      value: (candidato) => candidato.nombre,
+      secondaryValue: (candidato) => this.iniciales(candidato.nombre),
+    },
+    {
+      key: 'correo',
+      label: 'Correo electrónico',
+      width: 230,
+    },
+    {
+      key: 'telefono',
+      label: 'Teléfono de contacto',
+      width: 170,
+    },
+    {
+      key: 'cargo',
+      label: 'Cargo postulado',
+      width: 160,
+    },
+    {
+      key: 'estado',
+      label: 'Estado del candidato',
+      width: 170,
+      type: 'badge',
+      className: (candidato) => this.estadoClase(candidato.estado),
+    },
+    {
+      key: 'disponibilidad',
+      label: 'Disponibilidad',
+      width: 160,
+    },
+    {
+      key: 'renta',
+      label: 'Pretensión de renta',
+      width: 170,
+      value: (candidato) => this.formatearRenta(candidato.renta),
+    },
+    {
+      key: 'habilidades',
+      label: 'Habilidades técnicas',
+      width: 180,
+      type: 'stack',
+      value: (candidato) => candidato.nivel,
+      secondaryValue: (candidato) => `${candidato.experiencia} años de experiencia`,
+    },
+  ];
+
+  readonly acciones: DataTableAction<Candidato>[] = [
+    {
+      id: 'ver',
+      label: 'Ver candidato',
+      icon: 'eye',
+    },
+    {
+      id: 'descargar-cv',
+      label: 'Descargar CV',
+      icon: 'download',
+    },
+    {
+      id: 'agendar-entrevista',
+      label: 'Agendar entrevista',
+      icon: 'calendar',
+    },
+  ];
 
   readonly estados: EstadoCandidato[] = [
     'Todos',
@@ -217,6 +307,11 @@ export class CandidatosList {
     this.paginaActual = Math.min(Math.max(pagina, 1), this.totalPaginas);
   }
 
+  cambiarRegistrosPorPagina(registros: number) {
+    this.registrosPorPagina = registros;
+    this.paginaActual = 1;
+  }
+
   trackCandidato(_index: number, candidato: Candidato) {
     return `${candidato.idSolicitud}-${candidato.correo}`;
   }
@@ -240,6 +335,10 @@ export class CandidatosList {
     this.candidatosPaginados.forEach((candidato) => {
       this.alternarSeleccion(candidato, seleccionado);
     });
+  }
+
+  manejarAccionTabla(evento: DataTableActionEvent<Candidato>) {
+    console.log('Acción de candidato:', evento.action, evento.row);
   }
 
   iniciales(nombre: string) {
@@ -291,7 +390,7 @@ export class CandidatosList {
     return valor.trim().toLowerCase();
   }
 
-  private obtenerIdCandidato(candidato: Candidato) {
+  obtenerIdCandidato(candidato: Candidato) {
     return `${candidato.idSolicitud}-${candidato.correo}`;
   }
 }

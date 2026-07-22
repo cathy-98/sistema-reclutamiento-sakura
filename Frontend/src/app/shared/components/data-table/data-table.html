@@ -1,0 +1,154 @@
+<section class="data-table-panel" [attr.aria-label]="title">
+  <header class="table-header">
+    <div>
+      <h3>{{ title }}</h3>
+      <p>{{ subtitle || total + ' registros encontrados.' }}</p>
+    </div>
+  </header>
+
+  <div class="empty-state" *ngIf="total === 0">
+    <strong>{{ emptyTitle }}</strong>
+    <span>{{ emptyMessage }}</span>
+    <button class="ghost-button" type="button" (click)="clear.emit()">Limpiar filtros</button>
+  </div>
+
+  <div class="table-scroll" *ngIf="total > 0">
+    <table [style.min-width]="tableMinWidth">
+      <colgroup>
+        <col *ngIf="selectable" class="select-col" />
+        <col *ngFor="let column of visibleColumns; trackBy: trackColumn" [style.width.px]="column.width" />
+        <col *ngIf="hasActions" class="actions-col" />
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th *ngIf="selectable" class="select-column sticky-left" [ngStyle]="selectColumnStyle()">
+            <input
+              type="checkbox"
+              aria-label="Seleccionar todos los registros visibles"
+              [checked]="allVisibleSelected"
+              (change)="toggleVisibleRows($any($event.target).checked)"
+            />
+          </th>
+          <th
+            *ngFor="let column of visibleColumns; trackBy: trackColumn"
+            [class.sticky-left]="column.sticky === 'left'"
+            [class.sticky-right]="column.sticky === 'right'"
+            [ngStyle]="columnStyle(column)"
+          >
+            {{ column.label }}
+          </th>
+          <th *ngIf="hasActions" class="actions-column sticky-right" [ngStyle]="actionsColumnStyle()">
+            Acciones
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let row of rows; trackBy: trackRow">
+          <td *ngIf="selectable" class="select-column sticky-left" [ngStyle]="selectColumnStyle()">
+            <input
+              type="checkbox"
+              [checked]="isSelected(row)"
+              [attr.aria-label]="'Seleccionar registro ' + rowId(row)"
+              (change)="toggleRow(row, $any($event.target).checked)"
+            />
+          </td>
+          <td
+            *ngFor="let column of visibleColumns; trackBy: trackColumn"
+            [class.sticky-left]="column.sticky === 'left'"
+            [class.sticky-right]="column.sticky === 'right'"
+            [ngStyle]="columnStyle(column)"
+            [title]="cellTitle(row, column)"
+          >
+            <ng-container [ngSwitch]="column.type">
+              <span *ngSwitchCase="'badge'" class="status" [class]="cellClass(row, column)">
+                {{ columnValue(row, column) }}
+              </span>
+
+              <span *ngSwitchCase="'match'" class="match" [class]="cellClass(row, column)">
+                {{ columnValue(row, column) }}
+              </span>
+
+              <div *ngSwitchCase="'person'" class="person-cell">
+                <span class="avatar" aria-hidden="true">{{ secondaryValue(row, column) }}</span>
+                <strong>{{ columnValue(row, column) }}</strong>
+              </div>
+
+              <div *ngSwitchCase="'stack'" class="stack-cell">
+                <span>{{ columnValue(row, column) }}</span>
+                <small>{{ secondaryValue(row, column) }}</small>
+              </div>
+
+              <span *ngSwitchDefault>{{ columnValue(row, column) }}</span>
+            </ng-container>
+          </td>
+          <td *ngIf="hasActions" class="actions-column sticky-right" [ngStyle]="actionsColumnStyle()">
+            <div class="row-actions">
+              <button
+                *ngFor="let item of actions; trackBy: trackAction"
+                type="button"
+                [attr.aria-label]="item.label"
+                [disabled]="disabledAction(item, row)"
+                [hidden]="!visibleAction(item, row)"
+                (click)="emitAction(item, row)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <ng-container [ngSwitch]="item.icon">
+                    <ng-container *ngSwitchCase="'eye'">
+                      <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
+                      <circle cx="12" cy="12" r="2.2" />
+                    </ng-container>
+                    <ng-container *ngSwitchCase="'download'">
+                      <path d="M12 4v10" />
+                      <path d="m8 10 4 4 4-4" />
+                      <path d="M5 20h14" />
+                    </ng-container>
+                    <ng-container *ngSwitchCase="'calendar'">
+                      <path d="M5 5h14v16H5z" />
+                      <path d="M8 3v4M16 3v4M5 10h14" />
+                    </ng-container>
+                    <ng-container *ngSwitchCase="'edit'">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </ng-container>
+                    <ng-container *ngSwitchCase="'cancel'">
+                      <circle cx="12" cy="12" r="8" />
+                      <path d="m9 9 6 6" />
+                      <path d="m15 9-6 6" />
+                    </ng-container>
+                  </ng-container>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="table-footer" *ngIf="total > 0">
+    <span>Mostrando {{ rows.length }} de {{ total }} registros</span>
+    <div class="pagination">
+      <label>
+        Registros por página:
+        <select [ngModel]="pageSize" aria-label="Registros por página" (ngModelChange)="changePageSize($event)">
+          <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+        </select>
+      </label>
+      <button type="button" aria-label="Página anterior" [disabled]="page === 1" (click)="changePage(page - 1)">
+        ‹
+      </button>
+      <button class="is-active" type="button">{{ page }}</button>
+      <span>de {{ totalPages }}</span>
+      <button
+        type="button"
+        aria-label="Página siguiente"
+        [disabled]="page === totalPages"
+        (click)="changePage(page + 1)"
+      >
+        ›
+      </button>
+    </div>
+  </footer>
+</section>
