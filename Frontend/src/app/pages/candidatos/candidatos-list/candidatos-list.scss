@@ -4,7 +4,6 @@
   background: var(--color-page-bg);
 }
 
-.welcome-panel,
 .filters-panel {
   width: min(100%, 1180px);
   margin: 0 auto 22px;
@@ -14,24 +13,10 @@
   box-shadow: var(--shadow-card-soft);
 }
 
-.welcome-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 24px;
-}
-
-.welcome-panel h1,
 .filters-header h3 {
   margin: 0 0 5px;
 }
 
-.welcome-panel h1 {
-  font-size: 26px;
-  font-weight: 500;
-}
-
-.welcome-panel p,
 .filters-header p {
   margin: 0;
   color: var(--color-muted);
@@ -39,25 +24,6 @@
   line-height: 1.45;
 }
 
-.session-role {
-  display: inline-flex;
-  margin: 2px 0 6px;
-  padding: 4px 9px;
-  border-radius: 6px;
-  background: var(--color-danger-soft);
-  color: var(--color-sakura);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.welcome-panel img {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.action-strip,
 .bulk-actions {
   display: flex;
   align-items: center;
@@ -66,8 +32,6 @@
   gap: 10px;
 }
 
-.primary-button,
-.secondary-button,
 .ghost-button,
 .primary-small-button,
 .bulk-actions button {
@@ -82,12 +46,6 @@
   font-weight: 700;
 }
 
-.primary-button,
-.secondary-button {
-  flex: 1;
-}
-
-.primary-button,
 .primary-small-button,
 .bulk-actions button:first-child {
   border: 1px solid var(--color-sakura);
@@ -95,7 +53,6 @@
   color: var(--color-white);
 }
 
-.secondary-button,
 .ghost-button,
 .bulk-actions button {
   border: 1px solid var(--color-sakura);
@@ -103,7 +60,6 @@
   color: var(--color-sakura);
 }
 
-.primary-button span,
 .bulk-actions span {
   margin-right: 8px;
 }
@@ -214,7 +170,6 @@ input::placeholder {
 }
 
 @media (max-width: 900px) {
-  .action-strip,
   .bulk-actions,
   .filters-header {
     align-items: stretch;
@@ -241,7 +196,6 @@ input::placeholder {
     padding: 12px 0;
   }
 
-  .welcome-panel,
   .filters-panel {
     border-radius: 10px;
   }

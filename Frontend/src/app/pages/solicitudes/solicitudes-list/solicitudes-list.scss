@@ -4,7 +4,6 @@
   background: var(--color-page-bg);
 }
 
-.welcome-panel,
 .filters-panel {
   width: min(100%, 1180px);
   margin: 0 auto 22px;
@@ -14,33 +13,15 @@
   box-shadow: var(--shadow-card-soft);
 }
 
-.welcome-panel {
-  padding: 18px 24px;
-}
-
-.welcome-panel h1,
 .filters-header h3 {
   margin: 0 0 5px;
 }
 
-.welcome-panel h1 {
-  font-size: 26px;
-  font-weight: 500;
-}
-
-.welcome-panel p,
 .filters-header p {
   margin: 0;
   color: var(--color-muted);
   font-size: 14px;
   line-height: 1.45;
-}
-
-.action-strip {
-  display: flex;
-  justify-content: flex-end;
-  width: min(100%, 1180px);
-  margin: 0 auto 22px;
 }
 
 .primary-button,
@@ -161,7 +142,6 @@ select:focus-visible {
 }
 
 @media (max-width: 900px) {
-  .action-strip,
   .filters-header {
     align-items: stretch;
     flex-direction: column;
@@ -183,7 +163,6 @@ select:focus-visible {
     padding: 12px 0;
   }
 
-  .welcome-panel,
   .filters-panel {
     border-radius: 10px;
   }

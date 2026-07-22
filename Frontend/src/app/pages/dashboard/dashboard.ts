@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { PageHeader } from '../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, PageHeader],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

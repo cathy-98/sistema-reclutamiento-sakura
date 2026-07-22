@@ -1,0 +1,127 @@
+.page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: min(100%, 1180px);
+  margin: 0 auto 22px;
+  padding: 22px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-card-bg);
+  box-shadow: var(--shadow-card-soft);
+}
+
+.page-header-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.eyebrow {
+  color: var(--color-sakura);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.page-header-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.page-header-side:empty {
+  display: none;
+}
+
+:host ::ng-deep [pageHeaderActions] {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+:host ::ng-deep [pageHeaderActions] button,
+:host ::ng-deep [pageHeaderActions] a {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+:host ::ng-deep [pageHeaderActions] .primary-action {
+  border: 1px solid var(--color-sakura);
+  background: var(--color-sakura);
+  color: var(--color-white);
+}
+
+:host ::ng-deep [pageHeaderActions] .secondary-action {
+  border: 1px solid var(--color-sakura);
+  background: var(--color-white);
+  color: var(--color-sakura);
+}
+
+:host ::ng-deep [pageHeaderActions] button:focus-visible,
+:host ::ng-deep [pageHeaderActions] a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.badge {
+  width: fit-content;
+  margin-top: 2px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--color-danger-soft);
+  color: var(--color-sakura);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+    border-radius: 10px;
+  }
+
+  .page-header-side,
+  :host ::ng-deep [pageHeaderActions],
+  :host ::ng-deep [pageHeaderActions] button,
+  :host ::ng-deep [pageHeaderActions] a {
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 23px;
+  }
+}

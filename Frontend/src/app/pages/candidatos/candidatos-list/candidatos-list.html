@@ -1,16 +1,13 @@
 <main class="candidates-page">
-  <section class="welcome-panel">
-    <div>
-      <h1>Bienvenido, {{ nombreUsuario }}</h1>
-      <p class="session-role" *ngIf="rolUsuario">{{ rolUsuario }}</p>
-      <p>Gestión listado de candidatos</p>
+  <app-page-header
+    title="Listado de candidatos"
+    subtitle="Carga CVs, revisa candidatos y gestiona acciones del proceso."
+    [badge]="rolUsuario"
+  >
+    <div pageHeaderActions>
+      <button class="secondary-action" type="button">Realizar match</button>
     </div>
-    <img src="/images/Logos/logo_sakura.png" alt="Perfil" />
-  </section>
-
-  <section class="action-strip" aria-label="Acciones de candidatos">
-    <button class="secondary-button" type="button">Realizar match</button>
-  </section>
+  </app-page-header>
 
   <app-file-dropzone
     title="Carga CVs de candidatos"

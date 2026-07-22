@@ -1,17 +1,15 @@
 <main class="requests-page">
-  <section class="welcome-panel">
-    <div>
-      <h1>Listado de solicitudes</h1>
-      <p>Gestión listado de solicitudes</p>
+  <app-page-header
+    title="Listado de solicitudes"
+    subtitle="Gestión listado de solicitudes"
+  >
+    <div pageHeaderActions>
+      <button class="primary-action" type="button" *ngIf="puedeCrearSolicitud" (click)="abrirFormulario()">
+        <span aria-hidden="true">+</span>
+        Crear nueva solicitud
+      </button>
     </div>
-  </section>
-
-  <section class="action-strip" aria-label="Acciones de solicitudes">
-    <button class="primary-button" type="button" *ngIf="puedeCrearSolicitud" (click)="abrirFormulario()">
-      <span aria-hidden="true">+</span>
-      Crear nueva solicitud
-    </button>
-  </section>
+  </app-page-header>
 
   <section class="filters-panel" aria-label="Filtros de solicitudes">
     <header class="filters-header">

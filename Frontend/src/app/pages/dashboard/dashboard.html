@@ -1,7 +1,8 @@
 <main class="dashboard-page">
-  <section class="welcome-panel">
-    <p class="eyebrow">Sesión iniciada</p>
-    <h1>Hola, {{ usuario }}</h1>
-    <p *ngIf="rol">Rol: {{ rol }}</p>
-  </section>
+  <app-page-header
+    eyebrow="Sesión iniciada"
+    title="Inicio"
+    [subtitle]="'Hola, ' + usuario + '. Panel principal del sistema Sakura.'"
+    [badge]="rol ? 'Rol: ' + rol : ''"
+  ></app-page-header>
 </main>

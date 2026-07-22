@@ -9,6 +9,7 @@ import {
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
 import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
@@ -43,7 +44,7 @@ interface FiltrosCandidatos {
 
 @Component({
   selector: 'app-candidatos-list',
-  imports: [CommonModule, FormsModule, DataTable, FileDropzone],
+  imports: [CommonModule, FormsModule, DataTable, FileDropzone, PageHeader],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })

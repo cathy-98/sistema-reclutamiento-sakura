@@ -80,7 +80,7 @@ export class DataTable<T> {
 
   get tableMinWidth() {
     const selectableWidth = this.selectable ? 52 : 0;
-    const actionsWidth = this.hasActions ? 156 : 0;
+    const actionsWidth = this.hasActions ? 172 : 0;
     const columnsWidth = this.columns.reduce((total, column) => total + column.width, 0);
     return `${selectableWidth + columnsWidth + actionsWidth}px`;
   }
@@ -136,9 +136,9 @@ export class DataTable<T> {
 
   actionsColumnStyle() {
     return {
-      width: '156px',
-      minWidth: '156px',
-      maxWidth: '156px',
+      width: '172px',
+      minWidth: '172px',
+      maxWidth: '172px',
       right: '0',
     };
   }
@@ -210,7 +210,7 @@ export class DataTable<T> {
   }
 
   private rightOffset(column: DataTableColumn<T>) {
-    const actionsWidth = this.hasActions ? 156 : 0;
+    const actionsWidth = this.hasActions ? 172 : 0;
     const index = this.columns.indexOf(column);
     const nextSticky = this.columns.slice(index + 1).filter((item) => item.sticky === 'right');
     return actionsWidth + nextSticky.reduce((total, item) => total + item.width, 0);

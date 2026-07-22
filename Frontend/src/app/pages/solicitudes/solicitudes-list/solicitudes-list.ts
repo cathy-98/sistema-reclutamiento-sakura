@@ -11,6 +11,7 @@ import {
   DataTableActionEvent,
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
@@ -18,7 +19,7 @@ import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal
 
 @Component({
   selector: 'app-solicitudes-list',
-  imports: [CommonModule, SolicitudFormModal, ConfirmDialog, Alert, DataTable],
+  imports: [CommonModule, SolicitudFormModal, ConfirmDialog, Alert, DataTable, PageHeader],
   templateUrl: './solicitudes-list.html',
   styleUrl: './solicitudes-list.scss',
 })
