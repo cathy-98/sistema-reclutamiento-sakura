@@ -8,6 +8,7 @@ import {
   DataTableActionEvent,
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
+import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
@@ -42,7 +43,7 @@ interface FiltrosCandidatos {
 
 @Component({
   selector: 'app-candidatos-list',
-  imports: [CommonModule, FormsModule, DataTable],
+  imports: [CommonModule, FormsModule, DataTable, FileDropzone],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
@@ -53,6 +54,7 @@ export class CandidatosList {
   registrosPorPagina = 5;
   busquedaRapida = '';
   seleccionados = new Set<string>();
+  archivosCv: File[] = [];
 
   filtros: FiltrosCandidatos = this.filtrosIniciales();
 
@@ -339,6 +341,10 @@ export class CandidatosList {
 
   manejarAccionTabla(evento: DataTableActionEvent<Candidato>) {
     console.log('Acción de candidato:', evento.action, evento.row);
+  }
+
+  actualizarArchivosCv(files: File[]) {
+    this.archivosCv = files;
   }
 
   iniciales(nombre: string) {

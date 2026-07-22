@@ -26,10 +26,6 @@
       </label>
     </header>
 
-    <div class="table-message" *ngIf="cargando">
-      Cargando solicitudes...
-    </div>
-
     <app-alert
       *ngIf="alerta"
       [tipo]="alerta.tipo"
@@ -101,6 +97,8 @@
     [total]="solicitudes.length"
     [page]="paginaActual"
     [pageSize]="registrosPorPagina"
+    [loading]="cargando"
+    loadingMessage="Cargando solicitudes..."
     [rowId]="obtenerIdSolicitud"
     [actions]="acciones"
     [selectedIds]="seleccionados"

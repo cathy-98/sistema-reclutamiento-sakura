@@ -2,17 +2,23 @@
   <header class="table-header">
     <div>
       <h3>{{ title }}</h3>
-      <p>{{ subtitle || total + ' registros encontrados.' }}</p>
+      <p>{{ loading ? loadingMessage : subtitle || total + ' registros encontrados.' }}</p>
     </div>
   </header>
 
-  <div class="empty-state" *ngIf="total === 0">
+  <div class="loading-state" *ngIf="loading">
+    <span class="loader" aria-hidden="true"></span>
+    <strong>{{ loadingMessage }}</strong>
+    <span>Estamos preparando la información para mostrarla en la tabla.</span>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && total === 0">
     <strong>{{ emptyTitle }}</strong>
     <span>{{ emptyMessage }}</span>
     <button class="ghost-button" type="button" (click)="clear.emit()">Limpiar filtros</button>
   </div>
 
-  <div class="table-scroll" *ngIf="total > 0">
+  <div class="table-scroll" *ngIf="!loading && total > 0">
     <table [style.min-width]="tableMinWidth">
       <colgroup>
         <col *ngIf="selectable" class="select-col" />
@@ -127,7 +133,7 @@
     </table>
   </div>
 
-  <footer class="table-footer" *ngIf="total > 0">
+  <footer class="table-footer" *ngIf="!loading && total > 0">
     <span>Mostrando {{ rows.length }} de {{ total }} registros</span>
     <div class="pagination">
       <label>

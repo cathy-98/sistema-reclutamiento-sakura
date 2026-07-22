@@ -9,12 +9,17 @@
   </section>
 
   <section class="action-strip" aria-label="Acciones de candidatos">
-    <button class="primary-button" type="button">
-      <span aria-hidden="true">↗</span>
-      Cargar CVs
-    </button>
     <button class="secondary-button" type="button">Realizar match</button>
   </section>
+
+  <app-file-dropzone
+    title="Carga CVs de candidatos"
+    description="Arrastra uno o más CVs para dejarlos listos antes de procesarlos."
+    buttonText="Seleccionar CVs"
+    [allowedExtensions]="['pdf', 'doc', 'docx']"
+    [maxFileSizeMb]="10"
+    (filesChange)="actualizarArchivosCv($event)"
+  ></app-file-dropzone>
 
   <section class="filters-panel" aria-label="Filtros de candidatos">
     <header class="filters-header">

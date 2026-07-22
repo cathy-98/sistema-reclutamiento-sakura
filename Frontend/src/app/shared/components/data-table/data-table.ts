@@ -41,6 +41,8 @@ export class DataTable<T> {
   @Input() subtitle = '';
   @Input() emptyTitle = 'No hay registros para mostrar';
   @Input() emptyMessage = 'Ajusta los filtros o limpia la búsqueda para volver al listado completo.';
+  @Input() loading = false;
+  @Input() loadingMessage = 'Cargando registros...';
   @Input() columns: DataTableColumn<T>[] = [];
   @Input() rows: T[] = [];
   @Input() total = 0;

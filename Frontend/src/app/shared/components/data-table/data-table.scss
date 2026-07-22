@@ -19,6 +19,7 @@
 
 .table-header p,
 .empty-state span,
+.loading-state span,
 .stack-cell small {
   margin: 0;
   color: var(--color-muted);
@@ -279,6 +280,7 @@ input[type="checkbox"] {
   stroke-width: 1.8;
 }
 
+.loading-state,
 .empty-state {
   display: grid;
   justify-items: center;
@@ -287,12 +289,28 @@ input[type="checkbox"] {
   text-align: center;
 }
 
+.loading-state strong,
 .empty-state strong {
   font-size: 16px;
 }
 
+.loader {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-sakura);
+  border-radius: 50%;
+  animation: table-spin 800ms linear infinite;
+}
+
 .empty-state span {
   max-width: 360px;
+}
+
+@keyframes table-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ghost-button {
