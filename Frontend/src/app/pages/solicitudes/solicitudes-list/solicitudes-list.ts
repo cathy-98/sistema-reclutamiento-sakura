@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { Alert } from '../../../shared/components/alert/alert';
@@ -32,6 +33,7 @@ export class SolicitudesList implements OnInit {
   seleccionados = new Set<string>();
   paginaActual = 1;
   registrosPorPagina = 5;
+  private cargaTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
     {
@@ -155,22 +157,48 @@ export class SolicitudesList implements OnInit {
   cargarSolicitudes() {
     this.cargando = true;
     this.alerta = null;
+    this.limpiarTimeoutCarga();
+    this.cargaTimeoutId = setTimeout(() => {
+      if (!this.cargando) {
+        return;
+      }
 
-    this.solicitudesService.listar().subscribe({
-      next: (solicitudes) => {
-        this.solicitudes = solicitudes;
-        this.paginaActual = 1;
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.cargando = false;
-        this.alerta = {
-          tipo: 'danger',
-          variante: 'soft',
-          mensaje: obtenerMensajeError(error, 'No se pudieron cargar las solicitudes.'),
-        };
-      },
-    });
+      this.cargando = false;
+      this.solicitudes = [];
+      this.alerta = {
+        tipo: 'danger',
+        variante: 'soft',
+        mensaje: 'El servidor tardó demasiado en responder. Intenta recargar el listado.',
+      };
+    }, 10000);
+
+    this.solicitudesService
+      .listar()
+      .pipe(
+        timeout(10000),
+        take(1),
+      )
+      .subscribe({
+        next: (solicitudes) => {
+          this.solicitudes = solicitudes;
+          this.paginaActual = 1;
+          this.cargando = false;
+          this.limpiarTimeoutCarga();
+        },
+        error: (error) => {
+          this.solicitudes = [];
+          this.cargando = false;
+          this.limpiarTimeoutCarga();
+          this.alerta = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje:
+              error.name === 'TimeoutError'
+                ? 'El servidor tardó demasiado en responder. Intenta recargar el listado.'
+                : obtenerMensajeError(error, 'No se pudieron cargar las solicitudes.'),
+          };
+        },
+      });
   }
 
   abrirFormulario() {
@@ -293,6 +321,15 @@ export class SolicitudesList implements OnInit {
 
   obtenerIdSolicitud(solicitud: SolicitudResumen) {
     return solicitud.id;
+  }
+
+  private limpiarTimeoutCarga() {
+    if (!this.cargaTimeoutId) {
+      return;
+    }
+
+    clearTimeout(this.cargaTimeoutId);
+    this.cargaTimeoutId = null;
   }
 }
 
