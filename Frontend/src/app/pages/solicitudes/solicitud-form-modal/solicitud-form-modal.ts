@@ -9,8 +9,10 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { Alert } from '../../../shared/components/alert/alert';
 import { Modal } from '../../../shared/components/modal/modal';
 import { Stepper } from '../../../shared/components/stepper/stepper';
+import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 
 interface HabilidadSolicitud {
   id_habilidad: number | null;
@@ -23,7 +25,7 @@ type CatalogoActivo = '' | 'cargo' | 'area' | 'cliente' | 'habilidad';
 
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, ReactiveFormsModule, Modal, Stepper],
+  imports: [CommonModule, ReactiveFormsModule, Alert, Modal, Stepper],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })
@@ -35,6 +37,7 @@ export class SolicitudFormModal implements OnInit {
   cargandoDetalle = false;
   tabFormulario = 'general';
   catalogoActivo: CatalogoActivo = '';
+  alerta: AlertaUi | null = null;
   nuevoValorCatalogo = new UntypedFormControl('');
 
   pasosFormulario = [
@@ -328,7 +331,9 @@ export class SolicitudFormModal implements OnInit {
   }
 
   guardarSolicitud() {
-    if (this.formularioSolicitud.invalid) {
+    this.alerta = null;
+
+    if (this.formularioSolicitud.invalid || !this.validarHabilidadesSolicitud()) {
       this.formularioSolicitud.markAllAsTouched();
       return;
     }
@@ -338,6 +343,7 @@ export class SolicitudFormModal implements OnInit {
 
   validarPaso(clave: string) {
     const controles = this.camposPorPaso[clave] ?? [];
+    this.alerta = null;
 
     controles.forEach((nombre) => this.control(nombre)?.markAsTouched());
 
@@ -345,7 +351,15 @@ export class SolicitudFormModal implements OnInit {
       this.formularioSolicitud.updateValueAndValidity();
     }
 
-    return controles.every((nombre) => this.control(nombre)?.valid) && !this.formularioSolicitud.hasError('rangoSalarioInvalido');
+    const pasoValido =
+      controles.every((nombre) => this.control(nombre)?.valid) &&
+      !this.formularioSolicitud.hasError('rangoSalarioInvalido');
+
+    if (clave === 'habilidades') {
+      return pasoValido && this.validarHabilidadesSolicitud();
+    }
+
+    return pasoValido;
   }
 
   manejarSeleccionCatalogo(catalogo: CatalogoActivo, valor: string | number | null) {
@@ -417,6 +431,8 @@ export class SolicitudFormModal implements OnInit {
   }
 
   agregarHabilidad() {
+    this.alerta = null;
+
     if (this.nuevaHabilidad.invalid || this.modo === 'ver') {
       this.nuevaHabilidad.markAllAsTouched();
       return;
@@ -439,6 +455,10 @@ export class SolicitudFormModal implements OnInit {
     this.habilidadesFormArray.removeAt(indice);
   }
 
+  cerrarAlerta() {
+    this.alerta = null;
+  }
+
   crearHabilidadForm(habilidad: HabilidadSolicitud) {
     return new UntypedFormGroup({
       id_habilidad: new UntypedFormControl(habilidad.id_habilidad),
@@ -458,5 +478,31 @@ export class SolicitudFormModal implements OnInit {
 
   habilidadExcluyenteClase(esExcluyente: boolean) {
     return esExcluyente ? 'excluyente' : 'no-excluyente';
+  }
+
+  private validarHabilidadesSolicitud() {
+    if (this.habilidadesSolicitud.length === 0) {
+      this.tabFormulario = 'habilidades';
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Agrega al menos una habilidad técnica para la solicitud.',
+      };
+      return false;
+    }
+
+    const tieneExcluyente = this.habilidadesSolicitud.some((habilidad) => habilidad.es_excluyente);
+
+    if (!tieneExcluyente) {
+      this.tabFormulario = 'habilidades';
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Marca al menos una habilidad como excluyente para evaluar candidatos.',
+      };
+      return false;
+    }
+
+    return true;
   }
 }

@@ -5,6 +5,16 @@
         Cargando datos de la solicitud...
       </div>
 
+      <app-alert
+        *ngIf="alerta"
+        [tipo]="alerta.tipo"
+        [variante]="alerta.variante"
+        [titulo]="alerta.titulo || ''"
+        [mensaje]="alerta.mensaje"
+        [cerrable]="true"
+        (cerrar)="cerrarAlerta()"
+      ></app-alert>
+
       <form class="modal-form" [formGroup]="formularioSolicitud">
       <app-stepper
         [pasos]="pasosFormulario"

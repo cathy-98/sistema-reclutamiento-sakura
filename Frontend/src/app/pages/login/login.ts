@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Alert } from '../../shared/components/alert/alert';
 import { AuthService } from '../../services/auth.service';
+import { obtenerMensajeError } from '../../shared/utils/api-error';
 
 @Component({
   selector: 'app-login',
@@ -41,9 +42,9 @@ export class Login {
         this.cargando = false;
         this.router.navigate(['/dashboard']);
       },
-      error: () => {
+      error: (error) => {
         this.cargando = false;
-        this.error = 'Correo o contraseña incorrectos';
+        this.error = obtenerMensajeError(error, 'Correo o contraseña incorrectos');
       },
     });
   }
