@@ -1,4 +1,4 @@
-<main class="requests-page">
+<app-page-layout>
   <app-page-header
     title="Listado de solicitudes"
     subtitle="Gestión listado de solicitudes"
@@ -97,7 +97,7 @@
     (clear)="limpiarFiltros()"
     (retry)="cargarSolicitudes()"
   ></app-data-table>
-</main>
+</app-page-layout>
 
 <app-solicitud-form-modal
   *ngIf="mostrarFormulario"

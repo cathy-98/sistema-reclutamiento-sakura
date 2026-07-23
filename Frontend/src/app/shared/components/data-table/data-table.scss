@@ -162,30 +162,6 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
-.match {
-  display: inline-grid;
-  min-width: 42px;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--color-white);
-  font-weight: 800;
-}
-
-.match.is-high {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.match.is-medium {
-  background: var(--color-warning-bg);
-  color: var(--color-warning-dark);
-}
-
-.match.is-low {
-  background: var(--color-danger-bg);
-  color: var(--color-danger-dark);
-}
-
 .person-cell {
   display: inline-flex;
   align-items: center;
@@ -198,18 +174,6 @@ select:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
-}
-
-.avatar {
-  display: inline-grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-danger-soft);
-  color: var(--color-sakura);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .stack-cell {

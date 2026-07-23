@@ -1,0 +1,16 @@
+<section class="file-list" *ngIf="files.length > 0" aria-label="Archivos seleccionados">
+  <header>
+    <strong>
+      {{ files.length }} archivo{{ files.length === 1 ? '' : 's' }} listo{{ files.length === 1 ? '' : 's' }}
+    </strong>
+    <app-button variant="ghost" size="sm" (pressed)="clear.emit()">Limpiar</app-button>
+  </header>
+
+  <ul>
+    <li *ngFor="let file of files">
+      <span>{{ file.name }}</span>
+      <small>{{ fileSizeMb(file) | number: '1.1-1' }} MB</small>
+      <button type="button" [attr.aria-label]="'Quitar ' + file.name" (click)="remove.emit(file)">×</button>
+    </li>
+  </ul>
+</section>

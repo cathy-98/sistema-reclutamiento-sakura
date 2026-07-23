@@ -13,6 +13,7 @@ import {
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
 import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
+import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
@@ -40,6 +41,7 @@ interface FiltrosSolicitudes {
     Alert,
     DataTable,
     PageHeader,
+    PageLayout,
     FilterPanel,
   ],
   templateUrl: './solicitudes-list.html',

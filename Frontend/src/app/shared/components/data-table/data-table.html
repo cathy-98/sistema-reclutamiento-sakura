@@ -95,12 +95,14 @@
                 [statusClass]="cellClass(row, column)"
               ></app-status-badge>
 
-              <span *ngSwitchCase="'match'" class="match" [class]="cellClass(row, column)">
-                {{ columnValue(row, column) }}
-              </span>
+              <app-match-score
+                *ngSwitchCase="'match'"
+                [value]="columnValue(row, column)"
+                [scoreClass]="cellClass(row, column)"
+              ></app-match-score>
 
               <div *ngSwitchCase="'person'" class="person-cell">
-                <span class="avatar" aria-hidden="true">{{ secondaryValue(row, column) }}</span>
+                <app-avatar [initials]="secondaryValue(row, column).toString()"></app-avatar>
                 <strong>{{ columnValue(row, column) }}</strong>
               </div>
 

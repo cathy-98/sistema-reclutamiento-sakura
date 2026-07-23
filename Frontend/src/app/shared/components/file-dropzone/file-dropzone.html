@@ -29,23 +29,10 @@
       <small>Formatos permitidos: {{ allowedText }} · Máx. {{ maxFileSizeMb }} MB por archivo</small>
     </div>
 
-    <button type="button" (click)="fileInput.click()">{{ buttonText }}</button>
+    <app-button variant="ghost" (pressed)="fileInput.click()">{{ buttonText }}</app-button>
   </div>
 
   <p class="drop-error" *ngIf="error">{{ error }}</p>
 
-  <div class="file-list" *ngIf="files.length > 0">
-    <header>
-      <strong>{{ files.length }} archivo{{ files.length === 1 ? '' : 's' }} listo{{ files.length === 1 ? '' : 's' }}</strong>
-      <button type="button" (click)="clearFiles()">Limpiar</button>
-    </header>
-
-    <ul>
-      <li *ngFor="let file of files">
-        <span>{{ file.name }}</span>
-        <small>{{ file.size / 1024 / 1024 | number: '1.1-1' }} MB</small>
-        <button type="button" [attr.aria-label]="'Quitar ' + file.name" (click)="removeFile(file)">×</button>
-      </li>
-    </ul>
-  </div>
+  <app-file-list [files]="files" (clear)="clearFiles()" (remove)="removeFile($event)"></app-file-list>
 </section>

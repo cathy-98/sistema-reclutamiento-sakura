@@ -11,7 +11,9 @@ import {
 import { ActionBar } from '../../../shared/components/action-bar/action-bar';
 import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
 import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
+import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { CurrencyClPipe } from '../../../shared/pipes/currency-cl.pipe';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
@@ -46,7 +48,16 @@ interface FiltrosCandidatos {
 
 @Component({
   selector: 'app-candidatos-list',
-  imports: [CommonModule, FormsModule, DataTable, FileDropzone, PageHeader, FilterPanel, ActionBar],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DataTable,
+    FileDropzone,
+    PageHeader,
+    PageLayout,
+    FilterPanel,
+    ActionBar,
+  ],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
@@ -117,7 +128,7 @@ export class CandidatosList {
       key: 'renta',
       label: 'Pretensión de renta',
       width: 170,
-      value: (candidato) => this.formatearRenta(candidato.renta),
+      value: (candidato) => this.currencyCl.transform(candidato.renta),
     },
     {
       key: 'habilidades',
@@ -225,7 +236,10 @@ export class CandidatosList {
     },
   ];
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private currencyCl: CurrencyClPipe,
+  ) {
     this.actualizarDatosSesion();
 
     this.authService.cargarPerfilUsuario().subscribe(() => {
@@ -387,10 +401,6 @@ export class CandidatosList {
 
   estadoClase(estado: Candidato['estado']) {
     return estado.toLowerCase().replace(' ', '-');
-  }
-
-  formatearRenta(renta: number) {
-    return renta.toLocaleString('es-CL');
   }
 
   private filtrosIniciales(): FiltrosCandidatos {

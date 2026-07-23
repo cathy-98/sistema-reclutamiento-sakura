@@ -1,0 +1,23 @@
+.match-score {
+  display: inline-grid;
+  min-width: 42px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-white);
+  font-weight: 800;
+}
+
+.is-high {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.is-medium {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+}
+
+.is-low {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-dark);
+}

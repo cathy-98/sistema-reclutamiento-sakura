@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Button } from '../button/button';
+import { FileList } from '../file-list/file-list';
 
 @Component({
   selector: 'app-file-dropzone',
-  imports: [CommonModule],
+  imports: [CommonModule, Button, FileList],
   templateUrl: './file-dropzone.html',
   styleUrl: './file-dropzone.scss',
 })
