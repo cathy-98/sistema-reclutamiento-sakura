@@ -113,4 +113,10 @@
     (clear)="limpiarFiltros()"
     (retry)="cargarCandidatos()"
   ></app-data-table>
+
+  <app-candidato-perfil-modal
+    *ngIf="candidatoSeleccionado"
+    [candidato]="candidatoSeleccionado"
+    (cerrar)="cerrarPerfilCandidato()"
+  ></app-candidato-perfil-modal>
 </app-page-layout>

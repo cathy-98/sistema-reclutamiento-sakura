@@ -10,6 +10,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 export class Modal {
   @Input() titulo = '';
   @Input() subtitulo = '';
-  @Input() ancho: 'sm' | 'md' | 'lg' = 'lg';
+  @Input() ancho: 'sm' | 'md' | 'lg' | 'xl' = 'lg';
   @Output() cerrar = new EventEmitter<void>();
 }

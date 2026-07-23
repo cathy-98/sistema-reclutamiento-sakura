@@ -1,0 +1,277 @@
+<app-modal titulo="Perfil candidato" ancho="xl" (cerrar)="cerrar.emit()">
+  <section class="profile">
+    <header class="profile-header">
+      <div>
+        <h2>{{ nombre }} <span>Candidato</span></h2>
+        <div class="meta-row">
+          <small>Req actual: {{ candidato?.idSolicitud || 'Req-021' }} · {{ cargo }}</small>
+          <small>Estado: En proceso</small>
+          <small>Postuló: 24 oct 2024</small>
+        </div>
+      </div>
+    </header>
+
+    <app-candidato-profile-tabs
+      [tabs]="tabs"
+      [activeTab]="tabActiva"
+      (activeTabChange)="cambiarTab($event)"
+    ></app-candidato-profile-tabs>
+
+    <div class="profile-layout">
+      <app-candidato-summary-card
+        [initials]="iniciales"
+        [cargo]="cargo"
+        [correo]="candidato?.correo || 'juan.perez@gmail.com'"
+        [telefono]="candidato?.telefono || '+56 9 1234 5678'"
+        [disponibilidad]="candidato?.disponibilidad || 'Inmediata'"
+        [renta]="rentaFormateada"
+      ></app-candidato-summary-card>
+
+      <section class="profile-content">
+        <ng-container [ngSwitch]="tabActiva">
+          <div *ngSwitchCase="'datos'" class="panel-stack">
+            <article class="panel">
+              <h3>Información general</h3>
+              <div class="info-grid">
+                <dl>
+                  <div><dt>Nombre completo</dt><dd>{{ nombre }}</dd></div>
+                  <div><dt>RUT o ID</dt><dd>18.123.456-7</dd></div>
+                  <div><dt>Correo electrónico</dt><dd>{{ candidato?.correo || 'juan.perez@gmail.com' }}</dd></div>
+                  <div><dt>Teléfono móvil</dt><dd>{{ candidato?.telefono || '+56 9 1234 5678' }}</dd></div>
+                </dl>
+                <dl>
+                  <div><dt>Ubicación</dt><dd>Santiago, Chile</dd></div>
+                  <div><dt>Nacionalidad</dt><dd>Chilena</dd></div>
+                  <div><dt>LinkedIn</dt><dd>linkedin.com/in/juanperez</dd></div>
+                </dl>
+              </div>
+            </article>
+
+            <article class="panel">
+              <h3>Resumen del perfil</h3>
+              <ul class="check-list two-cols">
+                <li>5+ años de experiencia en desarrollo de software.</li>
+                <li>Inglés avanzado (B2/C1).</li>
+                <li>Stack principal: React, TypeScript, Node.js, AWS.</li>
+                <li>Disponibilidad inmediata y flexibilidad para viajar.</li>
+              </ul>
+            </article>
+
+            <article class="panel note-panel">
+              <div>
+                <h3>Observación general</h3>
+                <small>Última nota · 18 may 2025 · Reclutador Interno</small>
+                <p>
+                  Candidato con sólido perfil técnico en React y experiencia liderando proyectos web escalables.
+                  Recomendado para avanzar a siguiente etapa.
+                </p>
+              </div>
+              <app-button variant="ghost">Ver todas las notas</app-button>
+            </article>
+          </div>
+
+          <div *ngSwitchCase="'experiencia'" class="panel-stack">
+            <article class="panel summary-row">
+              <h3>Resumen profesional</h3>
+              <ul class="check-list three-cols">
+                <li>5+ años de experiencia en desarrollo de software.</li>
+                <li>Stack principal: React, TypeScript, Node.js, AWS.</li>
+                <li>Industrias: Tecnología, Fintech y E-commerce.</li>
+              </ul>
+            </article>
+
+            <article class="experience-card" *ngFor="let experiencia of experiencias">
+              <div>
+                <span class="soft-icon">work</span>
+                <h3>{{ experiencia.empresa }}</h3>
+                <p>{{ experiencia.cargo }}</p>
+                <small>{{ experiencia.fecha }} · {{ experiencia.modalidad }}</small>
+              </div>
+              <div>
+                <ul>
+                  <li *ngFor="let logro of experiencia.logros">{{ logro }}</li>
+                </ul>
+                <div class="tag-row">
+                  <span *ngFor="let tag of experiencia.tags">{{ tag }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div *ngSwitchCase="'estudios'" class="panel-stack">
+            <article class="panel">
+              <h3>Perfil académico</h3>
+              <div class="metric-grid">
+                <div><span>Nivel máximo de estudios</span><strong>Universitario</strong></div>
+                <div><span>Área principal de estudio</span><strong>Ingeniería en Informática</strong></div>
+                <div><span>Idiomas</span><strong>Inglés avanzado (B2/C1) · Español nativo</strong></div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <h3>Educación formal</h3>
+              <table>
+                <thead><tr><th>Título / Grado</th><th>Institución</th><th>Fecha</th><th>Estado</th></tr></thead>
+                <tbody>
+                  <tr><td>Ingeniero en Informática</td><td>Universidad de Santiago de Chile</td><td>Mar 2016</td><td><span class="pill success">Titulado</span></td></tr>
+                  <tr><td>Técnico en Programación</td><td>Instituto Profesional AIEP</td><td>Dic 2012</td><td><span class="pill success">Titulado</span></td></tr>
+                </tbody>
+              </table>
+            </article>
+
+            <article class="panel">
+              <h3>Cursos y certificaciones</h3>
+              <table>
+                <thead><tr><th>Curso / Certificación</th><th>Proveedor</th><th>Fecha</th><th>Categoría</th></tr></thead>
+                <tbody>
+                  <tr><td>AWS Certified Developer - Associate</td><td>Amazon Web Services</td><td>Feb 2024</td><td><span class="outline-pill">Cloud</span></td></tr>
+                  <tr><td>React - The Complete Guide</td><td>Udemy</td><td>Oct 2023</td><td><span class="outline-pill">Frontend</span></td></tr>
+                  <tr><td>Node.js - Advanced Concepts</td><td>Udemy</td><td>Jul 2023</td><td><span class="outline-pill">Backend</span></td></tr>
+                  <tr><td>SQL para análisis de datos</td><td>Platzi</td><td>May 2022</td><td><span class="outline-pill">Bases de datos</span></td></tr>
+                </tbody>
+              </table>
+            </article>
+
+            <article class="panel">
+              <h3>Herramientas y plataformas</h3>
+              <div class="tag-row">
+                <span *ngFor="let tag of ['VS Code', 'Git', 'GitHub', 'Docker', 'PostgreSQL', 'MongoDB', 'Figma', 'Jira', 'Slack']">{{ tag }}</span>
+              </div>
+            </article>
+          </div>
+
+          <div *ngSwitchCase="'historial'" class="panel-stack">
+            <div class="metric-grid">
+              <article class="metric"><strong>2</strong><span>postulaciones activas</span></article>
+              <article class="metric"><strong>14</strong><span>postulaciones históricas</span></article>
+              <article class="metric"><strong>18 may 2025</strong><span>última actualización</span></article>
+            </div>
+            <article class="panel">
+              <h3>Historial de postulaciones</h3>
+              <div class="table-tools">
+                <input [(ngModel)]="busquedaPostulaciones" type="search" placeholder="Buscar por empresa o puesto..." />
+                <select [(ngModel)]="filtroEstado">
+                  <option>Todos</option>
+                  <option>En proceso</option>
+                  <option>No seleccionado</option>
+                </select>
+              </div>
+              <table>
+                <thead><tr><th>ID Solicitud</th><th>Empresa</th><th>Puesto</th><th>Fecha</th><th>Estado</th><th>Ver proceso</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of postulacionesFiltradas">
+                    <td>{{ item[0] }}</td><td>{{ item[1] }}</td><td>{{ item[2] }}</td><td>{{ item[3] }}</td>
+                    <td><app-status-badge [value]="item[4]" [statusClass]="statusClass(item[4])"></app-status-badge></td>
+                    <td><button class="text-action" type="button">Ver proceso</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+
+          <div *ngSwitchCase="'proceso'" class="panel-stack">
+            <article class="panel process-panel">
+              <header class="request-strip">
+                <strong>Req-021 · Senior React Developer · Latam Airlines</strong>
+                <span>Recruiter responsable: María Fernanda López</span>
+                <span>Estado actual: En proceso</span>
+                <app-button variant="ghost" size="sm">Ver requerimiento</app-button>
+              </header>
+              <div class="timeline">
+                <div *ngFor="let etapa of etapas; let i = index" [class.is-current]="etapa[1] === 'Actual'">
+                  <span>{{ i + 1 }}</span>
+                  <strong>{{ etapa[0] }}</strong>
+                  <small>{{ etapa[1] }}</small>
+                </div>
+              </div>
+              <div class="metric-grid">
+                <article class="metric blue"><span>Etapa actual</span><strong>Entrevista técnica</strong><small>En curso desde 16 may 2025</small></article>
+                <article class="metric amber"><span>Próxima acción</span><strong>Programar entrevista técnica</strong><small>Definir fecha y confirmar participación</small></article>
+                <article class="metric green"><span>Resultado parcial</span><strong>Excelente</strong><small>3 de 3 etapas completadas</small></article>
+              </div>
+              <table>
+                <thead><tr><th>Fecha</th><th>Etapa</th><th>Responsable</th><th>Estado</th><th>Observación/Acción</th></tr></thead>
+                <tbody>
+                  <tr><td>24 oct 2024</td><td>Postulación</td><td>Sistema</td><td>Completado</td><td>Postulación recibida desde el portal de empleo.</td></tr>
+                  <tr><td>28 oct 2024</td><td>Filtro CV</td><td>María Fernanda López</td><td>Completado</td><td>CV cumple con requisitos mínimos del cargo.</td></tr>
+                  <tr><td>04 nov 2024</td><td>Entrevista RRHH</td><td>María Fernanda López</td><td>Completado</td><td>Entrevista realizada. Evaluación positiva.</td></tr>
+                  <tr><td>16 may 2025</td><td>Entrevista técnica</td><td>Diego Salazar</td><td>En curso</td><td>Entrevista técnica agendada y en ejecución.</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+
+          <div *ngSwitchCase="'match'" class="panel-stack">
+            <header class="request-strip">
+              <strong>Req-021 · Senior React Developer · Latam Airlines</strong>
+              <span>Match general <b>78%</b></span>
+              <span>Último análisis: 18 may 2025</span>
+            </header>
+            <div class="match-layout">
+              <article class="panel match-summary">
+                <app-match-score value="78%" scoreClass="is-high"></app-match-score>
+                <h3>Buen match</h3>
+                <p>El candidato cumple con la mayoría de los requisitos técnicos y tiene buena alineación con el rol.</p>
+                <app-button>Actualizar análisis</app-button>
+                <app-button variant="ghost">Ver requerimiento</app-button>
+              </article>
+              <article class="panel">
+                <h3>Habilidades técnicas</h3>
+                <table>
+                  <thead><tr><th>Tecnología</th><th>Nivel requerido</th><th>Nivel candidato</th><th>Años</th><th>Afinidad</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let item of habilidadesMatch">
+                      <td>{{ item[0] }}</td><td>{{ item[1] }}</td><td>{{ item[2] }}</td><td>{{ item[3] }}</td><td><span class="pill" [ngClass]="item[5]">{{ item[4] }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </article>
+            </div>
+            <article class="panel">
+              <h3>Análisis cualitativo</h3>
+              <div class="analysis-grid">
+                <div><strong>Resumen del candidato</strong><p>Desarrollador frontend con sólida experiencia en React y TypeScript.</p></div>
+                <div><strong>Fortalezas</strong><ul><li>Fuerte dominio de React y TypeScript.</li><li>Experiencia en arquitecturas escalables.</li></ul></div>
+                <div><strong>Áreas de mejora</strong><ul><li>Mayor experiencia práctica en AWS.</li><li>Profundizar en Docker y orquestación.</li></ul></div>
+              </div>
+            </article>
+          </div>
+
+          <div *ngSwitchCase="'documentos'" class="panel-stack">
+            <article class="panel notes-panel">
+              <h3>Notas internas</h3>
+              <label>Añadir nota interna</label>
+              <div class="note-input">
+                <textarea [(ngModel)]="nota" maxlength="1000" placeholder="Escribe una nota interna sobre el candidato..."></textarea>
+                <span>{{ nota.length }} / 1000</span>
+                <app-button>Guardar nota</app-button>
+              </div>
+              <div class="note-row" *ngFor="let item of ['Muy buena comunicación y actitud colaborativa.', 'Buen desempeño en la evaluación técnica.', 'Candidato interesado en modalidad híbrida.']">
+                <span>General del candidato</span>
+                <p>{{ item }}</p>
+                <app-icon-button icon="edit" label="Editar nota"></app-icon-button>
+              </div>
+            </article>
+            <article class="panel">
+              <h3>Documentos</h3>
+              <table>
+                <thead><tr><th>Nombre del documento</th><th>Tipo / Categoría</th><th>Asociado a</th><th>Fecha de carga</th><th>Acciones</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let doc of documentos">
+                    <td><span class="file-pill">{{ doc[4] }}</span>{{ doc[0] }}</td><td>{{ doc[1] }}</td><td>{{ doc[2] }}</td><td>{{ doc[3] }}</td>
+                    <td><button class="text-action" type="button">Ver</button><button class="text-action" type="button">Descargar</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </ng-container>
+      </section>
+    </div>
+  </section>
+
+  <footer modal-footer class="profile-footer">
+    <app-button variant="ghost" (pressed)="cerrar.emit()">Cerrar</app-button>
+    <app-button>Ver proceso de selección</app-button>
+  </footer>
+</app-modal>

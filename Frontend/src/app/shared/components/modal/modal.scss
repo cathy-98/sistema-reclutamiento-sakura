@@ -31,6 +31,11 @@
   height: min(90vh, 720px);
 }
 
+.app-modal.xl {
+  width: min(100%, 1480px);
+  height: min(92vh, 840px);
+}
+
 .modal-header {
   display: flex;
   align-items: flex-start;

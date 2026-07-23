@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { CandidatoPerfilModal } from '../candidato-perfil-modal/candidato-perfil-modal';
 import {
   DataTable,
   DataTableAction,
@@ -57,6 +58,7 @@ interface FiltrosCandidatos {
     PageLayout,
     FilterPanel,
     ActionBar,
+    CandidatoPerfilModal,
   ],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
@@ -71,6 +73,7 @@ export class CandidatosList {
   busquedaRapida = '';
   seleccionados = new Set<string>();
   archivosCv: File[] = [];
+  candidatoSeleccionado: Candidato | null = null;
 
   filtros: FiltrosCandidatos = this.filtrosIniciales();
 
@@ -371,7 +374,16 @@ export class CandidatosList {
   }
 
   manejarAccionTabla(evento: DataTableActionEvent<Candidato>) {
+    if (evento.action === 'ver') {
+      this.candidatoSeleccionado = evento.row;
+      return;
+    }
+
     console.log('Acción de candidato:', evento.action, evento.row);
+  }
+
+  cerrarPerfilCandidato() {
+    this.candidatoSeleccionado = null;
   }
 
   actualizarArchivosCv(files: File[]) {

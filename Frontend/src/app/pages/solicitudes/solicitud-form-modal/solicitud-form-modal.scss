@@ -34,44 +34,6 @@
   }
 }
 
-.form-section {
-  min-height: 440px;
-  padding: 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-white);
-}
-
-.form-section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.form-section-header span {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-sakura);
-  color: var(--color-white);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.form-section-header h3 {
-  margin: 0 0 3px;
-  font-size: 16px;
-}
-
-.form-section-header p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 12px;
-}
-
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -133,50 +95,6 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: var(--color-input-placeholder);
-}
-
-.ghost-button,
-.primary-small-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 92px;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.ghost-button {
-  border: 1px solid var(--color-sakura);
-  background: var(--color-white);
-  color: var(--color-sakura);
-}
-
-.primary-small-button {
-  border: 1px solid var(--color-sakura);
-  background: var(--color-sakura);
-  color: var(--color-white);
-}
-
-.add-skill-button {
-  display: inline-grid;
-  min-height: 36px;
-  place-items: center;
-  border: 1px solid var(--color-sakura);
-  border-radius: 7px;
-  background: var(--color-white);
-  color: var(--color-sakura);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.add-skill-button:hover {
-  background: var(--color-sakura);
-  color: var(--color-white);
 }
 
 .inline-create {
@@ -314,22 +232,3 @@ textarea::placeholder {
   font-size: 12px;
 }
 
-.modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 24px;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-white);
-}
-
-.modal-footer-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.modal-footer button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}

@@ -1,0 +1,49 @@
+.candidate-card {
+  align-self: start;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-white);
+  text-align: center;
+}
+
+app-avatar {
+  display: inline-grid;
+  transform: scale(2.2);
+  margin: 28px 0 42px;
+}
+
+h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+p {
+  margin: 0 0 22px;
+  color: var(--color-text-soft);
+}
+
+dl {
+  display: grid;
+  margin: 0;
+  text-align: left;
+}
+
+dl div {
+  display: grid;
+  gap: 4px;
+  padding: 13px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+dt {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 700;
+}
