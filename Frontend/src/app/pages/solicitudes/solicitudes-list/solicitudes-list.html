@@ -1,17 +1,15 @@
 <main class="requests-page">
-  <section class="welcome-panel">
-    <div>
-      <h1>Listado de solicitudes</h1>
-      <p>Gestión listado de solicitudes</p>
+  <app-page-header
+    title="Listado de solicitudes"
+    subtitle="Gestión listado de solicitudes"
+  >
+    <div pageHeaderActions>
+      <button class="primary-action" type="button" *ngIf="puedeCrearSolicitud" (click)="abrirFormulario()">
+        <span aria-hidden="true">+</span>
+        Crear nueva solicitud
+      </button>
     </div>
-  </section>
-
-  <section class="action-strip" aria-label="Acciones de solicitudes">
-    <button class="primary-button" type="button" (click)="abrirFormulario()">
-      <span aria-hidden="true">+</span>
-      Crear nueva solicitud
-    </button>
-  </section>
+  </app-page-header>
 
   <section class="filters-panel" aria-label="Filtros de solicitudes">
     <header class="filters-header">
@@ -26,13 +24,15 @@
       </label>
     </header>
 
-    <div class="table-message" *ngIf="cargando">
-      Cargando solicitudes...
-    </div>
-
-    <div class="table-message table-message--error" *ngIf="error">
-      {{ error }}
-    </div>
+    <app-alert
+      *ngIf="alerta"
+      [tipo]="alerta.tipo"
+      [variante]="alerta.variante"
+      [titulo]="alerta.titulo || ''"
+      [mensaje]="alerta.mensaje"
+      [cerrable]="true"
+      (cerrar)="cerrarAlerta()"
+    ></app-alert>
 
     <div class="filters-grid">
       <label>
@@ -88,131 +88,44 @@
     </div>
   </section>
 
-  <section class="table-panel" aria-label="Listado de solicitudes">
-    <header class="table-header">
-      <div>
-        <h3>Listado de solicitudes</h3>
-        <p>{{ solicitudes.length }} registros encontrados.</p>
-      </div>
-    </header>
-
-    <div class="empty-state" *ngIf="solicitudes.length === 0">
-      <strong>No hay solicitudes para mostrar</strong>
-      <span>Ajusta los filtros o limpia la búsqueda para volver al listado completo.</span>
-      <button class="ghost-button" type="button">Limpiar filtros</button>
-    </div>
-
-    <div class="table-scroll" *ngIf="solicitudes.length > 0">
-      <table>
-        <colgroup>
-          <col class="select-col" />
-          <col class="id-col" />
-          <col class="request-col" />
-          <col class="client-col" />
-          <col class="role-col" />
-          <col class="owner-col" />
-          <col class="date-col" />
-          <col class="date-col" />
-          <col class="priority-col" />
-          <col class="state-col" />
-          <col class="observation-col" />
-          <col class="actions-col" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th class="select-column">
-              <input type="checkbox" aria-label="Seleccionar todas las solicitudes" />
-            </th>
-            <th class="id-column">ID solicitud</th>
-            <th>Nombre de solicitud</th>
-            <th>Cliente</th>
-            <th>Cargo / vacantes</th>
-            <th>Responsable</th>
-            <th>Inicio y fin selección</th>
-            <th>Inicio empleo</th>
-            <th>Prioridad</th>
-            <th>Estado</th>
-            <th>Observación</th>
-            <th class="actions-column">Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let solicitud of solicitudes">
-            <td class="select-column">
-              <input type="checkbox" [attr.aria-label]="'Seleccionar ' + solicitud.id" />
-            </td>
-            <td class="id-column">{{ solicitud.id }}</td>
-            <td>
-              <div class="request-cell">
-                <strong>{{ solicitud.nombre }}</strong>
-                <small>{{ solicitud.vacantes }} vacantes</small>
-              </div>
-            </td>
-            <td>{{ solicitud.cliente }}</td>
-            <td>{{ solicitud.cargo }} / {{ solicitud.vacantes }}</td>
-            <td>{{ solicitud.responsable }}</td>
-            <td>{{ solicitud.seleccion }}</td>
-            <td>{{ solicitud.inicioEmpleo }}</td>
-            <td>
-              <span class="priority" [class]="'priority ' + prioridadClase(solicitud.prioridad)">
-                {{ solicitud.prioridad }}
-              </span>
-            </td>
-            <td>
-              <span class="status" [class]="'status ' + estadoClase(solicitud.estado)">
-                {{ solicitud.estado }}
-              </span>
-            </td>
-            <td>
-              <span class="observation-cell" [title]="solicitud.observacion">
-                {{ solicitud.observacion }}
-              </span>
-            </td>
-            <td class="actions-column">
-              <div class="row-actions">
-                <button type="button" aria-label="Ver solicitud">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
-                    <circle cx="12" cy="12" r="2.2" />
-                  </svg>
-                </button>
-                <button type="button" aria-label="Editar solicitud">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <footer class="table-footer" *ngIf="solicitudes.length > 0">
-      <span>Mostrando {{ solicitudes.length }} de {{ solicitudes.length }} registros</span>
-
-      <div class="pagination">
-        <label>
-          Registros por página:
-          <select aria-label="Registros por página">
-            <option>5</option>
-            <option selected>10</option>
-            <option>25</option>
-          </select>
-        </label>
-
-        <button type="button" aria-label="Página anterior">‹</button>
-        <button class="is-active" type="button">1</button>
-        <span>de 1</span>
-        <button type="button" aria-label="Página siguiente">›</button>
-      </div>
-    </footer>
-  </section>
+  <app-data-table
+    title="Listado de solicitudes"
+    [columns]="columnas"
+    [rows]="solicitudesPaginadas"
+    [total]="solicitudes.length"
+    [page]="paginaActual"
+    [pageSize]="registrosPorPagina"
+    [loading]="cargando"
+    [errorMessage]="errorCarga"
+    loadingMessage="Cargando solicitudes..."
+    [rowId]="obtenerIdSolicitud"
+    [actions]="acciones"
+    [selectedIds]="seleccionados"
+    emptyTitle="No hay solicitudes para mostrar"
+    emptyMessage="Ajusta los filtros o limpia la búsqueda para volver al listado completo."
+    (selectedIdsChange)="seleccionados = $event"
+    (pageChange)="cambiarPagina($event)"
+    (pageSizeChange)="cambiarRegistrosPorPagina($event)"
+    (actionClick)="manejarAccionTabla($event)"
+    (retry)="cargarSolicitudes()"
+  ></app-data-table>
 </main>
 
 <app-solicitud-form-modal
   *ngIf="mostrarFormulario"
+  [idSolicitud]="solicitudSeleccionadaId"
+  [modo]="modoFormulario"
   (cerrar)="cerrarFormulario()"
 ></app-solicitud-form-modal>
+
+<app-confirm-dialog
+  *ngIf="mostrarConfirmacionCancelacion"
+  titulo="Cancelar solicitud"
+  mensaje="Esta acción cambiará el estado de la solicitud a Cancelada."
+  [detalle]="'Solicitud seleccionada: ' + solicitudSeleccionadaId"
+  textoCancelar="Volver"
+  textoConfirmar="Confirmar cancelación"
+  variante="danger"
+  (cancelar)="cerrarConfirmacionCancelacion()"
+  (confirmar)="confirmarCancelacionSolicitud()"
+></app-confirm-dialog>

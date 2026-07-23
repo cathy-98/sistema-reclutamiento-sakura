@@ -22,16 +22,19 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        component: Dashboard
+        component: Dashboard,
+        data: { roles: ['Administrador', 'Reclutador', 'Entrevistador'] }
       },
       {
         path: 'candidatos',
-        component: CandidatosList
+        component: CandidatosList,
+        data: { roles: ['Administrador', 'Reclutador'] }
       },
       {
-  path: 'solicitudes',
-  component: SolicitudesList
-},
+        path: 'solicitudes',
+        component: SolicitudesList,
+        data: { roles: ['Administrador', 'Reclutador'] }
+      },
     ]
   }
 ];

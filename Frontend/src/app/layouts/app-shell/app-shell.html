@@ -8,7 +8,7 @@
     <p class="sidebar-section">Principal</p>
 
     <nav class="sidebar-nav">
-      <ng-container *ngFor="let item of menuItems">
+      <ng-container *ngFor="let item of menuItemsVisibles">
         <button
           *ngIf="item.children?.length; else menuWithoutChildren"
           class="sidebar-link sidebar-link-module"

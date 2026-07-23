@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { catchError, map, of, switchMap, tap, timeout } from 'rxjs';
 
 export interface LoginRequest {
   email: string;
@@ -11,6 +11,8 @@ export interface LoginResponse {
   access_token: string;
   token_type: string;
 }
+
+export type RolUsuario = 'Administrador' | 'Reclutador' | 'Entrevistador';
 
 interface TokenPayload {
   sub?: string;
@@ -39,7 +41,7 @@ export class AuthService {
   private readonly tokenKey = 'sakura_access_token';
   private readonly nombreKey = 'sakura_nombre';
   private readonly rolKey = 'sakura_rol';
-  private readonly rolesPorId: Record<number, string> = {
+  private readonly rolesPorId: Record<number, RolUsuario> = {
     1: 'Administrador',
     2: 'Reclutador',
     3: 'Entrevistador',
@@ -49,6 +51,7 @@ export class AuthService {
 
   login(credenciales: LoginRequest) {
     return this.http.post<LoginResponse>(this.apiUrl, credenciales).pipe(
+      timeout(6000),
       tap((respuesta) => this.guardarSesion(respuesta)),
       switchMap((respuesta) => this.cargarPerfilUsuario().pipe(map(() => respuesta)))
     );
@@ -119,7 +122,7 @@ export class AuthService {
     const rolGuardado = localStorage.getItem(this.rolKey);
 
     if (rolGuardado) {
-      return rolGuardado;
+      return rolGuardado as RolUsuario;
     }
 
     const rolId = this.obtenerPayload()?.rol_id;
@@ -139,6 +142,11 @@ export class AuthService {
 
   obtenerRolVisible() {
     return this.obtenerRol() ?? '';
+  }
+
+  tieneRol(rolesPermitidos: RolUsuario[]) {
+    const rol = this.obtenerRol();
+    return rolesPermitidos.includes(rol as RolUsuario);
   }
 
   eliminarToken() {

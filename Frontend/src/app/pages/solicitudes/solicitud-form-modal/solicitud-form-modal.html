@@ -1,29 +1,27 @@
-<div class="modal-backdrop">
-  <section class="request-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <header class="modal-header">
-      <div>
-        <h2 id="modal-title">Nueva solicitud de vacante</h2>
-        <p>Completa la información para crear una solicitud.</p>
+<app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
+    <div class="request-modal-body">
+      <div class="modal-loading" *ngIf="cargandoDetalle">
+        <span></span>
+        Cargando datos de la solicitud...
       </div>
 
-      <button class="modal-close" type="button" aria-label="Cerrar formulario" (click)="cerrar.emit()">
-        ×
-      </button>
-    </header>
+      <app-alert
+        *ngIf="alerta"
+        [tipo]="alerta.tipo"
+        [variante]="alerta.variante"
+        [titulo]="alerta.titulo || ''"
+        [mensaje]="alerta.mensaje"
+        [cerrable]="true"
+        (cerrar)="cerrarAlerta()"
+      ></app-alert>
 
-    <div class="modal-body">
-      <nav class="form-stepper" aria-label="Pasos del formulario">
-        <button
-          *ngFor="let paso of pasosFormulario"
-          type="button"
-          [class.is-active]="tabFormulario === paso.clave"
-          [class.is-complete]="pasoCompletado(paso.clave)"
-          (click)="cambiarTabFormulario(paso.clave)"
-        >
-          <span>{{ paso.numero }}</span>
-          {{ paso.titulo }}
-        </button>
-      </nav>
+      <form class="modal-form" [formGroup]="formularioSolicitud">
+      <app-stepper
+        [pasos]="pasosFormulario"
+        [pasoActivo]="tabFormulario"
+        [pasosCompletados]="pasosCompletados"
+        (cambiarPaso)="cambiarTabFormulario($event)"
+      ></app-stepper>
 
       <section class="form-section" *ngIf="tabFormulario === 'general'">
         <header class="form-section-header">
@@ -40,16 +38,19 @@
             <input
               type="text"
               placeholder="Ej. Desarrollador Frontend para Latam"
-              [(ngModel)]="formularioSolicitud.titulo"
+              formControlName="titulo"
             />
+            <small class="form-error" *ngIf="control('titulo')?.touched && control('titulo')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Cargo solicitado *
             <select
               *ngIf="catalogoActivo !== 'cargo'"
-              [(ngModel)]="formularioSolicitud.id_cargo"
-              (ngModelChange)="manejarSeleccionCatalogo('cargo', $event)"
+              formControlName="id_cargo"
+              (change)="manejarSeleccionCatalogo('cargo', formularioSolicitud.get('id_cargo')?.value)"
             >
               <option [ngValue]="null">Selecciona un cargo</option>
               <option *ngFor="let cargo of cargosCatalogo" [ngValue]="cargo.id">
@@ -59,18 +60,21 @@
             </select>
 
             <div class="inline-create" *ngIf="catalogoActivo === 'cargo'">
-              <input type="text" placeholder="Nuevo cargo" [(ngModel)]="nuevoValorCatalogo" />
+              <input type="text" placeholder="Nuevo cargo" [formControl]="nuevoValorCatalogo" />
               <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
               <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
             </div>
+            <small class="form-error" *ngIf="control('id_cargo')?.touched && control('id_cargo')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Área / Departamento *
             <select
               *ngIf="catalogoActivo !== 'area'"
-              [(ngModel)]="formularioSolicitud.id_area"
-              (ngModelChange)="manejarSeleccionCatalogo('area', $event)"
+              formControlName="id_area"
+              (change)="manejarSeleccionCatalogo('area', formularioSolicitud.get('id_area')?.value)"
             >
               <option [ngValue]="null">Selecciona un área</option>
               <option *ngFor="let area of areasCatalogo" [ngValue]="area.id">
@@ -80,18 +84,21 @@
             </select>
 
             <div class="inline-create" *ngIf="catalogoActivo === 'area'">
-              <input type="text" placeholder="Nueva área" [(ngModel)]="nuevoValorCatalogo" />
+              <input type="text" placeholder="Nueva área" [formControl]="nuevoValorCatalogo" />
               <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
               <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
             </div>
+            <small class="form-error" *ngIf="control('id_area')?.touched && control('id_area')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Cliente *
             <select
               *ngIf="catalogoActivo !== 'cliente'"
-              [(ngModel)]="formularioSolicitud.id_cliente"
-              (ngModelChange)="manejarSeleccionCatalogo('cliente', $event)"
+              formControlName="id_cliente"
+              (change)="manejarSeleccionCatalogo('cliente', formularioSolicitud.get('id_cliente')?.value)"
             >
               <option [ngValue]="null">Selecciona un cliente</option>
               <option *ngFor="let cliente of clientesCatalogo" [ngValue]="cliente.id">
@@ -101,24 +108,30 @@
             </select>
 
             <div class="inline-create" *ngIf="catalogoActivo === 'cliente'">
-              <input type="text" placeholder="Nuevo cliente" [(ngModel)]="nuevoValorCatalogo" />
+              <input type="text" placeholder="Nuevo cliente" [formControl]="nuevoValorCatalogo" />
               <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
               <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
             </div>
+            <small class="form-error" *ngIf="control('id_cliente')?.touched && control('id_cliente')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Solicitante *
-            <select [(ngModel)]="formularioSolicitud.id_usuario_solicitante">
+            <select formControlName="id_usuario_solicitante">
               <option [ngValue]="null">Selecciona solicitante</option>
               <option [ngValue]="1">Felipe Valdes</option>
               <option [ngValue]="3">Cathy</option>
             </select>
+            <small class="form-error" *ngIf="control('id_usuario_solicitante')?.touched && control('id_usuario_solicitante')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Responsable
-            <select [(ngModel)]="formularioSolicitud.id_usuario_responsable">
+            <select formControlName="id_usuario_responsable">
               <option [ngValue]="null">Sin asignar</option>
               <option [ngValue]="1">Felipe Valdes</option>
               <option [ngValue]="3">Cathy</option>
@@ -139,57 +152,73 @@
         <div class="form-grid">
           <label class="form-field">
             Prioridad *
-            <select [(ngModel)]="formularioSolicitud.id_prioridad">
+            <select formControlName="id_prioridad">
               <option [ngValue]="null">Selecciona prioridad</option>
               <option [ngValue]="1">Alta</option>
               <option [ngValue]="2">Media</option>
               <option [ngValue]="3">Baja</option>
             </select>
+            <small class="form-error" *ngIf="control('id_prioridad')?.touched && control('id_prioridad')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Cantidad de vacantes *
-            <input type="number" min="1" [(ngModel)]="formularioSolicitud.cantidad_vacantes" />
+            <input type="number" min="1" formControlName="cantidad_vacantes" />
+            <small class="form-error" *ngIf="control('cantidad_vacantes')?.touched && control('cantidad_vacantes')?.invalid">
+              Debe ser mayor a cero.
+            </small>
           </label>
 
           <label class="form-field">
             Modalidad *
-            <select [(ngModel)]="formularioSolicitud.id_modalidad">
+            <select formControlName="id_modalidad">
               <option [ngValue]="null">Selecciona modalidad</option>
               <option [ngValue]="1">Presencial</option>
               <option [ngValue]="2">Remoto</option>
               <option [ngValue]="3">Híbrido</option>
             </select>
+            <small class="form-error" *ngIf="control('id_modalidad')?.touched && control('id_modalidad')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Estado *
-            <select [(ngModel)]="formularioSolicitud.id_estado_solicitud">
+            <select formControlName="id_estado_solicitud">
               <option [ngValue]="null">Selecciona estado</option>
               <option [ngValue]="1">Pendiente</option>
               <option [ngValue]="2">En Curso</option>
               <option [ngValue]="3">Cerrada</option>
             </select>
+            <small class="form-error" *ngIf="control('id_estado_solicitud')?.touched && control('id_estado_solicitud')?.hasError('required')">
+              Campo obligatorio.
+            </small>
           </label>
 
           <label class="form-field">
             Salario mínimo
-            <input type="number" min="0" placeholder="Ej. 1200000" [(ngModel)]="formularioSolicitud.salario_minimo" />
+            <input type="number" min="0" placeholder="Ej. 1200000" formControlName="salario_minimo" />
           </label>
 
           <label class="form-field">
             Salario máximo
-            <input type="number" min="0" placeholder="Ej. 1800000" [(ngModel)]="formularioSolicitud.salario_maximo" />
+            <input type="number" min="0" placeholder="Ej. 1800000" formControlName="salario_maximo" />
           </label>
+
+          <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('rangoSalarioInvalido')">
+            El salario mínimo no puede ser mayor al salario máximo.
+          </small>
 
           <label class="form-field">
             Hora inicio jornada
-            <input type="time" [(ngModel)]="formularioSolicitud.hora_inicio_jornada" />
+            <input type="time" formControlName="hora_inicio_jornada" />
           </label>
 
           <label class="form-field">
             Hora fin jornada
-            <input type="time" [(ngModel)]="formularioSolicitud.hora_fin_jornada" />
+            <input type="time" formControlName="hora_fin_jornada" />
           </label>
         </div>
       </section>
@@ -206,17 +235,17 @@
         <div class="form-grid">
           <label class="form-field">
             Inicio selección
-            <input type="date" [(ngModel)]="formularioSolicitud.fecha_inicio_busqueda" />
+            <input type="date" formControlName="fecha_inicio_busqueda" />
           </label>
 
           <label class="form-field">
             Fin selección
-            <input type="date" [(ngModel)]="formularioSolicitud.fecha_cierre_busqueda" />
+            <input type="date" formControlName="fecha_cierre_busqueda" />
           </label>
 
           <label class="form-field">
             Inicio empleo
-            <input type="date" [(ngModel)]="formularioSolicitud.fecha_inicio_cliente" />
+            <input type="date" formControlName="fecha_inicio_cliente" />
           </label>
         </div>
       </section>
@@ -236,9 +265,9 @@
             rows="8"
             maxlength="500"
             placeholder="Añade requisitos, contexto del equipo o detalles relevantes."
-            [(ngModel)]="formularioSolicitud.descripcion"
+            formControlName="descripcion"
           ></textarea>
-          <small>{{ formularioSolicitud.descripcion.length }}/500</small>
+          <small>{{ descripcionLength }}/500</small>
         </label>
       </section>
 
@@ -251,13 +280,13 @@
           </div>
         </header>
 
-        <div class="skills-form-grid">
+        <div class="skills-form-grid" [formGroup]="nuevaHabilidad">
           <label class="form-field">
             Tecnología
             <select
               *ngIf="catalogoActivo !== 'habilidad'"
-              [(ngModel)]="nuevaHabilidad.id_habilidad"
-              (ngModelChange)="manejarSeleccionCatalogo('habilidad', $event)"
+              formControlName="id_habilidad"
+              (change)="manejarSeleccionCatalogo('habilidad', nuevaHabilidad.get('id_habilidad')?.value)"
             >
               <option [ngValue]="null">Selecciona habilidad</option>
               <option *ngFor="let habilidad of habilidadesCatalogo" [ngValue]="habilidad.id">
@@ -267,7 +296,7 @@
             </select>
 
             <div class="inline-create inline-create--wide" *ngIf="catalogoActivo === 'habilidad'">
-              <input type="text" placeholder="Nueva habilidad" [(ngModel)]="nuevoValorCatalogo" />
+              <input type="text" placeholder="Nueva habilidad" [formControl]="nuevoValorCatalogo" />
               <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
               <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
             </div>
@@ -275,7 +304,7 @@
 
           <label class="form-field">
             Nivel técnico
-            <select [(ngModel)]="nuevaHabilidad.id_nivel_habilidad">
+            <select formControlName="id_nivel_habilidad">
               <option [ngValue]="null">Selecciona nivel</option>
               <option *ngFor="let nivel of nivelesHabilidadCatalogo" [ngValue]="nivel.id">
                 {{ nivel.nombre }}
@@ -285,13 +314,13 @@
 
           <label class="form-field">
             Años experiencia
-            <input type="number" min="0" [(ngModel)]="nuevaHabilidad.anios_experiencia" />
+            <input type="number" min="0" formControlName="anios_experiencia" />
           </label>
 
           <label class="form-field skill-check-field">
             Excluyente
             <span class="skill-check-control">
-              <input type="checkbox" [(ngModel)]="nuevaHabilidad.es_excluyente" />
+              <input type="checkbox" formControlName="es_excluyente" />
               <span>Obligatoria</span>
             </span>
           </label>
@@ -301,11 +330,11 @@
           </button>
         </div>
 
-        <div class="skills-empty" *ngIf="formularioSolicitud.habilidades.length === 0">
+        <div class="skills-empty" *ngIf="habilidadesFormArray.length === 0">
           Todavía no agregaste habilidades.
         </div>
 
-        <div class="skills-preview" *ngFor="let habilidad of formularioSolicitud.habilidades; let i = index">
+        <div class="skills-preview" *ngFor="let habilidad of habilidadesSolicitud; let i = index">
           <div>
             <strong>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</strong>
             <span>
@@ -321,9 +350,10 @@
           </button>
         </div>
       </section>
+      </form>
     </div>
 
-    <footer class="modal-footer">
+    <footer modal-footer class="modal-footer">
       <button class="ghost-button" type="button" (click)="cerrar.emit()">Cancelar</button>
 
       <div class="modal-footer-actions">
@@ -338,5 +368,4 @@
         </button>
       </div>
     </footer>
-  </section>
-</div>
+</app-modal>

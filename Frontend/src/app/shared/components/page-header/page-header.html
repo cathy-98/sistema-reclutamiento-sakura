@@ -1,0 +1,13 @@
+<section class="page-header">
+  <div class="page-header-copy">
+    <span class="eyebrow" *ngIf="eyebrow">{{ eyebrow }}</span>
+    <h1>{{ title }}</h1>
+    <p *ngIf="subtitle">{{ subtitle }}</p>
+    <span class="badge" *ngIf="badge">{{ badge }}</span>
+  </div>
+
+  <div class="page-header-side">
+    <ng-content select="[pageHeaderActions]"></ng-content>
+    <img *ngIf="imageSrc" [src]="imageSrc" [alt]="imageAlt || title" />
+  </div>
+</section>
