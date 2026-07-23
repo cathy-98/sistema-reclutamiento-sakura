@@ -1,3 +1,5 @@
+# app/catalogos/models.py
+
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
