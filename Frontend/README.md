@@ -88,13 +88,33 @@ src/app
 │   └── solicitudes.service.ts
 └── shared
     ├── components
+    │   ├── action-bar
     │   ├── alert
+    │   ├── avatar
+    │   ├── button
+    │   ├── card
     │   ├── confirm-dialog
     │   ├── data-table
     │   ├── file-dropzone
+    │   ├── file-list
+    │   ├── filter-panel
+    │   ├── form-actions
+    │   ├── form-field
+    │   ├── form-section
+    │   ├── icon-button
+    │   ├── match-score
     │   ├── modal
-    │   └── stepper
+    │   ├── page-header
+    │   ├── page-layout
+    │   ├── pagination
+    │   ├── section-header
+    │   ├── state-message
+    │   ├── status-badge
+    │   ├── stepper
+    │   ├── table-toolbar
+    │   └── wizard-layout
     ├── models
+    ├── pipes
     └── utils
 ```
 
@@ -167,6 +187,29 @@ Uso general:
 ></app-file-dropzone>
 ```
 
+### Componentes base de UI
+
+Componentes compartidos para mantener consistencia entre módulos:
+
+- `app-page-layout`: estructura base de página.
+- `app-page-header`: cabecera principal de módulo.
+- `app-filter-panel`: panel reusable de filtros y búsqueda rápida.
+- `app-action-bar`: barra de acciones masivas.
+- `app-button`: botón base con variantes.
+- `app-icon-button`: botón cuadrado para acciones por icono.
+- `app-status-badge`: estados y prioridades.
+- `app-match-score`: porcentaje visual de match.
+- `app-avatar`: avatar con iniciales.
+- `app-pagination`: paginación.
+- `app-state-message`: estados de carga, error y vacío.
+- `app-form-section`: sección de formulario largo.
+- `app-form-actions`: footer de acciones de formulario.
+- `app-file-list`: listado de archivos seleccionados.
+
+### Pipes compartidos
+
+- `currencyCl`: formatea números con separador chileno, por ejemplo `1200000` como `1.200.000`.
+
 ## Módulos
 
 ### Login
@@ -197,7 +240,121 @@ Notas actuales:
 - La tabla usa `app-data-table`.
 - Los datos de candidatos son mock locales.
 - La carga de CVs usa `app-file-dropzone`.
+- El perfil del candidato se abre desde la acción `Ver candidato` de la tabla.
 - Falta conectar endpoint real para candidatos y subida de archivos.
+
+#### Perfil del candidato
+
+El perfil del candidato está implementado como un modal grande de detalle. Se eligió modal porque el flujo nace desde el listado de candidatos y permite revisar información completa sin perder filtros, página actual ni selección del listado.
+
+Archivos principales:
+
+```text
+src/app/pages/candidatos
+├── candidato-perfil-modal
+│   ├── candidato-perfil-modal.ts
+│   ├── candidato-perfil-modal.html
+│   └── candidato-perfil-modal.scss
+├── candidato-profile-tabs
+│   ├── candidato-profile-tabs.ts
+│   ├── candidato-profile-tabs.html
+│   └── candidato-profile-tabs.scss
+├── candidato-summary-card
+│   ├── candidato-summary-card.ts
+│   ├── candidato-summary-card.html
+│   └── candidato-summary-card.scss
+└── candidatos-list
+```
+
+Cómo se abre:
+
+1. El usuario entra a `/candidatos`.
+2. En la tabla, presiona la acción con icono de ojo.
+3. `candidatos-list` guarda el candidato seleccionado en `candidatoSeleccionado`.
+4. Se renderiza `app-candidato-perfil-modal`.
+5. Al cerrar, `candidatoSeleccionado` vuelve a `null`.
+
+Flujo en código:
+
+```ts
+manejarAccionTabla(evento: DataTableActionEvent<Candidato>) {
+  if (evento.action === 'ver') {
+    this.candidatoSeleccionado = evento.row;
+    return;
+  }
+}
+```
+
+Y en template:
+
+```html
+<app-candidato-perfil-modal
+  *ngIf="candidatoSeleccionado"
+  [candidato]="candidatoSeleccionado"
+  (cerrar)="cerrarPerfilCandidato()"
+></app-candidato-perfil-modal>
+```
+
+Secciones disponibles dentro del perfil:
+
+- Datos personales
+- Experiencia laboral
+- Estudios y cursos
+- Historial de postulaciones
+- Proceso de selección
+- Análisis de match
+- Documentos y notas
+
+Componentes reutilizables usados por el perfil:
+
+- `app-modal`
+- `app-button`
+- `app-avatar`
+- `app-status-badge`
+- `app-match-score`
+- `app-icon-button`
+- `app-candidato-profile-tabs`
+- `app-candidato-summary-card`
+
+Datos actuales del perfil:
+
+- La información detallada está mockeada en `candidato-perfil-modal.ts`.
+- El modal recibe los datos básicos desde la fila seleccionada.
+- Las secciones internas están preparadas para reemplazarse por datos del backend.
+
+Backend pendiente sugerido:
+
+- `GET /api/candidatos/:id`
+- `GET /api/candidatos/:id/postulaciones`
+- `GET /api/candidatos/:id/experiencia`
+- `GET /api/candidatos/:id/estudios`
+- `GET /api/candidatos/:id/proceso-seleccion`
+- `GET /api/candidatos/:id/match`
+- `GET /api/candidatos/:id/documentos`
+- `POST /api/candidatos/:id/notas`
+
+Modelo sugerido para conectar el perfil:
+
+```ts
+interface CandidatoPerfil {
+  id: number;
+  nombre: string;
+  correo: string;
+  telefono: string;
+  cargoActual: string;
+  ubicacion: string;
+  disponibilidad: string;
+  expectativaSalarial: number;
+  modalidadPreferida: string;
+  postulaciones: PostulacionCandidato[];
+  experiencia: ExperienciaLaboral[];
+  estudios: EstudioCandidato[];
+  procesoSeleccion: EtapaProceso[];
+  match: AnalisisMatch;
+  documentos: DocumentoCandidato[];
+  notas: NotaCandidato[];
+}
+```
 
 ## Conexión con Backend
 
