@@ -2078,7 +2078,7 @@ COPY public.tbl_motivo_rechazo (mtrc_id, mtrc_nombre, mtrc_descripcion) FROM std
 --
 
 COPY public.tbl_nivel_educacional (nved_id, nved_nombre) FROM stdin;
-1	Ense├▒anza Media
+1	Enseñanza Media
 2	Tenico Nivel Medio
 3	Tecnico Profesional Nivel Superior
 4	Universitario Incompleto
