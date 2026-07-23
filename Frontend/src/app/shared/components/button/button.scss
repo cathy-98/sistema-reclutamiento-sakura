@@ -1,0 +1,58 @@
+button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sm {
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.primary {
+  border-color: var(--color-sakura);
+  background: var(--color-sakura);
+  color: var(--color-white);
+}
+
+.secondary,
+.ghost {
+  border-color: var(--color-sakura);
+  background: var(--color-white);
+  color: var(--color-sakura);
+}
+
+.danger {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.98);
+}
+
+button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface-hover);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}

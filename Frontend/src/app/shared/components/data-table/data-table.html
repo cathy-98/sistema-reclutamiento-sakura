@@ -14,23 +14,30 @@
     </div>
   </header>
 
-  <div class="loading-state" *ngIf="loading">
-    <span class="loader" aria-hidden="true"></span>
-    <strong>{{ loadingMessage }}</strong>
-    <span>Estamos preparando la información para mostrarla en la tabla.</span>
-  </div>
+  <app-state-message
+    *ngIf="loading"
+    type="loading"
+    [title]="loadingMessage"
+    message="Estamos preparando la información para mostrarla en la tabla."
+  ></app-state-message>
 
-  <div class="error-state" *ngIf="!loading && errorMessage">
-    <strong>No se pudo cargar la información</strong>
-    <span>{{ errorMessage }}</span>
-    <button class="ghost-button" type="button" (click)="retry.emit()">Reintentar</button>
-  </div>
+  <app-state-message
+    *ngIf="!loading && errorMessage"
+    type="error"
+    title="No se pudo cargar la información"
+    [message]="errorMessage"
+    actionLabel="Reintentar"
+    (action)="retry.emit()"
+  ></app-state-message>
 
-  <div class="empty-state" *ngIf="!loading && !errorMessage && total === 0">
-    <strong>{{ emptyTitle }}</strong>
-    <span>{{ emptyMessage }}</span>
-    <button class="ghost-button" type="button" (click)="clear.emit()">Limpiar filtros</button>
-  </div>
+  <app-state-message
+    *ngIf="!loading && !errorMessage && total === 0"
+    type="empty"
+    [title]="emptyTitle"
+    [message]="emptyMessage"
+    actionLabel="Limpiar filtros"
+    (action)="clear.emit()"
+  ></app-state-message>
 
   <div class="table-scroll" *ngIf="!loading && !errorMessage && total > 0">
     <table [style.min-width]="tableMinWidth">
@@ -122,28 +129,14 @@
     </table>
   </div>
 
-  <footer class="table-footer" *ngIf="!loading && !errorMessage && total > 0">
-    <span>Mostrando {{ rows.length }} de {{ total }} registros</span>
-    <div class="pagination">
-      <label>
-        Registros por página:
-        <select [ngModel]="pageSize" aria-label="Registros por página" (ngModelChange)="changePageSize($event)">
-          <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
-        </select>
-      </label>
-      <button type="button" aria-label="Página anterior" [disabled]="page === 1" (click)="changePage(page - 1)">
-        ‹
-      </button>
-      <button class="is-active" type="button">{{ page }}</button>
-      <span>de {{ totalPages }}</span>
-      <button
-        type="button"
-        aria-label="Página siguiente"
-        [disabled]="page === totalPages"
-        (click)="changePage(page + 1)"
-      >
-        ›
-      </button>
-    </div>
-  </footer>
+  <app-pagination
+    *ngIf="!loading && !errorMessage && total > 0"
+    [page]="page"
+    [pageSize]="pageSize"
+    [total]="total"
+    [visibleCount]="rows.length"
+    [pageSizeOptions]="pageSizeOptions"
+    (pageChange)="changePage($event)"
+    (pageSizeChange)="changePageSize($event)"
+  ></app-pagination>
 </section>

@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Button } from '../button/button';
 
 @Component({
   selector: 'app-filter-panel',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Button],
   templateUrl: './filter-panel.html',
   styleUrl: './filter-panel.scss',
 })

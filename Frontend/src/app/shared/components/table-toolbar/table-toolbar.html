@@ -1,0 +1,10 @@
+<section class="table-toolbar" aria-label="Herramientas de tabla">
+  <div *ngIf="title || description">
+    <h3 *ngIf="title">{{ title }}</h3>
+    <p *ngIf="description">{{ description }}</p>
+  </div>
+
+  <div class="toolbar-actions">
+    <ng-content></ng-content>
+  </div>
+</section>

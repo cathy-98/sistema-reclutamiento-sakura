@@ -21,7 +21,7 @@
   </div>
 
   <div class="filter-actions">
-    <button class="ghost-button" type="button" (click)="clear.emit()">Limpiar filtros</button>
-    <button class="primary-button" type="button" (click)="search.emit()">Buscar</button>
+    <app-button variant="ghost" (pressed)="clear.emit()">Limpiar filtros</app-button>
+    <app-button (pressed)="search.emit()">Buscar</app-button>
   </div>
 </section>

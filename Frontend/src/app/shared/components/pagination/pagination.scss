@@ -1,0 +1,60 @@
+.pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: var(--color-table-footer);
+  color: var(--color-text-soft);
+  font-size: 13px;
+}
+
+.pagination,
+.pagination label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+select,
+button {
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--color-white);
+  color: var(--color-text-muted-strong);
+}
+
+select {
+  padding: 0 12px;
+}
+
+button {
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:disabled {
+  background: var(--color-surface-hover);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.is-active {
+  background: var(--color-sakura);
+  color: var(--color-white);
+}
+
+@media (max-width: 900px) {
+  .pagination-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

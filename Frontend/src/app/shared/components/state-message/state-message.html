@@ -1,0 +1,8 @@
+<div class="state-message" [ngClass]="type" role="status" [attr.aria-live]="type === 'loading' ? 'polite' : null">
+  <span class="loader" *ngIf="type === 'loading'" aria-hidden="true"></span>
+  <strong>{{ title }}</strong>
+  <span *ngIf="message">{{ message }}</span>
+  <app-button *ngIf="actionLabel" variant="ghost" size="sm" (pressed)="action.emit()">
+    {{ actionLabel }}
+  </app-button>
+</div>

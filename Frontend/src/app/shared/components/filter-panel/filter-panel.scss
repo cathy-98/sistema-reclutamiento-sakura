@@ -84,7 +84,6 @@ input:focus,
   box-shadow: 0 0 0 3px var(--color-focus-shadow);
 }
 
-button:focus-visible,
 input:focus-visible,
 :host ::ng-deep input:focus-visible,
 :host ::ng-deep select:focus-visible {
@@ -102,32 +101,6 @@ input::placeholder,
   justify-content: flex-end;
   gap: 12px;
   margin-top: 22px;
-}
-
-.ghost-button,
-.primary-button {
-  display: inline-flex;
-  min-width: 92px;
-  min-height: 42px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.primary-button {
-  border: 1px solid var(--color-sakura);
-  background: var(--color-sakura);
-  color: var(--color-white);
-}
-
-.ghost-button {
-  border: 1px solid var(--color-sakura);
-  background: var(--color-white);
-  color: var(--color-sakura);
 }
 
 @media (max-width: 900px) {

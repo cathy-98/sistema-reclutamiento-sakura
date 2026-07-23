@@ -1,0 +1,15 @@
+.wizard-layout {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto 1fr auto;
+}
+
+.wizard-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+.wizard-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-white);
+}

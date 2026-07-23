@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { IconButton, IconButtonName } from '../icon-button/icon-button';
+import { Pagination } from '../pagination/pagination';
+import { StateMessage } from '../state-message/state-message';
 import { StatusBadge } from '../status-badge/status-badge';
 
 export type DataTableColumnType = 'text' | 'badge' | 'match' | 'person' | 'stack';
@@ -34,7 +35,7 @@ export interface DataTableActionEvent<T> {
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule, IconButton, StatusBadge],
+  imports: [CommonModule, IconButton, Pagination, StateMessage, StatusBadge],
   templateUrl: './data-table.html',
   styleUrl: './data-table.scss',
 })
