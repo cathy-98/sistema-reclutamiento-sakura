@@ -8,7 +8,9 @@ import {
   DataTableActionEvent,
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
+import { ActionBar } from '../../../shared/components/action-bar/action-bar';
 import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
+import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
@@ -44,7 +46,7 @@ interface FiltrosCandidatos {
 
 @Component({
   selector: 'app-candidatos-list',
-  imports: [CommonModule, FormsModule, DataTable, FileDropzone, PageHeader],
+  imports: [CommonModule, FormsModule, DataTable, FileDropzone, PageHeader, FilterPanel, ActionBar],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
@@ -297,6 +299,12 @@ export class CandidatosList {
 
   get totalPaginas() {
     return Math.max(1, Math.ceil(this.candidatosFiltrados.length / this.registrosPorPagina));
+  }
+
+  get mensajeAccionesMasivas() {
+    return this.seleccionados.size > 0
+      ? `${this.seleccionados.size} candidatos seleccionados.`
+      : 'Selecciona candidatos para habilitar acciones masivas.';
   }
 
   get candidatosPaginados() {

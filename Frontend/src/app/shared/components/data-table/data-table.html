@@ -82,9 +82,11 @@
             [title]="cellTitle(row, column)"
           >
             <ng-container [ngSwitch]="column.type">
-              <span *ngSwitchCase="'badge'" class="status" [class]="cellClass(row, column)">
-                {{ columnValue(row, column) }}
-              </span>
+              <app-status-badge
+                *ngSwitchCase="'badge'"
+                [value]="columnValue(row, column)"
+                [statusClass]="cellClass(row, column)"
+              ></app-status-badge>
 
               <span *ngSwitchCase="'match'" class="match" [class]="cellClass(row, column)">
                 {{ columnValue(row, column) }}
@@ -105,41 +107,14 @@
           </td>
           <td *ngIf="hasActions" class="actions-column sticky-right" [ngStyle]="actionsColumnStyle()">
             <div class="row-actions">
-              <button
+              <app-icon-button
                 *ngFor="let item of actions; trackBy: trackAction"
-                type="button"
-                [attr.aria-label]="item.label"
+                [icon]="item.icon"
+                [label]="item.label"
                 [disabled]="disabledAction(item, row)"
                 [hidden]="!visibleAction(item, row)"
-                (click)="emitAction(item, row)"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <ng-container [ngSwitch]="item.icon">
-                    <ng-container *ngSwitchCase="'eye'">
-                      <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
-                      <circle cx="12" cy="12" r="2.2" />
-                    </ng-container>
-                    <ng-container *ngSwitchCase="'download'">
-                      <path d="M12 4v10" />
-                      <path d="m8 10 4 4 4-4" />
-                      <path d="M5 20h14" />
-                    </ng-container>
-                    <ng-container *ngSwitchCase="'calendar'">
-                      <path d="M5 5h14v16H5z" />
-                      <path d="M8 3v4M16 3v4M5 10h14" />
-                    </ng-container>
-                    <ng-container *ngSwitchCase="'edit'">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </ng-container>
-                    <ng-container *ngSwitchCase="'cancel'">
-                      <circle cx="12" cy="12" r="8" />
-                      <path d="m9 9 6 6" />
-                      <path d="m15 9-6 6" />
-                    </ng-container>
-                  </ng-container>
-                </svg>
-              </button>
+                (pressed)="emitAction(item, row)"
+              ></app-icon-button>
             </div>
           </td>
         </tr>

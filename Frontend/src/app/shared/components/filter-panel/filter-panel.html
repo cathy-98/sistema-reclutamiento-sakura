@@ -1,0 +1,27 @@
+<section class="filter-panel" aria-label="Filtros">
+  <header class="filter-header">
+    <div>
+      <h3>{{ title }}</h3>
+      <p *ngIf="description">{{ description }}</p>
+    </div>
+
+    <label class="quick-search" *ngIf="showQuickSearch">
+      {{ quickSearchLabel }}
+      <input
+        [ngModel]="quickSearch"
+        type="search"
+        [placeholder]="quickSearchPlaceholder"
+        (ngModelChange)="updateQuickSearch($event)"
+      />
+    </label>
+  </header>
+
+  <div class="panel-content">
+    <ng-content></ng-content>
+  </div>
+
+  <div class="filter-actions">
+    <button class="ghost-button" type="button" (click)="clear.emit()">Limpiar filtros</button>
+    <button class="primary-button" type="button" (click)="search.emit()">Buscar</button>
+  </div>
+</section>

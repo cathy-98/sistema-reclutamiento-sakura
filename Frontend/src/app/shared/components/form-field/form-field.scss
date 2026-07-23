@@ -1,0 +1,69 @@
+.form-field {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+strong,
+.error {
+  color: var(--color-danger);
+}
+
+.hint,
+.error {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
+:host ::ng-deep input:not([type="checkbox"]),
+:host ::ng-deep textarea,
+:host ::ng-deep select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+:host ::ng-deep textarea {
+  min-height: 92px;
+  padding-top: 10px;
+  resize: vertical;
+}
+
+:host ::ng-deep input:focus,
+:host ::ng-deep textarea:focus,
+:host ::ng-deep select:focus {
+  border-color: var(--color-sakura);
+  box-shadow: 0 0 0 3px var(--color-focus-shadow);
+}
+
+:host ::ng-deep input:focus-visible,
+:host ::ng-deep textarea:focus-visible,
+:host ::ng-deep select:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+:host ::ng-deep input::placeholder,
+:host ::ng-deep textarea::placeholder {
+  color: var(--color-input-placeholder);
+}

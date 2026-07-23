@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
@@ -11,15 +12,36 @@ import {
   DataTableActionEvent,
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
+import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal';
 
+interface FiltrosSolicitudes {
+  busquedaRapida: string;
+  id: string;
+  nombre: string;
+  cliente: string;
+  cargo: string;
+  responsable: string;
+  prioridad: string;
+  estado: string;
+}
+
 @Component({
   selector: 'app-solicitudes-list',
-  imports: [CommonModule, SolicitudFormModal, ConfirmDialog, Alert, DataTable, PageHeader],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SolicitudFormModal,
+    ConfirmDialog,
+    Alert,
+    DataTable,
+    PageHeader,
+    FilterPanel,
+  ],
   templateUrl: './solicitudes-list.html',
   styleUrl: './solicitudes-list.scss',
 })
@@ -35,6 +57,7 @@ export class SolicitudesList implements OnInit {
   seleccionados = new Set<string>();
   paginaActual = 1;
   registrosPorPagina = 5;
+  filtros: FiltrosSolicitudes = this.filtrosIniciales();
   private cargaTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
@@ -123,7 +146,37 @@ export class SolicitudesList implements OnInit {
 
   get solicitudesPaginadas() {
     const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
-    return this.solicitudes.slice(inicio, inicio + this.registrosPorPagina);
+    return this.solicitudesFiltradas.slice(inicio, inicio + this.registrosPorPagina);
+  }
+
+  get solicitudesFiltradas() {
+    const filtros = {
+      busquedaRapida: this.normalizar(this.filtros.busquedaRapida),
+      id: this.normalizar(this.filtros.id),
+      nombre: this.normalizar(this.filtros.nombre),
+      cliente: this.normalizar(this.filtros.cliente),
+      cargo: this.normalizar(this.filtros.cargo),
+      responsable: this.normalizar(this.filtros.responsable),
+      prioridad: this.normalizar(this.filtros.prioridad),
+      estado: this.normalizar(this.filtros.estado),
+    };
+
+    return this.solicitudes.filter((solicitud) => {
+      const textoSolicitud = this.normalizar(
+        `${solicitud.id} ${solicitud.nombre} ${solicitud.cliente} ${solicitud.cargo} ${solicitud.responsable}`,
+      );
+
+      return (
+        textoSolicitud.includes(filtros.busquedaRapida) &&
+        this.normalizar(solicitud.id).includes(filtros.id) &&
+        this.normalizar(solicitud.nombre).includes(filtros.nombre) &&
+        this.normalizar(solicitud.cliente).includes(filtros.cliente) &&
+        this.normalizar(solicitud.cargo).includes(filtros.cargo) &&
+        this.normalizar(solicitud.responsable).includes(filtros.responsable) &&
+        (!filtros.prioridad || this.normalizar(solicitud.prioridad) === filtros.prioridad) &&
+        (!filtros.estado || this.normalizar(solicitud.estado) === filtros.estado)
+      );
+    });
   }
 
   get acciones(): DataTableAction<SolicitudResumen>[] {
@@ -236,7 +289,10 @@ export class SolicitudesList implements OnInit {
   }
 
   cambiarPagina(pagina: number) {
-    const totalPaginas = Math.max(1, Math.ceil(this.solicitudes.length / this.registrosPorPagina));
+    const totalPaginas = Math.max(
+      1,
+      Math.ceil(this.solicitudesFiltradas.length / this.registrosPorPagina),
+    );
     this.paginaActual = Math.min(Math.max(pagina, 1), totalPaginas);
   }
 
@@ -307,6 +363,15 @@ export class SolicitudesList implements OnInit {
     this.alerta = null;
   }
 
+  buscar() {
+    this.paginaActual = 1;
+  }
+
+  limpiarFiltros() {
+    this.filtros = this.filtrosIniciales();
+    this.paginaActual = 1;
+  }
+
   private mostrarAlertaPermisos() {
     this.alerta = {
       tipo: 'warning',
@@ -326,6 +391,27 @@ export class SolicitudesList implements OnInit {
 
     clearTimeout(this.cargaTimeoutId);
     this.cargaTimeoutId = null;
+  }
+
+  private filtrosIniciales(): FiltrosSolicitudes {
+    return {
+      busquedaRapida: '',
+      id: '',
+      nombre: '',
+      cliente: '',
+      cargo: '',
+      responsable: '',
+      prioridad: '',
+      estado: '',
+    };
+  }
+
+  private normalizar(valor: string) {
+    return valor
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 }
 

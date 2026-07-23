@@ -165,21 +165,6 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 700;
-}
-
-.status::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
 .match {
   display: inline-grid;
   min-width: 42px;
@@ -202,29 +187,6 @@ select:focus-visible {
 .match.is-low {
   background: var(--color-danger-bg);
   color: var(--color-danger-dark);
-}
-
-.alta,
-.cancelada,
-.descartado {
-  color: var(--color-danger);
-}
-
-.media,
-.pendiente,
-.en-revision {
-  color: var(--color-warning);
-}
-
-.baja,
-.en-curso,
-.contactado {
-  color: var(--color-info);
-}
-
-.cerrada,
-.entrevista {
-  color: var(--color-success);
 }
 
 .person-cell {
@@ -264,35 +226,6 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.row-actions button {
-  display: inline-grid;
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  place-items: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.row-actions button:hover {
-  border-color: var(--color-sakura);
-  color: var(--color-sakura);
-}
-
-.row-actions svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 
 .loading-state,

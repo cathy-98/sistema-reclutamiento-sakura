@@ -18,83 +18,66 @@
     (filesChange)="actualizarArchivosCv($event)"
   ></app-file-dropzone>
 
-  <section class="filters-panel" aria-label="Filtros de candidatos">
-    <header class="filters-header">
-      <div>
-        <h3>Buscar y filtrar</h3>
-        <p>Usa uno o más campos para encontrar candidatos.</p>
-      </div>
-      <label class="quick-search">
-        Búsqueda rápida
-        <input
-          [(ngModel)]="busquedaRapida"
-          type="search"
-          placeholder="Nombre, correo, cargo o solicitud"
-          (ngModelChange)="buscar()"
-        />
-      </label>
-    </header>
+  <app-filter-panel
+    description="Usa uno o más campos para encontrar candidatos."
+    quickSearchPlaceholder="Nombre, correo, cargo o solicitud"
+    [(quickSearch)]="busquedaRapida"
+    (search)="buscar()"
+    (clear)="limpiarFiltros()"
+  >
+    <label>
+      ID solicitud
+      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Req-021" />
+    </label>
+    <label>
+      Cargo postulado
+      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Frontend" />
+    </label>
+    <label>
+      Nombre completo
+      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Todos" />
+    </label>
+    <label>
+      Correo electrónico
+      <input [(ngModel)]="filtros.correo" type="email" placeholder="Todos" />
+    </label>
+    <label>
+      Número de teléfono
+      <input [(ngModel)]="filtros.telefono" type="text" placeholder="Numeración" />
+    </label>
+    <label>
+      Estado del candidato
+      <select [(ngModel)]="filtros.estado">
+        <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
+      </select>
+    </label>
+    <label>
+      Disponibilidad
+      <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Todos" />
+    </label>
+    <label>
+      Pretensión de renta
+      <input [(ngModel)]="filtros.renta" type="number" min="0" placeholder="Numérico" />
+    </label>
+    <label>
+      Match
+      <input [(ngModel)]="filtros.match" type="number" min="0" max="100" placeholder="Ingresa num." />
+    </label>
+    <label>
+      Nivel
+      <select [(ngModel)]="filtros.nivel">
+        <option value="">Todos</option>
+        <option *ngFor="let nivel of niveles" [ngValue]="nivel">{{ nivel }}</option>
+      </select>
+    </label>
+    <label>
+      Años de experiencia
+      <input [(ngModel)]="filtros.experiencia" type="number" min="0" placeholder="0,00" />
+    </label>
+  </app-filter-panel>
 
-    <div class="filters-grid">
-      <label>
-        ID solicitud
-        <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Req-021" />
-      </label>
-      <label>
-        Cargo postulado
-        <input [(ngModel)]="filtros.cargo" type="text" placeholder="Frontend" />
-      </label>
-      <label>
-        Nombre completo
-        <input [(ngModel)]="filtros.nombre" type="text" placeholder="Todos" />
-      </label>
-      <label>
-        Correo electrónico
-        <input [(ngModel)]="filtros.correo" type="email" placeholder="Todos" />
-      </label>
-      <label>
-        Número de teléfono
-        <input [(ngModel)]="filtros.telefono" type="text" placeholder="Numeración" />
-      </label>
-      <label>
-        Estado del candidato
-        <select [(ngModel)]="filtros.estado">
-          <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
-        </select>
-      </label>
-      <label>
-        Disponibilidad
-        <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Todos" />
-      </label>
-      <label>
-        Pretensión de renta
-        <input [(ngModel)]="filtros.renta" type="number" min="0" placeholder="Numérico" />
-      </label>
-      <label>
-        Match
-        <input [(ngModel)]="filtros.match" type="number" min="0" max="100" placeholder="Ingresa num." />
-      </label>
-      <label>
-        Nivel
-        <select [(ngModel)]="filtros.nivel">
-          <option value="">Todos</option>
-          <option *ngFor="let nivel of niveles" [ngValue]="nivel">{{ nivel }}</option>
-        </select>
-      </label>
-      <label>
-        Años de experiencia
-        <input [(ngModel)]="filtros.experiencia" type="number" min="0" placeholder="0,00" />
-      </label>
-    </div>
-
-    <div class="filter-actions">
-      <button class="ghost-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
-      <button class="primary-small-button" type="button" (click)="buscar()">Buscar</button>
-    </div>
-  </section>
-
-  <section
-    class="bulk-actions"
+  <app-action-bar
+    [message]="mensajeAccionesMasivas"
     aria-label="Acciones masivas"
     *ngIf="!cargando && !errorCarga && candidatosFiltrados.length > 0"
   >
@@ -106,9 +89,7 @@
       <span aria-hidden="true">✦</span>
       Agendar entrevistas
     </button>
-    <p *ngIf="seleccionados.size === 0">Selecciona candidatos para habilitar acciones masivas.</p>
-    <p *ngIf="seleccionados.size > 0">{{ seleccionados.size }} candidatos seleccionados.</p>
-  </section>
+  </app-action-bar>
 
   <app-data-table
     title="Listado de candidatos"

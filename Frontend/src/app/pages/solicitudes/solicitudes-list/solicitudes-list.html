@@ -11,19 +11,13 @@
     </div>
   </app-page-header>
 
-  <section class="filters-panel" aria-label="Filtros de solicitudes">
-    <header class="filters-header">
-      <div>
-        <h3>Buscar y filtrar</h3>
-        <p>Usa uno o más campos para encontrar solicitudes.</p>
-      </div>
-
-      <label class="quick-search">
-        Búsqueda rápida
-        <input type="search" placeholder="Solicitud, cliente, cargo o responsable" />
-      </label>
-    </header>
-
+  <app-filter-panel
+    description="Usa uno o más campos para encontrar solicitudes."
+    quickSearchPlaceholder="Solicitud, cliente, cargo o responsable"
+    [(quickSearch)]="filtros.busquedaRapida"
+    (search)="buscar()"
+    (clear)="limpiarFiltros()"
+  >
     <app-alert
       *ngIf="alerta"
       [tipo]="alerta.tipo"
@@ -34,65 +28,58 @@
       (cerrar)="cerrarAlerta()"
     ></app-alert>
 
-    <div class="filters-grid">
-      <label>
-        ID solicitud
-        <input type="text" placeholder="Req-021" />
-      </label>
+    <label>
+      ID solicitud
+      <input [(ngModel)]="filtros.id" type="text" placeholder="Req-021" />
+    </label>
 
-      <label>
-        Nombre de solicitud
-        <input type="text" placeholder="Todos" />
-      </label>
+    <label>
+      Nombre de solicitud
+      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Todos" />
+    </label>
 
-      <label>
-        Cliente
-        <input type="text" placeholder="Todos" />
-      </label>
+    <label>
+      Cliente
+      <input [(ngModel)]="filtros.cliente" type="text" placeholder="Todos" />
+    </label>
 
-      <label>
-        Cargo solicitado
-        <input type="text" placeholder="Frontend" />
-      </label>
+    <label>
+      Cargo solicitado
+      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Frontend" />
+    </label>
 
-      <label>
-        Responsable
-        <input type="text" placeholder="Todos" />
-      </label>
+    <label>
+      Responsable
+      <input [(ngModel)]="filtros.responsable" type="text" placeholder="Todos" />
+    </label>
 
-      <label>
-        Prioridad
-        <select>
-          <option>Todas</option>
-          <option>Alta</option>
-          <option>Media</option>
-          <option>Baja</option>
-        </select>
-      </label>
+    <label>
+      Prioridad
+      <select [(ngModel)]="filtros.prioridad">
+        <option value="">Todas</option>
+        <option>Alta</option>
+        <option>Media</option>
+        <option>Baja</option>
+      </select>
+    </label>
 
-      <label>
-        Estado
-        <select>
-          <option>Todos</option>
-          <option>Pendiente</option>
-          <option>En curso</option>
-          <option>Cerrada</option>
-          <option>Cancelada</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="filter-actions">
-      <button class="ghost-button" type="button">Limpiar filtros</button>
-      <button class="primary-small-button" type="button">Buscar</button>
-    </div>
-  </section>
+    <label>
+      Estado
+      <select [(ngModel)]="filtros.estado">
+        <option value="">Todos</option>
+        <option>Pendiente</option>
+        <option>En curso</option>
+        <option>Cerrada</option>
+        <option>Cancelada</option>
+      </select>
+    </label>
+  </app-filter-panel>
 
   <app-data-table
     title="Listado de solicitudes"
     [columns]="columnas"
     [rows]="solicitudesPaginadas"
-    [total]="solicitudes.length"
+    [total]="solicitudesFiltradas.length"
     [page]="paginaActual"
     [pageSize]="registrosPorPagina"
     [loading]="cargando"
@@ -107,6 +94,7 @@
     (pageChange)="cambiarPagina($event)"
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"
     (actionClick)="manejarAccionTabla($event)"
+    (clear)="limpiarFiltros()"
     (retry)="cargarSolicitudes()"
   ></app-data-table>
 </main>
