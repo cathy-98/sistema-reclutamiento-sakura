@@ -18,8 +18,8 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(164, 82, 82, 0.14) 0%,
-    rgba(164, 82, 82, 0.07) 42%,
+    var(--color-sakura-soft-strong) 0%,
+    var(--color-sakura-soft) 42%,
     transparent 72%
   );
   pointer-events: none;
@@ -120,20 +120,6 @@
 
 .password-field {
   position: relative;
-
-  span {
-    position: absolute;
-    top: 50%;
-    right: 14px;
-    transform: translateY(-50%);
-    color: var(--color-input-placeholder);
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  input {
-    padding-right: 42px;
-  }
 }
 
 .forgot-password {
@@ -145,17 +131,6 @@
   text-decoration: none;
 }
 
-.login-error {
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(164, 82, 82, 0.28);
-  border-radius: 7px;
-  background: rgba(164, 82, 82, 0.08);
-  color: var(--color-sakura);
-  font-size: 12px;
-  font-weight: 600;
-}
-
 button {
   min-height: 42px;
   margin-top: 2px;
@@ -163,7 +138,7 @@ button {
   border: none;
   border-radius: 7px;
   background: var(--color-sakura);
-  color: #ffffff;
+  color: var(--color-white);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;

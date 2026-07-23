@@ -1,33 +1,5 @@
 .dashboard-page {
   min-height: 100vh;
-  padding: 48px;
+  padding: 24px;
   background: var(--color-page-bg);
-}
-
-.welcome-panel {
-  max-width: 720px;
-  padding: 32px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-card-bg);
-  box-shadow: var(--shadow-card);
-
-  h1 {
-    margin: 0 0 10px;
-    color: var(--color-text);
-    font-size: 32px;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-muted);
-  }
-}
-
-.eyebrow {
-  margin-bottom: 8px;
-  color: var(--color-sakura);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
 }

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict bgcFlw1rjX8lJDnn00fmtEH2LJeKd2mhgwsyuPBehRloNzuohV3Lxi8KThSc4yD
+\restrict s8ajpfWkzPSFxCYV8OkqZ1Ypcwuug9Z5n7VxJhay7NfnDRgsE52Ix96iF3sIeIz
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Debian 16.14-1.pgdg13+1)
@@ -101,8 +101,8 @@ ALTER TABLE public.tbl_area ALTER COLUMN area_id ADD GENERATED ALWAYS AS IDENTIT
 
 CREATE TABLE public.tbl_candidato (
     cand_id integer NOT NULL,
-    cand_email character varying(20),
-    cand_password character varying(20),
+    cand_email character varying(255),
+    cand_password character varying(255),
     cand_nombres character varying(20),
     cand_apellido_paterno character varying(20),
     cand_apellido_materno character varying(20),
@@ -243,7 +243,7 @@ ALTER TABLE public.tbl_cargo ALTER COLUMN crgo_id ADD GENERATED ALWAYS AS IDENTI
 
 CREATE TABLE public.tbl_carrera (
     crra_id integer NOT NULL,
-    crra_nombre character varying(40),
+    crra_nombre character varying(255),
     CONSTRAINT chk_tbl_carrera_nombre_vacio CHECK ((TRIM(BOTH FROM crra_nombre) <> ''::text))
 );
 
@@ -811,7 +811,7 @@ ALTER TABLE public.tbl_experiencia_laboral_habilidad OWNER TO elitsoft_admin;
 
 CREATE TABLE public.tbl_habilidad (
     hab_id integer NOT NULL,
-    hab_nombre character varying(20),
+    hab_nombre character varying(255),
     hab_descripcion character varying(300),
     CONSTRAINT chk_tbl_habilidad_nombre_vacio CHECK ((TRIM(BOTH FROM hab_nombre) <> ''::text))
 );
@@ -988,7 +988,7 @@ CREATE TABLE public.tbl_nivel_habilidad (
     nvhb_descripcion character varying(300),
     nvhb_puntaje_base integer,
     nvhb_duracion integer,
-    CONSTRAINT chk_tbl_nivel_habilidad_duracion CHECK ((nvhb_duracion > 0)),
+    CONSTRAINT chk_tbl_nivel_habilidad_duracion CHECK ((nvhb_duracion >= 0)),
     CONSTRAINT chk_tbl_nivel_habilidad_nombre_vacio CHECK ((TRIM(BOTH FROM nvhb_nombre) <> ''::text)),
     CONSTRAINT chk_tbl_nivel_habilidad_puntaje CHECK ((nvhb_puntaje_base >= 0))
 );
@@ -1340,7 +1340,7 @@ CREATE TABLE public.tbl_solicitud_candidato (
     slcd_solicitud_id integer,
     slcd_pretension_renta integer,
     slcd_puntaje_compatibilidad numeric(5,2),
-    slcd_estado_solicitud_id integer,
+    slcd_estado_solicitud_candidato_id integer,
     slcd_fecha_postulacion timestamp without time zone,
     slcd_observaciones character varying(300),
     slcd_motivo_rechazo_id integer,
@@ -1571,6 +1571,7 @@ COPY public.tbl_area (area_id, area_nombre, area_descripcion) FROM stdin;
 --
 
 COPY public.tbl_candidato (cand_id, cand_email, cand_password, cand_nombres, cand_apellido_paterno, cand_apellido_materno, cand_fecha_nacimiento, cand_telefono, cand_rut_sin_dv, cand_dv, cand_disponibilidad_id, cand_resumen_profesional, cand_fecha_creacion, cand_url_1, cand_titulo, cand_estado_usuario_id) FROM stdin;
+1	robmar@gmail.com	$2a$06$1vIqQfU62AG9OEYPLXDIquDLfEdW2OnodpQgSw5xmPFEoP6nysdki	Roberto	Martinez	Olivares	1992-01-10	978611802	18002593	1	1	Profesional con solida experiencia y alto nivel de autonomia, orientado al logro de resultados, la resolucion de problemas y la mejora continua, con capacidad para liderar y aportar valor a la organizacion.	2026-07-02 00:00:00	www.github.com/rmartinez;www.linkedin.com/rmartinez	Titulo/Profesion obtenido. Usualmente en cabecera de CV.	1
 \.
 
 
@@ -1587,6 +1588,21 @@ COPY public.tbl_candidato_cuestionario (cdcu_id, cdcu_candidato_id, cdcu_cuestio
 --
 
 COPY public.tbl_candidato_habilidad (cdhb_id, cdhb_candidato_id, cdhb_habilidad_id, cdhb_nivel_habilidad_id, cdhb_anios_experiencia) FROM stdin;
+1	1	7	4	9
+2	1	13	4	7
+3	1	1	4	9
+4	1	27	3	6
+5	1	28	2	3
+6	1	33	2	3
+7	1	45	3	7
+8	1	29	4	9
+9	1	30	3	6
+10	1	23	3	4
+11	1	21	3	6
+12	1	22	3	4
+13	1	40	4	8
+14	1	43	3	5
+15	1	44	3	5
 \.
 
 
@@ -1624,6 +1640,53 @@ COPY public.tbl_cargo (crgo_id, crgo_nombre, crgo_descripcion) FROM stdin;
 --
 
 COPY public.tbl_carrera (crra_id, crra_nombre) FROM stdin;
+1	Ingenieria Civil Informatica
+2	Ingenieria en Informatica
+3	Ingenieria Civil en Computacion
+4	Ingenieria Civil en Ciencia de Datos
+5	Ingenieria en Ciencia de Datos
+6	Ingenieria Civil Industrial
+7	Ingenieria Industrial
+8	Ingenieria en Automatizacion
+9	Ingenieria en Telecomunicaciones
+10	Ingenieria en Redes y Comunicaciones
+11	Ingenieria en Ciberseguridad
+12	Ingenieria en Inteligencia Artificial
+13	Ingenieria en Software
+14	Ingenieria en Sistemas
+15	Ingenieria en Computacion
+16	Ingenieria Electronica
+17	Ingenieria Electrica
+18	Ingenieria Mecatronica
+19	Ingenieria Matematica
+20	Licenciatura en Ciencias de la Computacion
+21	Licenciatura en Informatica
+22	Analisis de Sistemas
+23	Tecnico en Programacion
+24	Tecnico en Informatica
+25	Tecnico en Analisis de Sistemas
+26	Tecnico en Desarrollo de Software
+27	Tecnico en Desarrollo Web
+28	Tecnico en Ciberseguridad
+29	Tecnico en Redes
+30	Tecnico en Administracion de Redes
+31	Tecnico en Soporte TI
+32	Tecnico en Base de Datos
+33	Tecnico en Telecomunicaciones
+34	Tecnico en Automatizacion y Robotica
+35	Tecnico en Ciencia de Datos
+36	Tecnico en QA
+37	Tecnico en Infraestructura TI
+38	Administracion de Empresas
+39	Ingenieria Comercial
+40	Contador Auditor
+41	Psicologia
+42	Diseno Grafico
+43	Diseno UX/UI
+44	Periodismo
+45	Marketing Digital
+46	Recursos Humanos
+47	Administracion Publica
 \.
 
 
@@ -1632,6 +1695,7 @@ COPY public.tbl_carrera (crra_id, crra_nombre) FROM stdin;
 --
 
 COPY public.tbl_cita_entrevista (ctev_id, ctev_solicitud_candidato_id, ctev_tipo_entrevista_id, ctev_estado_entrevista_id, ctev_fecha_hora_inicio, ctev_fecha_hora_fin, ctev_fecha_creacion, ctev_enlace_reunion, ctev_comentarios_convocatoria, ctev_titulo_evento) FROM stdin;
+1	1	2	3	2026-07-08 10:00:00	2026-07-08 11:00:00	2026-07-07 14:00:00	https://meet.google.com/abc-defg-hij	Por favor, asiste con tu entorno de Python y Docker listo para una breve prueba de desarrollo.	Entrevista Tecnica Backend Senior - Roberto Martinez
 \.
 
 
@@ -1640,6 +1704,7 @@ COPY public.tbl_cita_entrevista (ctev_id, ctev_solicitud_candidato_id, ctev_tipo
 --
 
 COPY public.tbl_cita_tipo_entrevista (cten_tipo_entrevista_id, cten_cita_entrevista_id) FROM stdin;
+2	1
 \.
 
 
@@ -1685,6 +1750,16 @@ COPY public.tbl_cuestionario (cues_id, cues_nombre, cues_descripcion, cues_porce
 --
 
 COPY public.tbl_curso (curs_id, curs_candidato_id, curs_nombre_curso, curs_institucion_id, curs_es_certificado, curs_anio_curso) FROM stdin;
+1	1	Python Avanzado	29	t	2022
+2	1	Docker y Kubernetes	29	t	2023
+3	1	AWS Cloud Practitioner	33	t	2024
+4	1	Scrum Fundamentals	36	t	2023
+5	1	SQL para Analisis de Datos	29	f	2022
+6	1	Git y GitHub Profesional	28	f	2021
+7	1	Desarrollo Backend con FastAPI	26	t	2025
+8	1	Azure Fundamentals AZ-900	32	t	2024
+9	1	Google Cloud Fundamentals	34	f	2023
+10	1	JavaScript Moderno	28	f	2022
 \.
 
 
@@ -1701,6 +1776,11 @@ COPY public.tbl_direccion_candidato (drcd_id, drcd_candidato_id, drcd_comuna_id,
 --
 
 COPY public.tbl_disponibilidad (disp_id, disp_nombre) FROM stdin;
+1	Inmediata
+2	1 semana
+3	2 semanas
+4	3 semanas
+5	4 semanas
 \.
 
 
@@ -1729,6 +1809,12 @@ COPY public.tbl_estado_cuestionario_candidato (escc_id, escc_nombre) FROM stdin;
 --
 
 COPY public.tbl_estado_entrevista (esev_id, esev_nombre, esev_descripcion) FROM stdin;
+1	Pendiente	La entrevista fue agendada y se enviaron las invitaciones correspondientes.
+2	Confirmada	Todos los participantes confirmaron su asistencia y la entrevista se mantiene programada.
+3	Realizada	La entrevista se llevo a cabo exitosamente.
+4	Reprogramada	La entrevista fue reagendada para una nueva fecha y hora.
+5	Cancelada	La entrevista fue cancelada por el postulante, entrevistador o empresa.
+6	No Asistio	El postulante o uno de los participantes no asistio a la entrevista programada.
 \.
 
 
@@ -1751,6 +1837,12 @@ COPY public.tbl_estado_solicitud (essl_id, essl_nombre, essl_descripcion) FROM s
 --
 
 COPY public.tbl_estado_solicitud_candidato (essc_id, essc_nombre, essc_descripcion) FROM stdin;
+1	En revision	El CV fue recibido y el reclutador evalua si cumple los requisitos minimos.
+2	En entrevista	El candidato avanzo y se encuentra en etapa de evaluaciones o entrevistas.
+3	Inhabilitado	No cumple con las politicas basicas o fallo filtros criticos del sistema. Requiere asociar un motivo de rechazo.
+4	Seleccionado	El candidato supero todas las etapas y es el elegido para la oferta final.
+5	Descartado	La postulacion finalizo sin exito. Requiere asociar un motivo de rechazo.
+6	Contratado	El candidato acepto la oferta y se cerro formalmente su flujo.
 \.
 
 
@@ -1771,6 +1863,10 @@ COPY public.tbl_estado_usuario (esusr_id, esusr_nombre, esusr_descripcion) FROM 
 --
 
 COPY public.tbl_estudio_candidato (etcd_id, etcd_candidato_id, etcd_nivel_educacional_id, etcd_institucion_id, etcd_carrera_id, etcd_fecha_inicio, etcd_fecha_fin) FROM stdin;
+1	1	5	3	2	2010-03-01	2015-12-15
+2	1	6	29	2	2021-04-01	2021-09-30
+3	1	8	1	20	2022-03-01	2023-12-20
+4	1	6	34	2	2024-05-01	2024-08-31
 \.
 
 
@@ -1787,6 +1883,10 @@ COPY public.tbl_evaluacion_entrevista (even_id, even_nombre_resultado_id, even_o
 --
 
 COPY public.tbl_experiencia_laboral (expl_id, expl_candidato_id, expl_empresa_id, expl_cargo_id, expl_descripcion_funciones, expl_fecha_inicio, expl_fecha_fin) FROM stdin;
+1	1	2	1	Desarrollo y mantencion de APIs REST en Python, consultas PostgreSQL y soporte de aplicaciones internas.	2016-01-04	2018-06-30
+2	1	1	3	Desarrollo de aplicaciones Full Stack utilizando FastAPI, Angular, Docker y PostgreSQL bajo metodologia Scrum.	2018-07-02	2021-12-31
+3	1	3	1	Diseno de microservicios, integraciones con servicios cloud y optimizacion de procesos backend para plataformas corporativas.	2022-01-03	2024-08-31
+4	1	4	20	Liderazgo tecnico del equipo backend, definicion de arquitectura, revision de codigo y apoyo en decisiones tecnicas del proyecto.	2024-09-02	\N
 \.
 
 
@@ -1795,6 +1895,35 @@ COPY public.tbl_experiencia_laboral (expl_id, expl_candidato_id, expl_empresa_id
 --
 
 COPY public.tbl_experiencia_laboral_habilidad (exph_experiencia_laboral_id, exph_habilidad_id) FROM stdin;
+1	7
+1	1
+1	29
+2	7
+2	13
+2	21
+2	23
+2	27
+2	1
+2	29
+2	40
+3	7
+3	13
+3	27
+3	28
+3	33
+3	45
+3	1
+3	29
+4	7
+4	13
+4	27
+4	28
+4	33
+4	29
+4	30
+4	43
+4	44
+4	40
 \.
 
 
@@ -1803,6 +1932,58 @@ COPY public.tbl_experiencia_laboral_habilidad (exph_experiencia_laboral_id, exph
 --
 
 COPY public.tbl_habilidad (hab_id, hab_nombre, hab_descripcion) FROM stdin;
+1	PostgreSQL	Modelamiento fisico de bases de datos, optimizacion de consultas, indices y triggers.
+2	MySQL	Administracion y desarrollo de bases de datos MySQL.
+3	SQL Server	Desarrollo y administracion de bases de datos Microsoft SQL Server.
+4	Oracle Database	Desarrollo y administracion de bases de datos Oracle.
+5	MongoDB	Base de datos NoSQL orientada a documentos.
+6	Redis	Base de datos en memoria para cache y alto rendimiento.
+7	Python	Desarrollo de aplicaciones y automatizaciones utilizando Python.
+8	Java	Desarrollo de aplicaciones empresariales utilizando Java.
+9	C#	Desarrollo de aplicaciones sobre la plataforma .NET.
+10	Node.js	Desarrollo de aplicaciones backend con JavaScript.
+11	PHP	Desarrollo de aplicaciones web con PHP.
+12	Go	Desarrollo de servicios de alto rendimiento con Go.
+13	FastAPI	Desarrollo de APIs REST de alto rendimiento con Python.
+14	Django	Desarrollo de aplicaciones web utilizando Django.
+15	Flask	Desarrollo de APIs y aplicaciones ligeras con Flask.
+16	Spring Boot	Desarrollo de aplicaciones Java empresariales.
+17	ASP.NET Core	Desarrollo de aplicaciones web con .NET.
+18	Express.js	Desarrollo de APIs REST con Node.js.
+19	HTML	Desarrollo de interfaces web mediante HTML5.
+20	CSS	Diseno de interfaces mediante hojas de estilo CSS3.
+21	JavaScript	Desarrollo de aplicaciones web con JavaScript.
+22	TypeScript	Desarrollo de aplicaciones tipadas sobre JavaScript.
+23	Angular	Desarrollo de aplicaciones SPA con Angular.
+24	React	Desarrollo de interfaces de usuario con React.
+25	Vue.js	Desarrollo de aplicaciones web con Vue.js.
+26	Bootstrap	Desarrollo de interfaces responsivas utilizando Bootstrap.
+27	Docker	Creacion de imagenes optimizadas y orquestacion de entornos con Docker Compose.
+28	Kubernetes	Orquestacion y administracion de contenedores.
+29	Git	Control de versiones mediante Git.
+30	GitHub	Gestion de repositorios y colaboracion mediante GitHub.
+31	GitLab	Administracion de repositorios y pipelines CI/CD.
+32	Jenkins	Automatizacion de integracion y despliegue continuo.
+33	Amazon Web Services (AWS)	Desarrollo e implementacion de soluciones en AWS.
+34	Microsoft Azure	Desarrollo e implementacion de soluciones en Azure.
+35	Google Cloud Platform (GCP)	Desarrollo e implementacion de soluciones en Google Cloud.
+36	Selenium	Automatizacion de pruebas funcionales.
+37	Cypress	Automatizacion de pruebas end-to-end para aplicaciones web.
+38	Postman	Pruebas y documentacion de APIs REST.
+39	JMeter	Pruebas de carga y rendimiento.
+40	Scrum	Trabajo bajo metodologia agil Scrum.
+41	Kanban	Gestion visual del trabajo mediante Kanban.
+42	Agile	Aplicacion de metodologias agiles de desarrollo.
+43	Jira	Gestion de proyectos y seguimiento de incidencias.
+44	Confluence	Documentacion colaborativa de proyectos.
+45	Linux	Administracion de sistemas operativos Linux.
+46	Windows Server	Administracion de servidores Windows.
+47	Power BI	Desarrollo de dashboards e indicadores de negocio.
+48	Excel Avanzado	Analisis y manipulacion avanzada de datos en Microsoft Excel.
+49	Ciberseguridad	Implementacion de controles y buenas practicas de seguridad informatica.
+50	OWASP	Aplicacion de buenas practicas de desarrollo seguro.
+51	OAuth 2.0	Implementacion de autenticacion y autorizacion segura.
+52	JWT	Implementacion de autenticacion mediante JSON Web Token.
 \.
 
 
@@ -1811,6 +1992,8 @@ COPY public.tbl_habilidad (hab_id, hab_nombre, hab_descripcion) FROM stdin;
 --
 
 COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_anterior_id, hsol_estado_actual_id, hsol_fecha_cambio, hsol_usuario_id, hsol_comentario) FROM stdin;
+1	1	\N	1	2026-07-06 09:00:00	1	Creacion de la solicitud de personal enviada por el cliente.
+2	1	1	2	2026-07-07 09:00:00	2	Vacante tomada por el reclutador y publicada oficialmente en plataformas de empleo.
 \.
 
 
@@ -1819,6 +2002,43 @@ COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_ant
 --
 
 COPY public.tbl_institucion (inst_id, inst_nombre, inst_tipo_institucion_id) FROM stdin;
+1	Universidad de Chile	1
+2	Pontificia Universidad Catolica de Chile	1
+3	Universidad de Santiago de Chile	1
+4	Universidad de Concepcion	1
+5	Universidad Tecnica Federico Santa Maria	1
+6	Universidad Adolfo Ibanez	1
+7	Universidad Diego Portales	1
+8	Universidad Andres Bello	1
+9	Universidad Mayor	1
+10	Universidad San Sebastian	1
+11	Universidad Catolica del Norte	1
+12	Universidad de Valparaiso	1
+13	Universidad Austral de Chile	1
+14	Universidad de La Serena	1
+15	Universidad del Desarrollo	1
+16	INACAP	2
+17	Duoc UC	2
+18	AIEP	2
+19	Santo Tomas	2
+20	IP Chile	2
+21	IPLACEX	2
+22	Instituto Profesional Providencia (IPP)	2
+23	CFT Santo Tomas	3
+24	CFT Estatal de Santiago	3
+25	CFT ENAC	3
+26	Desafio Latam	6
+27	Talento Digital para Chile	6
+28	Coderhouse	6
+29	Platzi	6
+30	Henry	6
+31	Cisco Networking Academy	5
+32	Microsoft Learn	5
+33	Amazon Web Services (AWS)	5
+34	Google Cloud Skills Boost	5
+35	Oracle University	5
+36	Scrum.org	5
+37	Project Management Institute (PMI)	5
 \.
 
 
@@ -1838,6 +2058,18 @@ COPY public.tbl_modalidad (mdld_id, mdld_nombre, mdld_descripcion) FROM stdin;
 --
 
 COPY public.tbl_motivo_rechazo (mtrc_id, mtrc_nombre, mtrc_descripcion) FROM stdin;
+1	Renta fuera de rango	La pretension salarial del candidato supera el presupuesto de la vacante.
+2	No cumple perfil tecnico	No cuenta con los anos de experiencia o el nivel requerido en las habilidades obligatorias.
+3	No asistio a evaluacion	El candidato no asistio a la entrevista o no rindio los cuestionarios dentro del plazo establecido.
+4	Decision propia del candidato	El postulante decidio retirarse del proceso por motivos personales o porque acepto otra oferta laboral.
+5	Disponibilidad incompatible	La fecha de incorporacion del candidato no se ajusta a las necesidades de la vacante.
+6	Documentacion incompleta	No presento la documentacion requerida para continuar el proceso.
+7	Resultado insuficiente en evaluacion	No alcanzo el puntaje minimo en cuestionarios tecnicos o pruebas practicas.
+8	Referencias laborales desfavorables	Las referencias obtenidas no respaldan el perfil del candidato.
+9	Perfil no alineado con la cultura	El candidato no demostro un ajuste adecuado con la cultura o valores de la organizacion.
+10	Vacante cancelada	El proceso fue cancelado por el cliente o la empresa antes de finalizar la seleccion.
+11	Candidato no interesado	El candidato informo que ya no desea continuar en el proceso.
+12	Otro	Motivo no contemplado en las categorias anteriores.
 \.
 
 
@@ -1846,6 +2078,14 @@ COPY public.tbl_motivo_rechazo (mtrc_id, mtrc_nombre, mtrc_descripcion) FROM std
 --
 
 COPY public.tbl_nivel_educacional (nved_id, nved_nombre) FROM stdin;
+1	Ense├▒anza Media
+2	Tenico Nivel Medio
+3	Tecnico Profesional Nivel Superior
+4	Universitario Incompleto
+5	Universitario Completo
+6	Diplomado
+7	Magister
+8	Doctorado
 \.
 
 
@@ -1854,6 +2094,10 @@ COPY public.tbl_nivel_educacional (nved_id, nved_nombre) FROM stdin;
 --
 
 COPY public.tbl_nivel_habilidad (nvhb_id, nvhb_nombre, nvhb_descripcion, nvhb_puntaje_base, nvhb_duracion) FROM stdin;
+2	Basico	Posee conocimientos fundamentales adquiridos mediante cursos, proyectos personales o formacion academica.	5	0
+3	Junior	Posee conocimientos practicos iniciales y requiere supervision para desarrollar tareas.	15	1
+4	Semi Senior	Trabaja de forma independiente, resuelve problemas complejos y aplica buenas practicas.	30	3
+5	Senior	Profesional con amplia experiencia, lidera iniciativas, toma decisiones tecnicas y asesora a otros integrantes del equipo.	50	5
 \.
 
 
@@ -1862,6 +2106,11 @@ COPY public.tbl_nivel_habilidad (nvhb_id, nvhb_nombre, nvhb_descripcion, nvhb_pu
 --
 
 COPY public.tbl_nombre_resultado (nore_id, nore_nombre) FROM stdin;
+1	Aprobado
+2	Aprobado con Observaciones
+3	No Aprobado
+4	En Espera
+5	Requiere Segunda Entrevista
 \.
 
 
@@ -2019,7 +2268,8 @@ COPY public.tbl_solicitud (sol_id, sol_codigo, sol_titulo, sol_cargo_id, sol_des
 -- Data for Name: tbl_solicitud_candidato; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
-COPY public.tbl_solicitud_candidato (slcd_id, slcd_candidato_id, slcd_solicitud_id, slcd_pretension_renta, slcd_puntaje_compatibilidad, slcd_estado_solicitud_id, slcd_fecha_postulacion, slcd_observaciones, slcd_motivo_rechazo_id) FROM stdin;
+COPY public.tbl_solicitud_candidato (slcd_id, slcd_candidato_id, slcd_solicitud_id, slcd_pretension_renta, slcd_puntaje_compatibilidad, slcd_estado_solicitud_candidato_id, slcd_fecha_postulacion, slcd_observaciones, slcd_motivo_rechazo_id) FROM stdin;
+1	1	1	2800000	92.50	2	2026-07-02 09:30:00	Excelente experiencia en Python, FastAPI y Docker. Cumple con la mayoria de los requisitos solicitados.	\N
 \.
 
 
@@ -2028,6 +2278,16 @@ COPY public.tbl_solicitud_candidato (slcd_id, slcd_candidato_id, slcd_solicitud_
 --
 
 COPY public.tbl_solicitud_habilidad (solhb_id, solhb_solicitud_id, solhb_habilidad_id, solhb_nivel_habilidad_id, solhb_anios_experiencia_req, solhb_es_excluyente) FROM stdin;
+1	1	7	4	5	t
+2	1	1	3	3	t
+3	1	13	4	4	t
+4	1	27	3	3	t
+5	1	29	3	3	t
+6	1	45	2	2	f
+7	1	33	2	2	f
+8	1	28	2	1	f
+9	1	30	2	2	f
+10	1	40	2	1	f
 \.
 
 
@@ -2049,6 +2309,12 @@ COPY public.tbl_tipo_contrato (tpct_id, tpct_nombre, tpct_descripcion) FROM stdi
 --
 
 COPY public.tbl_tipo_entrevista (tpet_id, tpet_nombre, tpet_descripcion) FROM stdin;
+1	RRHH	Entrevista inicial de filtro de competencias blandas, expectativas salariales y de cultura.
+2	Tecnica	Evaluacion de habilidades duras, arquitectura de software y codigo en vivo.
+3	Cliente	Entrevista realizada por el cliente o lider del area para validar el ajuste al equipo y aprobar la contratacion.
+4	Psicolaboral	Evaluacion psicolaboral realizada por un psicologo para analizar competencias, personalidad y adecuacion al cargo.
+5	Gerencial	Entrevista realizada por gerencias o directivos para cargos estrategicos o de liderazgo.
+6	Ingles	Evaluacion del nivel de comunicacion oral y escrita en idioma ingles.
 \.
 
 
@@ -2057,6 +2323,13 @@ COPY public.tbl_tipo_entrevista (tpet_id, tpet_nombre, tpet_descripcion) FROM st
 --
 
 COPY public.tbl_tipo_institucion (tint_id, tint_tipo_institucion) FROM stdin;
+1	Universidad
+2	Instituto Profesional
+3	Centro de Formacion Tecnica
+4	Colegio
+5	Organismo Certificador
+6	Academia / Bootcamp
+7	Otro
 \.
 
 
@@ -2090,7 +2363,7 @@ SELECT pg_catalog.setval('public.tbl_area_area_id_seq', 9, true);
 -- Name: tbl_candidato_cand_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_candidato_cand_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_candidato_cand_id_seq', 2, true);
 
 
 --
@@ -2104,7 +2377,7 @@ SELECT pg_catalog.setval('public.tbl_candidato_cuestionario_cdcu_id_seq', 1, fal
 -- Name: tbl_candidato_habilidad_cdhb_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_candidato_habilidad_cdhb_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_candidato_habilidad_cdhb_id_seq', 15, true);
 
 
 --
@@ -2118,14 +2391,14 @@ SELECT pg_catalog.setval('public.tbl_cargo_crgo_id_seq', 21, true);
 -- Name: tbl_carrera_crra_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_carrera_crra_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_carrera_crra_id_seq', 47, true);
 
 
 --
 -- Name: tbl_cita_entrevista_ctev_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_cita_entrevista_ctev_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_cita_entrevista_ctev_id_seq', 1, true);
 
 
 --
@@ -2160,7 +2433,7 @@ SELECT pg_catalog.setval('public.tbl_cuestionario_cues_id_seq', 1, false);
 -- Name: tbl_curso_curs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_curso_curs_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_curso_curs_id_seq', 10, true);
 
 
 --
@@ -2174,7 +2447,7 @@ SELECT pg_catalog.setval('public.tbl_direccion_candidato_drcd_id_seq', 1, false)
 -- Name: tbl_disponibilidad_disp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_disponibilidad_disp_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_disponibilidad_disp_id_seq', 5, true);
 
 
 --
@@ -2195,14 +2468,14 @@ SELECT pg_catalog.setval('public.tbl_estado_cuestionario_candidato_escc_id_seq',
 -- Name: tbl_estado_entrevista_esev_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_estado_entrevista_esev_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_estado_entrevista_esev_id_seq', 6, true);
 
 
 --
 -- Name: tbl_estado_solicitud_candidato_essc_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_estado_solicitud_candidato_essc_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_estado_solicitud_candidato_essc_id_seq', 6, true);
 
 
 --
@@ -2223,7 +2496,7 @@ SELECT pg_catalog.setval('public.tbl_estado_usuario_esusr_id_seq', 4, true);
 -- Name: tbl_estudio_candidato_etcd_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_estudio_candidato_etcd_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_estudio_candidato_etcd_id_seq', 4, true);
 
 
 --
@@ -2237,28 +2510,28 @@ SELECT pg_catalog.setval('public.tbl_evaluacion_entrevista_even_id_seq', 1, fals
 -- Name: tbl_experiencia_laboral_expl_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_experiencia_laboral_expl_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_experiencia_laboral_expl_id_seq', 4, true);
 
 
 --
 -- Name: tbl_habilidad_hab_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_habilidad_hab_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_habilidad_hab_id_seq', 52, true);
 
 
 --
 -- Name: tbl_historial_solicitud_hsol_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_historial_solicitud_hsol_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_historial_solicitud_hsol_id_seq', 2, true);
 
 
 --
 -- Name: tbl_institucion_inst_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_institucion_inst_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_institucion_inst_id_seq', 37, true);
 
 
 --
@@ -2272,28 +2545,28 @@ SELECT pg_catalog.setval('public.tbl_modalidad_mdld_id_seq', 3, true);
 -- Name: tbl_motivo_rechazo_mtrc_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_motivo_rechazo_mtrc_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_motivo_rechazo_mtrc_id_seq', 12, true);
 
 
 --
 -- Name: tbl_nivel_educacional_nved_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_nivel_educacional_nved_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_nivel_educacional_nved_id_seq', 8, true);
 
 
 --
 -- Name: tbl_nivel_habilidad_nvhb_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_nivel_habilidad_nvhb_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_nivel_habilidad_nvhb_id_seq', 5, true);
 
 
 --
 -- Name: tbl_nombre_resultado_nore_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_nombre_resultado_nore_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_nombre_resultado_nore_id_seq', 5, true);
 
 
 --
@@ -2356,14 +2629,14 @@ SELECT pg_catalog.setval('public.tbl_rol_rol_id_seq', 4, true);
 -- Name: tbl_solicitud_candidato_slcd_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_solicitud_candidato_slcd_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_solicitud_candidato_slcd_id_seq', 1, true);
 
 
 --
 -- Name: tbl_solicitud_habilidad_solhb_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_solicitud_habilidad_solhb_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_solicitud_habilidad_solhb_id_seq', 10, true);
 
 
 --
@@ -2384,14 +2657,14 @@ SELECT pg_catalog.setval('public.tbl_tipo_contrato_tpct_id_seq', 5, true);
 -- Name: tbl_tipo_entrevista_tpet_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_tipo_entrevista_tpet_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_tipo_entrevista_tpet_id_seq', 6, true);
 
 
 --
 -- Name: tbl_tipo_institucion_tint_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_tipo_institucion_tint_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_tipo_institucion_tint_id_seq', 7, true);
 
 
 --
@@ -3896,7 +4169,7 @@ CREATE INDEX idx_tbl_solicitud_candidato_candidato ON public.tbl_solicitud_candi
 -- Name: idx_tbl_solicitud_candidato_estado; Type: INDEX; Schema: public; Owner: elitsoft_admin
 --
 
-CREATE INDEX idx_tbl_solicitud_candidato_estado ON public.tbl_solicitud_candidato USING btree (slcd_estado_solicitud_id);
+CREATE INDEX idx_tbl_solicitud_candidato_estado ON public.tbl_solicitud_candidato USING btree (slcd_estado_solicitud_candidato_id);
 
 
 --
@@ -4521,7 +4794,7 @@ ALTER TABLE ONLY public.tbl_solicitud_candidato
 --
 
 ALTER TABLE ONLY public.tbl_solicitud_candidato
-    ADD CONSTRAINT fk_tbl_solicitud_candidato_estado FOREIGN KEY (slcd_estado_solicitud_id) REFERENCES public.tbl_estado_solicitud_candidato(essc_id);
+    ADD CONSTRAINT fk_tbl_solicitud_candidato_estado FOREIGN KEY (slcd_estado_solicitud_candidato_id) REFERENCES public.tbl_estado_solicitud_candidato(essc_id);
 
 
 --
@@ -4687,5 +4960,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bgcFlw1rjX8lJDnn00fmtEH2LJeKd2mhgwsyuPBehRloNzuohV3Lxi8KThSc4yD
+\unrestrict s8ajpfWkzPSFxCYV8OkqZ1Ypcwuug9Z5n7VxJhay7NfnDRgsE52Ix96iF3sIeIz
 
