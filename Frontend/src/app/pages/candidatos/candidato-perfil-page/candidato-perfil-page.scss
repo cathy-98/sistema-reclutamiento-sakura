@@ -1,0 +1,66 @@
+.profile-page,
+.profile-hero,
+.profile-content,
+.section-stack {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.profile-hero,
+.profile-tabs-bar {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.profile-hero {
+  padding: 22px;
+}
+
+.profile-tabs-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.section-loading {
+  margin: 0;
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-text-soft);
+  font-size: 16px;
+}
+
+.observation-modal-body {
+  padding: 22px 24px;
+}
+
+.observation-modal-body label {
+  display: grid;
+  gap: 10px;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.observation-modal-body textarea {
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.observation-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 18px 24px;
+  border-top: 1px solid var(--color-border);
+}

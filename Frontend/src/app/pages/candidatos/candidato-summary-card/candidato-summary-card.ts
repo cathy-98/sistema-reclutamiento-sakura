@@ -9,6 +9,7 @@ import { Avatar } from '../../../shared/components/avatar/avatar';
 })
 export class CandidatoSummaryCard {
   @Input() initials = '';
+  @Input() nombre = '';
   @Input() cargo = '';
   @Input() correo = '';
   @Input() telefono = '';

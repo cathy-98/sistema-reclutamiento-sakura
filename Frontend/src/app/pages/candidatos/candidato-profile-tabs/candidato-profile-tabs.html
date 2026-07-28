@@ -5,7 +5,6 @@
     [class.is-active]="activeTab === tab.id"
     (click)="activeTabChange.emit(tab.id)"
   >
-    <span aria-hidden="true">{{ tab.icon }}</span>
     {{ tab.label }}
   </button>
 </nav>

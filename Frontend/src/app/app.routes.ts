@@ -3,8 +3,6 @@ import { Login } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { authGuard } from './guards/auth.guard';
 import { AppShell } from './layouts/app-shell/app-shell';
-import { CandidatosList } from './pages/candidatos/candidatos-list/candidatos-list';
-import { SolicitudesList } from './pages/solicitudes/solicitudes-list/solicitudes-list';
 export const routes: Routes = [
   {
     path: '',
@@ -26,14 +24,28 @@ export const routes: Routes = [
         data: { roles: ['Administrador', 'Reclutador', 'Entrevistador'] }
       },
       {
+        path: 'candidatos/perfil/:id',
+        loadComponent: () =>
+          import('./pages/candidatos/candidato-perfil-page/candidato-perfil-page').then((m) => m.CandidatoPerfilPage),
+        data: { roles: ['Administrador', 'Reclutador'] }
+      },
+      {
         path: 'candidatos',
-        component: CandidatosList,
+        loadComponent: () =>
+          import('./pages/candidatos/candidatos-list/candidatos-list').then((m) => m.CandidatosList),
         data: { roles: ['Administrador', 'Reclutador'] }
       },
       {
         path: 'solicitudes',
-        component: SolicitudesList,
+        loadComponent: () =>
+          import('./pages/solicitudes/solicitudes-list/solicitudes-list').then((m) => m.SolicitudesList),
         data: { roles: ['Administrador', 'Reclutador'] }
+      },
+      {
+        path: 'entrevistas',
+        loadComponent: () =>
+          import('./pages/entrevistas/entrevistas-list/entrevistas-list').then((m) => m.EntrevistasList),
+        data: { roles: ['Administrador', 'Reclutador', 'Entrevistador'] }
       },
     ]
   }

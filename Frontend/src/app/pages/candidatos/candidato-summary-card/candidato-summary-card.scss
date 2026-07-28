@@ -1,8 +1,9 @@
 .candidate-card {
   align-self: start;
-  padding: 24px;
+  overflow: hidden;
+  padding: 22px;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--color-white);
   text-align: center;
 }
@@ -15,12 +16,14 @@ app-avatar {
 
 h3 {
   margin: 0 0 8px;
-  font-size: 18px;
+  font-size: 17px;
+  line-height: 1.25;
 }
 
 p {
-  margin: 0 0 22px;
+  margin: 0 0 20px;
   color: var(--color-text-soft);
+  font-size: 14px;
 }
 
 dl {
@@ -44,6 +47,7 @@ dt {
 dd {
   margin: 0;
   color: var(--color-text);
-  font-size: 15px;
+  overflow-wrap: anywhere;
+  font-size: 14px;
   font-weight: 700;
 }

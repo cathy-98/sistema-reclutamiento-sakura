@@ -1,0 +1,288 @@
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CandidatoProfileTab, CandidatoProfileTabs } from '../candidato-profile-tabs/candidato-profile-tabs';
+import { Button } from '../../../shared/components/button/button';
+import { Modal } from '../../../shared/components/modal/modal';
+import { PageLayout } from '../../../shared/components/page-layout/page-layout';
+import { CandidateApplicationsSection } from './components/candidate-applications-section/candidate-applications-section';
+import { CandidateDocumentsSection } from './components/candidate-documents-section/candidate-documents-section';
+import { CandidateEducationSection } from './components/candidate-education-section/candidate-education-section';
+import { CandidateExperienceSection } from './components/candidate-experience-section/candidate-experience-section';
+import { CandidateMatchSection } from './components/candidate-match-section/candidate-match-section';
+import { CandidateObservationHistory } from './components/candidate-observation-history/candidate-observation-history';
+import { CandidateProfileHeader } from './components/candidate-profile-header/candidate-profile-header';
+import { CandidateQuickObservations } from './components/candidate-quick-observations/candidate-quick-observations';
+import {
+  CandidatoPerfil,
+  DocumentoPerfil,
+  EstudioPerfil,
+  EtapaSeleccion,
+  ExperienciaPerfil,
+  HabilidadComparada,
+  ObservacionPerfil,
+  PerfilTab,
+  PostulacionPerfil,
+} from './candidato-perfil.models';
+
+@Component({
+  selector: 'app-candidato-perfil-page',
+  imports: [
+    CommonModule,
+    FormsModule,
+    Button,
+    CandidatoProfileTabs,
+    CandidateApplicationsSection,
+    CandidateDocumentsSection,
+    CandidateEducationSection,
+    CandidateExperienceSection,
+    CandidateMatchSection,
+    CandidateObservationHistory,
+    CandidateProfileHeader,
+    CandidateQuickObservations,
+    Modal,
+    PageLayout,
+  ],
+  templateUrl: './candidato-perfil-page.html',
+  styleUrl: './candidato-perfil-page.scss',
+})
+export class CandidatoPerfilPage {
+  tabActiva: PerfilTab = 'postulaciones';
+  postulacionSeleccionadaId = 'Req-021';
+  busquedaPostulacion = '';
+  archivosDocumentos: File[] = [];
+  mostrarModalObservacion = false;
+  nota = '';
+
+  readonly candidato: CandidatoPerfil;
+
+  readonly tabs: CandidatoProfileTab[] = [
+    { id: 'experiencia', label: 'Experiencia', icon: 'briefcase' },
+    { id: 'estudios', label: 'Estudios', icon: 'graduation' },
+    { id: 'postulaciones', label: 'Postulaciones', icon: 'puzzle' },
+    { id: 'match', label: 'Match', icon: 'users' },
+    { id: 'documentos', label: 'Documentos', icon: 'file' },
+    { id: 'observaciones', label: 'Observaciones', icon: 'list' },
+  ];
+
+  readonly experiencias: ExperienciaPerfil[] = [
+    {
+      empresa: 'TechSolutions S.A.',
+      cargo: 'Desarrollador Full Stack Senior',
+      fecha: 'Mar 2021 - Presente',
+      descripcion:
+        'Liderazgo técnico en el desarrollo de plataformas SaaS. Diseño de arquitectura en la nube usando AWS. Migración de monolito a microservicios.',
+      tags: ['React', 'Node.js', 'AWS', 'PostgreSQL'],
+    },
+    {
+      empresa: 'Cornershop',
+      cargo: 'Desarrollador Full Stack',
+      fecha: 'Jun 2020 - Dic 2021',
+      descripcion: 'Desarrollo de APIs REST y funcionalidades frontend para aplicaciones internas.',
+      tags: ['React', 'Node.js', 'Redux'],
+    },
+    {
+      empresa: 'Bci',
+      cargo: 'Desarrollador de Software',
+      fecha: 'Ene 2019 - May 2020',
+      descripcion: 'Construcción de módulos para banca digital e integraciones con servicios internos.',
+      tags: ['JavaScript', 'Git', 'Jenkins'],
+    },
+  ];
+
+  readonly estudios: EstudioPerfil[] = [
+    {
+      titulo: 'Ingeniería Civil Informática',
+      institucion: 'Universidad de Chile',
+      estado: 'Graduado',
+      fecha: 'Dic 2020',
+    },
+    {
+      titulo: 'Técnico en Programación',
+      institucion: 'Instituto Profesional AIEP',
+      estado: 'Graduado',
+      fecha: 'Dic 2016',
+    },
+  ];
+
+  readonly idiomas = ['Español (Nativo)', 'Inglés (B2)'];
+
+  readonly postulaciones: PostulacionPerfil[] = [
+    ['Req-021', 'Latam', 'Backend', '18/05/2025', 'En curso'],
+    ['Req-026', 'Banco de Chile', 'Frontend', '18/05/2025', 'Cerrada'],
+    ['Req-028', 'SParta', 'QA', '18/05/2025', 'Cerrada'],
+    ['Req-029', 'Servicios Financieros', 'QA', '18/05/2025', 'En curso'],
+    ['Req-030', 'Latam', 'Frontend', '18/05/2025', 'Cerrada'],
+  ];
+
+  readonly procesoBase: EtapaSeleccion[] = [
+    {
+      etapa: 'Entrevista Reclutamiento',
+      estado: 'Realizada',
+      fecha: '10 Oct 2023',
+      entrevistador: 'MACARENA LÓPEZ',
+      resultado: 'Aprobó',
+      observaciones: 'Buen perfil comunicacional, expectativas salariales alineadas.',
+    },
+    {
+      etapa: 'Entrevista Operacional',
+      estado: 'Realizada',
+      fecha: '15 Oct 2023',
+      entrevistador: 'Rodrigo Riquelme (PM)',
+      resultado: 'Aprobó',
+      observaciones: 'Preparado para avanzar.',
+    },
+    {
+      etapa: 'Entrevista Técnica',
+      estado: 'Realizada',
+      fecha: '15 Oct 2023',
+      entrevistador: 'Carlos Ruiz (Líder)',
+      resultado: 'Aprobó',
+      observaciones: 'Sólidos conocimientos en React. Resolvió el caso práctico eficientemente.',
+    },
+    {
+      etapa: 'Evaluaciones Técnicas',
+      estado: 'Pendiente',
+      fecha: 'Pendiente',
+      entrevistador: 'Pendiente',
+      resultado: 'Pendiente',
+      observaciones: 'Code Challenge Backend pendiente de finalización.',
+    },
+  ];
+
+  readonly procesosPorPostulacion: Record<string, EtapaSeleccion[]> = {
+    'Req-021': this.procesoBase,
+    'Req-026': [
+      ...this.procesoBase.slice(0, 2),
+      {
+        etapa: 'Cierre de proceso',
+        estado: 'Realizada',
+        fecha: '22 Oct 2023',
+        entrevistador: 'Equipo Reclutamiento',
+        resultado: 'No seleccionado',
+        observaciones: 'Proceso cerrado por ajuste de presupuesto interno.',
+      },
+    ],
+    'Req-028': this.procesoBase.slice(0, 2),
+    'Req-029': this.procesoBase.slice(0, 3),
+    'Req-030': this.procesoBase.slice(0, 2),
+  };
+
+  readonly habilidadesComparadas: HabilidadComparada[] = [
+    ['Html', 'Junior', '4', 'Html', 'Junior', '4', '95%', 'success'],
+    ['Python', 'Junior', '5', 'Python', 'Junior', '5', '95%', 'success'],
+    ['Css', 'Junior', '8', 'Css', 'Junior', '8', '95%', 'success'],
+    ['Java', 'Junior', '10', 'Java', 'Junior', '8', '66%', 'warning'],
+    ['Angular', 'Junior', '4', 'Angular', 'Junior', '2', '20%', 'danger'],
+  ];
+
+  readonly fortalezasMatch = ['Excelente arquitectura en React y manejo de estados complejos.'];
+  readonly areasMejoraMatch = ['Requiere nivelar conocimientos en el entorno backend con Node.js.'];
+
+  readonly documentos: DocumentoPerfil[] = [
+    ['CV_Juan_Perez_Gonzalez.pdf', 'Currículum', '24 oct 2024'],
+    ['Carta_de_presentacion.docx', 'Carta de presentación', '24 oct 2024'],
+    ['Certificado_Titulo_Ingenieria.pdf', 'Certificado', '24 oct 2024'],
+  ];
+
+  readonly historialObservaciones: ObservacionPerfil[] = [
+    ['18 may 2025', '10:42', 'María Fernanda López', 'Buen perfil comunicacional y expectativas alineadas con la vacante.'],
+    ['16 may 2025', '16:15', 'Diego Salazar', 'Avanza con buen desempeño técnico; revisar profundidad en backend.'],
+    ['24 oct 2024', '09:08', 'Sistema', 'Postulación recibida desde el portal de empleo.'],
+  ];
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {
+    const params = this.route.snapshot.queryParamMap;
+
+    this.candidato = {
+      idSolicitud: params.get('idSolicitud') || 'Req-021',
+      match: Number(params.get('match') || 78),
+      nombre: params.get('nombre') || 'Juan Perez Gonzalez',
+      correo: params.get('correo') || 'juan.perez@gmail.com',
+      telefono: params.get('telefono') || '+56 9 1234 5678',
+      cargo: params.get('cargo') || 'Senior React Developer',
+      estado: params.get('estado') || 'En proceso',
+      disponibilidad: params.get('disponibilidad') || 'Inmediata',
+      renta: Number(params.get('renta') || 2800000),
+      fechaNacimiento: '12 may 1994',
+      fechaRegistro: '24 oct 2024',
+      tituloProfesional: 'Ingeniera Civil Informática',
+      estadoUsuario: 'Activo',
+      resumenProfesional: 'Desarrolladora frontend con experiencia en React, TypeScript y plataformas SaaS.',
+      urlPerfil: 'linkedin.com/in/juanperez',
+      comuna: 'Providencia',
+      direccion: 'Av. Providencia 1234, Depto 502',
+    };
+  }
+
+  get iniciales() {
+    return this.candidato.nombre
+      .split(' ')
+      .slice(0, 2)
+      .map((parte) => parte[0])
+      .join('')
+      .toUpperCase();
+  }
+
+  get rentaFormateada() {
+    return `$${this.candidato.renta.toLocaleString('es-CL')} CLP líquidos`;
+  }
+
+  get matchClass() {
+    if (this.candidato.match >= 75) {
+      return 'is-high';
+    }
+
+    if (this.candidato.match >= 55) {
+      return 'is-medium';
+    }
+
+    return 'is-low';
+  }
+
+  get postulacionesFiltradas() {
+    const texto = this.busquedaPostulacion.trim().toLowerCase();
+    return this.postulaciones.filter((postulacion) => postulacion.join(' ').toLowerCase().includes(texto));
+  }
+
+  get postulacionSeleccionada() {
+    return this.postulaciones.find((postulacion) => postulacion[0] === this.postulacionSeleccionadaId) || this.postulaciones[0];
+  }
+
+  get procesoSeleccionado() {
+    return this.procesosPorPostulacion[this.postulacionSeleccionadaId] || this.procesoBase;
+  }
+
+  seleccionarPostulacion(id: string) {
+    this.postulacionSeleccionadaId = id;
+  }
+
+  actualizarDocumentos(files: File[]) {
+    this.archivosDocumentos = files;
+  }
+
+  abrirModalObservacion() {
+    this.mostrarModalObservacion = true;
+  }
+
+  cerrarModalObservacion() {
+    this.mostrarModalObservacion = false;
+  }
+
+  guardarObservacion() {
+    this.nota = '';
+    this.cerrarModalObservacion();
+  }
+
+  cambiarTab(tab: string) {
+    this.tabActiva = tab as PerfilTab;
+  }
+
+  volver() {
+    this.router.navigate(['/candidatos']);
+  }
+}
