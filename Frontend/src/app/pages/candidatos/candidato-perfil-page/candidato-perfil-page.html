@@ -3,10 +3,10 @@
     <header class="profile-hero">
       <app-candidate-profile-header
         [candidato]="candidato"
-        [rentaFormateada]="rentaFormateada"
         [matchClass]="matchClass"
         (back)="volver()"
         (addObservation)="abrirModalObservacion()"
+        (scheduleInterview)="abrirModalEntrevista()"
       ></app-candidate-profile-header>
 
       <app-candidate-quick-observations
@@ -130,4 +130,11 @@
       <app-button (pressed)="guardarObservacion()">Guardar observación</app-button>
     </div>
   </app-modal>
+
+  <app-entrevista-form-modal
+    *ngIf="mostrarModalEntrevista"
+    [initialData]="entrevistaInicial"
+    (cerrar)="cerrarModalEntrevista()"
+    (guardar)="guardarEntrevista($event)"
+  ></app-entrevista-form-modal>
 </app-page-layout>

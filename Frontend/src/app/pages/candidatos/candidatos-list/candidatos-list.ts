@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
 import {
   DataTable,
   DataTableAction,
@@ -15,6 +16,10 @@ import { FilterPanel } from '../../../shared/components/filter-panel/filter-pane
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { CurrencyClPipe } from '../../../shared/pipes/currency-cl.pipe';
+import {
+  EntrevistaCandidatoSeleccionado,
+  EntrevistaFormModal,
+} from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
@@ -58,6 +63,7 @@ interface FiltrosCandidatos {
     PageLayout,
     FilterPanel,
     ActionBar,
+    EntrevistaFormModal,
   ],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
@@ -72,6 +78,8 @@ export class CandidatosList {
   busquedaRapida = '';
   seleccionados = new Set<string>();
   archivosCv: File[] = [];
+  candidatosAgenda: EntrevistaCandidatoSeleccionado[] = [];
+  mostrarModalAgenda = false;
 
   filtros: FiltrosCandidatos = this.filtrosIniciales();
 
@@ -241,6 +249,7 @@ export class CandidatosList {
     private authService: AuthService,
     private currencyCl: CurrencyClPipe,
     private router: Router,
+    private entrevistasService: EntrevistasService,
   ) {
     this.actualizarDatosSesion();
 
@@ -392,7 +401,79 @@ export class CandidatosList {
       return;
     }
 
+    if (evento.action === 'agendar-entrevista') {
+      this.abrirAgendaEntrevista([evento.row]);
+      return;
+    }
+
     console.log('Acción de candidato:', evento.action, evento.row);
+  }
+
+  abrirAgendaMasiva() {
+    const candidatos = this.candidatos.filter((candidato) =>
+      this.seleccionados.has(this.obtenerIdCandidato(candidato)),
+    );
+
+    if (candidatos.length === 0) {
+      return;
+    }
+
+    this.abrirAgendaEntrevista(candidatos);
+  }
+
+  abrirAgendaEntrevista(candidatos: Candidato[]) {
+    this.candidatosAgenda = candidatos.map((candidato) => ({
+      id: this.obtenerIdCandidato(candidato),
+      idSolicitud: candidato.idSolicitud,
+      nombre: candidato.nombre,
+      cargo: candidato.cargo,
+    }));
+    this.mostrarModalAgenda = true;
+  }
+
+  cerrarAgendaEntrevista() {
+    this.mostrarModalAgenda = false;
+    this.candidatosAgenda = [];
+  }
+
+  actualizarCandidatosAgenda(candidatos: EntrevistaCandidatoSeleccionado[]) {
+    this.candidatosAgenda = candidatos;
+    this.seleccionados = new Set(
+      candidatos
+        .map((candidato) => candidato.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+  }
+
+  guardarAgendaEntrevista(payload: EntrevistaPayload) {
+    const candidatos = this.candidatosAgenda;
+
+    if (candidatos.length <= 1) {
+      this.entrevistasService.crear(payload).subscribe({
+        next: () => this.cerrarAgendaEntrevista(),
+        error: () => {
+          this.errorCarga = 'No se pudo agendar la entrevista. Intenta nuevamente.';
+        },
+      });
+      return;
+    }
+
+    const entrevistas = candidatos.map((candidato) => ({
+      ...payload,
+      idSolicitud: candidato.idSolicitud,
+      candidato: candidato.nombre,
+      cargo: candidato.cargo,
+    }));
+
+    this.entrevistasService.crearMasiva(entrevistas).subscribe({
+      next: () => {
+        this.seleccionados = new Set<string>();
+        this.cerrarAgendaEntrevista();
+      },
+      error: () => {
+        this.errorCarga = 'No se pudieron agendar las entrevistas. Intenta nuevamente.';
+      },
+    });
   }
 
   actualizarArchivosCv(files: File[]) {

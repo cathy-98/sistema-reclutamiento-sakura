@@ -1,0 +1,14 @@
+.contact-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin-top: 8px;
+}
+
+.contact-inline :is(span, a) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-soft);
+  text-decoration: none;
+}

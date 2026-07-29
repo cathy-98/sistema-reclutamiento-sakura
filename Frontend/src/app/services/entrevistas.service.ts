@@ -141,6 +141,18 @@ export class EntrevistasService {
     return of(nuevaEntrevista).pipe(delay(150));
   }
 
+  crearMasiva(payloads: EntrevistaPayload[]) {
+    const inicio = this.entrevistas.value.length;
+    const nuevasEntrevistas: EntrevistaResumen[] = payloads.map((payload, index) => ({
+      ...payload,
+      id: `ENT-${String(inicio + index + 1).padStart(3, '0')}`,
+      estado: 'Pendiente',
+    }));
+
+    this.entrevistas.next([...nuevasEntrevistas, ...this.entrevistas.value]);
+    return of(nuevasEntrevistas).pipe(delay(150));
+  }
+
   reprogramar(id: string, fecha: string, horaInicio: string, horaFin: string, observacion: string) {
     if (!this.entrevistas.value.some((entrevista) => entrevista.id === id)) {
       return throwError(() => ({ status: 404 }));

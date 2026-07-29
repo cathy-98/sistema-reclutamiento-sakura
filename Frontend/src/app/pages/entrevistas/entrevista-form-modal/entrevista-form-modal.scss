@@ -13,6 +13,13 @@
   font-size: 12px;
 }
 
+.interview-summary.is-bulk {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
 .interview-summary strong {
   font-size: 13px;
 }
@@ -24,6 +31,97 @@
   border-radius: 7px;
   color: var(--color-sakura);
   font-weight: 700;
+}
+
+.selected-candidates {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.selected-candidates > div {
+  display: grid;
+  gap: 3px;
+}
+
+.selected-candidates strong {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.selected-candidates span,
+.selected-candidates small {
+  color: var(--color-text-soft);
+  font-size: 12px;
+}
+
+.selected-candidates ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  max-height: 122px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.selected-candidates li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+}
+
+.selected-candidates li span {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.selected-candidates-table {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.selected-candidates-table table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.selected-candidates-table th,
+.selected-candidates-table td {
+  height: 48px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.selected-candidates-table th {
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-weight: 800;
+}
+
+.selected-candidates-table td:last-child,
+.selected-candidates-table th:last-child {
+  width: 86px;
+  text-align: center;
+}
+
+.selected-candidates-table tr:last-child td {
+  border-bottom: 0;
 }
 
 .form-grid {

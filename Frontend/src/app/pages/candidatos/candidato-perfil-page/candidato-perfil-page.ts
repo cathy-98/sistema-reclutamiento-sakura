@@ -6,6 +6,8 @@ import { CandidatoProfileTab, CandidatoProfileTabs } from '../candidato-profile-
 import { Button } from '../../../shared/components/button/button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
+import { EntrevistaFormModal } from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
+import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
 import { CandidateApplicationsSection } from './components/candidate-applications-section/candidate-applications-section';
 import { CandidateDocumentsSection } from './components/candidate-documents-section/candidate-documents-section';
 import { CandidateEducationSection } from './components/candidate-education-section/candidate-education-section';
@@ -41,6 +43,7 @@ import {
     CandidateObservationHistory,
     CandidateProfileHeader,
     CandidateQuickObservations,
+    EntrevistaFormModal,
     Modal,
     PageLayout,
   ],
@@ -53,6 +56,7 @@ export class CandidatoPerfilPage {
   busquedaPostulacion = '';
   archivosDocumentos: File[] = [];
   mostrarModalObservacion = false;
+  mostrarModalEntrevista = false;
   nota = '';
 
   readonly candidato: CandidatoPerfil;
@@ -181,9 +185,9 @@ export class CandidatoPerfilPage {
   readonly areasMejoraMatch = ['Requiere nivelar conocimientos en el entorno backend con Node.js.'];
 
   readonly documentos: DocumentoPerfil[] = [
-    ['CV_Juan_Perez_Gonzalez.pdf', 'Currículum', '24 oct 2024'],
-    ['Carta_de_presentacion.docx', 'Carta de presentación', '24 oct 2024'],
-    ['Certificado_Titulo_Ingenieria.pdf', 'Certificado', '24 oct 2024'],
+    ['CV_Juan_Perez_Gonzalez.pdf', 'Currículum', '24 oct 2024', '10:30'],
+    ['Carta_de_presentacion.docx', 'Carta de presentación', '24 oct 2024', '10:36'],
+    ['Certificado_Titulo_Ingenieria.pdf', 'Certificado', '24 oct 2024', '11:05'],
   ];
 
   readonly historialObservaciones: ObservacionPerfil[] = [
@@ -195,6 +199,7 @@ export class CandidatoPerfilPage {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private entrevistasService: EntrevistasService,
   ) {
     const params = this.route.snapshot.queryParamMap;
 
@@ -230,6 +235,17 @@ export class CandidatoPerfilPage {
 
   get rentaFormateada() {
     return `$${this.candidato.renta.toLocaleString('es-CL')} CLP líquidos`;
+  }
+
+  get entrevistaInicial(): Partial<EntrevistaPayload> {
+    return {
+      idSolicitud: this.candidato.idSolicitud,
+      candidato: this.candidato.nombre,
+      cargo: this.candidato.cargo,
+      tipo: 'Reclutamiento',
+      asunto: `Entrevista ${this.candidato.cargo}`,
+      modalidad: 'Online',
+    };
   }
 
   get matchClass() {
@@ -276,6 +292,22 @@ export class CandidatoPerfilPage {
   guardarObservacion() {
     this.nota = '';
     this.cerrarModalObservacion();
+  }
+
+  abrirModalEntrevista() {
+    this.mostrarModalEntrevista = true;
+  }
+
+  cerrarModalEntrevista() {
+    this.mostrarModalEntrevista = false;
+  }
+
+  guardarEntrevista(payload: EntrevistaPayload) {
+    this.entrevistasService.crear(payload).subscribe({
+      next: () => {
+        this.cerrarModalEntrevista();
+      },
+    });
   }
 
   cambiarTab(tab: string) {

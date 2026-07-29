@@ -1,0 +1,20 @@
+<div class="hero-summary" aria-label="Datos clave del candidato">
+  <article>
+    <span>Match</span>
+    <app-match-score [value]="candidato.match + '%'" [scoreClass]="matchClass"></app-match-score>
+  </article>
+  <article>
+    <span>Renta esperada</span>
+    <input type="number" [(ngModel)]="rentaInput" aria-label="Renta esperada" />
+    <small>{{ rentaFormateada }}</small>
+  </article>
+  <article>
+    <span>Disponibilidad</span>
+    <select [(ngModel)]="candidato.disponibilidad" aria-label="Disponibilidad">
+      <option>Inmediata</option>
+      <option>15 días</option>
+      <option>30 días</option>
+      <option>A convenir</option>
+    </select>
+  </article>
+</div>

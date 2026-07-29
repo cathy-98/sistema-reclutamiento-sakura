@@ -34,11 +34,7 @@
     </div>
     <p>Cargo postulado: <strong>{{ candidato.cargo }}</strong></p>
     <p class="professional-summary">{{ candidato.resumenProfesional }}</p>
-    <div class="contact-inline" aria-label="Datos de contacto prioritarios">
-      <span><span aria-hidden="true">✉</span>{{ candidato.correo }}</span>
-      <span><span aria-hidden="true">⌕</span>{{ candidato.telefono }}</span>
-      <span><span aria-hidden="true">⌖</span>{{ candidato.comuna }}, Región Metropolitana, Chile</span>
-    </div>
+    <app-candidate-contact-line [candidato]="candidato"></app-candidate-contact-line>
   </div>
 
   <div class="candidate-controls">
@@ -52,60 +48,9 @@
         <option>Descartado</option>
       </select>
     </label>
-    <app-button [fullWidth]="true">Agendar entrevista</app-button>
+    <app-button [fullWidth]="true" (pressed)="scheduleInterview.emit()">Agendar entrevista</app-button>
   </div>
 </div>
 
-<section class="candidate-details-actions">
-  <button class="details-toggle" type="button" [attr.aria-expanded]="datosCompletosAbiertos" (click)="toggleDatosCompletos()">
-    {{ datosCompletosAbiertos ? 'Ocultar datos' : 'Ver datos del candidato' }}
-    <span aria-hidden="true">{{ datosCompletosAbiertos ? '↑' : '↓' }}</span>
-  </button>
-</section>
-
-<div class="candidate-data-groups" *ngIf="datosCompletosAbiertos">
-  <section>
-    <h3>Identificación</h3>
-    <dl>
-      <div><dt>RUT</dt><dd>18.123.456-7</dd></div>
-      <div><dt>Fecha nacimiento</dt><dd>{{ candidato.fechaNacimiento }}</dd></div>
-    </dl>
-  </section>
-
-  <section>
-    <h3>Contacto</h3>
-    <dl>
-      <div><dt>Teléfono 2</dt><dd>+56 2 2345 6789</dd></div>
-      <div><dt>LinkedIn</dt><dd><a href="https://linkedin.com/in/juanperez" target="_blank" rel="noreferrer">{{ candidato.urlPerfil }}</a></dd></div>
-    </dl>
-  </section>
-
-  <section>
-    <h3>Ubicación</h3>
-    <dl>
-      <div><dt>Comuna</dt><dd>{{ candidato.comuna }}</dd></div>
-      <div><dt>Dirección</dt><dd>{{ candidato.direccion }}</dd></div>
-    </dl>
-  </section>
-
-  <section>
-    <h3>Perfil laboral</h3>
-    <dl>
-      <div><dt>Título</dt><dd>{{ candidato.tituloProfesional }}</dd></div>
-      <div><dt>Modalidad</dt><dd>Híbrida</dd></div>
-      <div><dt>Disponibilidad</dt><dd>{{ candidato.disponibilidad }}</dd></div>
-      <div><dt>Registro</dt><dd>{{ candidato.fechaRegistro }}</dd></div>
-    </dl>
-  </section>
-</div>
-
-<div class="hero-summary" aria-label="Datos clave del candidato">
-  <article>
-    <span>Match</span>
-    <app-match-score [value]="candidato.match + '%'" [scoreClass]="matchClass"></app-match-score>
-  </article>
-  <article>
-    <span>Renta esperada</span>
-    <strong>{{ rentaFormateada }}</strong>
-  </article>
-</div>
+<app-candidate-editable-metrics [candidato]="candidato" [matchClass]="matchClass"></app-candidate-editable-metrics>
+<app-candidate-details-disclosure [candidato]="candidato"></app-candidate-details-disclosure>

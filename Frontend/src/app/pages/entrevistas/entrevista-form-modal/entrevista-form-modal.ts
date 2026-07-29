@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ReactiveFormsModule, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Button } from '../../../shared/components/button/button';
 import { DataTable, DataTableColumn } from '../../../shared/components/data-table/data-table';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { FormSection } from '../../../shared/components/form-section/form-section';
+import { IconButton } from '../../../shared/components/icon-button/icon-button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { Stepper } from '../../../shared/components/stepper/stepper';
 import { EntrevistaPayload, TipoEntrevista } from '../../../services/entrevistas.service';
@@ -17,14 +18,25 @@ interface IntegranteEntrevista {
   fechaAgendamiento: string;
 }
 
+export interface EntrevistaCandidatoSeleccionado {
+  id?: string;
+  idSolicitud: string;
+  nombre: string;
+  cargo: string;
+}
+
 @Component({
   selector: 'app-entrevista-form-modal',
-  imports: [CommonModule, ReactiveFormsModule, Button, DataTable, FormActions, FormField, FormSection, Modal, Stepper],
+  imports: [CommonModule, ReactiveFormsModule, Button, DataTable, FormActions, FormField, FormSection, IconButton, Modal, Stepper],
   templateUrl: './entrevista-form-modal.html',
   styleUrl: './entrevista-form-modal.scss',
 })
-export class EntrevistaFormModal {
+export class EntrevistaFormModal implements OnChanges, OnInit {
+  @Input() initialData: Partial<EntrevistaPayload> | null = null;
+  @Input() candidatos: EntrevistaCandidatoSeleccionado[] = [];
+
   @Output() cerrar = new EventEmitter<void>();
+  @Output() candidatosChange = new EventEmitter<EntrevistaCandidatoSeleccionado[]>();
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
 
   readonly tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
@@ -80,6 +92,40 @@ export class EntrevistaFormModal {
     linkReunion: new UntypedFormControl(''),
     observacion: new UntypedFormControl(''),
   });
+
+  ngOnInit() {
+    this.aplicarDatosIniciales();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['initialData'] || changes['candidatos']) {
+      this.aplicarDatosIniciales();
+    }
+  }
+
+  get tituloModal() {
+    return this.esAgendaMasiva ? 'Agendar entrevistas masivas' : 'Agendar nueva entrevista';
+  }
+
+  get subtituloModal() {
+    return this.esAgendaMasiva
+      ? 'Define una misma fecha y hora para los candidatos seleccionados.'
+      : 'Completa los datos para crear la cita.';
+  }
+
+  get esAgendaMasiva() {
+    return this.candidatos.length > 1;
+  }
+
+  get tieneCandidatosPreseleccionados() {
+    return this.candidatos.length > 0;
+  }
+
+  get resumenCandidatos() {
+    return this.esAgendaMasiva
+      ? `${this.candidatos.length} candidatos seleccionados`
+      : this.candidatos[0]?.nombre || String(this.control('candidato')?.value || 'Sin candidato');
+  }
 
   get pasosCompletados() {
     return this.pasosFormulario
@@ -195,5 +241,73 @@ export class EntrevistaFormModal {
 
   actualizarSeleccionIntegrantes(ids: Set<string>) {
     this.integrantesSeleccionados = ids;
+  }
+
+  eliminarCandidatoAgenda(candidato: EntrevistaCandidatoSeleccionado) {
+    const candidatosActualizados = this.candidatos.filter(
+      (item) => this.obtenerIdCandidatoAgenda(item) !== this.obtenerIdCandidatoAgenda(candidato),
+    );
+
+    if (candidatosActualizados.length === 0) {
+      this.cerrar.emit();
+      return;
+    }
+
+    this.candidatos = candidatosActualizados;
+    this.candidatosChange.emit(candidatosActualizados);
+    this.aplicarDatosIniciales();
+  }
+
+  private aplicarDatosIniciales() {
+    if (this.initialData) {
+      this.formulario.patchValue(this.initialData);
+    }
+
+    if (!this.tieneCandidatosPreseleccionados) {
+      return;
+    }
+
+    const primerCandidato = this.candidatos[0];
+
+    this.formulario.patchValue({
+      idSolicitud: this.esAgendaMasiva ? 'Múltiples solicitudes' : primerCandidato.idSolicitud,
+      candidato: this.esAgendaMasiva ? `${this.candidatos.length} candidatos seleccionados` : primerCandidato.nombre,
+      cargo: this.esAgendaMasiva ? 'Múltiples cargos' : primerCandidato.cargo,
+      asunto:
+        this.formulario.get('asunto')?.value ||
+        (this.esAgendaMasiva ? 'Agendamiento de entrevistas' : `Entrevista ${primerCandidato.cargo}`),
+    });
+
+    this.sincronizarIntegrantesPreseleccionados();
+  }
+
+  private sincronizarIntegrantesPreseleccionados() {
+    const candidatosIntegrantes = this.candidatos.map((candidato) => ({
+      id: this.crearId(candidato.nombre),
+      nombre: candidato.nombre,
+      rol: 'Candidato',
+      fechaAgendamiento: String(this.formulario.get('fecha')?.value || 'Sin fecha'),
+    }));
+
+    const equipoInterno = this.integrantes.filter((integrante) => integrante.rol !== 'Candidata' && integrante.rol !== 'Candidato');
+
+    this.integrantes = [...candidatosIntegrantes, ...equipoInterno];
+    this.integrantesSeleccionados = new Set([
+      ...candidatosIntegrantes.map((integrante) => integrante.id),
+      ...equipoInterno.filter((integrante) => integrante.rol !== 'Area tecnica').map((integrante) => integrante.id),
+    ]);
+  }
+
+  private crearId(valor: string) {
+    return valor
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-');
+  }
+
+  private obtenerIdCandidatoAgenda(candidato: EntrevistaCandidatoSeleccionado) {
+    return candidato.id || this.crearId(`${candidato.idSolicitud}-${candidato.nombre}`);
   }
 }

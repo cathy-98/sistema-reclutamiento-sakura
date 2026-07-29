@@ -85,7 +85,7 @@
       <span aria-hidden="true">✓</span>
       Enviar correo
     </button>
-    <button type="button" [disabled]="seleccionados.size === 0">
+    <button type="button" [disabled]="seleccionados.size === 0" (click)="abrirAgendaMasiva()">
       <span aria-hidden="true">✦</span>
       Agendar entrevistas
     </button>
@@ -113,5 +113,13 @@
     (clear)="limpiarFiltros()"
     (retry)="cargarCandidatos()"
   ></app-data-table>
+
+  <app-entrevista-form-modal
+    *ngIf="mostrarModalAgenda"
+    [candidatos]="candidatosAgenda"
+    (candidatosChange)="actualizarCandidatosAgenda($event)"
+    (cerrar)="cerrarAgendaEntrevista()"
+    (guardar)="guardarAgendaEntrevista($event)"
+  ></app-entrevista-form-modal>
 
 </app-page-layout>

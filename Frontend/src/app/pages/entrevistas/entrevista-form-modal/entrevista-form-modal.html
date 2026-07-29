@@ -1,9 +1,73 @@
-<app-modal titulo="Modal de agendamiento de entrevista" subtitulo="Modal/agendar entrevista" ancho="lg" (cerrar)="cerrar.emit()">
+<app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
   <form class="interview-form" [formGroup]="formulario">
-    <div class="interview-summary">
-      <strong>Cargo/ Nombre vacante: {{ control('cargo')?.value || 'Desarrollador' }}</strong>
-      <span>ID solicitud: {{ control('idSolicitud')?.value || 'Req-021' }}</span>
+    <div class="interview-summary" [class.is-bulk]="esAgendaMasiva">
+      <strong>
+        {{
+          esAgendaMasiva
+            ? 'Agenda masiva: ' + candidatos.length + ' candidatos'
+            : 'Cargo/ Nombre vacante: ' + (control('cargo')?.value || 'Desarrollador')
+        }}
+      </strong>
+      <span>
+        {{
+          esAgendaMasiva
+            ? 'Una entrevista por candidato'
+            : 'ID solicitud: ' + (control('idSolicitud')?.value || 'Req-021')
+        }}
+      </span>
     </div>
+
+    <section class="selected-candidates" *ngIf="tieneCandidatosPreseleccionados" aria-label="Candidatos seleccionados">
+      <div>
+        <strong>{{ resumenCandidatos }}</strong>
+        <span>
+          {{
+            esAgendaMasiva
+              ? 'Se creará una entrevista para cada candidato seleccionado.'
+              : 'La entrevista quedará asociada a este candidato.'
+          }}
+        </span>
+      </div>
+
+      <div class="selected-candidates-table" *ngIf="esAgendaMasiva; else candidatoUnico">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>ID solicitud</th>
+              <th>Cargo</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let candidato of candidatos">
+              <td>
+                <strong>{{ candidato.nombre }}</strong>
+              </td>
+              <td>{{ candidato.idSolicitud }}</td>
+              <td>{{ candidato.cargo }}</td>
+              <td>
+                <app-icon-button
+                  icon="trash"
+                  [label]="'Quitar ' + candidato.nombre"
+                  (pressed)="eliminarCandidatoAgenda(candidato)"
+                ></app-icon-button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #candidatoUnico>
+        <ul>
+          <li *ngFor="let candidato of candidatos">
+            <span>{{ candidato.nombre }}</span>
+            <small>{{ candidato.idSolicitud }} · {{ candidato.cargo }}</small>
+          </li>
+        </ul>
+      </ng-template>
+
+    </section>
 
     <app-stepper
       [pasos]="pasosFormulario"
@@ -24,7 +88,13 @@
           [required]="true"
           [error]="control('idSolicitud')?.touched && control('idSolicitud')?.invalid ? 'Campo obligatorio.' : ''"
         >
-          <select formControlName="idSolicitud">
+          <input
+            *ngIf="tieneCandidatosPreseleccionados"
+            type="text"
+            formControlName="idSolicitud"
+            readonly
+          />
+          <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="idSolicitud">
             <option [ngValue]="null">Selecciona solicitud</option>
             <option>Req-021</option>
             <option>Req-022</option>
@@ -37,7 +107,13 @@
           [required]="true"
           [error]="control('candidato')?.touched && control('candidato')?.invalid ? 'Campo obligatorio.' : ''"
         >
-          <select formControlName="candidato">
+          <input
+            *ngIf="tieneCandidatosPreseleccionados"
+            type="text"
+            formControlName="candidato"
+            readonly
+          />
+          <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="candidato">
             <option [ngValue]="null">Selecciona candidato</option>
             <option>Macarena Lopez</option>
             <option>Valentina Rojas</option>
@@ -51,7 +127,12 @@
           [required]="true"
           [error]="control('cargo')?.touched && control('cargo')?.invalid ? 'Campo obligatorio.' : ''"
         >
-          <input type="text" formControlName="cargo" placeholder="Ej. Desarrollador" />
+          <input
+            type="text"
+            formControlName="cargo"
+            placeholder="Ej. Desarrollador"
+            [readonly]="tieneCandidatosPreseleccionados"
+          />
         </app-form-field>
       </div>
     </app-form-section>

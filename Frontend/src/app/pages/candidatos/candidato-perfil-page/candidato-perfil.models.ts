@@ -47,5 +47,5 @@ export interface EtapaSeleccion {
 }
 
 export type HabilidadComparada = [string, string, string, string, string, string, string, string];
-export type DocumentoPerfil = [string, string, string];
+export type DocumentoPerfil = [string, string, string, string];
 export type ObservacionPerfil = [string, string, string, string];
