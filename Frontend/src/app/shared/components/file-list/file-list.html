@@ -1,16 +1,38 @@
 <section class="file-list" *ngIf="files.length > 0" aria-label="Archivos seleccionados">
   <header>
-    <strong>
-      {{ files.length }} archivo{{ files.length === 1 ? '' : 's' }} listo{{ files.length === 1 ? '' : 's' }}
-    </strong>
+    <div>
+      <strong>
+        {{ files.length }} archivo{{ files.length === 1 ? '' : 's' }} listo{{ files.length === 1 ? '' : 's' }}
+      </strong>
+      <span>{{ totalSizeMb | number: '1.1-1' }} MB en total</span>
+    </div>
     <app-button variant="ghost" size="sm" (pressed)="clear.emit()">Limpiar</app-button>
   </header>
 
-  <ul>
-    <li *ngFor="let file of files">
-      <span>{{ file.name }}</span>
-      <small>{{ fileSizeMb(file) | number: '1.1-1' }} MB</small>
-      <button type="button" [attr.aria-label]="'Quitar ' + file.name" (click)="remove.emit(file)">×</button>
-    </li>
-  </ul>
+  <div class="file-table" tabindex="0" aria-label="Listado de archivos seleccionados">
+    <table>
+      <thead>
+        <tr>
+          <th>Archivo</th>
+          <th>Tamaño</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let file of files; trackBy: trackFile">
+          <td>
+            <span>{{ file.name }}</span>
+          </td>
+          <td>{{ fileSizeMb(file) | number: '1.1-1' }} MB</td>
+          <td>
+            <app-icon-button
+              icon="trash"
+              [label]="'Quitar ' + file.name"
+              (pressed)="remove.emit(file)"
+            ></app-icon-button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </section>
