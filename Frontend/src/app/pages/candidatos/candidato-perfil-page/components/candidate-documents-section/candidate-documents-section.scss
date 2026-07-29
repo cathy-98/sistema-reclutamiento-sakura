@@ -1,0 +1,54 @@
+.content-panel {
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 22px;
+}
+
+.record-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.record-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-sakura-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.record-list article:hover {
+  background: var(--color-surface-soft);
+}
+
+strong {
+  overflow-wrap: anywhere;
+  font-size: 17px;
+}
+
+span {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.text-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-sakura);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}

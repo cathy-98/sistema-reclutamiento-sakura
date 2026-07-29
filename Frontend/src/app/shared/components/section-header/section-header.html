@@ -1,0 +1,7 @@
+<header class="section-header">
+  <div>
+    <h3>{{ title }}</h3>
+    <p *ngIf="description">{{ description }}</p>
+  </div>
+  <ng-content select="[sectionHeaderActions]"></ng-content>
+</header>

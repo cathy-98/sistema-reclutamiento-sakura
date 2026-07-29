@@ -1,0 +1,43 @@
+<section class="candidate-details-panel">
+  <button class="details-toggle" type="button" [attr.aria-expanded]="abierto" (click)="toggle()">
+    <span>
+      <strong>Datos adicionales del candidato</strong>
+      <small>RUT, ubicación, título y registro</small>
+    </span>
+    <span aria-hidden="true">{{ abierto ? '↑' : '↓' }}</span>
+  </button>
+
+  <div class="candidate-data-groups" *ngIf="abierto">
+    <section>
+      <h3>Identificación</h3>
+      <dl>
+        <div><dt>RUT</dt><dd>18.123.456-7</dd></div>
+        <div><dt>Fecha nacimiento</dt><dd>{{ candidato.fechaNacimiento }}</dd></div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Contacto</h3>
+      <dl>
+        <div><dt>Teléfono 2</dt><dd>+56 2 2345 6789</dd></div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Ubicación</h3>
+      <dl>
+        <div><dt>Comuna</dt><dd>{{ candidato.comuna }}</dd></div>
+        <div><dt>Dirección</dt><dd>{{ candidato.direccion }}</dd></div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Perfil laboral</h3>
+      <dl>
+        <div><dt>Título</dt><dd>{{ candidato.tituloProfesional }}</dd></div>
+        <div><dt>Modalidad</dt><dd>Híbrida</dd></div>
+        <div><dt>Registro</dt><dd>{{ candidato.fechaRegistro }}</dd></div>
+      </dl>
+    </section>
+  </div>
+</section>

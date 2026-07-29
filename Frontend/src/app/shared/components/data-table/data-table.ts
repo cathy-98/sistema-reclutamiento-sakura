@@ -1,9 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Avatar } from '../avatar/avatar';
+import { IconButton, IconButtonName } from '../icon-button/icon-button';
+import { MatchScore } from '../match-score/match-score';
+import { Pagination } from '../pagination/pagination';
+import { StateMessage } from '../state-message/state-message';
+import { StatusBadge } from '../status-badge/status-badge';
 
 export type DataTableColumnType = 'text' | 'badge' | 'match' | 'person' | 'stack';
-export type DataTableActionIcon = 'eye' | 'download' | 'calendar' | 'edit' | 'cancel';
+export type DataTableActionIcon = IconButtonName;
 
 export interface DataTableColumn<T> {
   key: string;
@@ -32,7 +37,7 @@ export interface DataTableActionEvent<T> {
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, Avatar, IconButton, MatchScore, Pagination, StateMessage, StatusBadge],
   templateUrl: './data-table.html',
   styleUrl: './data-table.scss',
 })

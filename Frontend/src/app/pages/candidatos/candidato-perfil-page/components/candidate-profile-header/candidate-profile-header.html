@@ -1,0 +1,56 @@
+<div class="hero-top">
+  <button class="back-link" type="button" (click)="back.emit()">
+    <span aria-hidden="true">←</span>
+    Volver al listado
+  </button>
+</div>
+
+<div class="candidate-brief">
+  <div class="candidate-main">
+    <div class="name-row">
+      <h1>{{ candidato.nombre }}</h1>
+      <div class="candidate-actions-menu">
+        <button
+          class="kebab-button"
+          type="button"
+          aria-label="Abrir acciones del candidato"
+          [attr.aria-expanded]="menuAccionesAbierto"
+          (click)="toggleActions()"
+        >
+          ⋮
+        </button>
+
+        <div class="kebab-menu" *ngIf="menuAccionesAbierto">
+          <button type="button" (click)="selectDownloadCv()">
+            <span class="menu-icon" aria-hidden="true">↓</span>
+            Descargar CV
+          </button>
+          <button type="button" (click)="selectAddObservation()">
+            <span class="menu-icon" aria-hidden="true">＋</span>
+            Agregar observación
+          </button>
+        </div>
+      </div>
+    </div>
+    <p>Cargo postulado: <strong>{{ candidato.cargo }}</strong></p>
+    <p class="professional-summary">{{ candidato.resumenProfesional }}</p>
+    <app-candidate-contact-line [candidato]="candidato"></app-candidate-contact-line>
+  </div>
+
+  <div class="candidate-controls">
+    <span class="request-badge">Solicitud {{ candidato.idSolicitud }}</span>
+    <label>
+      Estado de candidato
+      <select [(ngModel)]="candidato.estado">
+        <option>En revision</option>
+        <option>Contactado</option>
+        <option>Entrevista</option>
+        <option>Descartado</option>
+      </select>
+    </label>
+    <app-button [fullWidth]="true" (pressed)="scheduleInterview.emit()">Agendar entrevista</app-button>
+  </div>
+</div>
+
+<app-candidate-editable-metrics [candidato]="candidato" [matchClass]="matchClass"></app-candidate-editable-metrics>
+<app-candidate-details-disclosure [candidato]="candidato"></app-candidate-details-disclosure>

@@ -1,0 +1,140 @@
+<app-page-layout>
+  <section class="profile-page">
+    <header class="profile-hero">
+      <app-candidate-profile-header
+        [candidato]="candidato"
+        [matchClass]="matchClass"
+        (back)="volver()"
+        (addObservation)="abrirModalObservacion()"
+        (scheduleInterview)="abrirModalEntrevista()"
+      ></app-candidate-profile-header>
+
+      <app-candidate-quick-observations
+        [historial]="historialObservaciones"
+      ></app-candidate-quick-observations>
+    </header>
+
+    <div class="profile-tabs-bar">
+      <app-candidato-profile-tabs
+        [tabs]="tabs"
+        [activeTab]="tabActiva"
+        (activeTabChange)="cambiarTab($event)"
+      ></app-candidato-profile-tabs>
+    </div>
+
+    <main class="profile-content">
+      @switch (tabActiva) {
+        @case ('experiencia') {
+          <section class="section-stack">
+            @defer {
+              <app-candidate-experience-section [experiencias]="experiencias"></app-candidate-experience-section>
+            } @placeholder {
+              <p class="section-loading">Cargando experiencia...</p>
+            }
+          </section>
+        }
+
+        @case ('estudios') {
+          <section class="section-stack">
+            @defer {
+              <app-candidate-education-section [estudios]="estudios" [idiomas]="idiomas"></app-candidate-education-section>
+            } @placeholder {
+              <p class="section-loading">Cargando estudios...</p>
+            }
+          </section>
+        }
+
+        @case ('postulaciones') {
+          <section class="section-stack">
+            @defer {
+              <app-candidate-applications-section
+                [candidato]="candidato"
+                [postulaciones]="postulaciones"
+                [postulacionSeleccionadaId]="postulacionSeleccionadaId"
+                [busqueda]="busquedaPostulacion"
+                [proceso]="procesoSeleccionado"
+                (postulacionSeleccionadaIdChange)="seleccionarPostulacion($event)"
+                (busquedaChange)="busquedaPostulacion = $event"
+              ></app-candidate-applications-section>
+            } @placeholder {
+              <p class="section-loading">Cargando postulaciones...</p>
+            }
+          </section>
+        }
+
+        @case ('match') {
+          <section class="section-stack">
+            @defer {
+              <app-candidate-match-section
+                [candidato]="candidato"
+                [matchClass]="matchClass"
+                [habilidades]="habilidadesComparadas"
+                [fortalezas]="fortalezasMatch"
+                [areasMejora]="areasMejoraMatch"
+              ></app-candidate-match-section>
+            } @placeholder {
+              <p class="section-loading">Cargando match...</p>
+            }
+          </section>
+        }
+
+        @case ('documentos') {
+          <section class="section-stack">
+            @defer {
+              <app-candidate-documents-section
+                [documentos]="documentos"
+                (filesChange)="actualizarDocumentos($event)"
+              ></app-candidate-documents-section>
+            } @placeholder {
+              <p class="section-loading">Cargando documentos...</p>
+            }
+          </section>
+        }
+
+        @case ('observaciones') {
+          <section class="section-stack">
+            @defer {
+              <app-candidate-observation-history
+                [historial]="historialObservaciones"
+                (addObservation)="abrirModalObservacion()"
+              ></app-candidate-observation-history>
+            } @placeholder {
+              <p class="section-loading">Cargando observaciones...</p>
+            }
+          </section>
+        }
+      }
+    </main>
+  </section>
+
+  <app-modal
+    *ngIf="mostrarModalObservacion"
+    titulo="Agregar observación"
+    subtitulo="Registra una nota interna para el seguimiento del candidato."
+    ancho="sm"
+    (cerrar)="cerrarModalObservacion()"
+  >
+    <div class="observation-modal-body">
+      <label>
+        Observación
+        <textarea
+          [(ngModel)]="nota"
+          maxlength="1000"
+          placeholder="Escribe una observación clara y breve"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="observation-modal-footer" modal-footer>
+      <app-button variant="secondary" (pressed)="cerrarModalObservacion()">Cancelar</app-button>
+      <app-button (pressed)="guardarObservacion()">Guardar observación</app-button>
+    </div>
+  </app-modal>
+
+  <app-entrevista-form-modal
+    *ngIf="mostrarModalEntrevista"
+    [initialData]="entrevistaInicial"
+    (cerrar)="cerrarModalEntrevista()"
+    (guardar)="guardarEntrevista($event)"
+  ></app-entrevista-form-modal>
+</app-page-layout>

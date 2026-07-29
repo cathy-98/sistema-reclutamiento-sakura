@@ -1,0 +1,12 @@
+.avatar {
+  display: inline-grid;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-danger-soft);
+  color: var(--color-sakura);
+  font-size: 12px;
+  font-weight: 700;
+}

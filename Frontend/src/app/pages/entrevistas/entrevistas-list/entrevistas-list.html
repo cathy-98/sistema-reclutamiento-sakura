@@ -1,0 +1,86 @@
+<app-page-layout>
+  <app-page-header title="Agenda de entrevistas" subtitle="Gestión de entrevistas">
+    <div pageHeaderActions>
+      <app-button (pressed)="mostrarFormulario = true">+ Crear nueva entrevista</app-button>
+    </div>
+  </app-page-header>
+
+  <app-filter-panel
+    description="Usa uno o más campos para encontrar entrevistas."
+    quickSearchPlaceholder="Solicitud, candidato, cargo o entrevistador"
+    [(quickSearch)]="filtros.busquedaRapida"
+    (search)="buscar()"
+    (clear)="limpiarFiltros()"
+  >
+    <label>
+      Cargo vacante
+      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Todos" />
+    </label>
+
+    <label>
+      Fecha agendada
+      <input [(ngModel)]="filtros.fecha" type="date" />
+    </label>
+
+    <label>
+      Estado entrevista
+      <select [(ngModel)]="filtros.estado">
+        <option value="">Todos</option>
+        <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
+      </select>
+    </label>
+
+    <label>
+      Tipo de entrevista
+      <select [(ngModel)]="filtros.tipo">
+        <option value="">Todos</option>
+        <option *ngFor="let tipo of tipos" [ngValue]="tipo">{{ tipo }}</option>
+      </select>
+    </label>
+  </app-filter-panel>
+
+  <app-action-bar
+    [message]="mensajeAccionesMasivas"
+    *ngIf="!cargando && !errorCarga && entrevistasFiltradas.length > 0"
+  >
+    <button type="button" [disabled]="seleccionados.size === 0">Enviar recordatorio</button>
+    <button type="button" [disabled]="seleccionados.size === 0">Exportar agenda</button>
+  </app-action-bar>
+
+  <app-data-table
+    title="Listado de entrevistas"
+    [columns]="columnas"
+    [rows]="entrevistasPaginadas"
+    [total]="entrevistasFiltradas.length"
+    [page]="paginaActual"
+    [pageSize]="registrosPorPagina"
+    [loading]="cargando"
+    [errorMessage]="errorCarga"
+    loadingMessage="Cargando entrevistas..."
+    [rowId]="obtenerIdEntrevista"
+    [actions]="acciones"
+    [selectedIds]="seleccionados"
+    emptyTitle="No hay entrevistas para mostrar"
+    emptyMessage="Ajusta los filtros o crea una nueva entrevista."
+    (selectedIdsChange)="seleccionados = $event"
+    (pageChange)="cambiarPagina($event)"
+    (pageSizeChange)="cambiarRegistrosPorPagina($event)"
+    (actionClick)="manejarAccionTabla($event)"
+    (clear)="limpiarFiltros()"
+    (retry)="cargarEntrevistas()"
+  ></app-data-table>
+
+  <app-entrevista-form-modal
+    *ngIf="mostrarFormulario"
+    (cerrar)="mostrarFormulario = false"
+    (guardar)="guardarEntrevista($event)"
+  ></app-entrevista-form-modal>
+
+  <app-entrevista-estado-modal
+    *ngIf="entrevistaSeleccionada"
+    [entrevista]="entrevistaSeleccionada"
+    [modo]="modoEstado"
+    (cerrar)="cerrarModalEstado()"
+    (confirmar)="confirmarEstado($event)"
+  ></app-entrevista-estado-modal>
+</app-page-layout>
