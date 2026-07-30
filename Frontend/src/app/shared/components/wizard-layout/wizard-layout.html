@@ -1,0 +1,16 @@
+<section class="wizard-layout">
+  <app-stepper
+    [pasos]="pasos"
+    [pasoActivo]="pasoActivo"
+    [pasosCompletados]="pasosCompletados"
+    (cambiarPaso)="cambiarPaso.emit($event)"
+  ></app-stepper>
+
+  <div class="wizard-body">
+    <ng-content></ng-content>
+  </div>
+
+  <footer class="wizard-footer">
+    <ng-content select="[wizard-footer]"></ng-content>
+  </footer>
+</section>

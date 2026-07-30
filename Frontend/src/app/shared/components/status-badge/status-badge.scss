@@ -1,0 +1,37 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.status-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.alta,
+.cancelada,
+.descartado {
+  color: var(--color-danger);
+}
+
+.media,
+.pendiente,
+.en-revision {
+  color: var(--color-warning);
+}
+
+.baja,
+.en-curso,
+.contactado {
+  color: var(--color-info);
+}
+
+.cerrada,
+.entrevista {
+  color: var(--color-success);
+}

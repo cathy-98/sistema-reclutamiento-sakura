@@ -15,6 +15,7 @@
           type="button"
           [class.has-open-submenu]="estaSubmenuAbierto(item)"
           [attr.aria-expanded]="estaSubmenuAbierto(item)"
+          [attr.title]="!menuAbierto ? item.label : null"
           (click)="alternarSubmenu(item)"
         >
           <ng-container
@@ -23,7 +24,6 @@
           ></ng-container>
           <span class="sidebar-label">{{ item.label }}</span>
           <span class="sidebar-chevron" aria-hidden="true">›</span>
-          <span class="sidebar-tooltip">{{ item.label }}</span>
         </button>
 
         <div class="sidebar-submenu" *ngIf="item.children?.length && estaSubmenuAbierto(item)">
@@ -53,6 +53,7 @@
           [routerLink]="item.route"
           routerLinkActive="is-active"
           [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+          [attr.title]="!menuAbierto ? item.label : null"
           (click)="abrirMenuSiEstaCerrado()"
         >
           <ng-container
@@ -60,26 +61,23 @@
             [ngTemplateOutletContext]="{ icon: item.icon }"
           ></ng-container>
           <span class="sidebar-label">{{ item.label }}</span>
-          <span class="sidebar-tooltip">{{ item.label }}</span>
         </a>
 
         <ng-template #menuButton>
-          <button class="sidebar-link sidebar-link-module" type="button">
+          <button class="sidebar-link sidebar-link-module" type="button" [attr.title]="!menuAbierto ? item.label : null">
             <ng-container
               [ngTemplateOutlet]="menuIcon"
               [ngTemplateOutletContext]="{ icon: item.icon }"
             ></ng-container>
             <span class="sidebar-label">{{ item.label }}</span>
-            <span class="sidebar-tooltip">{{ item.label }}</span>
           </button>
         </ng-template>
         </ng-template>
       </ng-container>
     </nav>
 
-    <button class="sidebar-logout" type="button" (click)="cerrarSesion()">
+    <button class="sidebar-logout" type="button" [attr.title]="!menuAbierto ? 'Cerrar sesión' : null" (click)="cerrarSesion()">
       <span class="sidebar-label">Cerrar sesión</span>
-      <span class="sidebar-tooltip">Cerrar sesión</span>
     </button>
 
     <ng-template #menuIcon let-icon="icon">

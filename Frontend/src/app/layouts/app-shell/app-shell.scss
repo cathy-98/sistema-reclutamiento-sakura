@@ -86,10 +86,7 @@
   text-decoration: none;
   text-align: left;
   white-space: nowrap;
-  transition:
-    background 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
+  transition: background 150ms ease, color 150ms ease;
 }
 
 .sidebar-link:hover {
@@ -103,7 +100,9 @@
   box-shadow: inset 3px 0 0 var(--color-sakura);
 }
 
-.sidebar-link.has-open-submenu {
+.sidebar-link.has-open-submenu,
+.sidebar-submenu-link:hover,
+.sidebar-submenu-link.is-active {
   background: var(--color-sakura-soft);
   color: var(--color-sakura);
 }
@@ -140,38 +139,6 @@
   stroke-linejoin: round;
 }
 
-.sidebar-tooltip {
-  position: absolute;
-  left: 54px;
-  z-index: 5;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--color-text);
-  color: var(--color-white);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-4px);
-  transition:
-    opacity 150ms ease,
-    transform 150ms ease;
-  white-space: nowrap;
-}
-
-.app-layout:not(.menu-cerrado) .sidebar-tooltip {
-  display: none;
-}
-
-.menu-cerrado .sidebar-link:hover .sidebar-tooltip,
-.menu-cerrado .sidebar-link:focus-visible .sidebar-tooltip,
-.menu-cerrado .sidebar-logout:hover .sidebar-tooltip,
-.menu-cerrado .sidebar-logout:focus-visible .sidebar-tooltip {
-  opacity: 1;
-  transform: translateX(0);
-}
-
 .sidebar-submenu {
   display: grid;
   margin: 4px 0 4px 31px;
@@ -191,12 +158,6 @@
   font-size: 11px;
   text-align: left;
   text-decoration: none;
-}
-
-.sidebar-submenu-link:hover,
-.sidebar-submenu-link.is-active {
-  background: var(--color-sakura-soft);
-  color: var(--color-sakura);
 }
 
 .sidebar-logout {
@@ -231,10 +192,7 @@
   background: var(--color-card-bg);
   color: var(--color-muted);
   cursor: pointer;
-  transition:
-    left 180ms ease,
-    color 150ms ease,
-    border-color 150ms ease;
+  transition: left 180ms ease, color 150ms ease, border-color 150ms ease;
 }
 
 .menu-toggle:hover {

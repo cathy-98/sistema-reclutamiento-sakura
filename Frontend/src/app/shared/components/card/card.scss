@@ -1,0 +1,19 @@
+.card {
+  width: min(100%, 1180px);
+  margin: 0 auto 22px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-card-bg);
+  box-shadow: var(--shadow-card-soft);
+}
+
+.is-padded {
+  padding: 24px;
+}
+
+@media (max-width: 640px) {
+  .card {
+    border-radius: 10px;
+  }
+}

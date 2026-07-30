@@ -1,0 +1,24 @@
+<footer class="pagination-footer">
+  <span>Mostrando {{ visibleCount }} de {{ total }} registros</span>
+  <div class="pagination">
+    <label>
+      Registros por página:
+      <select [ngModel]="pageSize" aria-label="Registros por página" (ngModelChange)="changePageSize($event)">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+      </select>
+    </label>
+    <button type="button" aria-label="Página anterior" [disabled]="page === 1" (click)="changePage(page - 1)">
+      ‹
+    </button>
+    <button class="is-active" type="button" aria-current="page">{{ page }}</button>
+    <span>de {{ totalPages }}</span>
+    <button
+      type="button"
+      aria-label="Página siguiente"
+      [disabled]="page === totalPages"
+      (click)="changePage(page + 1)"
+    >
+      ›
+    </button>
+  </div>
+</footer>

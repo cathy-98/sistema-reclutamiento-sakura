@@ -1,0 +1,80 @@
+<article class="content-panel application-panel">
+  <h2 class="application-title">Historial de postulación</h2>
+
+  <div class="application-overview">
+    <article class="next-interview">
+      <span>Próxima entrevista</span>
+      <strong>{{ candidato.cargo }} Developer</strong>
+      <p>{{ postulacionSeleccionada[1] }}</p>
+      <dl>
+        <div><dt>Fecha</dt><dd>Oct 24, 2024</dd></div>
+        <div><dt>Hora</dt><dd>10:30 AM</dd></div>
+      </dl>
+    </article>
+
+    <div class="application-metrics">
+      <article><strong>02</strong><span>En proceso</span></article>
+      <article><strong>14</strong><span>Postulaciones</span></article>
+    </div>
+  </div>
+
+  <div class="application-search">
+    <label>
+      Buscar
+      <input [ngModel]="busqueda" (ngModelChange)="busquedaChange.emit($event)" type="search" placeholder="Insertar búsqueda" />
+    </label>
+    <app-button>Buscar</app-button>
+  </div>
+
+  <div class="application-layout">
+    <div class="application-history">
+      <table>
+        <thead>
+          <tr><th>ID Solicitud</th><th>Cliente / empresa</th><th>Puesto</th><th>Fecha postulación</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let postulacion of postulacionesFiltradas"
+            [class.is-selected]="postulacion[0] === postulacionSeleccionadaId"
+            (click)="postulacionSeleccionadaIdChange.emit(postulacion[0])"
+          >
+            <td>{{ postulacion[0] }}</td>
+            <td>{{ postulacion[1] }}</td>
+            <td>{{ postulacion[2] }}</td>
+            <td>{{ postulacion[3] }}</td>
+            <td><span class="status-pill" [class.closed]="postulacion[4] === 'Cerrada'">{{ postulacion[4] }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="selected-process-summary">
+      <span>Proceso seleccionado</span>
+      <strong>{{ postulacionSeleccionada[0] }} · {{ postulacionSeleccionada[2] }}</strong>
+      <p>{{ postulacionSeleccionada[1] }} · {{ postulacionSeleccionada[4] }}</p>
+    </aside>
+  </div>
+</article>
+
+<article class="content-panel process-panel">
+  <h2>Proceso de selección: {{ postulacionSeleccionada[0] }}</h2>
+  <div class="selection-list">
+    <article *ngFor="let etapa of proceso">
+      <header>
+        <strong>{{ etapa.etapa }}</strong>
+        <span class="state-chip" [class.pending]="etapa.estado === 'Pendiente'">{{ etapa.estado }}</span>
+      </header>
+
+      <dl>
+        <div><dt>Fecha</dt><dd>{{ etapa.fecha }}</dd></div>
+        <div><dt>Entrevistador</dt><dd>{{ etapa.entrevistador }}</dd></div>
+        <div><dt>Resultado</dt><dd class="result">{{ etapa.resultado }}</dd></div>
+      </dl>
+
+      <div>
+        <dt>Observaciones</dt>
+        <p>{{ etapa.observaciones }}</p>
+      </div>
+    </article>
+  </div>
+</article>

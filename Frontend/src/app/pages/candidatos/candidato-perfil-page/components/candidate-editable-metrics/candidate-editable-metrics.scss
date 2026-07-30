@@ -1,0 +1,35 @@
+.hero-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hero-summary article {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.hero-summary span,
+.hero-summary small {
+  color: var(--color-muted);
+}
+
+.hero-summary input,
+.hero-summary select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+}
+
+@media (max-width: 1050px) {
+  .hero-summary {
+    grid-template-columns: 1fr;
+  }
+}

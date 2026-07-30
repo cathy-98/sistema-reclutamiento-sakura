@@ -1,0 +1,9 @@
+<label class="form-field">
+  <span class="label">
+    {{ label }}
+    <strong *ngIf="required" aria-hidden="true">*</strong>
+  </span>
+  <ng-content></ng-content>
+  <small class="hint" *ngIf="hint && !error">{{ hint }}</small>
+  <small class="error" *ngIf="error">{{ error }}</small>
+</label>

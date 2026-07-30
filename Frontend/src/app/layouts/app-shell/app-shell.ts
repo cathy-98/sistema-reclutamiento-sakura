@@ -64,7 +64,8 @@ export class AppShell {
     {
       label: 'Gestion de entrevistas',
       icon: 'calendar',
-      roles: ['Administrador', 'Entrevistador'],
+      route: '/entrevistas',
+      roles: ['Administrador', 'Reclutador', 'Entrevistador'],
     },
   ];
 

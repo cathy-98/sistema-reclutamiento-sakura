@@ -1,0 +1,60 @@
+<article class="match-panel">
+  <app-match-score [value]="candidato.match + '%'" [scoreClass]="matchClass"></app-match-score>
+  <div>
+    <h2>Buen match para el cargo</h2>
+    <p>El candidato cumple con la mayoría de los requisitos técnicos y tiene buena alineación con el rol.</p>
+  </div>
+  <app-button variant="secondary">Actualizar análisis</app-button>
+</article>
+
+<article class="content-panel match-detail-panel">
+  <h2>Habilidades técnicas</h2>
+  <div class="match-table-scroll">
+    <table class="match-table">
+      <thead>
+        <tr>
+          <th>Tecnología requerida</th>
+          <th>Nivel requerido</th>
+          <th>Años requeridos</th>
+          <th>Tecnología candidato</th>
+          <th>Nivel candidato</th>
+          <th>Años candidato</th>
+          <th>Afinidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of habilidades">
+          <td>{{ item[0] }}</td>
+          <td>{{ item[1] }}</td>
+          <td>{{ item[2] }}</td>
+          <td [ngClass]="item[7]">{{ item[3] }}</td>
+          <td [ngClass]="item[7]">{{ item[4] }}</td>
+          <td [ngClass]="item[7]">{{ item[5] }}</td>
+          <td [ngClass]="item[7]">{{ item[6] }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<article class="content-panel qualitative-panel">
+  <h2>Análisis cualitativo</h2>
+  <div class="analysis-columns">
+    <div>
+      <h3>Resumen candidato</h3>
+      <p>{{ candidato.nombre }} es una desarrolladora proactiva con fuerte dominio en el frontend.</p>
+    </div>
+    <div>
+      <h3>Fortalezas</h3>
+      <ul>
+        <li *ngFor="let fortaleza of fortalezas">{{ fortaleza }}</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Áreas de mejora</h3>
+      <ul>
+        <li *ngFor="let mejora of areasMejora">{{ mejora }}</li>
+      </ul>
+    </div>
+  </div>
+</article>

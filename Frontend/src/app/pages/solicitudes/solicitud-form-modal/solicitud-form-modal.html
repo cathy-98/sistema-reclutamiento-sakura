@@ -23,14 +23,12 @@
         (cambiarPaso)="cambiarTabFormulario($event)"
       ></app-stepper>
 
-      <section class="form-section" *ngIf="tabFormulario === 'general'">
-        <header class="form-section-header">
-          <span>1</span>
-          <div>
-            <h3>Información general</h3>
-            <p>Datos principales de la solicitud.</p>
-          </div>
-        </header>
+      <app-form-section
+        *ngIf="tabFormulario === 'general'"
+        step="1"
+        title="Información general"
+        description="Datos principales de la solicitud."
+      >
 
         <div class="form-grid">
           <label class="form-field form-field--full">
@@ -138,16 +136,14 @@
             </select>
           </label>
         </div>
-      </section>
+      </app-form-section>
 
-      <section class="form-section" *ngIf="tabFormulario === 'condiciones'">
-        <header class="form-section-header">
-          <span>2</span>
-          <div>
-            <h3>Condiciones de la vacante</h3>
-            <p>Define prioridad, modalidad, salario y jornada.</p>
-          </div>
-        </header>
+      <app-form-section
+        *ngIf="tabFormulario === 'condiciones'"
+        step="2"
+        title="Condiciones de la vacante"
+        description="Define prioridad, modalidad, salario y jornada."
+      >
 
         <div class="form-grid">
           <label class="form-field">
@@ -221,16 +217,14 @@
             <input type="time" formControlName="hora_fin_jornada" />
           </label>
         </div>
-      </section>
+      </app-form-section>
 
-      <section class="form-section" *ngIf="tabFormulario === 'cronograma'">
-        <header class="form-section-header">
-          <span>3</span>
-          <div>
-            <h3>Cronograma</h3>
-            <p>Fechas principales del proceso.</p>
-          </div>
-        </header>
+      <app-form-section
+        *ngIf="tabFormulario === 'cronograma'"
+        step="3"
+        title="Cronograma"
+        description="Fechas principales del proceso."
+      >
 
         <div class="form-grid">
           <label class="form-field">
@@ -248,16 +242,14 @@
             <input type="date" formControlName="fecha_inicio_cliente" />
           </label>
         </div>
-      </section>
+      </app-form-section>
 
-      <section class="form-section" *ngIf="tabFormulario === 'descripcion'">
-        <header class="form-section-header">
-          <span>4</span>
-          <div>
-            <h3>Descripción</h3>
-            <p>Observaciones y detalle de la vacante.</p>
-          </div>
-        </header>
+      <app-form-section
+        *ngIf="tabFormulario === 'descripcion'"
+        step="4"
+        title="Descripción"
+        description="Observaciones y detalle de la vacante."
+      >
 
         <label class="form-field">
           Descripción / observaciones
@@ -269,16 +261,14 @@
           ></textarea>
           <small>{{ descripcionLength }}/500</small>
         </label>
-      </section>
+      </app-form-section>
 
-      <section class="form-section" *ngIf="tabFormulario === 'habilidades'">
-        <header class="form-section-header">
-          <span>5</span>
-          <div>
-            <h3>Habilidades técnicas</h3>
-            <p>Define tecnologías, nivel y años de experiencia.</p>
-          </div>
-        </header>
+      <app-form-section
+        *ngIf="tabFormulario === 'habilidades'"
+        step="5"
+        title="Habilidades técnicas"
+        description="Define tecnologías, nivel y años de experiencia."
+      >
 
         <div class="skills-form-grid" [formGroup]="nuevaHabilidad">
           <label class="form-field">
@@ -325,9 +315,9 @@
             </span>
           </label>
 
-          <button class="add-skill-button" type="button" (click)="agregarHabilidad()">
+          <app-button variant="ghost" type="button" (pressed)="agregarHabilidad()">
             + Agregar
-          </button>
+          </app-button>
         </div>
 
         <div class="skills-empty" *ngIf="habilidadesFormArray.length === 0">
@@ -349,23 +339,17 @@
             Eliminar
           </button>
         </div>
-      </section>
+      </app-form-section>
       </form>
     </div>
 
-    <footer modal-footer class="modal-footer">
-      <button class="ghost-button" type="button" (click)="cerrar.emit()">Cancelar</button>
+    <app-form-actions modal-footer>
+      <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
 
-      <div class="modal-footer-actions">
-        <button class="ghost-button" type="button" [disabled]="pasoActualIndice() === 0" (click)="volverPaso()">
-          Volver
-        </button>
-        <button class="primary-small-button" type="button" *ngIf="!esUltimoPaso()" (click)="siguientePaso()">
-          Siguiente
-        </button>
-        <button class="primary-small-button" type="button" *ngIf="esUltimoPaso()" (click)="guardarSolicitud()">
-          Guardar solicitud
-        </button>
-      </div>
-    </footer>
+      <app-button variant="ghost" type="button" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
+        Volver
+      </app-button>
+      <app-button type="button" *ngIf="!esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
+      <app-button type="button" *ngIf="esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
+    </app-form-actions>
 </app-modal>

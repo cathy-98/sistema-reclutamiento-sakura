@@ -1,0 +1,34 @@
+<app-modal [titulo]="titulo" [subtitulo]="entrevista?.idSolicitud || ''" ancho="sm" (cerrar)="cerrar.emit()">
+  <form class="state-form" [formGroup]="formulario">
+    <p *ngIf="entrevista">
+      {{ entrevista.asunto }} · {{ entrevista.candidato }} · {{ entrevista.cargo }}
+    </p>
+
+    <div class="date-grid" *ngIf="modo === 'reprogramar'">
+      <label>
+        Nueva fecha
+        <input type="date" formControlName="fecha" />
+      </label>
+      <label>
+        Hora inicio
+        <input type="time" formControlName="horaInicio" />
+      </label>
+      <label>
+        Hora fin
+        <input type="time" formControlName="horaFin" />
+        <small *ngIf="!horarioValido()">La hora fin debe ser mayor a la hora inicio.</small>
+      </label>
+    </div>
+
+    <label>
+      Motivo
+      <textarea formControlName="motivo" placeholder="Indica el motivo para registrar el cambio"></textarea>
+      <small *ngIf="formulario.get('motivo')?.touched && formulario.get('motivo')?.invalid">Campo obligatorio.</small>
+    </label>
+  </form>
+
+  <app-form-actions modal-footer>
+    <app-button formActionsStart variant="ghost" (pressed)="cerrar.emit()">Volver</app-button>
+    <app-button [variant]="modo === 'cancelar' ? 'danger' : 'primary'" (pressed)="enviar()">{{ accion }}</app-button>
+  </app-form-actions>
+</app-modal>

@@ -1,15 +1,25 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
 import {
   DataTable,
   DataTableAction,
   DataTableActionEvent,
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
+import { ActionBar } from '../../../shared/components/action-bar/action-bar';
 import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
+import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
+import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { CurrencyClPipe } from '../../../shared/pipes/currency-cl.pipe';
+import {
+  EntrevistaCandidatoSeleccionado,
+  EntrevistaFormModal,
+} from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 
 type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
@@ -44,7 +54,17 @@ interface FiltrosCandidatos {
 
 @Component({
   selector: 'app-candidatos-list',
-  imports: [CommonModule, FormsModule, DataTable, FileDropzone, PageHeader],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DataTable,
+    FileDropzone,
+    PageHeader,
+    PageLayout,
+    FilterPanel,
+    ActionBar,
+    EntrevistaFormModal,
+  ],
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
@@ -58,6 +78,8 @@ export class CandidatosList {
   busquedaRapida = '';
   seleccionados = new Set<string>();
   archivosCv: File[] = [];
+  candidatosAgenda: EntrevistaCandidatoSeleccionado[] = [];
+  mostrarModalAgenda = false;
 
   filtros: FiltrosCandidatos = this.filtrosIniciales();
 
@@ -115,7 +137,7 @@ export class CandidatosList {
       key: 'renta',
       label: 'Pretensión de renta',
       width: 170,
-      value: (candidato) => this.formatearRenta(candidato.renta),
+      value: (candidato) => this.currencyCl.transform(candidato.renta),
     },
     {
       key: 'habilidades',
@@ -223,7 +245,12 @@ export class CandidatosList {
     },
   ];
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private currencyCl: CurrencyClPipe,
+    private router: Router,
+    private entrevistasService: EntrevistasService,
+  ) {
     this.actualizarDatosSesion();
 
     this.authService.cargarPerfilUsuario().subscribe(() => {
@@ -299,6 +326,12 @@ export class CandidatosList {
     return Math.max(1, Math.ceil(this.candidatosFiltrados.length / this.registrosPorPagina));
   }
 
+  get mensajeAccionesMasivas() {
+    return this.seleccionados.size > 0
+      ? `${this.seleccionados.size} candidatos seleccionados.`
+      : 'Selecciona candidatos para habilitar acciones masivas.';
+  }
+
   get candidatosPaginados() {
     const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
     return this.candidatosFiltrados.slice(inicio, inicio + this.registrosPorPagina);
@@ -349,7 +382,98 @@ export class CandidatosList {
   }
 
   manejarAccionTabla(evento: DataTableActionEvent<Candidato>) {
+    if (evento.action === 'ver') {
+      const candidato = evento.row;
+
+      this.router.navigate(['/candidatos/perfil', this.obtenerIdCandidato(candidato)], {
+        queryParams: {
+          idSolicitud: candidato.idSolicitud,
+          match: candidato.match,
+          nombre: candidato.nombre,
+          correo: candidato.correo,
+          telefono: candidato.telefono,
+          cargo: candidato.cargo,
+          estado: candidato.estado,
+          disponibilidad: candidato.disponibilidad,
+          renta: candidato.renta,
+        },
+      });
+      return;
+    }
+
+    if (evento.action === 'agendar-entrevista') {
+      this.abrirAgendaEntrevista([evento.row]);
+      return;
+    }
+
     console.log('Acción de candidato:', evento.action, evento.row);
+  }
+
+  abrirAgendaMasiva() {
+    const candidatos = this.candidatos.filter((candidato) =>
+      this.seleccionados.has(this.obtenerIdCandidato(candidato)),
+    );
+
+    if (candidatos.length === 0) {
+      return;
+    }
+
+    this.abrirAgendaEntrevista(candidatos);
+  }
+
+  abrirAgendaEntrevista(candidatos: Candidato[]) {
+    this.candidatosAgenda = candidatos.map((candidato) => ({
+      id: this.obtenerIdCandidato(candidato),
+      idSolicitud: candidato.idSolicitud,
+      nombre: candidato.nombre,
+      cargo: candidato.cargo,
+    }));
+    this.mostrarModalAgenda = true;
+  }
+
+  cerrarAgendaEntrevista() {
+    this.mostrarModalAgenda = false;
+    this.candidatosAgenda = [];
+  }
+
+  actualizarCandidatosAgenda(candidatos: EntrevistaCandidatoSeleccionado[]) {
+    this.candidatosAgenda = candidatos;
+    this.seleccionados = new Set(
+      candidatos
+        .map((candidato) => candidato.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+  }
+
+  guardarAgendaEntrevista(payload: EntrevistaPayload) {
+    const candidatos = this.candidatosAgenda;
+
+    if (candidatos.length <= 1) {
+      this.entrevistasService.crear(payload).subscribe({
+        next: () => this.cerrarAgendaEntrevista(),
+        error: () => {
+          this.errorCarga = 'No se pudo agendar la entrevista. Intenta nuevamente.';
+        },
+      });
+      return;
+    }
+
+    const entrevistas = candidatos.map((candidato) => ({
+      ...payload,
+      idSolicitud: candidato.idSolicitud,
+      candidato: candidato.nombre,
+      cargo: candidato.cargo,
+    }));
+
+    this.entrevistasService.crearMasiva(entrevistas).subscribe({
+      next: () => {
+        this.seleccionados = new Set<string>();
+        this.cerrarAgendaEntrevista();
+      },
+      error: () => {
+        this.errorCarga = 'No se pudieron agendar las entrevistas. Intenta nuevamente.';
+      },
+    });
   }
 
   actualizarArchivosCv(files: File[]) {
@@ -379,10 +503,6 @@ export class CandidatosList {
 
   estadoClase(estado: Candidato['estado']) {
     return estado.toLowerCase().replace(' ', '-');
-  }
-
-  formatearRenta(renta: number) {
-    return renta.toLocaleString('es-CL');
   }
 
   private filtrosIniciales(): FiltrosCandidatos {

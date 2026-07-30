@@ -18,9 +18,6 @@
 }
 
 .table-header p,
-.empty-state span,
-.error-state span,
-.loading-state span,
 .stack-cell small {
   margin: 0;
   color: var(--color-muted);
@@ -165,68 +162,6 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 700;
-}
-
-.status::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.match {
-  display: inline-grid;
-  min-width: 42px;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--color-white);
-  font-weight: 800;
-}
-
-.match.is-high {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.match.is-medium {
-  background: var(--color-warning-bg);
-  color: var(--color-warning-dark);
-}
-
-.match.is-low {
-  background: var(--color-danger-bg);
-  color: var(--color-danger-dark);
-}
-
-.alta,
-.cancelada,
-.descartado {
-  color: var(--color-danger);
-}
-
-.media,
-.pendiente,
-.en-revision {
-  color: var(--color-warning);
-}
-
-.baja,
-.en-curso,
-.contactado {
-  color: var(--color-info);
-}
-
-.cerrada,
-.entrevista {
-  color: var(--color-success);
-}
-
 .person-cell {
   display: inline-flex;
   align-items: center;
@@ -241,18 +176,6 @@ select:focus-visible {
   font-size: 14px;
 }
 
-.avatar {
-  display: inline-grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-danger-soft);
-  color: var(--color-sakura);
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .stack-cell {
   display: grid;
   gap: 4px;
@@ -264,137 +187,6 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.row-actions button {
-  display: inline-grid;
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  place-items: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.row-actions button:hover {
-  border-color: var(--color-sakura);
-  color: var(--color-sakura);
-}
-
-.row-actions svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.loading-state,
-.error-state,
-.empty-state {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 42px 20px 46px;
-  text-align: center;
-}
-
-.loading-state strong,
-.error-state strong,
-.empty-state strong {
-  font-size: 18px;
-}
-
-.loader {
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-sakura);
-  border-radius: 50%;
-  animation: table-spin 800ms linear infinite;
-}
-
-.empty-state span {
-  max-width: 360px;
-}
-
-@keyframes table-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.ghost-button {
-  display: inline-flex;
-  min-width: 92px;
-  min-height: 42px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-  border: 1px solid var(--color-sakura);
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-sakura);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 18px;
-  background: var(--color-table-footer);
-  color: var(--color-text-soft);
-  font-size: 13px;
-}
-
-.pagination,
-.pagination label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination select,
-.pagination button {
-  min-width: 28px;
-  height: 38px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-text-muted-strong);
-}
-
-.pagination button {
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.pagination button:disabled {
-  background: var(--color-surface-hover);
-  color: var(--color-muted);
-  cursor: not-allowed;
-}
-
-.pagination .is-active {
-  background: var(--color-sakura);
-  color: var(--color-white);
-}
-
-@media (max-width: 900px) {
-  .table-footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 640px) {
