@@ -1,0 +1,249 @@
+.content-panel {
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.application-title {
+  margin-bottom: 22px;
+  padding-bottom: 12px;
+  color: var(--color-sakura);
+}
+
+.application-overview,
+.application-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.application-overview {
+  grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.9fr);
+  margin-bottom: 24px;
+}
+
+.next-interview {
+  display: grid;
+  gap: 10px;
+  padding: 22px 24px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #c8621d, #984e21);
+  color: var(--color-white);
+}
+
+.next-interview span {
+  justify-self: start;
+  padding: 5px 10px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.next-interview strong {
+  font-size: 24px;
+}
+
+.next-interview p,
+.selected-process-summary p,
+.selection-list p {
+  margin: 0;
+}
+
+.next-interview dl {
+  display: flex;
+  gap: 34px;
+  margin: 10px 0 0;
+}
+
+.next-interview dt,
+.next-interview dd {
+  color: var(--color-white);
+}
+
+.application-metrics,
+.selection-list {
+  display: grid;
+  gap: 12px;
+}
+
+.application-metrics article {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 18px 22px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.application-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+input {
+  min-height: 54px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  font: inherit;
+}
+
+.application-layout {
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-items: start;
+}
+
+.application-history {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px 12px;
+  text-align: left;
+}
+
+th {
+  color: var(--color-sakura);
+  font-size: 14px;
+}
+
+tr {
+  cursor: pointer;
+}
+
+tbody tr:hover,
+.is-selected {
+  background: var(--color-sakura-soft);
+}
+
+.status-pill {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-weight: 800;
+}
+
+.status-pill.closed {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.selected-process-summary {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--color-sakura-border);
+  border-radius: 8px;
+  background: var(--color-sakura-soft);
+}
+
+.selection-list article {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-sakura-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.selection-list article:hover {
+  background: var(--color-surface-soft);
+}
+
+.selection-list header,
+.selection-list dl {
+  display: grid;
+  gap: 12px;
+}
+
+.selection-list header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.selection-list dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+dt,
+.selected-process-summary span {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.selection-list .result {
+  color: var(--color-success);
+}
+
+.state-chip {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.state-chip.pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+}
+
+@media (max-width: 1050px) {
+  .application-overview,
+  .application-layout,
+  .selection-list dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .application-search,
+  .selection-list header {
+    grid-template-columns: 1fr;
+  }
+}

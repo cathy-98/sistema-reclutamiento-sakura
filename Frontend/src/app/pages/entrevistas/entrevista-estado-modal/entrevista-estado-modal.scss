@@ -1,0 +1,48 @@
+.state-form {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.date-grid,
+label {
+  display: grid;
+  gap: 10px;
+}
+
+label {
+  color: var(--color-text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+textarea {
+  min-height: 110px;
+  padding-top: 10px;
+  resize: vertical;
+}
+
+small {
+  color: var(--color-danger);
+}

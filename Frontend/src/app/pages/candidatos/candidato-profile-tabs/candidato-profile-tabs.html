@@ -1,0 +1,10 @@
+<nav class="profile-tabs" aria-label="Secciones del perfil candidato">
+  <button
+    *ngFor="let tab of tabs"
+    type="button"
+    [class.is-active]="activeTab === tab.id"
+    (click)="activeTabChange.emit(tab.id)"
+  >
+    {{ tab.label }}
+  </button>
+</nav>

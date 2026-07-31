@@ -1,0 +1,19 @@
+<article class="content-panel">
+  <h2>Documentos</h2>
+  <app-file-dropzone
+    title="Cargar documentos del candidato"
+    description="Arrastra CV, certificados u otros respaldos asociados al perfil."
+    buttonText="Seleccionar documentos"
+    [allowedExtensions]="['pdf', 'doc', 'docx', 'xls', 'xlsx']"
+    [maxFileSizeMb]="10"
+    (filesChange)="filesChange.emit($event)"
+  ></app-file-dropzone>
+
+  <div class="record-list">
+    <article *ngFor="let doc of documentos">
+      <strong>{{ doc[0] }}</strong>
+      <span>{{ doc[1] }} · {{ doc[2] }} · {{ doc[3] }}</span>
+      <button class="text-action" type="button">Ver documento</button>
+    </article>
+  </div>
+</article>

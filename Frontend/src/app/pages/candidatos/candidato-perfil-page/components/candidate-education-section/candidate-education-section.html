@@ -1,0 +1,20 @@
+<article class="content-panel resume-panel">
+  <h2>Estudios y Cursos</h2>
+  <div class="education-list">
+    <article *ngFor="let estudio of estudios">
+      <h3>{{ estudio.titulo }}</h3>
+      <p>{{ estudio.institucion }}</p>
+      <div class="education-meta">
+        <span>{{ estudio.estado }}</span>
+        <small>{{ estudio.fecha }}</small>
+      </div>
+    </article>
+  </div>
+
+  <div class="language-block">
+    <h3>Idiomas</h3>
+    <div class="tag-row">
+      <span *ngFor="let idioma of idiomas">{{ idioma }}</span>
+    </div>
+  </div>
+</article>

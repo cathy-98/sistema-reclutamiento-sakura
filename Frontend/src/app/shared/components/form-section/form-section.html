@@ -1,0 +1,11 @@
+<section class="form-section">
+  <header class="form-section-header">
+    <span *ngIf="step">{{ step }}</span>
+    <div>
+      <h3>{{ title }}</h3>
+      <p *ngIf="description">{{ description }}</p>
+    </div>
+  </header>
+
+  <ng-content></ng-content>
+</section>

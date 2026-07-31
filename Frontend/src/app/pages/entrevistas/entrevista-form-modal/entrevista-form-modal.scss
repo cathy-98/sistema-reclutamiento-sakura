@@ -1,0 +1,202 @@
+.interview-form {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+}
+
+.interview-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--color-text-soft);
+  font-size: 12px;
+}
+
+.interview-summary.is-bulk {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.interview-summary strong {
+  font-size: 13px;
+}
+
+.interview-summary span {
+  min-height: 34px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-sakura);
+  border-radius: 7px;
+  color: var(--color-sakura);
+  font-weight: 700;
+}
+
+.selected-candidates {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.selected-candidates > div {
+  display: grid;
+  gap: 3px;
+}
+
+.selected-candidates strong {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.selected-candidates span,
+.selected-candidates small {
+  color: var(--color-text-soft);
+  font-size: 12px;
+}
+
+.selected-candidates ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  max-height: 122px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.selected-candidates li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+}
+
+.selected-candidates li span {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.selected-candidates-table {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.selected-candidates-table table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.selected-candidates-table th,
+.selected-candidates-table td {
+  height: 48px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.selected-candidates-table th {
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-weight: 800;
+}
+
+.selected-candidates-table td:last-child,
+.selected-candidates-table th:last-child {
+  width: 86px;
+  text-align: center;
+}
+
+.selected-candidates-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.form-error {
+  color: var(--color-danger);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.type-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.type-options legend {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+  color: var(--color-text-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.type-options label,
+.check-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-sakura);
+}
+
+.add-integrant {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 220px);
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 760px) {
+  .interview-form {
+    padding: 18px;
+  }
+
+  .interview-summary,
+  .add-integrant {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .form-grid,
+  .type-options {
+    grid-template-columns: 1fr;
+  }
+
+}

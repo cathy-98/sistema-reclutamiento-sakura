@@ -1,0 +1,269 @@
+<app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
+  <form class="interview-form" [formGroup]="formulario">
+    <div class="interview-summary" [class.is-bulk]="esAgendaMasiva">
+      <strong>
+        {{
+          esAgendaMasiva
+            ? 'Agenda masiva: ' + candidatos.length + ' candidatos'
+            : 'Cargo/ Nombre vacante: ' + (control('cargo')?.value || 'Desarrollador')
+        }}
+      </strong>
+      <span>
+        {{
+          esAgendaMasiva
+            ? 'Una entrevista por candidato'
+            : 'ID solicitud: ' + (control('idSolicitud')?.value || 'Req-021')
+        }}
+      </span>
+    </div>
+
+    <section class="selected-candidates" *ngIf="tieneCandidatosPreseleccionados" aria-label="Candidatos seleccionados">
+      <div>
+        <strong>{{ resumenCandidatos }}</strong>
+        <span>
+          {{
+            esAgendaMasiva
+              ? 'Se creará una entrevista para cada candidato seleccionado.'
+              : 'La entrevista quedará asociada a este candidato.'
+          }}
+        </span>
+      </div>
+
+      <div class="selected-candidates-table" *ngIf="esAgendaMasiva; else candidatoUnico">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>ID solicitud</th>
+              <th>Cargo</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let candidato of candidatos">
+              <td>
+                <strong>{{ candidato.nombre }}</strong>
+              </td>
+              <td>{{ candidato.idSolicitud }}</td>
+              <td>{{ candidato.cargo }}</td>
+              <td>
+                <app-icon-button
+                  icon="trash"
+                  [label]="'Quitar ' + candidato.nombre"
+                  (pressed)="eliminarCandidatoAgenda(candidato)"
+                ></app-icon-button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #candidatoUnico>
+        <ul>
+          <li *ngFor="let candidato of candidatos">
+            <span>{{ candidato.nombre }}</span>
+            <small>{{ candidato.idSolicitud }} · {{ candidato.cargo }}</small>
+          </li>
+        </ul>
+      </ng-template>
+
+    </section>
+
+    <app-stepper
+      [pasos]="pasosFormulario"
+      [pasoActivo]="tabFormulario"
+      [pasosCompletados]="pasosCompletados"
+      (cambiarPaso)="cambiarTabFormulario($event)"
+    ></app-stepper>
+
+    <app-form-section
+      *ngIf="tabFormulario === 'datos'"
+      step="1"
+      title="Datos de la solicitud"
+      description="Selecciona la solicitud, candidato y cargo asociado."
+    >
+      <div class="form-grid">
+        <app-form-field
+          label="Solicitud"
+          [required]="true"
+          [error]="control('idSolicitud')?.touched && control('idSolicitud')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input
+            *ngIf="tieneCandidatosPreseleccionados"
+            type="text"
+            formControlName="idSolicitud"
+            readonly
+          />
+          <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="idSolicitud">
+            <option [ngValue]="null">Selecciona solicitud</option>
+            <option>Req-021</option>
+            <option>Req-022</option>
+            <option>Req-023</option>
+          </select>
+        </app-form-field>
+
+        <app-form-field
+          label="Candidato"
+          [required]="true"
+          [error]="control('candidato')?.touched && control('candidato')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input
+            *ngIf="tieneCandidatosPreseleccionados"
+            type="text"
+            formControlName="candidato"
+            readonly
+          />
+          <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="candidato">
+            <option [ngValue]="null">Selecciona candidato</option>
+            <option>Macarena Lopez</option>
+            <option>Valentina Rojas</option>
+            <option>Juan Perez Gonzalez</option>
+          </select>
+        </app-form-field>
+
+        <app-form-field
+          class="full"
+          label="Cargo vacante"
+          [required]="true"
+          [error]="control('cargo')?.touched && control('cargo')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input
+            type="text"
+            formControlName="cargo"
+            placeholder="Ej. Desarrollador"
+            [readonly]="tieneCandidatosPreseleccionados"
+          />
+        </app-form-field>
+      </div>
+    </app-form-section>
+
+    <app-form-section
+      *ngIf="tabFormulario === 'agenda'"
+      step="2"
+      title="Tipo, hora, fecha y duración"
+      description="Define el tipo de entrevista y cuándo se realizará."
+    >
+      <fieldset class="type-options">
+        <legend>Tipo de entrevista *</legend>
+        <label *ngFor="let tipo of tipos">
+          <input
+            type="checkbox"
+            [checked]="control('tipo')?.value === tipo"
+            (change)="seleccionarTipo(tipo)"
+          />
+          {{ tipo }}
+        </label>
+      </fieldset>
+      <small class="form-error" *ngIf="control('tipo')?.touched && control('tipo')?.invalid">Campo obligatorio.</small>
+
+      <div class="form-grid">
+        <app-form-field
+          label="Fecha"
+          [required]="true"
+          [error]="control('fecha')?.touched && control('fecha')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input type="date" formControlName="fecha" />
+        </app-form-field>
+
+        <app-form-field
+          label="Hora solicitada"
+          [required]="true"
+          [error]="control('horaInicio')?.touched && control('horaInicio')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input type="time" formControlName="horaInicio" />
+        </app-form-field>
+
+        <app-form-field
+          label="Hora fin"
+          [required]="true"
+          [error]="
+            control('horaFin')?.touched && control('horaFin')?.invalid
+              ? 'Campo obligatorio.'
+              : !horarioValido()
+                ? 'La hora fin debe ser mayor a la hora inicio.'
+                : ''
+          "
+        >
+          <input type="time" formControlName="horaFin" />
+        </app-form-field>
+
+        <app-form-field label="Duración">
+          <select formControlName="duracion">
+            <option *ngFor="let duracion of duraciones">{{ duracion }}</option>
+          </select>
+        </app-form-field>
+
+        <app-form-field label="Modalidad" [required]="true">
+          <select formControlName="modalidad">
+            <option *ngFor="let modalidad of modalidades">{{ modalidad }}</option>
+          </select>
+        </app-form-field>
+
+        <app-form-field label="Link reunión">
+          <input type="url" formControlName="linkReunion" placeholder="https://..." />
+        </app-form-field>
+      </div>
+    </app-form-section>
+
+    <app-form-section
+      *ngIf="tabFormulario === 'integrantes'"
+      step="3"
+      title="Integrantes y roles"
+      description="Agrega participantes y confirma quiénes quedan seleccionados."
+    >
+      <div class="add-integrant">
+        <app-form-field
+          label="Integrante"
+          [required]="true"
+          [error]="control('entrevistador')?.touched && control('entrevistador')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input type="text" formControlName="entrevistador" placeholder="Nombre responsable" />
+        </app-form-field>
+        <app-button type="button" (pressed)="agregarIntegrante()">Añadir</app-button>
+      </div>
+
+      <app-data-table
+        title="Integrantes"
+        subtitle="Selecciona los participantes de la entrevista."
+        [columns]="columnasIntegrantes"
+        [rows]="integrantes"
+        [total]="integrantes.length"
+        [page]="1"
+        [pageSize]="integrantes.length"
+        [pageSizeOptions]="[integrantes.length]"
+        [rowId]="obtenerIdIntegrante"
+        [selectedIds]="integrantesSeleccionados"
+        (selectedIdsChange)="actualizarSeleccionIntegrantes($event)"
+      ></app-data-table>
+    </app-form-section>
+
+    <app-form-section
+      *ngIf="tabFormulario === 'detalle'"
+      step="4"
+      title="Detalle del evento"
+      description="Completa el asunto y las notas que se enviarán en la cita."
+    >
+      <div class="form-grid">
+        <app-form-field
+          class="full"
+          label="Título"
+          [required]="true"
+          [error]="control('asunto')?.touched && control('asunto')?.invalid ? 'Campo obligatorio.' : ''"
+        >
+          <input type="text" formControlName="asunto" placeholder="Ej. Agendamiento entrevista técnica" />
+        </app-form-field>
+
+        <app-form-field class="full" label="Detalle o nota del evento">
+          <textarea formControlName="observacion" placeholder="Notas para la entrevista"></textarea>
+        </app-form-field>
+      </div>
+    </app-form-section>
+  </form>
+
+  <app-form-actions modal-footer>
+    <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
+    <app-button variant="ghost" type="button" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">Volver</app-button>
+    <app-button type="button" *ngIf="!esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
+    <app-button type="button" *ngIf="esUltimoPaso()" (pressed)="enviar()">Enviar</app-button>
+  </app-form-actions>
+</app-modal>

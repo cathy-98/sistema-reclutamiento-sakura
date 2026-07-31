@@ -1,0 +1,13 @@
+<article class="content-panel resume-panel">
+  <h2>Experiencia Laboral</h2>
+  <div class="timeline-list">
+    <div class="timeline-item" *ngFor="let experiencia of experiencias">
+      <h3>{{ experiencia.cargo }}</h3>
+      <strong>{{ experiencia.empresa }} · {{ experiencia.fecha }}</strong>
+      <p>{{ experiencia.descripcion }}</p>
+      <div class="tag-row">
+        <span *ngFor="let tag of experiencia.tags">{{ tag }}</span>
+      </div>
+    </div>
+  </div>
+</article>

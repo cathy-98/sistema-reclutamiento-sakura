@@ -1,0 +1,16 @@
+<article class="content-panel observation-panel">
+  <header class="panel-header">
+    <h2>Historial de observaciones</h2>
+    <app-button variant="secondary" (pressed)="addObservation.emit()">Agregar observación</app-button>
+  </header>
+
+  <div class="observation-history">
+    <article *ngFor="let observacion of historial">
+      <header>
+        <strong>{{ observacion[2] }}</strong>
+        <span>{{ observacion[0] }} · {{ observacion[1] }}</span>
+      </header>
+      <p>{{ observacion[3] }}</p>
+    </article>
+  </div>
+</article>
