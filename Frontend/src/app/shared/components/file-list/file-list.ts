@@ -15,6 +15,16 @@ export class FileList {
   @Output() clear = new EventEmitter<void>();
   @Output() remove = new EventEmitter<File>();
 
+  readonly listId = `file-list-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.listId}-title`;
+  }
+
+  get descriptionId() {
+    return `${this.listId}-description`;
+  }
+
   get totalSizeMb() {
     return this.files.reduce((total, file) => total + this.fileSizeMb(file), 0);
   }

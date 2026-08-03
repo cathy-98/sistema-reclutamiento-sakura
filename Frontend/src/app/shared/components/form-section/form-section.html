@@ -1,9 +1,10 @@
-<section class="form-section">
+<section class="form-section" [attr.aria-labelledby]="titleId" [attr.aria-describedby]="description ? descriptionId : null">
+  <!-- Sección reutilizable dentro de formularios largos. -->
   <header class="form-section-header">
     <span *ngIf="step">{{ step }}</span>
     <div>
-      <h3>{{ title }}</h3>
-      <p *ngIf="description">{{ description }}</p>
+      <h3 [id]="titleId">{{ title }}</h3>
+      <p *ngIf="description" [id]="descriptionId">{{ description }}</p>
     </div>
   </header>
 

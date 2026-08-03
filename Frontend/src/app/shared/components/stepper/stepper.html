@@ -1,9 +1,12 @@
 <nav class="stepper" aria-label="Pasos del formulario">
+  <!-- Navegación entre pasos del formulario. -->
   <button
     *ngFor="let paso of pasos"
     type="button"
     [class.is-active]="pasoActivo === paso.clave"
     [class.is-complete]="estaCompleto(paso.clave)"
+    [attr.aria-current]="pasoActivo === paso.clave ? 'step' : null"
+    [attr.aria-label]="'Paso ' + paso.numero + ': ' + paso.titulo"
     (click)="cambiarPaso.emit(paso.clave)"
   >
     <span>{{ paso.numero }}</span>

@@ -67,6 +67,16 @@ export class DataTable<T> {
   @Output() clear = new EventEmitter<void>();
   @Output() retry = new EventEmitter<void>();
 
+  readonly tableId = `table-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.tableId}-title`;
+  }
+
+  get descriptionId() {
+    return `${this.tableId}-description`;
+  }
+
   get visibleColumns() {
     return this.columns;
   }

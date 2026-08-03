@@ -1,7 +1,8 @@
-<section class="filter-panel" aria-label="Filtros">
+<section class="filter-panel" [attr.aria-labelledby]="titleId">
+  <!-- Panel reutilizable de búsqueda y filtros del módulo. -->
   <header class="filter-header">
     <div>
-      <h3>{{ title }}</h3>
+      <h3 [id]="titleId">{{ title }}</h3>
       <p *ngIf="description">{{ description }}</p>
     </div>
 
@@ -16,12 +17,12 @@
     </label>
   </header>
 
-  <div class="panel-content">
+  <form class="panel-content" (ngSubmit)="search.emit()">
     <ng-content></ng-content>
-  </div>
+  </form>
 
-  <div class="filter-actions">
+  <footer class="filter-actions">
     <app-button variant="ghost" (pressed)="clear.emit()">Limpiar filtros</app-button>
     <app-button (pressed)="search.emit()">Buscar</app-button>
-  </div>
+  </footer>
 </section>

@@ -1,5 +1,6 @@
 <app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
   <form class="interview-form" [formGroup]="formulario">
+    <!-- Resumen contextual de la entrevista individual o masiva. -->
     <div class="interview-summary" [class.is-bulk]="esAgendaMasiva">
       <strong>
         {{
@@ -18,6 +19,7 @@
     </div>
 
     <section class="selected-candidates" *ngIf="tieneCandidatosPreseleccionados" aria-label="Candidatos seleccionados">
+      <!-- Tabla de revisión para agendas masivas antes de guardar. -->
       <div>
         <strong>{{ resumenCandidatos }}</strong>
         <span>
@@ -33,10 +35,10 @@
         <table>
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>ID solicitud</th>
-              <th>Cargo</th>
-              <th>Acción</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">ID solicitud</th>
+              <th scope="col">Cargo</th>
+              <th scope="col">Acción</th>
             </tr>
           </thead>
           <tbody>

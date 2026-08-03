@@ -134,13 +134,25 @@ th {
   font-size: 14px;
 }
 
-tr {
-  cursor: pointer;
-}
-
 tbody tr:hover,
 .is-selected {
   background: var(--color-sakura-soft);
+}
+
+.select-postulation {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-sakura);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+}
+
+.select-postulation:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .status-pill {
@@ -197,6 +209,15 @@ tbody tr:hover,
 .selection-list dl {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
+}
+
+.selection-list .observation-definition {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.observation-definition dd {
+  font-weight: 400;
 }
 
 dt,

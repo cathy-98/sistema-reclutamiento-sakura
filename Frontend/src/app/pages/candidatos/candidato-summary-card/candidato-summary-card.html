@@ -1,6 +1,7 @@
-<aside class="candidate-card">
+<aside class="candidate-card" aria-labelledby="candidate-summary-title">
+  <!-- Card lateral con datos rápidos del candidato. -->
   <app-avatar [initials]="initials"></app-avatar>
-  <h3>{{ nombre }}</h3>
+  <h3 id="candidate-summary-title">{{ nombre }}</h3>
   <p>{{ cargo }} · Santiago, Chile</p>
   <dl>
     <div>

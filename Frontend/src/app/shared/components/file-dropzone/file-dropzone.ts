@@ -23,6 +23,24 @@ export class FileDropzone {
   files: File[] = [];
   error = '';
 
+  readonly dropzoneId = `file-dropzone-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.dropzoneId}-title`;
+  }
+
+  get descriptionId() {
+    return `${this.dropzoneId}-description`;
+  }
+
+  get helperId() {
+    return `${this.dropzoneId}-helper`;
+  }
+
+  get errorId() {
+    return `${this.dropzoneId}-error`;
+  }
+
   get accept() {
     return this.allowedExtensions.map((extension) => `.${extension}`).join(',');
   }

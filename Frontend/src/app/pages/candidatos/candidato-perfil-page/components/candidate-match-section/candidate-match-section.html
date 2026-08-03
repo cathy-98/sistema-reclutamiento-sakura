@@ -1,25 +1,27 @@
-<article class="match-panel">
+<section class="match-panel" aria-labelledby="match-summary-title">
+  <!-- Resumen de compatibilidad del candidato con el cargo. -->
   <app-match-score [value]="candidato.match + '%'" [scoreClass]="matchClass"></app-match-score>
   <div>
-    <h2>Buen match para el cargo</h2>
+    <h2 id="match-summary-title">Buen match para el cargo</h2>
     <p>El candidato cumple con la mayoría de los requisitos técnicos y tiene buena alineación con el rol.</p>
   </div>
   <app-button variant="secondary">Actualizar análisis</app-button>
-</article>
+</section>
 
-<article class="content-panel match-detail-panel">
-  <h2>Habilidades técnicas</h2>
+<section class="content-panel match-detail-panel" aria-labelledby="match-skills-title">
+  <!-- Tabla comparativa de habilidades requeridas versus habilidades del candidato. -->
+  <h2 id="match-skills-title">Habilidades técnicas</h2>
   <div class="match-table-scroll">
     <table class="match-table">
       <thead>
         <tr>
-          <th>Tecnología requerida</th>
-          <th>Nivel requerido</th>
-          <th>Años requeridos</th>
-          <th>Tecnología candidato</th>
-          <th>Nivel candidato</th>
-          <th>Años candidato</th>
-          <th>Afinidad</th>
+          <th scope="col">Tecnología requerida</th>
+          <th scope="col">Nivel requerido</th>
+          <th scope="col">Años requeridos</th>
+          <th scope="col">Tecnología candidato</th>
+          <th scope="col">Nivel candidato</th>
+          <th scope="col">Años candidato</th>
+          <th scope="col">Afinidad</th>
         </tr>
       </thead>
       <tbody>
@@ -35,26 +37,27 @@
       </tbody>
     </table>
   </div>
-</article>
+</section>
 
-<article class="content-panel qualitative-panel">
-  <h2>Análisis cualitativo</h2>
+<section class="content-panel qualitative-panel" aria-labelledby="qualitative-match-title">
+  <!-- Lectura cualitativa del análisis de match. -->
+  <h2 id="qualitative-match-title">Análisis cualitativo</h2>
   <div class="analysis-columns">
-    <div>
+    <article>
       <h3>Resumen candidato</h3>
       <p>{{ candidato.nombre }} es una desarrolladora proactiva con fuerte dominio en el frontend.</p>
-    </div>
-    <div>
+    </article>
+    <article>
       <h3>Fortalezas</h3>
       <ul>
         <li *ngFor="let fortaleza of fortalezas">{{ fortaleza }}</li>
       </ul>
-    </div>
-    <div>
+    </article>
+    <article>
       <h3>Áreas de mejora</h3>
       <ul>
         <li *ngFor="let mejora of areasMejora">{{ mejora }}</li>
       </ul>
-    </div>
+    </article>
   </div>
-</article>
+</section>

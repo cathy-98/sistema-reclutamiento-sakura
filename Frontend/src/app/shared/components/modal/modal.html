@@ -1,9 +1,17 @@
 <div class="modal-backdrop">
-  <section class="app-modal" [ngClass]="ancho" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <section
+    class="app-modal"
+    [ngClass]="ancho"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="tituloId"
+    [attr.aria-describedby]="subtitulo ? subtituloId : null"
+  >
+    <!-- Encabezado semántico de la ventana modal. -->
     <header class="modal-header">
       <div>
-        <h2 id="modal-title">{{ titulo }}</h2>
-        <p *ngIf="subtitulo">{{ subtitulo }}</p>
+        <h2 [id]="tituloId">{{ titulo }}</h2>
+        <p *ngIf="subtitulo" [id]="subtituloId">{{ subtitulo }}</p>
       </div>
 
       <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrar.emit()">
@@ -11,6 +19,7 @@
       </button>
     </header>
 
+    <!-- Contenido proyectado por cada módulo que usa la modal. -->
     <div class="modal-body">
       <ng-content></ng-content>
     </div>

@@ -17,4 +17,14 @@ export class ConfirmDialog {
 
   @Output() cancelar = new EventEmitter<void>();
   @Output() confirmar = new EventEmitter<void>();
+
+  readonly dialogId = `confirm-dialog-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.dialogId}-title`;
+  }
+
+  get messageId() {
+    return `${this.dialogId}-message`;
+  }
 }

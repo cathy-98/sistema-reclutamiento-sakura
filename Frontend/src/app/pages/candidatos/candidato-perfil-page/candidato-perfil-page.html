@@ -22,7 +22,7 @@
       ></app-candidato-profile-tabs>
     </div>
 
-    <main class="profile-content">
+    <section class="profile-content" aria-label="Contenido del perfil candidato">
       @switch (tabActiva) {
         @case ('experiencia') {
           <section class="section-stack">
@@ -104,7 +104,7 @@
           </section>
         }
       }
-    </main>
+    </section>
   </section>
 
   <app-modal

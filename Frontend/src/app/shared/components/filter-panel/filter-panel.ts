@@ -21,6 +21,12 @@ export class FilterPanel {
   @Output() search = new EventEmitter<void>();
   @Output() clear = new EventEmitter<void>();
 
+  readonly panelId = `filter-panel-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.panelId}-title`;
+  }
+
   updateQuickSearch(value: string) {
     this.quickSearch = value;
     this.quickSearchChange.emit(value);

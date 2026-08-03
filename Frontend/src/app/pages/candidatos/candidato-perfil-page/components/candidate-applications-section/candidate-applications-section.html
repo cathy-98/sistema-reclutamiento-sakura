@@ -1,5 +1,6 @@
-<article class="content-panel application-panel">
-  <h2 class="application-title">Historial de postulación</h2>
+<section class="content-panel application-panel" aria-labelledby="application-history-title">
+  <!-- Resumen e historial de postulaciones del candidato. -->
+  <h2 id="application-history-title" class="application-title">Historial de postulación</h2>
 
   <div class="application-overview">
     <article class="next-interview">
@@ -12,33 +13,53 @@
       </dl>
     </article>
 
-    <div class="application-metrics">
+    <section class="application-metrics" aria-label="Métricas de postulación">
       <article><strong>02</strong><span>En proceso</span></article>
       <article><strong>14</strong><span>Postulaciones</span></article>
-    </div>
+    </section>
   </div>
 
-  <div class="application-search">
+  <form class="application-search" (ngSubmit)="busquedaChange.emit(busqueda)">
     <label>
       Buscar
-      <input [ngModel]="busqueda" (ngModelChange)="busquedaChange.emit($event)" type="search" placeholder="Insertar búsqueda" />
+      <input
+        name="busquedaPostulacion"
+        [ngModel]="busqueda"
+        (ngModelChange)="busquedaChange.emit($event)"
+        type="search"
+        placeholder="Insertar búsqueda"
+      />
     </label>
     <app-button>Buscar</app-button>
-  </div>
+  </form>
 
   <div class="application-layout">
-    <div class="application-history">
+    <section class="application-history" aria-label="Tabla de postulaciones">
       <table>
         <thead>
-          <tr><th>ID Solicitud</th><th>Cliente / empresa</th><th>Puesto</th><th>Fecha postulación</th><th>Estado</th></tr>
+          <tr>
+            <th scope="col">ID Solicitud</th>
+            <th scope="col">Cliente / empresa</th>
+            <th scope="col">Puesto</th>
+            <th scope="col">Fecha postulación</th>
+            <th scope="col">Estado</th>
+          </tr>
         </thead>
         <tbody>
           <tr
             *ngFor="let postulacion of postulacionesFiltradas"
             [class.is-selected]="postulacion[0] === postulacionSeleccionadaId"
-            (click)="postulacionSeleccionadaIdChange.emit(postulacion[0])"
           >
-            <td>{{ postulacion[0] }}</td>
+            <td>
+              <button
+                class="select-postulation"
+                type="button"
+                [attr.aria-pressed]="postulacion[0] === postulacionSeleccionadaId"
+                (click)="postulacionSeleccionadaIdChange.emit(postulacion[0])"
+              >
+                {{ postulacion[0] }}
+              </button>
+            </td>
             <td>{{ postulacion[1] }}</td>
             <td>{{ postulacion[2] }}</td>
             <td>{{ postulacion[3] }}</td>
@@ -46,7 +67,7 @@
           </tr>
         </tbody>
       </table>
-    </div>
+    </section>
 
     <aside class="selected-process-summary">
       <span>Proceso seleccionado</span>
@@ -54,10 +75,11 @@
       <p>{{ postulacionSeleccionada[1] }} · {{ postulacionSeleccionada[4] }}</p>
     </aside>
   </div>
-</article>
+</section>
 
-<article class="content-panel process-panel">
-  <h2>Proceso de selección: {{ postulacionSeleccionada[0] }}</h2>
+<section class="content-panel process-panel" aria-labelledby="selection-process-title">
+  <!-- Detalle de etapas asociadas a la postulación seleccionada. -->
+  <h2 id="selection-process-title">Proceso de selección: {{ postulacionSeleccionada[0] }}</h2>
   <div class="selection-list">
     <article *ngFor="let etapa of proceso">
       <header>
@@ -71,10 +93,10 @@
         <div><dt>Resultado</dt><dd class="result">{{ etapa.resultado }}</dd></div>
       </dl>
 
-      <div>
+      <dl class="observation-definition">
         <dt>Observaciones</dt>
-        <p>{{ etapa.observaciones }}</p>
-      </div>
+        <dd>{{ etapa.observaciones }}</dd>
+      </dl>
     </article>
   </div>
-</article>
+</section>

@@ -17,4 +17,14 @@ export class StateMessage {
   @Input() actionLabel = '';
 
   @Output() action = new EventEmitter<void>();
+
+  readonly stateId = `state-message-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.stateId}-title`;
+  }
+
+  get messageId() {
+    return `${this.stateId}-message`;
+  }
 }

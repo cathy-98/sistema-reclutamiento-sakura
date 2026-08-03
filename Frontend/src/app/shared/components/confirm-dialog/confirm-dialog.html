@@ -1,10 +1,17 @@
 <div class="confirm-backdrop" role="presentation">
-  <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+  <section
+    class="confirm-dialog"
+    role="alertdialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="titleId"
+    [attr.aria-describedby]="messageId"
+  >
+    <!-- Diálogo reutilizable para confirmar acciones sensibles. -->
     <div class="confirm-icon" [ngClass]="variante" aria-hidden="true">!</div>
 
     <div class="confirm-content">
-      <h2 id="confirm-title">{{ titulo }}</h2>
-      <p>{{ mensaje }}</p>
+      <h2 [id]="titleId">{{ titulo }}</h2>
+      <p [id]="messageId">{{ mensaje }}</p>
       <small *ngIf="detalle">{{ detalle }}</small>
     </div>
 

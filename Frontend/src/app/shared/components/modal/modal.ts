@@ -12,4 +12,14 @@ export class Modal {
   @Input() subtitulo = '';
   @Input() ancho: 'sm' | 'md' | 'lg' | 'xl' = 'lg';
   @Output() cerrar = new EventEmitter<void>();
+
+  readonly modalId = `modal-${Math.random().toString(36).slice(2)}`;
+
+  get tituloId() {
+    return `${this.modalId}-title`;
+  }
+
+  get subtituloId() {
+    return `${this.modalId}-description`;
+  }
 }

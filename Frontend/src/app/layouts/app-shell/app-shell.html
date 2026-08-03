@@ -1,5 +1,5 @@
 <div class="app-layout" [class.menu-cerrado]="!menuAbierto">
-  <aside class="sidebar" aria-label="Menu principal">
+  <aside class="sidebar" aria-label="Menú principal">
     <header class="sidebar-header">
       <img class="brand-logo" src="/images/Logos/logo_sakura.png" alt="Sakura" />
       <span class="brand-name">Sakura</span>
@@ -120,7 +120,7 @@
     <span aria-hidden="true">{{ menuAbierto ? '<' : '>' }}</span>
   </button>
 
-  <main class="app-content">
+  <div class="app-content">
     <router-outlet></router-outlet>
-  </main>
+  </div>
 </div>

@@ -1,7 +1,15 @@
-<section class="file-dropzone">
+<section
+  class="file-dropzone"
+  [attr.aria-labelledby]="titleId"
+  [attr.aria-describedby]="error ? errorId : helperId"
+>
+  <!-- Zona reutilizable para seleccionar o arrastrar archivos. -->
   <div
     class="drop-area"
     [class.is-dragging]="dragging"
+    role="group"
+    [attr.aria-labelledby]="titleId"
+    [attr.aria-describedby]="error ? errorId : helperId"
     (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave($event)"
     (drop)="onDrop($event)"
@@ -16,7 +24,7 @@
     />
 
     <div class="drop-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 15V4" />
         <path d="m8 8 4-4 4 4" />
         <path d="M5 15v4h14v-4" />
@@ -24,15 +32,15 @@
     </div>
 
     <div class="drop-copy">
-      <strong>{{ title }}</strong>
-      <span>{{ description }}</span>
-      <small>Formatos permitidos: {{ allowedText }} · Máx. {{ maxFileSizeMb }} MB por archivo</small>
+      <strong [id]="titleId">{{ title }}</strong>
+      <span [id]="descriptionId">{{ description }}</span>
+      <small [id]="helperId">Formatos permitidos: {{ allowedText }} · Máx. {{ maxFileSizeMb }} MB por archivo</small>
     </div>
 
     <app-button variant="ghost" (pressed)="fileInput.click()">{{ buttonText }}</app-button>
   </div>
 
-  <p class="drop-error" *ngIf="error">{{ error }}</p>
+  <p class="drop-error" *ngIf="error" [id]="errorId" role="alert">{{ error }}</p>
 
   <app-file-list [files]="files" (clear)="clearFiles()" (remove)="removeFile($event)"></app-file-list>
 </section>

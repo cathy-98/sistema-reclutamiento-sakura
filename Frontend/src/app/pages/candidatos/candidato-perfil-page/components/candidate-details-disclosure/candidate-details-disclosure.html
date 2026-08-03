@@ -1,38 +1,45 @@
-<section class="candidate-details-panel">
-  <button class="details-toggle" type="button" [attr.aria-expanded]="abierto" (click)="toggle()">
+<section class="candidate-details-panel" aria-labelledby="candidate-extra-data-title">
+  <!-- Panel expandible con datos adicionales del candidato. -->
+  <button
+    class="details-toggle"
+    type="button"
+    [attr.aria-expanded]="abierto"
+    aria-controls="candidate-extra-data"
+    (click)="toggle()"
+  >
     <span>
-      <strong>Datos adicionales del candidato</strong>
+      <strong id="candidate-extra-data-title">Datos adicionales del candidato</strong>
       <small>RUT, ubicación, título y registro</small>
     </span>
     <span aria-hidden="true">{{ abierto ? '↑' : '↓' }}</span>
   </button>
 
-  <div class="candidate-data-groups" *ngIf="abierto">
-    <section>
-      <h3>Identificación</h3>
+  <div id="candidate-extra-data" class="candidate-data-groups" *ngIf="abierto">
+    <section aria-labelledby="candidate-identification-title">
+      <h3 id="candidate-identification-title">Identificación</h3>
       <dl>
         <div><dt>RUT</dt><dd>18.123.456-7</dd></div>
         <div><dt>Fecha nacimiento</dt><dd>{{ candidato.fechaNacimiento }}</dd></div>
       </dl>
     </section>
 
-    <section>
-      <h3>Contacto</h3>
+    <section aria-labelledby="candidate-contact-extra-title">
+      <h3 id="candidate-contact-extra-title">Contacto</h3>
       <dl>
         <div><dt>Teléfono 2</dt><dd>+56 2 2345 6789</dd></div>
       </dl>
     </section>
 
-    <section>
-      <h3>Ubicación</h3>
+    <section aria-labelledby="candidate-location-title">
+      <h3 id="candidate-location-title">Ubicación</h3>
       <dl>
         <div><dt>Comuna</dt><dd>{{ candidato.comuna }}</dd></div>
         <div><dt>Dirección</dt><dd>{{ candidato.direccion }}</dd></div>
       </dl>
     </section>
 
-    <section>
-      <h3>Perfil laboral</h3>
+    <section aria-labelledby="candidate-work-profile-title">
+      <h3 id="candidate-work-profile-title">Perfil laboral</h3>
       <dl>
         <div><dt>Título</dt><dd>{{ candidato.tituloProfesional }}</dd></div>
         <div><dt>Modalidad</dt><dd>Híbrida</dd></div>

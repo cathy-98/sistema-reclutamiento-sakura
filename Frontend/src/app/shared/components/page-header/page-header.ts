@@ -14,4 +14,14 @@ export class PageHeader {
   @Input() badge = '';
   @Input() imageSrc = '';
   @Input() imageAlt = '';
+
+  readonly headerId = `page-header-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.headerId}-title`;
+  }
+
+  get subtitleId() {
+    return `${this.headerId}-subtitle`;
+  }
 }

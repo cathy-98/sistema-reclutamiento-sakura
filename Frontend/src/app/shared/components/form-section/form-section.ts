@@ -11,4 +11,14 @@ export class FormSection {
   @Input() step = '';
   @Input() title = '';
   @Input() description = '';
+
+  readonly sectionId = `form-section-${Math.random().toString(36).slice(2)}`;
+
+  get titleId() {
+    return `${this.sectionId}-title`;
+  }
+
+  get descriptionId() {
+    return `${this.sectionId}-description`;
+  }
 }

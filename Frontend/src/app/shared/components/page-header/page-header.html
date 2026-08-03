@@ -1,13 +1,14 @@
-<section class="page-header">
+<header class="page-header" [attr.aria-labelledby]="titleId" [attr.aria-describedby]="subtitle ? subtitleId : null">
+  <!-- Cabecera reutilizable de módulo o página. -->
   <div class="page-header-copy">
     <span class="eyebrow" *ngIf="eyebrow">{{ eyebrow }}</span>
-    <h1>{{ title }}</h1>
-    <p *ngIf="subtitle">{{ subtitle }}</p>
+    <h1 [id]="titleId">{{ title }}</h1>
+    <p *ngIf="subtitle" [id]="subtitleId">{{ subtitle }}</p>
     <span class="badge" *ngIf="badge">{{ badge }}</span>
   </div>
 
-  <div class="page-header-side">
+  <aside class="page-header-side" aria-label="Acciones y contexto de la página">
     <ng-content select="[pageHeaderActions]"></ng-content>
     <img *ngIf="imageSrc" [src]="imageSrc" [alt]="imageAlt || title" />
-  </div>
-</section>
+  </aside>
+</header>
