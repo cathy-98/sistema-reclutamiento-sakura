@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../services/auth.service';
 import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
 import {
   DataTable,
@@ -11,6 +10,7 @@ import {
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
 import { ActionBar } from '../../../shared/components/action-bar/action-bar';
+import { Button } from '../../../shared/components/button/button';
 import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
 import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
@@ -58,6 +58,7 @@ interface FiltrosCandidatos {
     CommonModule,
     FormsModule,
     DataTable,
+    Button,
     FileDropzone,
     PageHeader,
     PageLayout,
@@ -69,8 +70,6 @@ interface FiltrosCandidatos {
   styleUrl: './candidatos-list.scss',
 })
 export class CandidatosList {
-  nombreUsuario = 'usuario';
-  rolUsuario = '';
   cargando = false;
   errorCarga = '';
   paginaActual = 1;
@@ -165,6 +164,11 @@ export class CandidatosList {
       label: 'Agendar entrevista',
       icon: 'calendar',
     },
+    {
+      id: 'enviar-test',
+      label: 'Enviar test',
+      icon: 'edit',
+    },
   ];
 
   readonly estados: EstadoCandidato[] = [
@@ -246,27 +250,15 @@ export class CandidatosList {
   ];
 
   constructor(
-    private authService: AuthService,
     private currencyCl: CurrencyClPipe,
     private router: Router,
     private entrevistasService: EntrevistasService,
-  ) {
-    this.actualizarDatosSesion();
-
-    this.authService.cargarPerfilUsuario().subscribe(() => {
-      this.actualizarDatosSesion();
-    });
-  }
+  ) {}
 
   cargarCandidatos() {
     this.cargando = false;
     this.errorCarga = '';
     this.paginaActual = 1;
-  }
-
-  private actualizarDatosSesion() {
-    this.nombreUsuario = this.authService.obtenerNombreVisible();
-    this.rolUsuario = this.authService.obtenerRolVisible();
   }
 
   get candidatosFiltrados() {
@@ -406,6 +398,24 @@ export class CandidatosList {
       return;
     }
 
+    if (evento.action === 'enviar-test') {
+      this.router.navigate(['/candidatos/perfil', this.obtenerIdCandidato(evento.row)], {
+        queryParams: {
+          idSolicitud: evento.row.idSolicitud,
+          match: evento.row.match,
+          nombre: evento.row.nombre,
+          correo: evento.row.correo,
+          telefono: evento.row.telefono,
+          cargo: evento.row.cargo,
+          estado: evento.row.estado,
+          disponibilidad: evento.row.disponibilidad,
+          renta: evento.row.renta,
+          tab: 'evaluaciones',
+        },
+      });
+      return;
+    }
+
     console.log('Acción de candidato:', evento.action, evento.row);
   }
 
@@ -419,6 +429,14 @@ export class CandidatosList {
     }
 
     this.abrirAgendaEntrevista(candidatos);
+  }
+
+  prepararTestMasivo() {
+    if (this.seleccionados.size === 0) {
+      return;
+    }
+
+    console.log('Preparar test masivo para candidatos:', Array.from(this.seleccionados));
   }
 
   abrirAgendaEntrevista(candidatos: Candidato[]) {

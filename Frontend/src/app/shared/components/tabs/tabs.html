@@ -1,0 +1,12 @@
+<nav class="tabs" [attr.aria-label]="ariaLabel" role="tablist">
+  <button
+    *ngFor="let tab of tabs"
+    type="button"
+    role="tab"
+    [class.is-active]="activeTab === tab.id"
+    [attr.aria-selected]="activeTab === tab.id"
+    (click)="activeTabChange.emit(tab.id)"
+  >
+    {{ tab.label }}
+  </button>
+</nav>

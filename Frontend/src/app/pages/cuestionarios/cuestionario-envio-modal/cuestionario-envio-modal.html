@@ -1,0 +1,39 @@
+<app-modal
+  titulo="Enviar test"
+  [subtitulo]="cantidadPreguntas + ' preguntas seleccionadas - ' + duracion"
+  ancho="md"
+  (cerrar)="cerrar.emit()"
+>
+  <form class="send-form" [formGroup]="formulario" (ngSubmit)="confirmarEnvio()">
+    <p class="test-summary">{{ resumen }}</p>
+
+    <app-form-field label="ID solicitud" [required]="true">
+      <input type="text" formControlName="solicitudId" placeholder="Req-001" />
+    </app-form-field>
+
+    <fieldset formArrayName="destinatarios">
+      <legend>Destinatarios</legend>
+
+      <div class="recipient-row" *ngFor="let destinatario of destinatarios.controls; let i = index" [formGroupName]="i">
+        <app-form-field label="Nombre" [required]="true">
+          <input type="text" formControlName="nombre" placeholder="Nombre candidato" />
+        </app-form-field>
+        <app-form-field label="Correo" [required]="true">
+          <input type="email" formControlName="correo" placeholder="correo@empresa.cl" />
+        </app-form-field>
+        <app-button variant="secondary" size="sm" type="button" (pressed)="eliminarDestinatario(i)">Quitar</app-button>
+      </div>
+    </fieldset>
+
+    <app-button variant="secondary" type="button" (pressed)="agregarDestinatario()">Agregar destinatario</app-button>
+
+    <app-form-field label="Mensaje opcional">
+      <textarea formControlName="mensaje" placeholder="Mensaje para acompanar el test"></textarea>
+    </app-form-field>
+
+    <footer class="modal-actions">
+      <app-button variant="secondary" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
+      <app-button type="submit">Enviar test</app-button>
+    </footer>
+  </form>
+</app-modal>

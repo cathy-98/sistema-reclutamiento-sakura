@@ -57,7 +57,10 @@ p {
   gap: 10px;
 }
 
-:host ::ng-deep [pageHeaderActions] button,
+:host ::ng-deep [pageHeaderActions] app-button {
+  display: inline-flex;
+}
+
 :host ::ng-deep [pageHeaderActions] a {
   display: inline-flex;
   min-height: 42px;
@@ -71,19 +74,6 @@ p {
   cursor: pointer;
 }
 
-:host ::ng-deep [pageHeaderActions] .primary-action {
-  border: 1px solid var(--color-sakura);
-  background: var(--color-sakura);
-  color: var(--color-white);
-}
-
-:host ::ng-deep [pageHeaderActions] .secondary-action {
-  border: 1px solid var(--color-sakura);
-  background: var(--color-white);
-  color: var(--color-sakura);
-}
-
-:host ::ng-deep [pageHeaderActions] button:focus-visible,
 :host ::ng-deep [pageHeaderActions] a:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
@@ -116,7 +106,8 @@ img {
 
   .page-header-side,
   :host ::ng-deep [pageHeaderActions],
-  :host ::ng-deep [pageHeaderActions] button,
+  :host ::ng-deep [pageHeaderActions] app-button,
+  :host ::ng-deep [pageHeaderActions] app-button button,
   :host ::ng-deep [pageHeaderActions] a {
     width: 100%;
   }

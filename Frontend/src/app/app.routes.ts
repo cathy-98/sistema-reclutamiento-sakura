@@ -47,6 +47,23 @@ export const routes: Routes = [
           import('./pages/entrevistas/entrevistas-list/entrevistas-list').then((m) => m.EntrevistasList),
         data: { roles: ['Administrador', 'Reclutador', 'Entrevistador'] }
       },
+      {
+        path: 'cuestionarios',
+        redirectTo: 'cuestionarios/banco',
+        pathMatch: 'full'
+      },
+      {
+        path: 'cuestionarios/test',
+        loadComponent: () =>
+          import('./pages/cuestionarios/cuestionarios-admin/cuestionarios-admin').then((m) => m.CuestionariosAdmin),
+        data: { roles: ['Administrador', 'Reclutador'], vista: 'armar' }
+      },
+      {
+        path: 'cuestionarios/banco',
+        loadComponent: () =>
+          import('./pages/cuestionarios/cuestionarios-admin/cuestionarios-admin').then((m) => m.CuestionariosAdmin),
+        data: { roles: ['Administrador', 'Reclutador'], vista: 'crear' }
+      },
     ]
   }
 ];

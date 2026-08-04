@@ -1,20 +1,26 @@
 <app-page-layout>
-  <app-page-header title="Agenda de entrevistas" subtitle="Gestión de entrevistas">
+  <app-page-header
+    title="Listado de entrevistas"
+    subtitle="Gestión de entrevistas"
+  >
     <div pageHeaderActions>
-      <app-button (pressed)="mostrarFormulario = true">+ Crear nueva entrevista</app-button>
+      <app-button type="button" (pressed)="mostrarFormulario = true">
+        <span aria-hidden="true">+</span>
+        Crear nueva entrevista
+      </app-button>
     </div>
   </app-page-header>
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar entrevistas."
-    quickSearchPlaceholder="Solicitud, candidato, cargo o entrevistador"
+    quickSearchPlaceholder="Ej. Req-021, Macarena Lopez o Tecnica"
     [(quickSearch)]="filtros.busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
     <label>
       Cargo vacante
-      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Todos" />
+      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Ej. Frontend Angular" />
     </label>
 
     <label>
@@ -44,7 +50,6 @@
     *ngIf="!cargando && !errorCarga && entrevistasFiltradas.length > 0"
   >
     <button type="button" [disabled]="seleccionados.size === 0">Enviar recordatorio</button>
-    <button type="button" [disabled]="seleccionados.size === 0">Exportar agenda</button>
   </app-action-bar>
 
   <app-data-table

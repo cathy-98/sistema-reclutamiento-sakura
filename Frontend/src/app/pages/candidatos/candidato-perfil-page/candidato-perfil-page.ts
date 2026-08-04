@@ -21,6 +21,7 @@ import {
   DocumentoPerfil,
   EstudioPerfil,
   EtapaSeleccion,
+  EvaluacionTecnicaPerfil,
   ExperienciaPerfil,
   HabilidadComparada,
   ObservacionPerfil,
@@ -57,6 +58,7 @@ export class CandidatoPerfilPage {
   archivosDocumentos: File[] = [];
   mostrarModalObservacion = false;
   mostrarModalEntrevista = false;
+  mostrarModalTest = false;
   nota = '';
 
   readonly candidato: CandidatoPerfil;
@@ -66,6 +68,7 @@ export class CandidatoPerfilPage {
     { id: 'estudios', label: 'Estudios', icon: 'graduation' },
     { id: 'postulaciones', label: 'Postulaciones', icon: 'puzzle' },
     { id: 'match', label: 'Match', icon: 'users' },
+    { id: 'evaluaciones', label: 'Evaluaciones técnicas', icon: 'file' },
     { id: 'documentos', label: 'Documentos', icon: 'file' },
     { id: 'observaciones', label: 'Observaciones', icon: 'list' },
   ];
@@ -190,6 +193,11 @@ export class CandidatoPerfilPage {
     ['Certificado_Titulo_Ingenieria.pdf', 'Certificado', '24 oct 2024', '11:05'],
   ];
 
+  readonly evaluacionesTecnicas: EvaluacionTecnicaPerfil[] = [
+    ['Test Angular Junior', 'Enviado', 'Req-021', '45 min', 'Pendiente'],
+    ['Code Challenge Backend', 'Pendiente', 'Req-021', '60 min', 'Sin enviar'],
+  ];
+
   readonly historialObservaciones: ObservacionPerfil[] = [
     ['18 may 2025', '10:42', 'María Fernanda López', 'Buen perfil comunicacional y expectativas alineadas con la vacante.'],
     ['16 may 2025', '16:15', 'Diego Salazar', 'Avanza con buen desempeño técnico; revisar profundidad en backend.'],
@@ -202,6 +210,7 @@ export class CandidatoPerfilPage {
     private entrevistasService: EntrevistasService,
   ) {
     const params = this.route.snapshot.queryParamMap;
+    const tabInicial = params.get('tab') as PerfilTab | null;
 
     this.candidato = {
       idSolicitud: params.get('idSolicitud') || 'Req-021',
@@ -222,6 +231,10 @@ export class CandidatoPerfilPage {
       comuna: 'Providencia',
       direccion: 'Av. Providencia 1234, Depto 502',
     };
+
+    if (tabInicial && this.tabs.some((tab) => tab.id === tabInicial)) {
+      this.tabActiva = tabInicial;
+    }
   }
 
   get iniciales() {
@@ -308,6 +321,14 @@ export class CandidatoPerfilPage {
         this.cerrarModalEntrevista();
       },
     });
+  }
+
+  abrirModalTest() {
+    this.mostrarModalTest = true;
+  }
+
+  cerrarModalTest() {
+    this.mostrarModalTest = false;
   }
 
   cambiarTab(tab: string) {

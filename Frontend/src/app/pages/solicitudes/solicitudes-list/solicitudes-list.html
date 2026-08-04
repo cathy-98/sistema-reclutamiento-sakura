@@ -1,19 +1,19 @@
 <app-page-layout>
   <app-page-header
     title="Listado de solicitudes"
-    subtitle="Gestión listado de solicitudes"
+    subtitle="Gestión de solicitudes"
   >
     <div pageHeaderActions>
-      <button class="primary-action" type="button" *ngIf="puedeCrearSolicitud" (click)="abrirFormulario()">
+      <app-button type="button" *ngIf="puedeCrearSolicitud" (pressed)="abrirFormulario()">
         <span aria-hidden="true">+</span>
         Crear nueva solicitud
-      </button>
+      </app-button>
     </div>
   </app-page-header>
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar solicitudes."
-    quickSearchPlaceholder="Solicitud, cliente, cargo o responsable"
+    quickSearchPlaceholder="Ej. Req-021, Banco BICE o Frontend"
     [(quickSearch)]="filtros.busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
@@ -30,27 +30,27 @@
 
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.id" type="text" placeholder="Req-021" />
+      <input [(ngModel)]="filtros.id" type="text" placeholder="Ej. Req-021" />
     </label>
 
     <label>
       Nombre de solicitud
-      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Todos" />
+      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Ej. Frontend Latam" />
     </label>
 
     <label>
       Cliente
-      <input [(ngModel)]="filtros.cliente" type="text" placeholder="Todos" />
+      <input [(ngModel)]="filtros.cliente" type="text" placeholder="Ej. Banco BICE" />
     </label>
 
     <label>
       Cargo solicitado
-      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Frontend" />
+      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Ej. Desarrollador Frontend" />
     </label>
 
     <label>
       Responsable
-      <input [(ngModel)]="filtros.responsable" type="text" placeholder="Todos" />
+      <input [(ngModel)]="filtros.responsable" type="text" placeholder="Ej. Ana Perez" />
     </label>
 
     <label>

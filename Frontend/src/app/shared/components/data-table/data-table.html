@@ -118,7 +118,7 @@
             </ng-container>
           </td>
           <td *ngIf="hasActions" class="actions-column sticky-right" [ngStyle]="actionsColumnStyle()">
-            <div class="row-actions">
+            <div class="row-actions" *ngIf="!compactActions">
               <app-icon-button
                 *ngFor="let item of actions; trackBy: trackAction"
                 [icon]="item.icon"
@@ -127,6 +127,39 @@
                 [hidden]="!visibleAction(item, row)"
                 (pressed)="emitAction(item, row)"
               ></app-icon-button>
+            </div>
+
+            <div class="row-actions compact" *ngIf="compactActions">
+              <app-icon-button
+                *ngIf="primaryRowAction(row) as primaryAction"
+                [icon]="primaryAction.icon"
+                [label]="primaryAction.label"
+                [disabled]="disabledAction(primaryAction, row)"
+                (pressed)="emitAction(primaryAction, row)"
+              ></app-icon-button>
+
+              <div class="row-menu" *ngIf="secondaryRowActions(row).length > 0">
+                <button
+                  class="row-menu-trigger"
+                  type="button"
+                  aria-label="Más acciones"
+                  [attr.aria-expanded]="isActionMenuOpen(row)"
+                  (click)="toggleActionMenu(row)"
+                >
+                  ⋮
+                </button>
+
+                <div class="row-menu-list" *ngIf="isActionMenuOpen(row)">
+                  <button
+                    *ngFor="let item of secondaryRowActions(row); trackBy: trackAction"
+                    type="button"
+                    [disabled]="disabledAction(item, row)"
+                    (click)="emitAction(item, row)"
+                  >
+                    {{ item.label }}
+                  </button>
+                </div>
+              </div>
             </div>
           </td>
         </tr>

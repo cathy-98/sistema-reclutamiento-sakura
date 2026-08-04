@@ -34,6 +34,118 @@
   font-size: 16px;
 }
 
+.content-panel {
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.evaluations-panel,
+.evaluations-header,
+.evaluations-summary,
+.test-modal-body,
+.test-modal-body dl {
+  display: grid;
+  gap: 16px;
+}
+
+.evaluations-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.evaluations-header h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.evaluations-header p,
+.test-modal-body p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.evaluations-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.evaluations-summary article {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.evaluations-summary span,
+.test-modal-body dt {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.evaluations-summary strong {
+  font-size: 20px;
+}
+
+.evaluations-table {
+  overflow-x: auto;
+}
+
+.evaluations-table table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.evaluations-table th,
+.evaluations-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.evaluations-table th {
+  color: var(--color-sakura);
+  font-size: 13px;
+}
+
+.state-chip {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.test-modal-body {
+  padding: 22px 24px;
+}
+
+.test-modal-body dl {
+  margin: 0;
+}
+
+.test-modal-body dl div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.test-modal-body dd {
+  margin: 0;
+  font-weight: 800;
+}
+
 .observation-modal-body {
   padding: 22px 24px;
 }
@@ -56,6 +168,7 @@
   resize: vertical;
 }
 
+.test-modal-footer,
 .observation-modal-footer {
   display: flex;
   flex-wrap: wrap;
@@ -63,4 +176,11 @@
   justify-content: flex-end;
   padding: 18px 24px;
   border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 760px) {
+  .evaluations-header,
+  .evaluations-summary {
+    grid-template-columns: 1fr;
+  }
 }

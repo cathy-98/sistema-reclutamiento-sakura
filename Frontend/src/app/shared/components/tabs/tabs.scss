@@ -1,0 +1,30 @@
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px;
+}
+
+button {
+  min-width: max-content;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+button.is-active {
+  border-color: var(--color-sakura-border);
+  background: var(--color-sakura-soft);
+  color: var(--color-sakura);
+}
+
+button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

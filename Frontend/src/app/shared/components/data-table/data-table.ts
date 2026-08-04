@@ -59,6 +59,7 @@ export class DataTable<T> {
   @Input() selectedIds = new Set<string>();
   @Input({ required: true }) rowId: (row: T) => string = () => '';
   @Input() actions: DataTableAction<T>[] = [];
+  @Input() compactActions = false;
 
   @Output() selectedIdsChange = new EventEmitter<Set<string>>();
   @Output() pageChange = new EventEmitter<number>();
@@ -68,6 +69,7 @@ export class DataTable<T> {
   @Output() retry = new EventEmitter<void>();
 
   readonly tableId = `table-${Math.random().toString(36).slice(2)}`;
+  openActionMenuRowId = '';
 
   get titleId() {
     return `${this.tableId}-title`;
@@ -95,9 +97,13 @@ export class DataTable<T> {
 
   get tableMinWidth() {
     const selectableWidth = this.selectable ? 52 : 0;
-    const actionsWidth = this.hasActions ? 172 : 0;
+    const actionsWidth = this.hasActions ? this.actionsColumnWidth : 0;
     const columnsWidth = this.columns.reduce((total, column) => total + column.width, 0);
     return `${selectableWidth + columnsWidth + actionsWidth}px`;
+  }
+
+  get actionsColumnWidth() {
+    return this.compactActions ? 112 : 172;
   }
 
   columnValue(row: T, column: DataTableColumn<T>) {
@@ -151,9 +157,9 @@ export class DataTable<T> {
 
   actionsColumnStyle() {
     return {
-      width: '172px',
-      minWidth: '172px',
-      maxWidth: '172px',
+      width: `${this.actionsColumnWidth}px`,
+      minWidth: `${this.actionsColumnWidth}px`,
+      maxWidth: `${this.actionsColumnWidth}px`,
       right: '0',
     };
   }
@@ -210,7 +216,29 @@ export class DataTable<T> {
   }
 
   emitAction(action: DataTableAction<T>, row: T) {
+    this.openActionMenuRowId = '';
     this.actionClick.emit({ action: action.id, row });
+  }
+
+  visibleActions(row: T) {
+    return this.actions.filter((action) => this.visibleAction(action, row));
+  }
+
+  primaryRowAction(row: T) {
+    return this.visibleActions(row)[0];
+  }
+
+  secondaryRowActions(row: T) {
+    return this.visibleActions(row).slice(1);
+  }
+
+  toggleActionMenu(row: T) {
+    const id = this.rowId(row);
+    this.openActionMenuRowId = this.openActionMenuRowId === id ? '' : id;
+  }
+
+  isActionMenuOpen(row: T) {
+    return this.openActionMenuRowId === this.rowId(row);
   }
 
   trackRow = (_index: number, row: T) => this.rowId(row);
@@ -225,7 +253,7 @@ export class DataTable<T> {
   }
 
   private rightOffset(column: DataTableColumn<T>) {
-    const actionsWidth = this.hasActions ? 172 : 0;
+    const actionsWidth = this.hasActions ? this.actionsColumnWidth : 0;
     const index = this.columns.indexOf(column);
     const nextSticky = this.columns.slice(index + 1).filter((item) => item.sticky === 'right');
     return actionsWidth + nextSticky.reduce((total, item) => total + item.width, 0);

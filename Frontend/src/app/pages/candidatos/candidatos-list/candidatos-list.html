@@ -1,11 +1,10 @@
 <app-page-layout>
   <app-page-header
     title="Listado de candidatos"
-    subtitle="Carga CVs, revisa candidatos y gestiona acciones del proceso."
-    [badge]="rolUsuario"
+    subtitle="Gestión de candidatos"
   >
     <div pageHeaderActions>
-      <button class="secondary-action" type="button">Realizar match</button>
+      <app-button type="button">Realizar match</app-button>
     </div>
   </app-page-header>
 
@@ -20,30 +19,30 @@
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar candidatos."
-    quickSearchPlaceholder="Nombre, correo, cargo o solicitud"
+    quickSearchPlaceholder="Ej. Macarena Lopez, Req-021 o Frontend"
     [(quickSearch)]="busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Req-021" />
+      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. Req-021" />
     </label>
     <label>
       Cargo postulado
-      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Frontend" />
+      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Ej. Frontend Angular" />
     </label>
     <label>
       Nombre completo
-      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Todos" />
+      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Ej. Macarena Lopez" />
     </label>
     <label>
       Correo electrónico
-      <input [(ngModel)]="filtros.correo" type="email" placeholder="Todos" />
+      <input [(ngModel)]="filtros.correo" type="email" placeholder="Ej. macarena.lopez@mail.com" />
     </label>
     <label>
       Número de teléfono
-      <input [(ngModel)]="filtros.telefono" type="text" placeholder="Numeración" />
+      <input [(ngModel)]="filtros.telefono" type="text" placeholder="Ej. +56 9 5634 8547" />
     </label>
     <label>
       Estado del candidato
@@ -53,15 +52,15 @@
     </label>
     <label>
       Disponibilidad
-      <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Todos" />
+      <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Ej. Inmediata" />
     </label>
     <label>
       Pretensión de renta
-      <input [(ngModel)]="filtros.renta" type="number" min="0" placeholder="Numérico" />
+      <input [(ngModel)]="filtros.renta" type="number" min="0" placeholder="Ej. 900000" />
     </label>
     <label>
       Match
-      <input [(ngModel)]="filtros.match" type="number" min="0" max="100" placeholder="Ingresa num." />
+      <input [(ngModel)]="filtros.match" type="number" min="0" max="100" placeholder="Ej. 75" />
     </label>
     <label>
       Nivel
@@ -72,7 +71,7 @@
     </label>
     <label>
       Años de experiencia
-      <input [(ngModel)]="filtros.experiencia" type="number" min="0" placeholder="0,00" />
+      <input [(ngModel)]="filtros.experiencia" type="number" min="0" placeholder="Ej. 3" />
     </label>
   </app-filter-panel>
 
@@ -89,6 +88,10 @@
       <span aria-hidden="true">✦</span>
       Agendar entrevistas
     </button>
+    <button type="button" [disabled]="seleccionados.size === 0" (click)="prepararTestMasivo()">
+      <span aria-hidden="true">+</span>
+      Enviar test
+    </button>
   </app-action-bar>
 
   <app-data-table
@@ -103,6 +106,7 @@
     loadingMessage="Cargando candidatos..."
     [rowId]="obtenerIdCandidato"
     [actions]="acciones"
+    [compactActions]="true"
     [selectedIds]="seleccionados"
     emptyTitle="No hay candidatos para mostrar"
     emptyMessage="Ajusta los filtros o limpia la búsqueda para volver al listado completo."

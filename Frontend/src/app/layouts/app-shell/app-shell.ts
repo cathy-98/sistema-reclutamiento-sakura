@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService, RolUsuario } from '../../services/auth.service';
 
 interface MenuItem {
@@ -30,7 +31,13 @@ export class AppShell {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) {
+    this.abrirSubmenuActivo();
+
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.abrirSubmenuActivo());
+  }
 
   menuItems: MenuItem[] = [
     {
@@ -44,7 +51,8 @@ export class AppShell {
       icon: 'questionnaire',
       roles: ['Administrador', 'Reclutador'],
       children: [
-        { label: 'Creacion de test', roles: ['Administrador', 'Reclutador'] },
+        { label: 'Banco de preguntas', route: '/cuestionarios/banco', roles: ['Administrador', 'Reclutador'] },
+        { label: 'Armar y enviar test', route: '/cuestionarios/test', roles: ['Administrador', 'Reclutador'] },
       ],
     },
     {
@@ -64,8 +72,10 @@ export class AppShell {
     {
       label: 'Gestion de entrevistas',
       icon: 'calendar',
-      route: '/entrevistas',
       roles: ['Administrador', 'Reclutador', 'Entrevistador'],
+      children: [
+        { label: 'Listado de entrevistas', route: '/entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'] },
+      ],
     },
   ];
 
@@ -101,6 +111,24 @@ export class AppShell {
     return this.submenuAbierto === item.label;
   }
 
+  estaItemActivo(item: MenuItem) {
+    if (item.route) {
+      return this.router.isActive(item.route, {
+        paths: item.route === '/dashboard' ? 'exact' : 'subset',
+        queryParams: 'ignored',
+        fragment: 'ignored',
+        matrixParams: 'ignored',
+      });
+    }
+
+    return item.children?.some((child) => child.route && this.router.isActive(child.route, {
+      paths: 'subset',
+      queryParams: 'ignored',
+      fragment: 'ignored',
+      matrixParams: 'ignored',
+    })) ?? false;
+  }
+
   cerrarSesion() {
     this.authService.eliminarToken();
     this.router.navigate(['/login']);
@@ -108,5 +136,20 @@ export class AppShell {
 
   private puedeVerItem(roles?: RolUsuario[]) {
     return !roles?.length || this.authService.tieneRol(roles);
+  }
+
+  private abrirSubmenuActivo() {
+    const itemActivo = this.menuItemsVisibles.find((item) => item.children?.some((child) => (
+      child.route && this.router.isActive(child.route, {
+        paths: 'subset',
+        queryParams: 'ignored',
+        fragment: 'ignored',
+        matrixParams: 'ignored',
+      })
+    )));
+
+    if (itemActivo) {
+      this.submenuAbierto = itemActivo.label;
+    }
   }
 }

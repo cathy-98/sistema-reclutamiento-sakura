@@ -72,8 +72,9 @@ input:not([type="checkbox"]),
   border-radius: 7px;
   background: var(--color-input-bg);
   color: var(--color-text);
-  font: inherit;
+  font-family: inherit;
   font-size: 14px;
+  font-weight: 500;
   outline: none;
 }
 
@@ -94,6 +95,8 @@ input:focus-visible,
 input::placeholder,
 :host ::ng-deep input::placeholder {
   color: var(--color-input-placeholder);
+  font-weight: 500;
+  opacity: 1;
 }
 
 .filter-actions {

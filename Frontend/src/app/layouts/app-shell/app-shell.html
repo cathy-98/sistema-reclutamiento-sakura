@@ -14,6 +14,7 @@
           class="sidebar-link sidebar-link-module"
           type="button"
           [class.has-open-submenu]="estaSubmenuAbierto(item)"
+          [class.is-active]="estaItemActivo(item)"
           [attr.aria-expanded]="estaSubmenuAbierto(item)"
           [attr.title]="!menuAbierto ? item.label : null"
           (click)="alternarSubmenu(item)"

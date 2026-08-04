@@ -5,6 +5,7 @@ import { take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { Alert } from '../../../shared/components/alert/alert';
+import { Button } from '../../../shared/components/button/button';
 import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import {
   DataTable,
@@ -39,6 +40,7 @@ interface FiltrosSolicitudes {
     SolicitudFormModal,
     ConfirmDialog,
     Alert,
+    Button,
     DataTable,
     PageHeader,
     PageLayout,

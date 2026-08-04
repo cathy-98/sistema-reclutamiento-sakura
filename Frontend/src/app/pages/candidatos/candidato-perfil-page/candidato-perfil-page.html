@@ -6,6 +6,7 @@
         [matchClass]="matchClass"
         (back)="volver()"
         (addObservation)="abrirModalObservacion()"
+        (sendTest)="abrirModalTest()"
         (scheduleInterview)="abrirModalEntrevista()"
       ></app-candidate-profile-header>
 
@@ -78,6 +79,61 @@
           </section>
         }
 
+        @case ('evaluaciones') {
+          <section class="section-stack">
+            <section class="content-panel evaluations-panel" aria-labelledby="evaluaciones-title">
+              <header class="evaluations-header">
+                <div>
+                  <h2 id="evaluaciones-title">Evaluaciones técnicas</h2>
+                  <p>Tests asociados al candidato y al proceso seleccionado.</p>
+                </div>
+                <app-button type="button" (pressed)="abrirModalTest()">
+                  <span aria-hidden="true">+</span>
+                  Enviar test
+                </app-button>
+              </header>
+
+              <div class="evaluations-summary">
+                <article>
+                  <span>Enviados</span>
+                  <strong>1</strong>
+                </article>
+                <article>
+                  <span>Pendientes</span>
+                  <strong>1</strong>
+                </article>
+                <article>
+                  <span>Último estado</span>
+                  <strong>Pendiente</strong>
+                </article>
+              </div>
+
+              <div class="evaluations-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Test</th>
+                      <th>Estado</th>
+                      <th>Solicitud</th>
+                      <th>Duración</th>
+                      <th>Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let evaluacion of evaluacionesTecnicas">
+                      <td>{{ evaluacion[0] }}</td>
+                      <td><span class="state-chip">{{ evaluacion[1] }}</span></td>
+                      <td>{{ evaluacion[2] }}</td>
+                      <td>{{ evaluacion[3] }}</td>
+                      <td>{{ evaluacion[4] }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        }
+
         @case ('documentos') {
           <section class="section-stack">
             @defer {
@@ -137,4 +193,39 @@
     (cerrar)="cerrarModalEntrevista()"
     (guardar)="guardarEntrevista($event)"
   ></app-entrevista-form-modal>
+
+  <app-modal
+    *ngIf="mostrarModalTest"
+    titulo="Enviar test técnico"
+    [subtitulo]="candidato.nombre + ' - ' + candidato.cargo"
+    ancho="sm"
+    (cerrar)="cerrarModalTest()"
+  >
+    <div class="test-modal-body">
+      <dl>
+        <div>
+          <dt>Candidato</dt>
+          <dd>{{ candidato.nombre }}</dd>
+        </div>
+        <div>
+          <dt>Solicitud</dt>
+          <dd>{{ candidato.idSolicitud }}</dd>
+        </div>
+        <div>
+          <dt>Test sugerido</dt>
+          <dd>Test Angular Junior</dd>
+        </div>
+        <div>
+          <dt>Duración estimada</dt>
+          <dd>45 min</dd>
+        </div>
+      </dl>
+      <p>El envío real quedará conectado cuando se defina el flujo de cuestionarios para candidatos.</p>
+    </div>
+
+    <div class="test-modal-footer" modal-footer>
+      <app-button variant="secondary" (pressed)="cerrarModalTest()">Cancelar</app-button>
+      <app-button (pressed)="cerrarModalTest()">Preparar test</app-button>
+    </div>
+  </app-modal>
 </app-page-layout>

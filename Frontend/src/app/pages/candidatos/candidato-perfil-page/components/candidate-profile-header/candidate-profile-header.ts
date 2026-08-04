@@ -21,6 +21,7 @@ export class CandidateProfileHeader {
   @Output() downloadCv = new EventEmitter<void>();
   @Output() addObservation = new EventEmitter<void>();
   @Output() scheduleInterview = new EventEmitter<void>();
+  @Output() sendTest = new EventEmitter<void>();
 
   menuAccionesAbierto = false;
 

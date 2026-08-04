@@ -1,4 +1,4 @@
-export type PerfilTab = 'experiencia' | 'estudios' | 'postulaciones' | 'match' | 'documentos' | 'observaciones';
+export type PerfilTab = 'experiencia' | 'estudios' | 'postulaciones' | 'match' | 'evaluaciones' | 'documentos' | 'observaciones';
 
 export interface CandidatoPerfil {
   idSolicitud: string;
@@ -49,3 +49,4 @@ export interface EtapaSeleccion {
 export type HabilidadComparada = [string, string, string, string, string, string, string, string];
 export type DocumentoPerfil = [string, string, string, string];
 export type ObservacionPerfil = [string, string, string, string];
+export type EvaluacionTecnicaPerfil = [string, string, string, string, string];

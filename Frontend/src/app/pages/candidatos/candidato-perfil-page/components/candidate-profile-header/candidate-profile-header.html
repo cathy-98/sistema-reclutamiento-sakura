@@ -48,6 +48,7 @@
         <option>Descartado</option>
       </select>
     </label>
+    <app-button variant="secondary" [fullWidth]="true" (pressed)="sendTest.emit()">Enviar test</app-button>
     <app-button [fullWidth]="true" (pressed)="scheduleInterview.emit()">Agendar entrevista</app-button>
   </div>
 </div>
