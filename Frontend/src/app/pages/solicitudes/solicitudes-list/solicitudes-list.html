@@ -18,15 +18,7 @@
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
-    <app-alert
-      *ngIf="alerta"
-      [tipo]="alerta.tipo"
-      [variante]="alerta.variante"
-      [titulo]="alerta.titulo || ''"
-      [mensaje]="alerta.mensaje"
-      [cerrable]="true"
-      (cerrar)="cerrarAlerta()"
-    ></app-alert>
+    <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
     <label>
       ID solicitud

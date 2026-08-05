@@ -36,9 +36,7 @@
 
       <a class="forgot-password">¿Olvidaste tu contraseña?</a>
 
-      @if (error) {
-        <app-alert tipo="danger" variante="soft" [mensaje]="error" [cerrable]="true" (cerrar)="error = ''"></app-alert>
-      }
+      <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
       <button type="submit" [disabled]="cargando">
         {{ cargando ? 'Ingresando...' : 'Ingresar' }}

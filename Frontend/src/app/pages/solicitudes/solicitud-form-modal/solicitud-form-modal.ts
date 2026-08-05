@@ -9,7 +9,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Alert } from '../../../shared/components/alert/alert';
+import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { FormSection } from '../../../shared/components/form-section/form-section';
@@ -28,7 +28,7 @@ type CatalogoActivo = '' | 'cargo' | 'area' | 'cliente' | 'habilidad';
 
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, ReactiveFormsModule, Alert, Button, FormActions, FormSection, Modal, Stepper],
+  imports: [CommonModule, ReactiveFormsModule, AlertRegion, Button, FormActions, FormSection, Modal, Stepper],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })

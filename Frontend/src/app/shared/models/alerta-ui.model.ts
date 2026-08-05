@@ -7,3 +7,14 @@ export interface AlertaUi {
   titulo?: string;
 }
 
+export const crearAlerta = (
+  tipo: AlertTipo,
+  mensaje: string,
+  titulo = '',
+  variante: AlertVariante = 'soft',
+): AlertaUi => ({
+  tipo,
+  variante,
+  mensaje,
+  ...(titulo ? { titulo } : {}),
+});

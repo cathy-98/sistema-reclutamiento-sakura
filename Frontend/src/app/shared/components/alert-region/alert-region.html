@@ -1,0 +1,9 @@
+<app-alert
+  *ngIf="alerta"
+  [tipo]="alerta.tipo"
+  [variante]="alerta.variante"
+  [titulo]="alerta.titulo || ''"
+  [mensaje]="alerta.mensaje"
+  [cerrable]="cerrable"
+  (cerrar)="cerrar.emit()"
+></app-alert>

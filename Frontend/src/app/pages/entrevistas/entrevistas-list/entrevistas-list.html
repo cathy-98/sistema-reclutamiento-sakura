@@ -11,6 +11,8 @@
     </div>
   </app-page-header>
 
+  <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+
   <app-filter-panel
     description="Usa uno o más campos para encontrar entrevistas."
     quickSearchPlaceholder="Ej. Req-021, Macarena Lopez o Tecnica"

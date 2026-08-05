@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Alert } from '../../shared/components/alert/alert';
+import { AlertRegion } from '../../shared/components/alert-region/alert-region';
 import { AuthService } from '../../services/auth.service';
+import { AlertaUi } from '../../shared/models/alerta-ui.model';
 import { obtenerMensajeError } from '../../shared/utils/api-error';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, Alert],
+  imports: [FormsModule, AlertRegion],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -15,7 +16,7 @@ export class Login {
   email = '';
   password = '';
   cargando = false;
-  error = '';
+  alerta: AlertaUi | null = null;
 
   constructor(
     private authService: AuthService,
@@ -27,12 +28,16 @@ export class Login {
     const password = this.password.trim();
 
     if (!email || !password) {
-      this.error = 'Ingresa correo y contraseña para continuar';
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Ingresa correo y contraseña para continuar',
+      };
       return;
     }
 
     this.cargando = true;
-    this.error = '';
+    this.alerta = null;
 
     this.authService.login({
       email,
@@ -44,8 +49,16 @@ export class Login {
       },
       error: (error) => {
         this.cargando = false;
-        this.error = obtenerMensajeError(error, 'Correo o contraseña incorrectos');
+        this.alerta = {
+          tipo: 'danger',
+          variante: 'soft',
+          mensaje: obtenerMensajeError(error, 'Correo o contraseña incorrectos'),
+        };
       },
     });
+  }
+
+  cerrarAlerta() {
+    this.alerta = null;
   }
 }

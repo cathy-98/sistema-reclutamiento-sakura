@@ -164,14 +164,7 @@
       </ul>
     </section>
 
-    <app-alert
-      *ngIf="alertaEnvio"
-      tipo="success"
-      variante="soft"
-      [mensaje]="alertaEnvio"
-      [cerrable]="true"
-      (cerrar)="alertaEnvio = ''"
-    ></app-alert>
+    <app-alert-region [alerta]="alertaEnvio" (cerrar)="alertaEnvio = null"></app-alert-region>
   </section>
 
   <section class="questionnaire-workspace" aria-labelledby="tecnologias-title">

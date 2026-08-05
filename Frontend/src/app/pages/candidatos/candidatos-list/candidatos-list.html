@@ -8,6 +8,8 @@
     </div>
   </app-page-header>
 
+  <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+
   <app-file-dropzone
     title="Carga CVs de candidatos"
     description="Arrastra uno o más CVs para dejarlos listos antes de procesarlos."
@@ -127,3 +129,15 @@
   ></app-entrevista-form-modal>
 
 </app-page-layout>
+
+<app-confirm-dialog
+  *ngIf="mostrarConfirmacionDesactivacion"
+  titulo="Desactivar candidato"
+  mensaje="Esta acción cambiará el estado del candidato a Desactivado."
+  [detalle]="'Candidato seleccionado: ' + (candidatoSeleccionadoDesactivacion?.nombre || '')"
+  textoCancelar="Volver"
+  textoConfirmar="Confirmar desactivación"
+  variante="danger"
+  (cancelar)="cerrarConfirmacionDesactivacion()"
+  (confirmar)="confirmarDesactivacionCandidato()"
+></app-confirm-dialog>

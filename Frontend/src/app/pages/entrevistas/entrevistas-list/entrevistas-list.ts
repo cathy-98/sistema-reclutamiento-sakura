@@ -9,6 +9,7 @@ import {
   TipoEntrevista,
 } from '../../../services/entrevistas.service';
 import { ActionBar } from '../../../shared/components/action-bar/action-bar';
+import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
 import {
   DataTable,
@@ -17,6 +18,7 @@ import {
   DataTableColumn,
 } from '../../../shared/components/data-table/data-table';
 import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
+import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
@@ -37,6 +39,7 @@ interface FiltrosEntrevistas {
     CommonModule,
     FormsModule,
     ActionBar,
+    AlertRegion,
     Button,
     DataTable,
     EntrevistaEstadoModal,
@@ -51,6 +54,7 @@ interface FiltrosEntrevistas {
 export class EntrevistasList implements OnInit {
   cargando = false;
   errorCarga = '';
+  alerta: AlertaUi | null = null;
   paginaActual = 1;
   registrosPorPagina = 5;
   seleccionados = new Set<string>();
@@ -157,10 +161,19 @@ export class EntrevistasList implements OnInit {
     this.entrevistasService.crear(payload).subscribe({
       next: () => {
         this.mostrarFormulario = false;
+        this.alerta = {
+          tipo: 'success',
+          variante: 'soft',
+          mensaje: 'Entrevista creada correctamente.',
+        };
         this.cargarEntrevistas();
       },
       error: (error) => {
-        this.errorCarga = obtenerMensajeError(error, 'No se pudo crear la entrevista.');
+        this.alerta = {
+          tipo: 'danger',
+          variante: 'soft',
+          mensaje: obtenerMensajeError(error, 'No se pudo crear la entrevista.'),
+        };
       },
     });
   }
@@ -183,11 +196,23 @@ export class EntrevistasList implements OnInit {
 
     solicitud.subscribe({
       next: () => {
+        this.alerta = {
+          tipo: 'success',
+          variante: 'soft',
+          mensaje:
+            this.modoEstado === 'cancelar'
+              ? 'Entrevista cancelada correctamente.'
+              : 'Entrevista reprogramada correctamente.',
+        };
         this.cerrarModalEstado();
         this.cargarEntrevistas();
       },
       error: (error) => {
-        this.errorCarga = obtenerMensajeError(error, 'No se pudo actualizar la entrevista.');
+        this.alerta = {
+          tipo: 'danger',
+          variante: 'soft',
+          mensaje: obtenerMensajeError(error, 'No se pudo actualizar la entrevista.'),
+        };
       },
     });
   }
@@ -213,6 +238,10 @@ export class EntrevistasList implements OnInit {
 
   cerrarModalEstado() {
     this.entrevistaSeleccionada = null;
+  }
+
+  cerrarAlerta() {
+    this.alerta = null;
   }
 
   limpiarFiltros() {

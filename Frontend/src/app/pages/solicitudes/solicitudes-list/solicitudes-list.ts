@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
-import { Alert } from '../../../shared/components/alert/alert';
+import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
 import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import {
@@ -39,7 +39,7 @@ interface FiltrosSolicitudes {
     FormsModule,
     SolicitudFormModal,
     ConfirmDialog,
-    Alert,
+    AlertRegion,
     Button,
     DataTable,
     PageHeader,

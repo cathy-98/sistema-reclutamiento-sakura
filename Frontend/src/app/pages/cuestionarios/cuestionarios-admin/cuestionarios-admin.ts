@@ -12,11 +12,12 @@ import {
 import { Button } from '../../../shared/components/button/button';
 import { Card } from '../../../shared/components/card/card';
 import { DataTable, DataTableColumn } from '../../../shared/components/data-table/data-table';
-import { Alert } from '../../../shared/components/alert/alert';
+import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { TabItem, Tabs } from '../../../shared/components/tabs/tabs';
+import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { CuestionarioEnvioModal, CuestionarioEnvioPayload } from '../cuestionario-envio-modal/cuestionario-envio-modal';
 
 interface TecnologiaResumen {
@@ -49,7 +50,7 @@ interface EnvioCuestionarioHistorial {
     Card,
     FormField,
     Button,
-    Alert,
+    AlertRegion,
     Tabs,
     CuestionarioEnvioModal,
   ],
@@ -70,7 +71,7 @@ export class CuestionariosAdmin implements OnInit {
   busquedaPreguntas = '';
   preguntasSeleccionadas = new Set<string>();
   mostrarModalEnvio = false;
-  alertaEnvio = '';
+  alertaEnvio: AlertaUi | null = null;
   vistaActiva: 'armar' | 'crear' = 'armar';
   nivelBancoActivo = 'todos';
   tabsBanco: TabItem[] = [];
@@ -428,13 +429,13 @@ export class CuestionariosAdmin implements OnInit {
     this.tecnologiaDetalle = tecnologia;
     this.formulario.patchValue({ tecnologiaId: tecnologia.id });
     this.limpiarBusquedaPreguntas();
-    this.alertaEnvio = '';
+    this.alertaEnvio = null;
   }
 
   volverListadoTecnologias() {
     this.tecnologiaDetalle = null;
     this.limpiarBusquedaPreguntas();
-    this.alertaEnvio = '';
+    this.alertaEnvio = null;
   }
 
   abrirModalEnvio() {
@@ -478,7 +479,11 @@ export class CuestionariosAdmin implements OnInit {
       },
       ...this.historialEnvios,
     ];
-    this.alertaEnvio = `Test ${payload.solicitudId} enviado a ${payload.destinatarios.length} destinatario(s) con ${this.cantidadPreguntasParaEnviar} pregunta(s).`;
+    this.alertaEnvio = {
+      tipo: 'success',
+      variante: 'soft',
+      mensaje: `Test ${payload.solicitudId} enviado a ${payload.destinatarios.length} destinatario(s) con ${this.cantidadPreguntasParaEnviar} pregunta(s).`,
+    };
     this.cerrarModalEnvio();
   }
 

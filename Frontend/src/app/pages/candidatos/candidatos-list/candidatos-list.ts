@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
+import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import {
   DataTable,
   DataTableAction,
@@ -11,17 +12,20 @@ import {
 } from '../../../shared/components/data-table/data-table';
 import { ActionBar } from '../../../shared/components/action-bar/action-bar';
 import { Button } from '../../../shared/components/button/button';
+import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { FileDropzone } from '../../../shared/components/file-dropzone/file-dropzone';
 import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { AlertaUi } from '../../../shared/models/alerta-ui.model';
+import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { CurrencyClPipe } from '../../../shared/pipes/currency-cl.pipe';
 import {
   EntrevistaCandidatoSeleccionado,
   EntrevistaFormModal,
 } from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 
-type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado';
+type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado' | 'Desactivado';
 type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
 
 interface Candidato {
@@ -57,8 +61,10 @@ interface FiltrosCandidatos {
   imports: [
     CommonModule,
     FormsModule,
+    AlertRegion,
     DataTable,
     Button,
+    ConfirmDialog,
     FileDropzone,
     PageHeader,
     PageLayout,
@@ -72,6 +78,7 @@ interface FiltrosCandidatos {
 export class CandidatosList {
   cargando = false;
   errorCarga = '';
+  alerta: AlertaUi | null = null;
   paginaActual = 1;
   registrosPorPagina = 5;
   busquedaRapida = '';
@@ -79,6 +86,8 @@ export class CandidatosList {
   archivosCv: File[] = [];
   candidatosAgenda: EntrevistaCandidatoSeleccionado[] = [];
   mostrarModalAgenda = false;
+  mostrarConfirmacionDesactivacion = false;
+  candidatoSeleccionadoDesactivacion: Candidato | null = null;
 
   filtros: FiltrosCandidatos = this.filtrosIniciales();
 
@@ -169,6 +178,12 @@ export class CandidatosList {
       label: 'Enviar test',
       icon: 'edit',
     },
+    {
+      id: 'desactivar',
+      label: 'Desactivar candidato',
+      icon: 'trash',
+      visible: (candidato) => candidato.estado !== 'Desactivado',
+    },
   ];
 
   readonly estados: EstadoCandidato[] = [
@@ -177,6 +192,7 @@ export class CandidatosList {
     'Contactado',
     'Entrevista',
     'Descartado',
+    'Desactivado',
   ];
 
   readonly niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
@@ -416,7 +432,41 @@ export class CandidatosList {
       return;
     }
 
+    if (evento.action === 'desactivar') {
+      this.abrirConfirmacionDesactivacion(evento.row);
+      return;
+    }
+
     console.log('Acción de candidato:', evento.action, evento.row);
+  }
+
+  abrirConfirmacionDesactivacion(candidato: Candidato) {
+    this.candidatoSeleccionadoDesactivacion = candidato;
+    this.mostrarConfirmacionDesactivacion = true;
+  }
+
+  cerrarConfirmacionDesactivacion() {
+    this.mostrarConfirmacionDesactivacion = false;
+    this.candidatoSeleccionadoDesactivacion = null;
+  }
+
+  confirmarDesactivacionCandidato() {
+    if (!this.candidatoSeleccionadoDesactivacion) {
+      return;
+    }
+
+    this.candidatoSeleccionadoDesactivacion.estado = 'Desactivado';
+    this.seleccionados.delete(this.obtenerIdCandidato(this.candidatoSeleccionadoDesactivacion));
+    this.alerta = {
+      tipo: 'success',
+      variante: 'soft',
+      mensaje: `${this.candidatoSeleccionadoDesactivacion.nombre} fue desactivado correctamente.`,
+    };
+    this.cerrarConfirmacionDesactivacion();
+  }
+
+  cerrarAlerta() {
+    this.alerta = null;
   }
 
   abrirAgendaMasiva() {
@@ -468,9 +518,20 @@ export class CandidatosList {
 
     if (candidatos.length <= 1) {
       this.entrevistasService.crear(payload).subscribe({
-        next: () => this.cerrarAgendaEntrevista(),
-        error: () => {
-          this.errorCarga = 'No se pudo agendar la entrevista. Intenta nuevamente.';
+        next: () => {
+          this.alerta = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: 'Entrevista agendada correctamente.',
+          };
+          this.cerrarAgendaEntrevista();
+        },
+        error: (error) => {
+          this.alerta = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo agendar la entrevista. Intenta nuevamente.'),
+          };
         },
       });
       return;
@@ -486,10 +547,19 @@ export class CandidatosList {
     this.entrevistasService.crearMasiva(entrevistas).subscribe({
       next: () => {
         this.seleccionados = new Set<string>();
+        this.alerta = {
+          tipo: 'success',
+          variante: 'soft',
+          mensaje: `${entrevistas.length} entrevistas agendadas correctamente.`,
+        };
         this.cerrarAgendaEntrevista();
       },
-      error: () => {
-        this.errorCarga = 'No se pudieron agendar las entrevistas. Intenta nuevamente.';
+      error: (error) => {
+        this.alerta = {
+          tipo: 'danger',
+          variante: 'soft',
+          mensaje: obtenerMensajeError(error, 'No se pudieron agendar las entrevistas. Intenta nuevamente.'),
+        };
       },
     });
   }
