@@ -1,0 +1,1 @@
+from app.listeners.solicitud_listeners import audit_cambio_estado_solicitud
