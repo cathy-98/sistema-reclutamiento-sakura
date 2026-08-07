@@ -1,7 +1,7 @@
 # app/solicitudes/models.py
 from datetime import datetime, time
 from typing import Optional, List
-from sqlalchemy import String, Integer, Boolean, DateTime, Time, ForeignKey, CheckConstraint, UniqueConstraint
+from sqlalchemy import Column, Numeric, String, Integer, Boolean, DateTime, Time, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -33,6 +33,7 @@ class SolicitudHabilidad(Base):
 
     def __repr__(self) -> str:
         return f"<SolicitudHabilidad(id={self.solhb_id}, habilidad_id={self.solhb_habilidad_id}, excluyente={self.solhb_es_excluyente})>"
+
 # tabla solicitud  
 class Solicitud(Base):
     __tablename__ = "tbl_solicitud"
@@ -96,3 +97,45 @@ class Solicitud(Base):
     def habilidades_deseables(self) -> List["SolicitudHabilidad"]:
         """Retorna los requisitos técnicos opcionales (no excluyentes)."""
         return [h for h in self.habilidades if not h.solhb_es_excluyente]
+
+#  ---
+
+class HistorialSolicitud(Base):
+    __tablename__ = "tbl_historial_solicitud"
+
+    __table_args__ = (
+        CheckConstraint(
+            "hsol_comentario IS NULL OR TRIM(hsol_comentario) <> ''",
+            name="chk_tbl_historial_solicitud_comentario_vacio"
+        ),
+        CheckConstraint(
+            "hsol_estado_anterior_id IS NULL OR hsol_estado_actual_id IS NULL OR hsol_estado_anterior_id <> hsol_estado_actual_id",
+            name="chk_tbl_historial_solicitud_estados_diferentes"
+        ),
+    )
+
+    hsol_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    hsol_solicitud_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tbl_solicitud.sol_id"), nullable=True)
+    hsol_estado_anterior_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tbl_estado_solicitud.essl_id"), nullable=True)
+    hsol_estado_actual_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tbl_estado_solicitud.essl_id"), nullable=True)
+    hsol_fecha_cambio: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, nullable=True)
+    hsol_usuario_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tbl_usuario.usr_id"), nullable=True)
+    hsol_comentario: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+
+    # Relaciones ORM
+    solicitud: Mapped[Optional["Solicitud"]] = relationship("Solicitud")
+    usuario: Mapped[Optional["Usuario"]] = relationship("Usuario")
+
+    def __repr__(self) -> str:
+        return f"<HistorialSolicitud(id={self.hsol_id}, solicitud_id={self.hsol_solicitud_id}, anterior={self.hsol_estado_anterior_id}, actual={self.hsol_estado_actual_id})>"
+
+
+class SolicitudCandidato(Base):
+    __tablename__ = "tbl_solicitud_candidato"
+
+    slcd_id = Column(Integer, primary_key=True, index=True)
+    slcd_solicitud_id = Column(Integer, ForeignKey("tbl_solicitud.sol_id"))
+    slcd_candidato_id = Column(Integer, ForeignKey("tbl_candidato.cnd_id"))
+    slcd_pretension_renta = Column(Numeric(12, 2))
+    slcd_puntaje_compatibilidad = Column(Numeric(5, 2))
+    slcd_estado_solicitud_candidato_id = Column(Integer)
