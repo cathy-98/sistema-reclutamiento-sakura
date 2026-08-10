@@ -6,6 +6,7 @@ from app.auth import router as auth_router
 from app.usuarios import router as usuarios_router
 # 🌟 NUEVO FECHA 20/07/2026: Importar el enrutador de catálogos
 from app.catalogos import router as catalogos_router
+from app.solicitudes import router as solicitudes_router
 
 # 🌟 NUEVO FECHA 20/07/2026: Forzar a SQLAlchemy a registrar los nuevos modelos relacionales geográficos
 from app.catalogos import models as catalogos_models
@@ -36,6 +37,7 @@ app.include_router(auth_router.router) # Registrar el enrutador de autenticació
 app.include_router(usuarios_router.router) # Registrar el enrutador de usuarios
 # 🌟 NUEVO: Fechas 20/07/2026: Registrar el enrutador de catálogos en FastAPI
 app.include_router(catalogos_router.router) # Registrar el enrutador de catálogos
+app.include_router(solicitudes_router.router) # Registrar el enrutador de solicitudes
 
 @app.get("/")
 def health_check(): # Endpoint para verificar el estado de la aplicación
