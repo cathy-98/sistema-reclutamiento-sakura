@@ -18,7 +18,11 @@
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
-    <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+    <app-alert-region
+      *ngIf="alerta"
+      [alerta]="alerta"
+      (cerrar)="cerrarAlerta()"
+    ></app-alert-region>
 
     <label>
       ID solicitud

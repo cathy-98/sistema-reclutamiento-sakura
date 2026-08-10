@@ -75,8 +75,16 @@ export class AppShell {
       roles: ['Administrador', 'Reclutador', 'Entrevistador'],
       children: [
         { label: 'Listado de entrevistas', route: '/entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'] },
+        { label: 'Agenda de entrevistas', route: '/agenda-entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'] },
       ],
     },
+    {
+      label: 'Informes al Cliente',
+      icon: 'requests',
+      route: '/informes-cliente',
+      roles: ['Administrador', 'Reclutador'],
+    },
+
   ];
 
   get menuItemsVisibles() {

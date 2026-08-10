@@ -1,0 +1,130 @@
+<app-page-layout>
+  <app-page-header
+    title="Agenda de entrevistas"
+    subtitle="Vista rápida de entrevistas recientes y próximas"
+  ></app-page-header>
+
+  <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+
+  <app-tabs
+    [tabs]="tabs"
+    [activeTab]="tabActiva"
+    ariaLabel="Filtrar agenda de entrevistas"
+    (activeTabChange)="cambiarTab($event)"
+  ></app-tabs>
+
+  <section class="agenda-layout" aria-label="Agenda de entrevistas">
+    <aside class="calendar-panel" aria-label="Calendario">
+      <header>
+        <h2>{{ tituloMes }}</h2>
+        <input type="month" [(ngModel)]="mesSeleccionado" (ngModelChange)="actualizarCalendario()" />
+      </header>
+
+      <div class="calendar-grid calendar-weekdays">
+        <span *ngFor="let dia of diasSemana">{{ dia }}</span>
+      </div>
+
+      <div class="calendar-grid">
+        <button
+          *ngFor="let dia of diasCalendario"
+          type="button"
+          class="calendar-day"
+          [class.is-muted]="!dia.esMesActual"
+          [class.is-selected]="dia.fechaIso === fechaSeleccionada"
+          [class.has-events]="dia.cantidad > 0"
+          (click)="seleccionarFecha(dia.fechaIso)"
+        >
+          <span>{{ dia.fecha.getDate() }}</span>
+          <small *ngIf="dia.cantidad > 0">{{ dia.cantidad }}</small>
+        </button>
+      </div>
+    </aside>
+
+    <section class="day-panel" aria-labelledby="entrevistas-dia-title">
+      <header class="day-header">
+        <div>
+          <h2 id="entrevistas-dia-title">Entrevistas del día</h2>
+          <p>{{ fechaSeleccionada }} · {{ entrevistasDia.length }} entrevista(s)</p>
+        </div>
+        <label>
+          Buscar
+          <input type="search" [(ngModel)]="busqueda" placeholder="Candidato, solicitud o entrevistador" />
+        </label>
+      </header>
+
+      <p class="agenda-message" *ngIf="cargando">Cargando entrevistas...</p>
+      <p class="agenda-message is-error" *ngIf="errorCarga">{{ errorCarga }}</p>
+
+      <div class="cards-list" *ngIf="!cargando && !errorCarga && entrevistasDia.length > 0">
+        <article class="interview-card" *ngFor="let entrevista of entrevistasDia">
+          <div class="avatar" aria-hidden="true">{{ entrevista.candidato.slice(0, 2).toUpperCase() }}</div>
+
+          <div class="card-content">
+            <header>
+              <div>
+                <h3>{{ entrevista.candidato }}</h3>
+                <p>{{ entrevista.cargo }} · {{ entrevista.idSolicitud }}</p>
+              </div>
+              <span class="state-chip" [class]="estadoClase(entrevista.estado)">{{ entrevista.estado }}</span>
+            </header>
+
+            <dl>
+              <div>
+                <dt>Horario</dt>
+                <dd>{{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</dd>
+              </div>
+              <div>
+                <dt>Tipo</dt>
+                <dd>{{ entrevista.tipo }}</dd>
+              </div>
+              <div>
+                <dt>Entrevistador</dt>
+                <dd>{{ entrevista.entrevistador }}</dd>
+              </div>
+              <div>
+                <dt>Modalidad</dt>
+                <dd>{{ entrevista.modalidad }}</dd>
+              </div>
+            </dl>
+
+            <footer>
+              <app-button variant="secondary" size="sm" type="button" (pressed)="verDetalle(entrevista)">Ver detalle</app-button>
+              <app-button
+                variant="secondary"
+                size="sm"
+                type="button"
+                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Cerrada'"
+                (pressed)="abrirEstado(entrevista, 'reprogramar')"
+              >
+                Reprogramar
+              </app-button>
+              <app-button
+                variant="secondary"
+                size="sm"
+                type="button"
+                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Cerrada'"
+                (pressed)="abrirEstado(entrevista, 'cancelar')"
+              >
+                Cancelar
+              </app-button>
+              <app-button size="sm" type="button" (pressed)="abrirFeedback(entrevista)">Feedback</app-button>
+            </footer>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargando && !errorCarga && entrevistasDia.length === 0">
+        <h3>No hay entrevistas</h3>
+        <p>Cambia la fecha, el estado o limpia la búsqueda. Para histórico completo usa el listado de entrevistas.</p>
+      </div>
+    </section>
+  </section>
+
+  <app-entrevista-estado-modal
+    *ngIf="entrevistaSeleccionada"
+    [entrevista]="entrevistaSeleccionada"
+    [modo]="modoEstado"
+    (cerrar)="cerrarModalEstado()"
+    (confirmar)="confirmarEstado($event)"
+  ></app-entrevista-estado-modal>
+</app-page-layout>

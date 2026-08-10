@@ -42,6 +42,12 @@ export const routes: Routes = [
         data: { roles: ['Administrador', 'Reclutador'] }
       },
       {
+        path: 'agenda-entrevistas',
+        loadComponent: () =>
+          import('./pages/entrevistas/entrevistas-agenda/entrevistas-agenda').then((m) => m.EntrevistasAgenda),
+        data: { roles: ['Administrador', 'Reclutador', 'Entrevistador'] }
+      },
+      {
         path: 'entrevistas',
         loadComponent: () =>
           import('./pages/entrevistas/entrevistas-list/entrevistas-list').then((m) => m.EntrevistasList),
@@ -64,6 +70,13 @@ export const routes: Routes = [
           import('./pages/cuestionarios/cuestionarios-admin/cuestionarios-admin').then((m) => m.CuestionariosAdmin),
         data: { roles: ['Administrador', 'Reclutador'], vista: 'crear' }
       },
+      {
+        path: 'informes-cliente',
+        loadComponent: () =>
+          import('./pages/informes-cliente/informes-cliente').then((m) => m.InformesCliente),
+        data: { roles: ['Administrador', 'Reclutador'] }
+      },
+
     ]
   }
 ];

@@ -1,0 +1,272 @@
+.agenda-layout {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+  margin-top: 18px;
+}
+
+.calendar-panel,
+.day-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.calendar-panel {
+  padding: 16px;
+  overflow: hidden;
+}
+
+.day-header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.calendar-panel header {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar-panel h2,
+.day-header h2 {
+  color: #0f172a;
+  font-size: 1rem;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.calendar-panel input,
+.day-header input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.calendar-grid {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.calendar-weekdays {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin: 18px 0 8px;
+  text-align: center;
+}
+
+.calendar-day {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: #0f172a;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  font-size: 0.9rem;
+  gap: 1px;
+  justify-items: center;
+  min-height: 42px;
+  min-width: 0;
+  padding: 3px 2px;
+}
+
+.calendar-day.is-muted {
+  color: #94a3b8;
+}
+
+.calendar-day.has-events {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.calendar-day.is-selected {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.calendar-day small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.day-panel {
+  min-height: 420px;
+  padding: 18px;
+}
+
+.day-header {
+  margin-bottom: 16px;
+}
+
+.day-header p,
+.day-header label {
+  color: #64748b;
+  font-size: 0.82rem;
+  margin: 4px 0 0;
+}
+
+.day-header label {
+  display: grid;
+  gap: 6px;
+  min-width: min(320px, 100%);
+}
+
+.cards-list {
+  display: grid;
+  gap: 12px;
+}
+
+.interview-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  padding: 14px;
+}
+
+.avatar {
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+  color: #334155;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.card-content header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.card-content h3 {
+  color: #0f172a;
+  font-size: 0.98rem;
+  margin: 0;
+}
+
+.card-content p {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin: 4px 0 0;
+}
+
+.state-chip {
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.state-chip.pendiente,
+.state-chip.en-curso {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.state-chip.cerrada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.state-chip.cancelada {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.card-content dl {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 14px 0;
+}
+
+.card-content dt {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.card-content dd {
+  color: #0f172a;
+  font-size: 0.82rem;
+  margin: 3px 0 0;
+}
+
+.card-content footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agenda-message,
+.empty-state {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #475569;
+  padding: 14px;
+}
+
+.agenda-message.is-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.empty-state h3 {
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+@media (max-width: 980px) {
+  .agenda-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-panel {
+    max-width: 420px;
+  }
+
+  .card-content dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .calendar-panel header,
+  .day-header,
+  .card-content header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .interview-card,
+  .card-content dl {
+    grid-template-columns: 1fr;
+  }
+}
