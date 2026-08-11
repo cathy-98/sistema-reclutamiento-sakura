@@ -2,7 +2,6 @@
 from .models import (
     Pais,
     Region,
-    Ciudad,
     Comuna,
     Habilidad,
     NivelHabilidad,
@@ -17,7 +16,6 @@ from .models import (
 __all__ = [
     "Pais",
     "Region",
-    "Ciudad",
     "Comuna",
     "Habilidad",
     "NivelHabilidad",

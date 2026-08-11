@@ -4,18 +4,21 @@ from fastapi.middleware.cors import CORSMiddleware
 # Importamos los enrutadores de nuestros módulos
 from app.auth import router as auth_router
 from app.usuarios import router as usuarios_router
-# 🌟 NUEVO FECHA 20/07/2026: Importar el enrutador de catálogos
+
 from app.catalogos import router as catalogos_router
 from app.solicitudes import router as solicitudes_router
 
-# 🌟 NUEVO FECHA 20/07/2026: Forzar a SQLAlchemy a registrar los nuevos modelos relacionales geográficos
-from app.catalogos import models as catalogos_models
 
+
+# ==========================================================
+# 1. CREAR LA APLICACIÓN
+# ==========================================================
 app = FastAPI( # Instancia de FastAPI
     title="Reclutamiento y Selección Sakura Backend API",
     description="Backend de Reclutamiento y Selección para Sakura - 2026",
     version="1.0.0"
 )
+
 
 # Configurar CORS para permitir peticiones desde Angular (Puerto 4200)
 # CORS es para permitir que las peticiones se hagan desde Angular (Puerto 4200)
@@ -32,13 +35,21 @@ app.add_middleware( # Añadir el middleware de CORS
     allow_headers=["*"], # Permitir todos los headers
 )
 
+# ==========================================================
+# 2. REGISTRAR ROUTERS
+# ==========================================================
 # Registrar los enrutadores en la aplicación principal
 app.include_router(auth_router.router) # Registrar el enrutador de autenticación
 app.include_router(usuarios_router.router) # Registrar el enrutador de usuarios
 # 🌟 NUEVO: Fechas 20/07/2026: Registrar el enrutador de catálogos en FastAPI
 app.include_router(catalogos_router.router) # Registrar el enrutador de catálogos
 app.include_router(solicitudes_router.router) # Registrar el enrutador de solicitudes
+app.include_router(catalogos_router.router) 
 
+
+# ==========================================================
+# 3. ENDPOINT BASE
+# ==========================================================
 @app.get("/")
 def health_check(): # Endpoint para verificar el estado de la aplicación
     return {

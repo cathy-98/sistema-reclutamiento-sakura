@@ -32,10 +32,7 @@ def crear_solicitud(solicitud_in: SolicitudCreate, db: Session = Depends(get_db)
     """Crea una nueva solicitud asociando el usuario creador y sus habilidades requeridas."""
 																			 
     datos_solicitud = solicitud_in.model_dump(exclude={"habilidades", "sol_estado_id"})
-												  
-						  
-	 
-    
+	
     # Asignar explícitamente la llave foránea de estado
     if hasattr(solicitud_in, "sol_estado_id") and solicitud_in.sol_estado_id is not None:
         datos_solicitud["sol_estado_solicitud_id"] = solicitud_in.sol_estado_id
