@@ -13,7 +13,7 @@
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar solicitudes."
-    quickSearchPlaceholder="Ej. Req-021, Banco BICE o Frontend"
+    quickSearchPlaceholder="Ej. SOL-021, Banco BICE o Frontend"
     [(quickSearch)]="filtros.busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
@@ -26,7 +26,7 @@
 
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.id" type="text" placeholder="Ej. Req-021" />
+      <input [(ngModel)]="filtros.id" type="text" placeholder="Ej. SOL-021" />
     </label>
 
     <label>
@@ -100,13 +100,14 @@
   [idSolicitud]="solicitudSeleccionadaId"
   [modo]="modoFormulario"
   (cerrar)="cerrarFormulario()"
+  (guardado)="manejarFormularioGuardado()"
 ></app-solicitud-form-modal>
 
 <app-confirm-dialog
   *ngIf="mostrarConfirmacionCancelacion"
   titulo="Cancelar solicitud"
   mensaje="Esta acción cambiará el estado de la solicitud a Cancelada."
-  [detalle]="'Solicitud seleccionada: ' + solicitudSeleccionadaId"
+  [detalle]="'Solicitud seleccionada: ' + (solicitudSeleccionadaCodigo || solicitudSeleccionadaId)"
   textoCancelar="Volver"
   textoConfirmar="Confirmar cancelación"
   variante="danger"

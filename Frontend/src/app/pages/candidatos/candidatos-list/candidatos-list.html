@@ -21,14 +21,14 @@
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar candidatos."
-    quickSearchPlaceholder="Ej. Macarena Lopez, Req-021 o Frontend"
+    quickSearchPlaceholder="Ej. Macarena Lopez, SOL-021 o Frontend"
     [(quickSearch)]="busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. Req-021" />
+      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. SOL-021" />
     </label>
     <label>
       Cargo postulado

@@ -199,7 +199,7 @@ export class CandidatosList {
 
   readonly candidatos: Candidato[] = [
     {
-      idSolicitud: 'Req-021',
+      idSolicitud: 'SOL-021',
       match: 90,
       nombre: 'Macarena Lopez',
       correo: 'macarena.lopez@mail.com',
@@ -212,7 +212,7 @@ export class CandidatosList {
       experiencia: 4,
     },
     {
-      idSolicitud: 'Req-021',
+      idSolicitud: 'SOL-021',
       match: 80,
       nombre: 'Valentina Rojas',
       correo: 'valentina.rojas@mail.com',
@@ -225,7 +225,7 @@ export class CandidatosList {
       experiencia: 5,
     },
     {
-      idSolicitud: 'Req-019',
+      idSolicitud: 'SOL-019',
       match: 68,
       nombre: 'Diego Martinez',
       correo: 'diego.martinez@mail.com',
@@ -238,7 +238,7 @@ export class CandidatosList {
       experiencia: 6,
     },
     {
-      idSolicitud: 'Req-018',
+      idSolicitud: 'SOL-018',
       match: 55,
       nombre: 'Camila Fuentes',
       correo: 'camila.fuentes@mail.com',
@@ -251,7 +251,7 @@ export class CandidatosList {
       experiencia: 3,
     },
     {
-      idSolicitud: 'Req-017',
+      idSolicitud: 'SOL-017',
       match: 42,
       nombre: 'Sebastian Araya',
       correo: 'sebastian.araya@mail.com',

@@ -111,8 +111,9 @@
             Solicitante *
             <select formControlName="id_usuario_solicitante">
               <option [ngValue]="null">Selecciona solicitante</option>
-              <option [ngValue]="1">Felipe Valdes</option>
-              <option [ngValue]="3">Cathy</option>
+              <option *ngFor="let usuario of usuariosCatalogo" [ngValue]="usuario.id">
+                {{ usuario.nombre }}
+              </option>
             </select>
             <small class="form-error" *ngIf="control('id_usuario_solicitante')?.touched && control('id_usuario_solicitante')?.hasError('required')">
               Campo obligatorio.
@@ -123,8 +124,9 @@
             Responsable
             <select formControlName="id_usuario_responsable">
               <option [ngValue]="null">Sin asignar</option>
-              <option [ngValue]="1">Felipe Valdes</option>
-              <option [ngValue]="3">Cathy</option>
+              <option *ngFor="let usuario of usuariosCatalogo" [ngValue]="usuario.id">
+                {{ usuario.nombre }}
+              </option>
             </select>
           </label>
         </div>
@@ -142,9 +144,9 @@
             Prioridad *
             <select formControlName="id_prioridad">
               <option [ngValue]="null">Selecciona prioridad</option>
-              <option [ngValue]="1">Alta</option>
-              <option [ngValue]="2">Media</option>
-              <option [ngValue]="3">Baja</option>
+              <option *ngFor="let prioridad of prioridadesCatalogo" [ngValue]="prioridad.id">
+                {{ prioridad.nombre }}
+              </option>
             </select>
             <small class="form-error" *ngIf="control('id_prioridad')?.touched && control('id_prioridad')?.hasError('required')">
               Campo obligatorio.
@@ -163,9 +165,9 @@
             Modalidad *
             <select formControlName="id_modalidad">
               <option [ngValue]="null">Selecciona modalidad</option>
-              <option [ngValue]="1">Presencial</option>
-              <option [ngValue]="2">Remoto</option>
-              <option [ngValue]="3">Híbrido</option>
+              <option *ngFor="let modalidad of modalidadesCatalogo" [ngValue]="modalidad.id">
+                {{ modalidad.nombre }}
+              </option>
             </select>
             <small class="form-error" *ngIf="control('id_modalidad')?.touched && control('id_modalidad')?.hasError('required')">
               Campo obligatorio.
@@ -176,9 +178,9 @@
             Estado *
             <select formControlName="id_estado_solicitud">
               <option [ngValue]="null">Selecciona estado</option>
-              <option [ngValue]="1">Pendiente</option>
-              <option [ngValue]="2">En Curso</option>
-              <option [ngValue]="3">Cerrada</option>
+              <option *ngFor="let estado of estadosSolicitudCatalogo" [ngValue]="estado.id">
+                {{ estado.nombre }}
+              </option>
             </select>
             <small class="form-error" *ngIf="control('id_estado_solicitud')?.touched && control('id_estado_solicitud')?.hasError('required')">
               Campo obligatorio.
