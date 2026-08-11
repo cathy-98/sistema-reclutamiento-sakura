@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { take, timeout } from 'rxjs';
+import { finalize, take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
@@ -56,6 +56,7 @@ export class SolicitudesList implements OnInit {
   mostrarFormulario = false;
   mostrarConfirmacionCancelacion = false;
   solicitudSeleccionadaId: string | null = null;
+  solicitudSeleccionadaCodigo: string | null = null;
   modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
   solicitudes: SolicitudResumen[] = [];
   seleccionados = new Set<string>();
@@ -66,7 +67,7 @@ export class SolicitudesList implements OnInit {
 
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
     {
-      key: 'id',
+      key: 'codigo',
       label: 'ID solicitud',
       width: 112,
       sticky: 'left',
@@ -167,12 +168,12 @@ export class SolicitudesList implements OnInit {
 
     return this.solicitudes.filter((solicitud) => {
       const textoSolicitud = this.normalizar(
-        `${solicitud.id} ${solicitud.nombre} ${solicitud.cliente} ${solicitud.cargo} ${solicitud.responsable}`,
+        `${solicitud.codigo} ${solicitud.nombre} ${solicitud.cliente} ${solicitud.cargo} ${solicitud.responsable}`,
       );
 
       return (
         textoSolicitud.includes(filtros.busquedaRapida) &&
-        this.normalizar(solicitud.id).includes(filtros.id) &&
+        this.normalizar(solicitud.codigo).includes(filtros.id) &&
         this.normalizar(solicitud.nombre).includes(filtros.nombre) &&
         this.normalizar(solicitud.cliente).includes(filtros.cliente) &&
         this.normalizar(solicitud.cargo).includes(filtros.cargo) &&
@@ -233,19 +234,19 @@ export class SolicitudesList implements OnInit {
       .pipe(
         timeout(10000),
         take(1),
+        finalize(() => {
+          this.cargando = false;
+          this.limpiarTimeoutCarga();
+        }),
       )
       .subscribe({
         next: (solicitudes) => {
           this.solicitudes = solicitudes;
           this.paginaActual = 1;
-          this.cargando = false;
           this.errorCarga = '';
-          this.limpiarTimeoutCarga();
         },
         error: (error) => {
           this.solicitudes = [];
-          this.cargando = false;
-          this.limpiarTimeoutCarga();
           this.errorCarga =
             error.name === 'TimeoutError'
               ? 'El servidor tardó demasiado en responder. Intenta recargar el listado.'
@@ -267,6 +268,7 @@ export class SolicitudesList implements OnInit {
 
   abrirDetalleSolicitud(id: string) {
     this.solicitudSeleccionadaId = id;
+    this.solicitudSeleccionadaCodigo = null;
     this.modoFormulario = 'ver';
     this.mostrarFormulario = true;
   }
@@ -278,17 +280,19 @@ export class SolicitudesList implements OnInit {
     }
 
     this.solicitudSeleccionadaId = id;
+    this.solicitudSeleccionadaCodigo = null;
     this.modoFormulario = 'editar';
     this.mostrarFormulario = true;
   }
 
-  abrirConfirmacionCancelacion(id: string) {
+  abrirConfirmacionCancelacion(solicitud: SolicitudResumen) {
     if (!this.puedeCancelarSolicitud) {
       this.mostrarAlertaPermisos();
       return;
     }
 
-    this.solicitudSeleccionadaId = id;
+    this.solicitudSeleccionadaId = solicitud.id;
+    this.solicitudSeleccionadaCodigo = solicitud.codigo;
     this.mostrarConfirmacionCancelacion = true;
   }
 
@@ -317,13 +321,14 @@ export class SolicitudesList implements OnInit {
     }
 
     if (evento.action === 'cancelar') {
-      this.abrirConfirmacionCancelacion(evento.row.id);
+      this.abrirConfirmacionCancelacion(evento.row);
     }
   }
 
   cerrarConfirmacionCancelacion() {
     this.mostrarConfirmacionCancelacion = false;
     this.solicitudSeleccionadaId = null;
+    this.solicitudSeleccionadaCodigo = null;
   }
 
   confirmarCancelacionSolicitud() {
@@ -345,6 +350,7 @@ export class SolicitudesList implements OnInit {
             mensaje: 'Solicitud cancelada correctamente.',
           };
           this.cerrarConfirmacionCancelacion();
+          this.cargarSolicitudes();
         },
         error: (error) => {
           this.alerta = {
@@ -360,7 +366,18 @@ export class SolicitudesList implements OnInit {
   cerrarFormulario() {
     this.mostrarFormulario = false;
     this.solicitudSeleccionadaId = null;
+    this.solicitudSeleccionadaCodigo = null;
     this.modoFormulario = 'crear';
+  }
+
+  manejarFormularioGuardado() {
+    this.cerrarFormulario();
+    this.alerta = {
+      tipo: 'success',
+      variante: 'soft',
+      mensaje: 'Solicitud guardada correctamente.',
+    };
+    this.cargarSolicitudes();
   }
 
   cerrarAlerta() {

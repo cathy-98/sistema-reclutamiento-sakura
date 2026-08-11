@@ -44,7 +44,7 @@ export class AuthService {
   private readonly rolesPorId: Record<number, RolUsuario> = {
     1: 'Administrador',
     2: 'Reclutador',
-    3: 'Entrevistador',
+    4: 'Entrevistador',
   };
 
   constructor(private http: HttpClient) {}

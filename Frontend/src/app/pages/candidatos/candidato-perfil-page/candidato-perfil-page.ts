@@ -53,7 +53,7 @@ import {
 })
 export class CandidatoPerfilPage {
   tabActiva: PerfilTab = 'postulaciones';
-  postulacionSeleccionadaId = 'Req-021';
+  postulacionSeleccionadaId = 'SOL-021';
   busquedaPostulacion = '';
   archivosDocumentos: File[] = [];
   mostrarModalObservacion = false;
@@ -116,11 +116,11 @@ export class CandidatoPerfilPage {
   readonly idiomas = ['Español (Nativo)', 'Inglés (B2)'];
 
   readonly postulaciones: PostulacionPerfil[] = [
-    ['Req-021', 'Latam', 'Backend', '18/05/2025', 'En curso'],
-    ['Req-026', 'Banco de Chile', 'Frontend', '18/05/2025', 'Cerrada'],
-    ['Req-028', 'SParta', 'QA', '18/05/2025', 'Cerrada'],
-    ['Req-029', 'Servicios Financieros', 'QA', '18/05/2025', 'En curso'],
-    ['Req-030', 'Latam', 'Frontend', '18/05/2025', 'Cerrada'],
+    ['SOL-021', 'Latam', 'Backend', '18/05/2025', 'En curso'],
+    ['SOL-026', 'Banco de Chile', 'Frontend', '18/05/2025', 'Cerrada'],
+    ['SOL-028', 'SParta', 'QA', '18/05/2025', 'Cerrada'],
+    ['SOL-029', 'Servicios Financieros', 'QA', '18/05/2025', 'En curso'],
+    ['SOL-030', 'Latam', 'Frontend', '18/05/2025', 'Cerrada'],
   ];
 
   readonly procesoBase: EtapaSeleccion[] = [
@@ -159,8 +159,8 @@ export class CandidatoPerfilPage {
   ];
 
   readonly procesosPorPostulacion: Record<string, EtapaSeleccion[]> = {
-    'Req-021': this.procesoBase,
-    'Req-026': [
+    'SOL-021': this.procesoBase,
+    'SOL-026': [
       ...this.procesoBase.slice(0, 2),
       {
         etapa: 'Cierre de proceso',
@@ -171,9 +171,9 @@ export class CandidatoPerfilPage {
         observaciones: 'Proceso cerrado por ajuste de presupuesto interno.',
       },
     ],
-    'Req-028': this.procesoBase.slice(0, 2),
-    'Req-029': this.procesoBase.slice(0, 3),
-    'Req-030': this.procesoBase.slice(0, 2),
+    'SOL-028': this.procesoBase.slice(0, 2),
+    'SOL-029': this.procesoBase.slice(0, 3),
+    'SOL-030': this.procesoBase.slice(0, 2),
   };
 
   readonly habilidadesComparadas: HabilidadComparada[] = [
@@ -194,8 +194,8 @@ export class CandidatoPerfilPage {
   ];
 
   readonly evaluacionesTecnicas: EvaluacionTecnicaPerfil[] = [
-    ['Test Angular Junior', 'Enviado', 'Req-021', '45 min', 'Pendiente'],
-    ['Code Challenge Backend', 'Pendiente', 'Req-021', '60 min', 'Sin enviar'],
+    ['Test Angular Junior', 'Enviado', 'SOL-021', '45 min', 'Pendiente'],
+    ['Code Challenge Backend', 'Pendiente', 'SOL-021', '60 min', 'Sin enviar'],
   ];
 
   readonly historialObservaciones: ObservacionPerfil[] = [
@@ -213,7 +213,7 @@ export class CandidatoPerfilPage {
     const tabInicial = params.get('tab') as PerfilTab | null;
 
     this.candidato = {
-      idSolicitud: params.get('idSolicitud') || 'Req-021',
+      idSolicitud: params.get('idSolicitud') || 'SOL-021',
       match: Number(params.get('match') || 78),
       nombre: params.get('nombre') || 'Juan Perez Gonzalez',
       correo: params.get('correo') || 'juan.perez@gmail.com',

@@ -41,7 +41,7 @@ export class EntrevistasService {
   private readonly entrevistas = new BehaviorSubject<EntrevistaResumen[]>([
     {
       id: 'ENT-001',
-      idSolicitud: 'Req-021',
+      idSolicitud: 'SOL-021',
       candidato: 'Macarena Lopez',
       estado: 'En curso',
       tipo: 'Reclutamiento',
@@ -56,7 +56,7 @@ export class EntrevistasService {
     },
     {
       id: 'ENT-002',
-      idSolicitud: 'Req-022',
+      idSolicitud: 'SOL-022',
       candidato: 'Valentina Rojas',
       estado: 'Pendiente',
       tipo: 'Técnica',
@@ -70,7 +70,7 @@ export class EntrevistasService {
     },
     {
       id: 'ENT-003',
-      idSolicitud: 'Req-023',
+      idSolicitud: 'SOL-023',
       candidato: 'Diego Martinez',
       estado: 'Cerrada',
       tipo: 'Reclutamiento',
@@ -84,7 +84,7 @@ export class EntrevistasService {
     },
     {
       id: 'ENT-004',
-      idSolicitud: 'Req-024',
+      idSolicitud: 'SOL-024',
       candidato: 'Camila Fuentes',
       estado: 'Cerrada',
       tipo: 'Técnica',
@@ -98,7 +98,7 @@ export class EntrevistasService {
     },
     {
       id: 'ENT-005',
-      idSolicitud: 'Req-025',
+      idSolicitud: 'SOL-025',
       candidato: 'Sebastian Araya',
       estado: 'Cerrada',
       tipo: 'Operacional',
@@ -112,7 +112,7 @@ export class EntrevistasService {
     },
     {
       id: 'ENT-006',
-      idSolicitud: 'Req-026',
+      idSolicitud: 'SOL-026',
       candidato: 'Juan Perez Gonzalez',
       estado: 'Cerrada',
       tipo: 'Técnica',

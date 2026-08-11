@@ -13,7 +13,7 @@
         {{
           esAgendaMasiva
             ? 'Una entrevista por candidato'
-            : 'ID solicitud: ' + (control('idSolicitud')?.value || 'Req-021')
+            : 'ID solicitud: ' + (control('idSolicitud')?.value || 'SOL-021')
         }}
       </span>
     </div>
@@ -98,9 +98,9 @@
           />
           <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="idSolicitud">
             <option [ngValue]="null">Selecciona solicitud</option>
-            <option>Req-021</option>
-            <option>Req-022</option>
-            <option>Req-023</option>
+            <option>SOL-021</option>
+            <option>SOL-022</option>
+            <option>SOL-023</option>
           </select>
         </app-form-field>
 
