@@ -1,186 +1,525 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
-from typing import List
+from __future__ import annotations
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.orm import Session
+
+from app.auth.dependencies import get_current_admin, get_current_user, require_permissions
 from app.database import get_db
-from app.usuarios import models, schemas
-from app.auth.utils import hash_password
-
-router = APIRouter(
-    prefix="/usuarios",
-    tags=["Usuarios"]
-)
-
-# ==========================================
-# 1. Listar todos los Roles (GET /usuarios/roles)
-# ==========================================
-@router.get("/roles", response_model=List[schemas.RolWithPermisosResponse])
-def listar_roles_con_permisos(db: Session = Depends(get_db)):
-    roles = db.query(models.Rol).options(joinedload(models.Rol.permisos)).all()
-    return roles
+from app.usuarios import models, schemas, service
 
 
-# ==========================================
-# 2. Listar todos los Permisos (GET /usuarios/permisos)
-# ==========================================
-@router.get("/permisos", response_model=List[schemas.PermisoResponse])
-def listar_permisos(db: Session = Depends(get_db)):
-    permisos = db.query(models.Permiso).all()
-    return permisos
+router = APIRouter(prefix="/usuarios", tags=["Usuarios y Accesos"])
 
 
-# ==========================================
-# 3. Listar todos los Estados de Usuario (GET /usuarios/estados)
-# ==========================================
-@router.get("/estados", response_model=List[schemas.EstadoUsuarioResponse])
-def listar_estados_usuario(db: Session = Depends(get_db)):
-    estados = db.query(models.EstadoUsuario).all()
-    return estados
+def _translate_error(exc: service.UserModuleError) -> HTTPException:
+    if isinstance(exc, service.NotFoundError):
+        code = status.HTTP_404_NOT_FOUND
+    elif isinstance(exc, service.ConflictError):
+        code = status.HTTP_409_CONFLICT
+    else:
+        code = status.HTTP_422_UNPROCESSABLE_CONTENT
+
+    detail: dict[str, object] = {"message": exc.message}
+    if exc.constraint:
+        detail["constraint"] = exc.constraint
+    return HTTPException(status_code=code, detail=detail)
 
 
-# ==========================================
-# 4. Crear Usuario (POST /usuarios/)
-# ==========================================
-@router.post("/", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
-def crear_usuario(usuario_in: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    email_existe = db.query(models.Usuario).filter(models.Usuario.usr_email == usuario_in.usr_email).first()
-    if email_existe:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo electrónico ya está registrado."
-        )
-
-    datos_usuario = usuario_in.model_dump()
-    datos_usuario["usr_contrasena"] = hash_password(datos_usuario["usr_contrasena"])
-    
-    nuevo_usuario = models.Usuario(**datos_usuario)
-    db.add(nuevo_usuario)
-    db.commit()
-    
-    usuario_completo = db.query(models.Usuario).options(
-        joinedload(models.Usuario.rol).joinedload(models.Rol.permisos),
-        joinedload(models.Usuario.area),
-        joinedload(models.Usuario.estado)
-    ).filter(models.Usuario.usr_id == nuevo_usuario.usr_id).first()
-    
-    return usuario_completo
+# ============================================================================
+# IMPORTANTE SOBRE EL ORDEN DE RUTAS
+# ============================================================================
+# Las rutas estáticas (/roles, /permisos, /areas, /estados) se registran ANTES
+# de /{usuario_id}. Así FastAPI no intenta interpretar "roles" como un entero.
+# ============================================================================
 
 
-# ==========================================
-# 5. Listar todos los Usuarios (GET /usuarios/)
-# ==========================================
-@router.get("/", response_model=List[schemas.UsuarioResponse])
-def listar_usuarios(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    usuarios = db.query(models.Usuario).options(
-        joinedload(models.Usuario.rol).joinedload(models.Rol.permisos),
-        joinedload(models.Usuario.estado),
-        joinedload(models.Usuario.area)
-    ).offset(skip).limit(limit).all()
-    return usuarios
+# ==========================================================
+# ROLES - ADMINISTRACIÓN
+# ==========================================================
 
-
-# ==========================================
-# 6. Obtener SOLO Permisos de un Usuario (GET /usuarios/{usuario_id}/permisos)
-# ==========================================
-@router.get("/{usuario_id}/permisos", response_model=List[str])
-def obtener_permisos_usuario(usuario_id: int, db: Session = Depends(get_db)):
-    usuario = db.query(models.Usuario).options(
-        joinedload(models.Usuario.rol).joinedload(models.Rol.permisos)
-    ).filter(models.Usuario.usr_id == usuario_id).first()
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Usuario con ID {usuario_id} no encontrado."
-        )
-    
-    if not usuario.rol:
-        return []
-        
-    return [permiso.per_nombre for permiso in usuario.rol.permisos]
-
-
-# ==========================================
-# 7. Obtener un Usuario por ID (GET /usuarios/{id})
-# ==========================================
-@router.get("/{usuario_id}", response_model=schemas.UsuarioResponse)
-def obtener_usuario_por_id(usuario_id: int, db: Session = Depends(get_db)):
-    usuario = db.query(models.Usuario).options(
-        joinedload(models.Usuario.rol).joinedload(models.Rol.permisos),
-        joinedload(models.Usuario.estado),
-        joinedload(models.Usuario.area)
-    ).filter(models.Usuario.usr_id == usuario_id).first()
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Usuario con ID {usuario_id} no encontrado."
-        )
-    return usuario
-
-
-# ==========================================
-# 8. Actualizar Usuario Parcialmente (PATCH /usuarios/{usuario_id})
-# ==========================================
-@router.patch("/{usuario_id}", response_model=schemas.UsuarioResponse)
-def actualizar_usuario(
-    usuario_id: int, 
-    usuario_update: schemas.UsuarioUpdate, 
-    db: Session = Depends(get_db)
+@router.get("/roles", response_model=list[schemas.RolRead])
+def listar_roles(
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
 ):
-    usuario = db.query(models.Usuario).options(
-        joinedload(models.Usuario.rol).joinedload(models.Rol.permisos),
-        joinedload(models.Usuario.area),
-        joinedload(models.Usuario.estado)
-    ).filter(models.Usuario.usr_id == usuario_id).first()
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Usuario con ID {usuario_id} no encontrado."
+    return service.list_roles(db)
+
+
+@router.post("/roles", response_model=schemas.RolRead, status_code=status.HTTP_201_CREATED)
+def crear_rol(
+    payload: schemas.RolCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.create_rol(db, payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/roles/{rol_id}", response_model=schemas.RolRead)
+def obtener_rol(
+    rol_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    try:
+        return service.get_rol(db, rol_id)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.put("/roles/{rol_id}", response_model=schemas.RolRead)
+def reemplazar_rol(
+    rol_id: int,
+    payload: schemas.RolCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_rol(db, service.get_rol(db, rol_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.patch("/roles/{rol_id}", response_model=schemas.RolRead)
+def actualizar_rol(
+    rol_id: int,
+    payload: schemas.RolUpdate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_rol(db, service.get_rol(db, rol_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.delete("/roles/{rol_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_rol(
+    rol_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        service.delete_rol(db, service.get_rol(db, rol_id))
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/roles/{rol_id}/permisos", response_model=list[schemas.PermisoRead])
+def listar_permisos_rol(
+    rol_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    try:
+        return service.get_rol(db, rol_id).permisos
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.put("/roles/{rol_id}/permisos", response_model=schemas.RolRead)
+def reemplazar_permisos_rol(
+    rol_id: int,
+    payload: schemas.RolPermisosReplace,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.replace_role_permissions(
+            db,
+            service.get_rol(db, rol_id),
+            payload.permiso_ids,
         )
-    
-    datos_actualizados = usuario_update.model_dump(exclude_unset=True)
-    
-    if "usr_contrasena" in datos_actualizados and datos_actualizados["usr_contrasena"]:
-        datos_actualizados["usr_contrasena"] = hash_password(datos_actualizados["usr_contrasena"])
-        
-    if "usr_email" in datos_actualizados:
-        email_existe = db.query(models.Usuario).filter(
-            models.Usuario.usr_email == datos_actualizados["usr_email"],
-            models.Usuario.usr_id != usuario_id
-        ).first()
-        if email_existe:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El correo electrónico ya está registrado por otro usuario."
-            )
-
-    for campo, valor in datos_actualizados.items():
-        setattr(usuario, campo, valor)
-        
-    db.commit()
-    db.refresh(usuario)
-    return usuario
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
 
 
-# ==========================================
-# 9. Eliminar Usuario - Baja Lógica (DELETE /usuarios/{usuario_id})
-# ==========================================
-@router.delete("/{usuario_id}", status_code=status.HTTP_200_OK)
-def eliminar_usuario(usuario_id: int, db: Session = Depends(get_db)):
-    usuario = db.query(models.Usuario).filter(models.Usuario.usr_id == usuario_id).first()
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Usuario con ID {usuario_id} no encontrado."
+@router.post("/roles/{rol_id}/permisos/{permiso_id}", response_model=schemas.RolRead)
+def agregar_permiso_rol(
+    rol_id: int,
+    permiso_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.add_role_permission(
+            db,
+            service.get_rol(db, rol_id),
+            service.get_permiso(db, permiso_id),
         )
-    
-    usuario.usr_estado_usuario_id = 4
-    db.commit()
-    
-    return {
-        "ok": True,
-        "message": f"Usuario con ID {usuario_id} ha sido dado de baja lógicamente (Estado: Eliminado)."
-    }
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.delete("/roles/{rol_id}/permisos/{permiso_id}", response_model=schemas.RolRead)
+def quitar_permiso_rol(
+    rol_id: int,
+    permiso_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.remove_role_permission(
+            db,
+            service.get_rol(db, rol_id),
+            service.get_permiso(db, permiso_id),
+        )
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+# ==========================================================
+# PERMISOS - ADMINISTRACIÓN
+# ==========================================================
+
+@router.get("/permisos", response_model=list[schemas.PermisoRead])
+def listar_permisos(
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    return service.list_permisos(db)
+
+
+@router.post("/permisos", response_model=schemas.PermisoRead, status_code=status.HTTP_201_CREATED)
+def crear_permiso(
+    payload: schemas.PermisoCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.create_permiso(db, payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/permisos/{permiso_id}", response_model=schemas.PermisoRead)
+def obtener_permiso(
+    permiso_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    try:
+        return service.get_permiso(db, permiso_id)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.put("/permisos/{permiso_id}", response_model=schemas.PermisoRead)
+def reemplazar_permiso(
+    permiso_id: int,
+    payload: schemas.PermisoCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_permiso(db, service.get_permiso(db, permiso_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.patch("/permisos/{permiso_id}", response_model=schemas.PermisoRead)
+def actualizar_permiso(
+    permiso_id: int,
+    payload: schemas.PermisoUpdate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_permiso(db, service.get_permiso(db, permiso_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.delete("/permisos/{permiso_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_permiso(
+    permiso_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        service.delete_permiso(db, service.get_permiso(db, permiso_id))
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ==========================================================
+# ÁREAS
+# ==========================================================
+
+@router.get("/areas", response_model=list[schemas.AreaRead])
+def listar_areas(
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    return service.list_areas(db)
+
+
+@router.post("/areas", response_model=schemas.AreaRead, status_code=status.HTTP_201_CREATED)
+def crear_area(
+    payload: schemas.AreaCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.create_area(db, payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/areas/{area_id}", response_model=schemas.AreaRead)
+def obtener_area(
+    area_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    try:
+        return service.get_area(db, area_id)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.put("/areas/{area_id}", response_model=schemas.AreaRead)
+def reemplazar_area(
+    area_id: int,
+    payload: schemas.AreaCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_area(db, service.get_area(db, area_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.patch("/areas/{area_id}", response_model=schemas.AreaRead)
+def actualizar_area(
+    area_id: int,
+    payload: schemas.AreaUpdate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_area(db, service.get_area(db, area_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.delete("/areas/{area_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_area(
+    area_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        service.delete_area(db, service.get_area(db, area_id))
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ==========================================================
+# ESTADOS DE USUARIO
+# ==========================================================
+
+@router.get("/estados", response_model=list[schemas.EstadoUsuarioRead])
+def listar_estados(
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    return service.list_estados(db)
+
+
+@router.post("/estados", response_model=schemas.EstadoUsuarioRead, status_code=status.HTTP_201_CREATED)
+def crear_estado(
+    payload: schemas.EstadoUsuarioCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.create_estado(db, payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/estados/{estado_id}", response_model=schemas.EstadoUsuarioRead)
+def obtener_estado(
+    estado_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_user),
+):
+    try:
+        return service.get_estado(db, estado_id)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.put("/estados/{estado_id}", response_model=schemas.EstadoUsuarioRead)
+def reemplazar_estado(
+    estado_id: int,
+    payload: schemas.EstadoUsuarioCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_estado(db, service.get_estado(db, estado_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.patch("/estados/{estado_id}", response_model=schemas.EstadoUsuarioRead)
+def actualizar_estado(
+    estado_id: int,
+    payload: schemas.EstadoUsuarioUpdate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        return service.update_estado(db, service.get_estado(db, estado_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.delete("/estados/{estado_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_estado(
+    estado_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(get_current_admin),
+):
+    try:
+        service.delete_estado(db, service.get_estado(db, estado_id))
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ==========================================================
+# USUARIOS - COLECCIÓN
+# ==========================================================
+
+@router.get("/", response_model=list[schemas.UsuarioRead])
+def listar_usuarios(
+    q: str | None = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    rol_id: int | None = Query(default=None, ge=1),
+    estado_id: int | None = Query(default=None, ge=1),
+    area_id: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_VIEW")),
+):
+    return service.list_usuarios(
+        db,
+        skip=skip,
+        limit=limit,
+        q=q,
+        rol_id=rol_id,
+        estado_id=estado_id,
+        area_id=area_id,
+    )
+
+
+@router.post("/", response_model=schemas.UsuarioRead, status_code=status.HTTP_201_CREATED)
+def crear_usuario(
+    payload: schemas.UsuarioCreate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_CREATE")),
+):
+    try:
+        return service.create_usuario(db, payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+# ==========================================================
+# USUARIOS - DETALLE
+# ==========================================================
+
+@router.get("/{usuario_id}/permisos", response_model=list[str])
+def obtener_permisos_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_VIEW")),
+):
+    try:
+        usuario = service.get_usuario(db, usuario_id)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return [p.per_nombre for p in (usuario.rol.permisos if usuario.rol else [])]
+
+
+@router.post("/{usuario_id}/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password_usuario(
+    usuario_id: int,
+    payload: schemas.UsuarioPasswordReset,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_UPDATE")),
+):
+    try:
+        service.reset_password(
+            db,
+            service.get_usuario(db, usuario_id),
+            payload.nueva_contrasena,
+        )
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{usuario_id}", response_model=schemas.UsuarioRead)
+def obtener_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_VIEW")),
+):
+    try:
+        return service.get_usuario(db, usuario_id)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.put("/{usuario_id}", response_model=schemas.UsuarioRead)
+def reemplazar_usuario(
+    usuario_id: int,
+    payload: schemas.UsuarioReplace,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_UPDATE")),
+):
+    try:
+        return service.replace_usuario(db, service.get_usuario(db, usuario_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.patch("/{usuario_id}", response_model=schemas.UsuarioRead)
+def actualizar_usuario(
+    usuario_id: int,
+    payload: schemas.UsuarioUpdate,
+    db: Session = Depends(get_db),
+    _: models.Usuario = Depends(require_permissions("USR_UPDATE")),
+):
+    try:
+        return service.update_usuario(db, service.get_usuario(db, usuario_id), payload)
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(require_permissions("USR_DELETE")),
+):
+    if current_user.usr_id == usuario_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No puede darse de baja a sí mismo",
+        )
+    try:
+        service.soft_delete_usuario(db, service.get_usuario(db, usuario_id))
+    except service.UserModuleError as exc:
+        raise _translate_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

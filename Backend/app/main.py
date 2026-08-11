@@ -4,10 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # Importamos los enrutadores de nuestros módulos
 from app.auth import router as auth_router
 from app.usuarios import router as usuarios_router
-
 from app.catalogos import router as catalogos_router
 from app.solicitudes import router as solicitudes_router
-
 
 
 # ==========================================================
@@ -44,7 +42,6 @@ app.include_router(usuarios_router.router) # Registrar el enrutador de usuarios
 # 🌟 NUEVO: Fechas 20/07/2026: Registrar el enrutador de catálogos en FastAPI
 app.include_router(catalogos_router.router) # Registrar el enrutador de catálogos
 app.include_router(solicitudes_router.router) # Registrar el enrutador de solicitudes
-app.include_router(catalogos_router.router) 
 
 
 # ==========================================================

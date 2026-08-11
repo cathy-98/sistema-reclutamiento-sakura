@@ -1,93 +1,156 @@
-# app/usuarios/models.py
-from sqlalchemy import String, Integer, ForeignKey
+from __future__ import annotations
+
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.database import Base
 
 
 class Area(Base):
-    """Mapea la tabla tbl_area necesaria para la FK de usuario"""
+    """Área organizacional asociable a usuarios administrativos."""
+
     __tablename__ = "tbl_area"
+    __table_args__ = (
+        UniqueConstraint("area_nombre", name="uq_tbl_area_nombre"),
+    )
 
     area_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    area_nombre: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True)
+    # CORRECCIÓN: base_inicial.sql define varchar(50), no varchar(20).
+    area_nombre: Mapped[str | None] = mapped_column(String(50), nullable=True)
     area_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
-    # Relación inversa con Usuario
-    usuarios: Mapped[list["Usuario"]] = relationship("Usuario", back_populates="area")
+    usuarios: Mapped[list["Usuario"]] = relationship(
+        "Usuario",
+        back_populates="area",
+    )
 
 
 class Permiso(Base):
-    """Mapea los permisos individuales del sistema (ej: 'CREAR_USUARIO')"""
+    """Permiso atómico utilizado por el esquema RBAC."""
+
     __tablename__ = "tbl_permiso"
+    __table_args__ = (
+        UniqueConstraint("per_nombre", name="uq_tbl_permiso_nombre"),
+    )
 
     per_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    per_nombre: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    per_nombre: Mapped[str] = mapped_column(String(20), nullable=False)
     per_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
-    # Relación Muchos a Muchos con Rol mediante la tabla asociativa
     roles: Mapped[list["Rol"]] = relationship(
-        "Rol", secondary="tbl_rol_permiso", back_populates="permisos"
+        "Rol",
+        secondary="tbl_rol_permiso",
+        back_populates="permisos",
     )
 
 
 class RolPermiso(Base):
-    """Tabla asociativa física intermedia tbl_rol_permiso"""
+    """Tabla física de asociación muchos-a-muchos entre rol y permiso."""
+
     __tablename__ = "tbl_rol_permiso"
 
     rlpm_rol_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("tbl_rol.rol_id"), primary_key=True
+        Integer,
+        ForeignKey("tbl_rol.rol_id"),
+        primary_key=True,
     )
     rlpm_permiso_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("tbl_permiso.per_id"), primary_key=True
+        Integer,
+        ForeignKey("tbl_permiso.per_id"),
+        primary_key=True,
     )
 
 
 class Rol(Base):
-    """Mapea los roles del sistema (ej: 'Administrador', 'Reclutador')"""
+    """Rol administrativo del sistema."""
+
     __tablename__ = "tbl_rol"
+    __table_args__ = (
+        UniqueConstraint("rol_nombre", name="uq_tbl_rol_nombre"),
+    )
 
     rol_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    rol_nombre: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    rol_nombre: Mapped[str] = mapped_column(String(20), nullable=False)
     rol_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
-    # Relaciones
-    permisos: Mapped[list["Permiso"]] = relationship(
-        "Permiso", secondary="tbl_rol_permiso", back_populates="roles"
+    permisos: Mapped[list[Permiso]] = relationship(
+        "Permiso",
+        secondary="tbl_rol_permiso",
+        back_populates="roles",
     )
-    usuarios: Mapped[list["Usuario"]] = relationship("Usuario", back_populates="rol")
+    usuarios: Mapped[list["Usuario"]] = relationship(
+        "Usuario",
+        back_populates="rol",
+    )
 
 
 class EstadoUsuario(Base):
-    """Mapea los estados que puede tener un usuario (ej: 'Activo', 'Inactivo')"""
+    """Estado operacional de una cuenta: Activo, Inactivo, Bloqueado, Eliminado, etc."""
+
     __tablename__ = "tbl_estado_usuario"
+    __table_args__ = (
+        UniqueConstraint("esusr_nombre", name="uq_tbl_estado_usuario_nombre"),
+    )
 
     esusr_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    esusr_nombre: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    esusr_nombre: Mapped[str] = mapped_column(String(20), nullable=False)
     esusr_descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
-    # Relación inversa con Usuario
-    usuarios: Mapped[list["Usuario"]] = relationship("Usuario", back_populates="estado")
+    usuarios: Mapped[list["Usuario"]] = relationship(
+        "Usuario",
+        back_populates="estado",
+    )
 
 
 class Usuario(Base):
-    """Mapea los usuarios administrativos o reclutadores de Elitsoft"""
-    __tablename__ = "tbl_usuario"
+    """Usuario administrativo/reclutador autenticable mediante JWT."""
 
-    usr_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    usr_rol_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("tbl_rol.rol_id"), nullable=True)
-    usr_estado_usuario_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("tbl_estado_usuario.esusr_id"), nullable=True)
-    usr_area_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("tbl_area.area_id"), nullable=True)
-    
+    __tablename__ = "tbl_usuario"
+    __table_args__ = (
+        UniqueConstraint("usr_email", name="uq_tbl_usuario_email"),
+        UniqueConstraint("usr_rut_sin_dv", "usr_dv", name="uq_tbl_usuario_rut"),
+    )
+
+    # CORRECCIÓN: usr_id es IDENTITY en base_inicial.sql.
+    usr_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usr_rol_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("tbl_rol.rol_id"),
+        nullable=True,
+    )
+    usr_estado_usuario_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("tbl_estado_usuario.esusr_id"),
+        nullable=True,
+    )
+    usr_area_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("tbl_area.area_id"),
+        nullable=True,
+    )
+
     usr_nombres: Mapped[str] = mapped_column(String(15), nullable=False)
     usr_apellido_paterno: Mapped[str] = mapped_column(String(15), nullable=False)
     usr_apellido_materno: Mapped[str | None] = mapped_column(String(15), nullable=True)
     usr_rut_sin_dv: Mapped[str | None] = mapped_column(String(15), nullable=True)
     usr_dv: Mapped[str | None] = mapped_column(String(1), nullable=True)
     usr_telefono: Mapped[str | None] = mapped_column(String(15), nullable=True)
-    usr_email: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
+    usr_email: Mapped[str] = mapped_column(String(30), nullable=False)
     usr_contrasena: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    # Relaciones del ORM
-    rol: Mapped["Rol"] = relationship("Rol", back_populates="usuarios")
-    estado: Mapped["EstadoUsuario"] = relationship("EstadoUsuario", back_populates="usuarios")
-    area: Mapped["Area"] = relationship("Area", back_populates="usuarios")
+    # joined evita N+1 para relaciones simples consultadas continuamente.
+    rol: Mapped[Rol | None] = relationship(
+        "Rol",
+        back_populates="usuarios",
+        lazy="joined",
+    )
+    estado: Mapped[EstadoUsuario | None] = relationship(
+        "EstadoUsuario",
+        back_populates="usuarios",
+        lazy="joined",
+    )
+    area: Mapped[Area | None] = relationship(
+        "Area",
+        back_populates="usuarios",
+        lazy="joined",
+    )
