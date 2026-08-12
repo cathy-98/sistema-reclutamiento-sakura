@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
 from app.usuarios.schemas import UsuarioRead
 
 
 Password = Annotated[str, StringConstraints(min_length=8, max_length=72)]
+ResetToken = Annotated[str, StringConstraints(min_length=32, max_length=512)]
 
 
 class LoginRequest(BaseModel):
@@ -27,6 +29,23 @@ class ChangePasswordRequest(BaseModel):
 
     password_actual: str = Field(min_length=1, max_length=72)
     password_nueva: Password
+
+
+class ForgotPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: ResetToken
+    nueva_contrasena: Password
 
 
 class AuthMeResponse(UsuarioRead):

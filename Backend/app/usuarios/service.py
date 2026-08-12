@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.utils import hash_password
+from app.auth.password_reset_service import revoke_all_pending_tokens_for_user
 from app.usuarios import models, schemas
 
 
@@ -190,6 +191,7 @@ def update_usuario(
 
 def reset_password(db: Session, usuario: models.Usuario, new_password: str) -> None:
     usuario.usr_contrasena = hash_password(new_password)
+    revoke_all_pending_tokens_for_user(db, usuario.usr_id, commit=False)
     _commit(db)
 
 

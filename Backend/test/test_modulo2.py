@@ -29,6 +29,7 @@ from app.database import Base, get_db
 from app.solicitudes import models as solicitud_models
 from app.solicitudes import router as solicitudes_router
 from app.usuarios import models as user_models
+from app.auth import models as auth_models
 
 
 # =============================================================================
@@ -74,6 +75,8 @@ MODULE2_TABLES = [
     solicitud_models.Solicitud.__table__,
     solicitud_models.SolicitudHabilidad.__table__,
     solicitud_models.HistorialSolicitud.__table__,
+        # Recuperación de contraseña
+    auth_models.PasswordResetToken.__table__,
 ]
 
 
