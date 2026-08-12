@@ -1,6 +1,7 @@
 export type PrioridadSolicitud = 'Alta' | 'Media' | 'Baja';
 export type EstadoSolicitud = 'Pendiente' | 'En curso' | 'Cerrada' | 'Cancelada' | string;
 
+// Modelo de integración: mantiene la misma nomenclatura que entrega backend/BD.
 export interface SolicitudApi {
   sol_id: number;
   sol_codigo?: string | null;
@@ -34,6 +35,7 @@ export interface SolicitudHabilidadApi {
   solhb_es_excluyente?: boolean | null;
 }
 
+// Payload de integración: se envía a la API con los nombres que espera backend.
 export interface SolicitudHabilidadPayload {
   solhb_habilidad_id: number;
   solhb_nivel_habilidad_id?: number | null;
@@ -41,6 +43,7 @@ export interface SolicitudHabilidadPayload {
   solhb_es_excluyente: boolean;
 }
 
+// Payload de integración: crear solicitud usa nombres sol_* para evitar traducciones al enviar.
 export interface SolicitudCreatePayload {
   sol_codigo: string;
   sol_titulo: string;
@@ -63,6 +66,7 @@ export interface SolicitudCreatePayload {
   habilidades?: SolicitudHabilidadPayload[];
 }
 
+// Payload de integración: editar solicitud conserva los campos reales del backend.
 export interface SolicitudUpdatePayload {
   sol_titulo?: string | null;
   sol_descripcion?: string | null;
@@ -82,6 +86,7 @@ export interface SolicitudUpdatePayload {
   sol_estado_solicitud_id?: number | null;
 }
 
+// Modelo de pantalla: nombres simples usados por tablas/componentes del front.
 export interface SolicitudResumen {
   id: string;
   codigo: string;

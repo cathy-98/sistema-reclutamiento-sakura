@@ -1,6 +1,30 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, delay, map, of } from 'rxjs';
 
+// Modelos físicos/API esperados. Se usan como referencia para integrar contra backend/BD.
+export interface PreguntaApi {
+  preg_id: number;
+  preg_texto_pregunta: string | null;
+  preg_habilidad_id: number | null;
+  preg_nivel_habilidad_id: number | null;
+  preg_fecha_creacion: string | null;
+}
+
+export interface PreguntaCreatePayload {
+  preg_texto_pregunta: string;
+  preg_habilidad_id: number;
+  preg_nivel_habilidad_id: number;
+}
+
+export interface CuestionarioApi {
+  cues_id: number;
+  cues_nombre: string | null;
+  cues_descripcion: string | null;
+  cues_porcentaje_aprobacion: number | null;
+  cues_solicitud_id: number | null;
+}
+
+// Modelos de pantalla: nombres simples para la vista de banco y armado de test.
 export interface TecnologiaCuestionario {
   id: number;
   nombre: string;
@@ -38,6 +62,8 @@ export interface PreguntaCuestionarioCreate {
   providedIn: 'root',
 })
 export class CuestionariosService {
+  // Temporal/mock: aún no existe router de cuestionarios registrado en backend.
+  // Al integrar, consumir PreguntaApi/CuestionarioApi y mapear a PreguntaCuestionario.
   readonly tecnologias: TecnologiaCuestionario[] = [
     { id: 1, nombre: 'JAVA' },
     { id: 2, nombre: 'Python' },
@@ -111,10 +137,12 @@ export class CuestionariosService {
   ]);
 
   listar() {
+    // Integración pendiente: reemplazar por GET real y mapeo preg_* -> PreguntaCuestionario.
     return this.preguntas.asObservable().pipe(delay(120));
   }
 
   crear(payload: PreguntaCuestionarioCreate) {
+    // Integración pendiente: convertir PreguntaCuestionarioCreate a PreguntaCreatePayload antes del POST real.
     const siguienteId = String(Math.max(0, ...this.preguntas.value.map((pregunta) => Number(pregunta.id))) + 1);
     const nuevaPregunta: PreguntaCuestionario = {
       ...payload,
@@ -127,6 +155,7 @@ export class CuestionariosService {
   }
 
   contarPorTecnologia() {
+    // Función de vista: resume preguntas ya mapeadas para mostrar conteos por tecnología.
     return this.listar().pipe(
       map((preguntas) =>
         this.tecnologias.map((tecnologia) => ({

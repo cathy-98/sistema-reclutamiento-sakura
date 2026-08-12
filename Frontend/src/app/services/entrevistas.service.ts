@@ -4,6 +4,33 @@ import { BehaviorSubject, delay, of, throwError } from 'rxjs';
 export type EstadoEntrevista = 'En curso' | 'Pendiente' | 'Cerrada' | 'Cancelada';
 export type TipoEntrevista = 'Reclutamiento' | 'Técnica' | 'Operacional';
 
+// Modelo físico/API esperado para citas de entrevista.
+// Backend/BD usa ctev_*; este tipo se debe usar cuando exista el endpoint real.
+export interface CitaEntrevistaApi {
+  ctev_id: number;
+  ctev_solicitud_candidato_id: number | null;
+  ctev_tipo_entrevista_id: number | null;
+  ctev_estado_entrevista_id: number | null;
+  ctev_fecha_hora_inicio: string | null;
+  ctev_fecha_hora_fin: string | null;
+  ctev_fecha_creacion?: string | null;
+  ctev_enlace_reunion?: string | null;
+  ctev_comentarios_convocatoria?: string | null;
+  ctev_titulo_evento?: string | null;
+}
+
+export interface CitaEntrevistaPayload {
+  ctev_solicitud_candidato_id: number;
+  ctev_tipo_entrevista_id: number;
+  ctev_estado_entrevista_id?: number | null;
+  ctev_fecha_hora_inicio: string;
+  ctev_fecha_hora_fin: string;
+  ctev_enlace_reunion?: string | null;
+  ctev_comentarios_convocatoria?: string | null;
+  ctev_titulo_evento: string;
+}
+
+// Modelo de pantalla: nombres legibles para tablas, filtros y formularios.
 export interface EntrevistaResumen {
   id: string;
   idSolicitud: string;
@@ -38,6 +65,8 @@ export interface EntrevistaPayload {
 
 @Injectable({ providedIn: 'root' })
 export class EntrevistasService {
+  // Temporal/mock: este módulo aún no tiene endpoint registrado en backend.
+  // Cuando exista la API, reemplazar BehaviorSubject por HttpClient y mapear campos backend/BD a EntrevistaResumen.
   private readonly entrevistas = new BehaviorSubject<EntrevistaResumen[]>([
     {
       id: 'ENT-001',
@@ -127,10 +156,12 @@ export class EntrevistasService {
   ]);
 
   listar() {
+    // Integración pendiente: aquí debería consumirse el endpoint real de entrevistas.
     return this.entrevistas.asObservable().pipe(delay(150));
   }
 
   crear(payload: EntrevistaPayload) {
+    // Integración pendiente: antes de enviar al backend, adaptar payload a la nomenclatura real de BD/API.
     const nuevaEntrevista: EntrevistaResumen = {
       ...payload,
       id: `ENT-${String(this.entrevistas.value.length + 1).padStart(3, '0')}`,
@@ -154,6 +185,7 @@ export class EntrevistasService {
   }
 
   reprogramar(id: string, fecha: string, horaInicio: string, horaFin: string, observacion: string) {
+    // Integración pendiente: reprogramar debe actualizar ctev_fecha_hora_inicio/ctev_fecha_hora_fin.
     if (!this.entrevistas.value.some((entrevista) => entrevista.id === id)) {
       return throwError(() => ({ status: 404 }));
     }
@@ -169,6 +201,7 @@ export class EntrevistasService {
   }
 
   cancelar(id: string, observacion: string) {
+    // Integración pendiente: cancelar debe actualizar ctev_estado_entrevista_id y comentario/auditoría.
     if (!this.entrevistas.value.some((entrevista) => entrevista.id === id)) {
       return throwError(() => ({ status: 404 }));
     }
