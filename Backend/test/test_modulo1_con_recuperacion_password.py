@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 # IMPORTANTE: definir configuración JWT ANTES de importar app.auth.utils/dependencies.
@@ -23,8 +23,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.auth import models as auth_models
+from app.auth import password_reset_service
 from app.auth import router as auth_router
 from app.auth import utils as auth_utils
+from app.auth.email_service import EmailDeliveryError
 from app.database import Base, get_db
 from app.usuarios import models
 from app.usuarios import router as usuarios_router
@@ -914,3 +916,356 @@ def test_extra_field_rechazado_422(client: TestClient, admin_token: str):
         },
     )
     assert response.status_code == 422
+
+
+# =============================================================================
+# RECUPERACIÓN DE CONTRASEÑA / FORGOT PASSWORD
+# =============================================================================
+def _capturar_correo_reset(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    """Sustituye Gmail SMTP por una función local y devuelve los envíos capturados."""
+    enviados: list[dict] = []
+
+    def fake_send_password_reset_email(*, to_email: str, token: str, expiration_minutes: int) -> None:
+        enviados.append(
+            {
+                "to_email": to_email,
+                "token": token,
+                "expiration_minutes": expiration_minutes,
+            }
+        )
+
+    monkeypatch.setattr(
+        auth_router,
+        "send_password_reset_email",
+        fake_send_password_reset_email,
+    )
+    return enviados
+
+
+def _obtener_tokens_reset() -> list[auth_models.PasswordResetToken]:
+    db = TestingSessionLocal()
+    try:
+        return list(
+            db.scalars(
+                select(auth_models.PasswordResetToken).order_by(
+                    auth_models.PasswordResetToken.prst_id.asc()
+                )
+            ).all()
+        )
+    finally:
+        db.close()
+
+
+def test_forgot_password_usuario_activo_crea_token_sin_enviar_gmail(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    seed_info: SeedInfo,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    response = client.post(
+        "/auth/forgot-password",
+        json={"email": ADMIN_EMAIL},
+    )
+
+    assert response.status_code == 202, response.text
+    assert response.json()["message"] == password_reset_service.GENERIC_FORGOT_PASSWORD_MESSAGE
+    assert len(enviados) == 1
+    assert enviados[0]["to_email"] == ADMIN_EMAIL
+    assert enviados[0]["expiration_minutes"] == 30
+
+    raw_token = enviados[0]["token"]
+    assert isinstance(raw_token, str)
+    assert len(raw_token) >= 32
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    registro = tokens[0]
+    assert registro.prst_usuario_id == seed_info["admin_id"]
+    assert registro.prst_token_hash == password_reset_service.hash_reset_token(raw_token)
+    assert registro.prst_token_hash != raw_token
+    assert registro.prst_fecha_uso is None
+    assert registro.prst_fecha_revocacion is None
+
+
+def test_forgot_password_email_inexistente_responde_202_y_no_envia_correo(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    response = client.post(
+        "/auth/forgot-password",
+        json={"email": "no.existe@sakura.cl"},
+    )
+
+    assert response.status_code == 202
+    assert response.json()["message"] == password_reset_service.GENERIC_FORGOT_PASSWORD_MESSAGE
+    assert enviados == []
+    assert _obtener_tokens_reset() == []
+
+
+def test_forgot_password_usuario_inactivo_responde_202_y_no_envia_correo(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    response = client.post(
+        "/auth/forgot-password",
+        json={"email": INACTIVE_EMAIL},
+    )
+
+    assert response.status_code == 202
+    assert response.json()["message"] == password_reset_service.GENERIC_FORGOT_PASSWORD_MESSAGE
+    assert enviados == []
+    assert _obtener_tokens_reset() == []
+
+
+def test_forgot_password_nueva_solicitud_revoca_token_anterior(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    first = client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL})
+    second = client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL})
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert len(enviados) == 2
+    assert enviados[0]["token"] != enviados[1]["token"]
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 2
+    assert tokens[0].prst_fecha_revocacion is not None
+    assert tokens[0].prst_fecha_uso is None
+    assert tokens[1].prst_fecha_revocacion is None
+    assert tokens[1].prst_fecha_uso is None
+
+
+def test_forgot_password_fallo_envio_revoca_token_y_mantiene_respuesta_generica(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def fake_delivery_failure(*, to_email: str, token: str, expiration_minutes: int) -> None:
+        raise EmailDeliveryError("SMTP simulado no disponible")
+
+    monkeypatch.setattr(
+        auth_router,
+        "send_password_reset_email",
+        fake_delivery_failure,
+    )
+
+    response = client.post(
+        "/auth/forgot-password",
+        json={"email": ADMIN_EMAIL},
+    )
+
+    assert response.status_code == 202
+    assert response.json()["message"] == password_reset_service.GENERIC_FORGOT_PASSWORD_MESSAGE
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    assert tokens[0].prst_fecha_revocacion is not None
+    assert tokens[0].prst_fecha_uso is None
+
+
+def test_reset_password_token_valido_cambia_password_y_marca_token_usado(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+    nueva_password = "AdminRecuperada123!"
+
+    forgot = client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL})
+    assert forgot.status_code == 202
+    token = enviados[0]["token"]
+
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": nueva_password},
+    )
+    assert response.status_code == 204, response.text
+
+    old_login = client.post(
+        "/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/auth/login",
+        json={"email": ADMIN_EMAIL, "password": nueva_password},
+    )
+    assert new_login.status_code == 200
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    assert tokens[0].prst_fecha_uso is not None
+
+
+def test_reset_password_token_usado_no_puede_reutilizarse(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    assert client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL}).status_code == 202
+    token = enviados[0]["token"]
+
+    first = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": "PrimeraNueva123!"},
+    )
+    assert first.status_code == 204
+
+    second = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": "SegundaNueva123!"},
+    )
+    assert second.status_code == 400
+
+
+def test_reset_password_token_inexistente_retorna_400(client: TestClient):
+    token_inexistente = "x" * 64
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token_inexistente, "nueva_contrasena": "NuevaClave123!"},
+    )
+    assert response.status_code == 400
+
+
+def test_reset_password_token_expirado_retorna_410(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    assert client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL}).status_code == 202
+    token = enviados[0]["token"]
+
+    db = TestingSessionLocal()
+    try:
+        registro = db.scalar(
+            select(auth_models.PasswordResetToken).where(
+                auth_models.PasswordResetToken.prst_token_hash
+                == password_reset_service.hash_reset_token(token)
+            )
+        )
+        assert registro is not None
+        registro.prst_fecha_expiracion = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": "NuevaClave123!"},
+    )
+    assert response.status_code == 410
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    assert tokens[0].prst_fecha_revocacion is not None
+
+
+def test_reset_password_no_permite_misma_password_actual(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    assert client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL}).status_code == 202
+    token = enviados[0]["token"]
+
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": ADMIN_PASSWORD},
+    )
+    assert response.status_code == 400
+
+    # El token sigue pendiente porque la contraseña no llegó a cambiarse.
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    assert tokens[0].prst_fecha_uso is None
+    assert tokens[0].prst_fecha_revocacion is None
+
+
+def test_change_password_revoca_token_recuperacion_pendiente(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    admin_token: str,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    assert client.post("/auth/forgot-password", json={"email": ADMIN_EMAIL}).status_code == 202
+    token = enviados[0]["token"]
+
+    response = client.post(
+        "/auth/change-password",
+        headers=_headers(admin_token),
+        json={"password_actual": ADMIN_PASSWORD, "password_nueva": "CambioPropio123!"},
+    )
+    assert response.status_code == 204
+
+    reset = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": "NoDebeAplicarse123!"},
+    )
+    assert reset.status_code == 400
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    assert tokens[0].prst_fecha_revocacion is not None
+
+
+def test_reset_administrativo_revoca_token_recuperacion_pendiente(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    admin_token: str,
+    seed_info: SeedInfo,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    assert client.post("/auth/forgot-password", json={"email": VIEWER_EMAIL}).status_code == 202
+    token = enviados[0]["token"]
+
+    admin_reset = client.post(
+        f"/usuarios/{seed_info['viewer_id']}/reset-password",
+        headers=_headers(admin_token),
+        json={"nueva_contrasena": "ViewerResetAdmin123!"},
+    )
+    assert admin_reset.status_code == 204
+
+    reset = client.post(
+        "/auth/reset-password",
+        json={"token": token, "nueva_contrasena": "NoDebeAplicarse123!"},
+    )
+    assert reset.status_code == 400
+
+    tokens = _obtener_tokens_reset()
+    assert len(tokens) == 1
+    assert tokens[0].prst_fecha_revocacion is not None
+
+
+def test_reset_password_token_demasiado_corto_retorna_422(client: TestClient):
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": "corto", "nueva_contrasena": "NuevaClave123!"},
+    )
+    assert response.status_code == 422
+
+
+def test_forgot_password_email_invalido_retorna_422(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    enviados = _capturar_correo_reset(monkeypatch)
+
+    response = client.post(
+        "/auth/forgot-password",
+        json={"email": "correo-invalido"},
+    )
+    assert response.status_code == 422
+    assert enviados == []
