@@ -3,7 +3,25 @@ import { Injectable } from '@angular/core';
 
 export type EstadoCandidatoApi = 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado' | 'Desactivado';
 
-export interface CandidatoResumenApi {
+// Modelo físico/API esperado para candidatos: usar estos nombres cand_* cuando exista el endpoint real.
+export interface CandidatoApi {
+  cand_id: number;
+  cand_email: string | null;
+  cand_nombres: string | null;
+  cand_apellido_paterno: string | null;
+  cand_apellido_materno?: string | null;
+  cand_fecha_nacimiento?: string | null;
+  cand_telefono?: string | null;
+  cand_disponibilidad_id?: number | null;
+  cand_resumen_profesional?: string | null;
+  cand_fecha_creacion?: string | null;
+  cand_url_1?: string | null;
+  cand_titulo?: string | null;
+  cand_estado_usuario_id?: number | null;
+}
+
+// Modelo de pantalla actual: se mantiene separado para no mezclar UI con nombres de BD.
+export interface CandidatoResumen {
   id: string;
   nombre: string;
   correo: string;
@@ -15,7 +33,7 @@ export interface CandidatoResumenApi {
   fechaRegistro?: string;
 }
 
-export interface CandidatoPerfilApi extends CandidatoResumenApi {
+export interface CandidatoPerfil extends CandidatoResumen {
   disponibilidad?: string;
   renta?: number;
   fechaNacimiento?: string;
@@ -27,13 +45,14 @@ export interface CandidatoPerfilApi extends CandidatoResumenApi {
 }
 
 export interface CandidatoVacantePayload {
-  solicitudId: string;
-  puntajeCompatibilidad?: number;
+  slcd_solicitud_id: number;
+  slcd_puntaje_compatibilidad?: number;
 }
 
 export interface CandidatoHabilidadPayload {
-  habilidadId: number;
-  nivelId?: number;
+  cdhb_habilidad_id: number;
+  cdhb_nivel_habilidad_id?: number;
+  cdhb_anios_experiencia?: number;
 }
 
 @Injectable({
@@ -45,29 +64,33 @@ export class CandidatosService {
   constructor(private http: HttpClient) {}
 
   listar() {
-    return this.http.get<CandidatoResumenApi[]>(this.apiUrl);
+    // Integración pendiente: reemplazar por mapeo cand_* -> modelo de pantalla cuando backend exponga /candidatos.
+    return this.http.get<CandidatoResumen[]>(this.apiUrl);
   }
 
   obtenerPorId(id: string) {
-    return this.http.get<CandidatoPerfilApi>(`${this.apiUrl}/${id}`);
+    // Integración pendiente: el detalle debe alinearse con la respuesta real de backend/BD.
+    return this.http.get<CandidatoPerfil>(`${this.apiUrl}/${id}`);
   }
 
-  crear(payload: Partial<CandidatoPerfilApi>) {
-    return this.http.post<CandidatoPerfilApi>(this.apiUrl, payload);
+  crear(payload: Partial<CandidatoApi>) {
+    // Integración pendiente: adaptar payload a nombres cand_* antes de conectar el endpoint real.
+    return this.http.post<CandidatoPerfil>(this.apiUrl, payload);
   }
 
-  actualizar(id: string, payload: Partial<CandidatoPerfilApi>) {
-    return this.http.put<CandidatoPerfilApi>(`${this.apiUrl}/${id}`, payload);
+  actualizar(id: string, payload: Partial<CandidatoApi>) {
+    // Integración pendiente: PUT debe enviar campos cand_* cuando exista el backend.
+    return this.http.put<CandidatoPerfil>(`${this.apiUrl}/${id}`, payload);
   }
 
   desactivar(id: string) {
-    return this.http.patch<CandidatoPerfilApi>(`${this.apiUrl}/${id}/desactivar`, {});
+    return this.http.patch<CandidatoPerfil>(`${this.apiUrl}/${id}/desactivar`, {});
   }
 
   subirCv(archivo: File) {
     const formData = new FormData();
     formData.append('archivo', archivo);
-    return this.http.post<CandidatoPerfilApi>(`${this.apiUrl}/cv`, formData);
+    return this.http.post<CandidatoPerfil>(`${this.apiUrl}/cv`, formData);
   }
 
   vincularVacante(candidatoId: string, payload: CandidatoVacantePayload) {

@@ -57,10 +57,12 @@ export class CatalogosService {
   constructor(private http: HttpClient) {}
 
   listarCargos() {
+    // Integración: los catálogos se consumen con la nomenclatura real del backend/BD.
     return this.http.get<CargoCatalogoApi[]>(`${this.apiUrl}/cargos`);
   }
 
   listarUsuarios() {
+    // Integración: usuarios viene desde /usuarios con campos usr_*.
     return this.http.get<UsuarioCatalogoApi[]>(`${this.usuariosApiUrl}/`);
   }
 

@@ -50,6 +50,7 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   login(credenciales: LoginRequest) {
+    // Integración: auth/login valida credenciales en backend y devuelve JWT.
     return this.http.post<LoginResponse>(this.apiUrl, credenciales).pipe(
       timeout(6000),
       tap((respuesta) => this.guardarSesion(respuesta)),
@@ -68,6 +69,7 @@ export class AuthService {
       return of(null);
     }
 
+    // Integración: el perfil se consulta en /usuarios/{id} con campos usr_*.
     return this.http.get<UsuarioPerfilResponse>(`${this.usuariosApiUrl}/${usuarioId}`).pipe(
       tap((perfil) => this.guardarPerfil(perfil)),
       catchError(() => of(null))
@@ -75,6 +77,7 @@ export class AuthService {
   }
 
   guardarPerfil(perfil: UsuarioPerfilResponse) {
+    // Mapeo API -> sesión front: traduce usr_* a nombre/rol visible en la interfaz.
     const nombreCompleto = [
       perfil.usr_nombres,
       perfil.usr_apellido_paterno,
