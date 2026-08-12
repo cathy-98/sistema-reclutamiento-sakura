@@ -40,12 +40,14 @@
   <div class="candidate-controls">
     <span class="request-badge">Solicitud {{ candidato.idSolicitud }}</span>
     <label>
-      Estado de candidato
+      Estado postulación
       <select [(ngModel)]="candidato.estado">
         <option>En revision</option>
-        <option>Contactado</option>
-        <option>Entrevista</option>
+        <option>En entrevista</option>
+        <option>Inhabilitado</option>
+        <option>Seleccionado</option>
         <option>Descartado</option>
+        <option>Contratado</option>
       </select>
     </label>
     <app-button variant="secondary" [fullWidth]="true" (pressed)="sendTest.emit()">Enviar test</app-button>

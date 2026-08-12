@@ -208,8 +208,8 @@ export interface UsuarioCatalogoApi {
   providedIn: 'root',
 })
 export class CatalogosService {
-  private readonly apiUrl = 'http://localhost:8000/catalogos';
-  private readonly usuariosApiUrl = 'http://localhost:8000/usuarios';
+  private readonly apiUrl = '/catalogos';
+  private readonly usuariosApiUrl = '/usuarios';
 
   constructor(private http: HttpClient) {}
 

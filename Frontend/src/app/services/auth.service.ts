@@ -39,9 +39,9 @@ interface UsuarioPerfilResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly authApiUrl = 'http://localhost:8000/auth';
+  private readonly authApiUrl = '/auth';
   private readonly apiUrl = `${this.authApiUrl}/login`;
-  private readonly usuariosApiUrl = 'http://localhost:8000/usuarios';
+  private readonly usuariosApiUrl = '/usuarios';
   private readonly tokenKey = 'sakura_access_token';
   private readonly nombreKey = 'sakura_nombre';
   private readonly rolKey = 'sakura_rol';

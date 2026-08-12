@@ -27,16 +27,21 @@ interface SubMenuItem {
 export class AppShell {
   menuAbierto = true;
   submenuAbierto: string | null = null;
+  menuItemsVisibles: MenuItem[] = [];
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {
+    this.actualizarMenuItemsVisibles();
     this.abrirSubmenuActivo();
 
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => this.abrirSubmenuActivo());
+      .subscribe(() => {
+        this.actualizarMenuItemsVisibles();
+        this.abrirSubmenuActivo();
+      });
   }
 
   menuItems: MenuItem[] = [
@@ -87,13 +92,21 @@ export class AppShell {
 
   ];
 
-  get menuItemsVisibles() {
-    return this.menuItems
+  actualizarMenuItemsVisibles() {
+    this.menuItemsVisibles = this.menuItems
       .filter((item) => this.puedeVerItem(item.roles))
       .map((item) => ({
         ...item,
         children: item.children?.filter((child) => this.puedeVerItem(child.roles)),
       }));
+  }
+
+  trackMenuItem(_index: number, item: MenuItem) {
+    return item.route ?? item.label;
+  }
+
+  trackSubMenuItem(_index: number, item: SubMenuItem) {
+    return item.route ?? item.label;
   }
 
   alternarMenu() {

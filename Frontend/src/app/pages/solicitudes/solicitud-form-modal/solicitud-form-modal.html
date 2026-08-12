@@ -35,100 +35,62 @@
             </small>
           </label>
 
-          <label class="form-field">
-            Cargo solicitado *
-            <select
-              *ngIf="catalogoActivo !== 'cargo'"
+          <div class="form-field">
+            <span>Cargo solicitado *</span>
+            <app-compact-select
               formControlName="id_cargo"
-              (change)="manejarSeleccionCatalogo('cargo', formularioSolicitud.get('id_cargo')?.value)"
-            >
-              <option [ngValue]="null">Selecciona un cargo</option>
-              <option *ngFor="let cargo of cargosCatalogo" [ngValue]="cargo.id">
-                {{ cargo.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nuevo cargo</option>
-            </select>
-
-            <div class="inline-create" *ngIf="catalogoActivo === 'cargo'">
-              <input type="text" placeholder="Nuevo cargo" [formControl]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
+              placeholder="Selecciona un cargo"
+              [options]="cargosCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('cargo')">+ Crear opción</button>
+            </div>
+            <div class="catalog-editor" *ngIf="editorActivo('cargo')">
+              <strong>{{ tituloEditorCatalogo() }}</strong>
+              <input type="text" placeholder="Nombre" [(ngModel)]="catalogoEditor.nombre" [ngModelOptions]="{ standalone: true }" />
+              <input type="text" placeholder="Descripción opcional" [(ngModel)]="catalogoEditor.descripcion" [ngModelOptions]="{ standalone: true }" />
+              <div>
+                <button type="button" (click)="guardarCatalogo()" [disabled]="catalogoEditor.guardando">Guardar</button>
+                <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
+              </div>
             </div>
             <small class="form-error" *ngIf="control('id_cargo')?.touched && control('id_cargo')?.hasError('required')">
               Campo obligatorio.
             </small>
-          </label>
+          </div>
 
-          <label class="form-field">
-            Área / Departamento *
-            <select
-              *ngIf="catalogoActivo !== 'area'"
-              formControlName="id_area"
-              (change)="manejarSeleccionCatalogo('area', formularioSolicitud.get('id_area')?.value)"
-            >
-              <option [ngValue]="null">Selecciona un área</option>
-              <option *ngFor="let area of areasCatalogo" [ngValue]="area.id">
-                {{ area.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nueva área</option>
-            </select>
-
-            <div class="inline-create" *ngIf="catalogoActivo === 'area'">
-              <input type="text" placeholder="Nueva área" [formControl]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
-            </div>
-            <small class="form-error" *ngIf="control('id_area')?.touched && control('id_area')?.hasError('required')">
-              Campo obligatorio.
-            </small>
-          </label>
-
-          <label class="form-field">
-            Cliente *
-            <select
-              *ngIf="catalogoActivo !== 'cliente'"
+          <div class="form-field">
+            <span>Cliente *</span>
+            <app-compact-select
               formControlName="id_cliente"
-              (change)="manejarSeleccionCatalogo('cliente', formularioSolicitud.get('id_cliente')?.value)"
-            >
-              <option [ngValue]="null">Selecciona un cliente</option>
-              <option *ngFor="let cliente of clientesCatalogo" [ngValue]="cliente.id">
-                {{ cliente.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nuevo cliente</option>
-            </select>
-
-            <div class="inline-create" *ngIf="catalogoActivo === 'cliente'">
-              <input type="text" placeholder="Nuevo cliente" [formControl]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
-            </div>
+              placeholder="Selecciona un cliente"
+              [options]="clientesCatalogo"
+            ></app-compact-select>
             <small class="form-error" *ngIf="control('id_cliente')?.touched && control('id_cliente')?.hasError('required')">
               Campo obligatorio.
             </small>
-          </label>
+          </div>
 
-          <label class="form-field">
-            Solicitante *
-            <select formControlName="id_usuario_solicitante">
-              <option [ngValue]="null">Selecciona solicitante</option>
-              <option *ngFor="let usuario of usuariosCatalogo" [ngValue]="usuario.id">
-                {{ usuario.nombre }}
-              </option>
-            </select>
+          <div class="form-field">
+            <span>Solicitante *</span>
+            <app-compact-select
+              formControlName="id_usuario_solicitante"
+              placeholder="Selecciona solicitante"
+              [options]="usuariosCatalogo"
+            ></app-compact-select>
             <small class="form-error" *ngIf="control('id_usuario_solicitante')?.touched && control('id_usuario_solicitante')?.hasError('required')">
               Campo obligatorio.
             </small>
-          </label>
+          </div>
 
-          <label class="form-field">
-            Responsable
-            <select formControlName="id_usuario_responsable">
-              <option [ngValue]="null">Sin asignar</option>
-              <option *ngFor="let usuario of usuariosCatalogo" [ngValue]="usuario.id">
-                {{ usuario.nombre }}
-              </option>
-            </select>
-          </label>
+          <div class="form-field">
+            <span>Responsable</span>
+            <app-compact-select
+              formControlName="id_usuario_responsable"
+              placeholder="Sin asignar"
+              [options]="usuariosCatalogo"
+            ></app-compact-select>
+          </div>
         </div>
       </app-form-section>
 
@@ -140,18 +102,29 @@
       >
 
         <div class="form-grid">
-          <label class="form-field">
-            Prioridad *
-            <select formControlName="id_prioridad">
-              <option [ngValue]="null">Selecciona prioridad</option>
-              <option *ngFor="let prioridad of prioridadesCatalogo" [ngValue]="prioridad.id">
-                {{ prioridad.nombre }}
-              </option>
-            </select>
+          <div class="form-field">
+            <span>Prioridad *</span>
+            <app-compact-select
+              formControlName="id_prioridad"
+              placeholder="Selecciona prioridad"
+              [options]="prioridadesCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('prioridad')">+ Crear opción</button>
+            </div>
+            <div class="catalog-editor" *ngIf="editorActivo('prioridad')">
+              <strong>{{ tituloEditorCatalogo() }}</strong>
+              <input type="text" placeholder="Nombre" [(ngModel)]="catalogoEditor.nombre" [ngModelOptions]="{ standalone: true }" />
+              <input type="text" placeholder="Descripción opcional" [(ngModel)]="catalogoEditor.descripcion" [ngModelOptions]="{ standalone: true }" />
+              <div>
+                <button type="button" (click)="guardarCatalogo()" [disabled]="catalogoEditor.guardando">Guardar</button>
+                <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
+              </div>
+            </div>
             <small class="form-error" *ngIf="control('id_prioridad')?.touched && control('id_prioridad')?.hasError('required')">
               Campo obligatorio.
             </small>
-          </label>
+          </div>
 
           <label class="form-field">
             Cantidad de vacantes *
@@ -161,41 +134,74 @@
             </small>
           </label>
 
-          <label class="form-field">
-            Modalidad *
-            <select formControlName="id_modalidad">
-              <option [ngValue]="null">Selecciona modalidad</option>
-              <option *ngFor="let modalidad of modalidadesCatalogo" [ngValue]="modalidad.id">
-                {{ modalidad.nombre }}
-              </option>
-            </select>
+          <div class="form-field">
+            <span>Modalidad *</span>
+            <app-compact-select
+              formControlName="id_modalidad"
+              placeholder="Selecciona modalidad"
+              [options]="modalidadesCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('modalidad')">+ Crear opción</button>
+            </div>
+            <div class="catalog-editor" *ngIf="editorActivo('modalidad')">
+              <strong>{{ tituloEditorCatalogo() }}</strong>
+              <input type="text" placeholder="Nombre" [(ngModel)]="catalogoEditor.nombre" [ngModelOptions]="{ standalone: true }" />
+              <input type="text" placeholder="Descripción opcional" [(ngModel)]="catalogoEditor.descripcion" [ngModelOptions]="{ standalone: true }" />
+              <div>
+                <button type="button" (click)="guardarCatalogo()" [disabled]="catalogoEditor.guardando">Guardar</button>
+                <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
+              </div>
+            </div>
             <small class="form-error" *ngIf="control('id_modalidad')?.touched && control('id_modalidad')?.hasError('required')">
               Campo obligatorio.
             </small>
-          </label>
+          </div>
 
-          <label class="form-field">
-            Tipo de contrato
-            <select formControlName="id_tipo_contrato">
-              <option [ngValue]="null">Selecciona tipo de contrato</option>
-              <option *ngFor="let tipoContrato of tiposContratoCatalogo" [ngValue]="tipoContrato.id">
-                {{ tipoContrato.nombre }}
-              </option>
-            </select>
-          </label>
+          <div class="form-field">
+            <span>Tipo de contrato</span>
+            <app-compact-select
+              formControlName="id_tipo_contrato"
+              placeholder="Selecciona tipo de contrato"
+              [options]="tiposContratoCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('tipoContrato')">+ Crear opción</button>
+            </div>
+            <div class="catalog-editor" *ngIf="editorActivo('tipoContrato')">
+              <strong>{{ tituloEditorCatalogo() }}</strong>
+              <input type="text" placeholder="Nombre" [(ngModel)]="catalogoEditor.nombre" [ngModelOptions]="{ standalone: true }" />
+              <input type="text" placeholder="Descripción opcional" [(ngModel)]="catalogoEditor.descripcion" [ngModelOptions]="{ standalone: true }" />
+              <div>
+                <button type="button" (click)="guardarCatalogo()" [disabled]="catalogoEditor.guardando">Guardar</button>
+                <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
+              </div>
+            </div>
+          </div>
 
-          <label class="form-field">
-            Estado *
-            <select formControlName="id_estado_solicitud">
-              <option [ngValue]="null">Selecciona estado</option>
-              <option *ngFor="let estado of estadosSolicitudCatalogo" [ngValue]="estado.id">
-                {{ estado.nombre }}
-              </option>
-            </select>
+          <div class="form-field">
+            <span>Estado *</span>
+            <app-compact-select
+              formControlName="id_estado_solicitud"
+              placeholder="Selecciona estado"
+              [options]="estadosSolicitudCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('estadoSolicitud')">+ Crear opción</button>
+            </div>
+            <div class="catalog-editor" *ngIf="editorActivo('estadoSolicitud')">
+              <strong>{{ tituloEditorCatalogo() }}</strong>
+              <input type="text" placeholder="Nombre" [(ngModel)]="catalogoEditor.nombre" [ngModelOptions]="{ standalone: true }" />
+              <input type="text" placeholder="Descripción opcional" [(ngModel)]="catalogoEditor.descripcion" [ngModelOptions]="{ standalone: true }" />
+              <div>
+                <button type="button" (click)="guardarCatalogo()" [disabled]="catalogoEditor.guardando">Guardar</button>
+                <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
+              </div>
+            </div>
             <small class="form-error" *ngIf="control('id_estado_solicitud')?.touched && control('id_estado_solicitud')?.hasError('required')">
               Campo obligatorio.
             </small>
-          </label>
+          </div>
 
           <label class="form-field">
             Salario mínimo
@@ -275,36 +281,29 @@
       >
 
         <div class="skills-form-grid" [formGroup]="nuevaHabilidad">
-          <label class="form-field">
-            Tecnología
-            <select
-              *ngIf="catalogoActivo !== 'habilidad'"
+          <div class="form-field">
+            <span>Tecnología</span>
+            <app-compact-select
               formControlName="id_habilidad"
-              (change)="manejarSeleccionCatalogo('habilidad', nuevaHabilidad.get('id_habilidad')?.value)"
-            >
-              <option [ngValue]="null">Selecciona habilidad</option>
-              <option *ngFor="let habilidad of habilidadesCatalogo" [ngValue]="habilidad.id">
-                {{ habilidad.nombre }}
-              </option>
-              <option [ngValue]="'crear'">+ Crear nueva habilidad</option>
-            </select>
-
-            <div class="inline-create inline-create--wide" *ngIf="catalogoActivo === 'habilidad'">
-              <input type="text" placeholder="Nueva habilidad" [formControl]="nuevoValorCatalogo" />
-              <button type="button" (click)="guardarNuevoCatalogo()">Guardar</button>
-              <button type="button" (click)="cancelarNuevoCatalogo()">Cancelar</button>
+              placeholder="Selecciona habilidad"
+              [options]="habilidadesCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('habilidad')">+ Crear opción</button>
             </div>
-          </label>
+          </div>
 
-          <label class="form-field">
-            Nivel técnico
-            <select formControlName="id_nivel_habilidad">
-              <option [ngValue]="null">Selecciona nivel</option>
-              <option *ngFor="let nivel of nivelesHabilidadCatalogo" [ngValue]="nivel.id">
-                {{ nivel.nombre }}
-              </option>
-            </select>
-          </label>
+          <div class="form-field">
+            <span>Nivel técnico</span>
+            <app-compact-select
+              formControlName="id_nivel_habilidad"
+              placeholder="Selecciona nivel"
+              [options]="nivelesHabilidadCatalogo"
+            ></app-compact-select>
+            <div class="catalog-actions" *ngIf="modo !== 'ver'">
+              <button type="button" (click)="abrirCrearCatalogo('nivelHabilidad')">+ Crear opción</button>
+            </div>
+          </div>
 
           <label class="form-field">
             Años experiencia
@@ -322,6 +321,16 @@
           <app-button variant="ghost" type="button" (pressed)="agregarHabilidad()">
             + Agregar
           </app-button>
+        </div>
+
+        <div class="catalog-editor catalog-editor--full" *ngIf="editorActivo('habilidad') || editorActivo('nivelHabilidad')">
+          <strong>{{ tituloEditorCatalogo() }}</strong>
+          <input type="text" placeholder="Nombre" [(ngModel)]="catalogoEditor.nombre" [ngModelOptions]="{ standalone: true }" />
+          <input type="text" placeholder="Descripción opcional" [(ngModel)]="catalogoEditor.descripcion" [ngModelOptions]="{ standalone: true }" />
+          <div>
+            <button type="button" (click)="guardarCatalogo()" [disabled]="catalogoEditor.guardando">Guardar</button>
+            <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
+          </div>
         </div>
 
         <div class="skills-empty" *ngIf="habilidadesFormArray.length === 0">

@@ -74,9 +74,10 @@ export class CuestionariosService {
   ];
 
   private readonly nivelesMock: NivelCuestionario[] = [
-    { id: 1, nombre: 'Trainee', duracionMinutos: 45 },
-    { id: 2, nombre: 'Junior', duracionMinutos: 50 },
-    { id: 3, nombre: 'Senior', duracionMinutos: 60 },
+    { id: 2, nombre: 'Basico', duracionMinutos: 45 },
+    { id: 3, nombre: 'Junior', duracionMinutos: 50 },
+    { id: 4, nombre: 'Semi Senior', duracionMinutos: 55 },
+    { id: 5, nombre: 'Senior', duracionMinutos: 60 },
   ];
 
   private readonly preguntas = new BehaviorSubject<PreguntaCuestionario[]>([

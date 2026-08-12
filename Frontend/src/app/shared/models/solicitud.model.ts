@@ -1,5 +1,12 @@
 export type PrioridadSolicitud = 'Alta' | 'Media' | 'Baja';
-export type EstadoSolicitud = 'Pendiente' | 'En curso' | 'Cerrada' | 'Cancelada' | string;
+export type EstadoSolicitud =
+  | 'Pendiente'
+  | 'En Curso'
+  | 'En Entrevistas'
+  | 'Cancelado'
+  | 'Cerrado'
+  | 'Pausado'
+  | string;
 
 // Modelo de integración: mantiene la misma nomenclatura que entrega backend/BD.
 export interface SolicitudApi {

@@ -47,7 +47,7 @@
       <input [(ngModel)]="filtros.telefono" type="text" placeholder="Ej. +56 9 5634 8547" />
     </label>
     <label>
-      Estado del candidato
+      Estado postulación
       <select [(ngModel)]="filtros.estado">
         <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
       </select>
@@ -140,11 +140,11 @@
 
 <app-confirm-dialog
   *ngIf="mostrarConfirmacionDesactivacion"
-  titulo="Desactivar candidato"
-  mensaje="Esta acción cambiará el estado del candidato a Desactivado."
+  titulo="Desactivar cuenta"
+  mensaje="Esta acción cambiará el estado de cuenta del candidato a Inactivo."
   [detalle]="'Candidato seleccionado: ' + (candidatoSeleccionadoDesactivacion?.nombre || '')"
   textoCancelar="Volver"
-  textoConfirmar="Confirmar desactivación"
+  textoConfirmar="Confirmar inactivación"
   variante="danger"
   (cancelar)="cerrarConfirmacionDesactivacion()"
   (confirmar)="confirmarDesactivacionCandidato()"

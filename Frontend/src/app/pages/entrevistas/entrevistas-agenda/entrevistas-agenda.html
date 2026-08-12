@@ -13,11 +13,21 @@
     (activeTabChange)="cambiarTab($event)"
   ></app-tabs>
 
-  <section class="agenda-layout" aria-label="Agenda de entrevistas">
-    <aside class="calendar-panel" aria-label="Calendario">
+  <section class="agenda-layout" aria-labelledby="agenda-layout-title">
+    <h2 id="agenda-layout-title" class="sr-only">Agenda de entrevistas</h2>
+
+    <aside class="calendar-panel" aria-labelledby="calendar-title">
       <header>
-        <h2>{{ tituloMes }}</h2>
-        <input type="month" [(ngModel)]="mesSeleccionado" (ngModelChange)="actualizarCalendario()" />
+        <h2 id="calendar-title">{{ tituloMes }}</h2>
+        <label for="agenda-month">
+          <span class="sr-only">Mes de agenda</span>
+          <input
+            id="agenda-month"
+            type="month"
+            [(ngModel)]="mesSeleccionado"
+            (ngModelChange)="actualizarCalendario()"
+          />
+        </label>
       </header>
 
       <div class="calendar-grid calendar-weekdays">
@@ -65,7 +75,7 @@
                 <h3>{{ entrevista.candidato }}</h3>
                 <p>{{ entrevista.cargo }} · {{ entrevista.idSolicitud }}</p>
               </div>
-              <span class="state-chip" [class]="estadoClase(entrevista.estado)">{{ entrevista.estado }}</span>
+              <span class="state-chip" [ngClass]="estadoClase(entrevista.estado)">{{ entrevista.estado }}</span>
             </header>
 
             <dl>
@@ -81,10 +91,6 @@
                 <dt>Entrevistador</dt>
                 <dd>{{ entrevista.entrevistador }}</dd>
               </div>
-              <div>
-                <dt>Modalidad</dt>
-                <dd>{{ entrevista.modalidad }}</dd>
-              </div>
             </dl>
 
             <footer>
@@ -93,7 +99,7 @@
                 variant="secondary"
                 size="sm"
                 type="button"
-                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Cerrada'"
+                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Realizada'"
                 (pressed)="abrirEstado(entrevista, 'reprogramar')"
               >
                 Reprogramar
@@ -102,7 +108,7 @@
                 variant="secondary"
                 size="sm"
                 type="button"
-                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Cerrada'"
+                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Realizada'"
                 (pressed)="abrirEstado(entrevista, 'cancelar')"
               >
                 Cancelar

@@ -37,7 +37,9 @@ interface Candidato {
   correo: string;
   telefono: string;
   cargo: string;
+  fechaPostulacion: string;
   estado: Exclude<EstadoCandidato, 'Todos'>;
+  estadoUsuario: string;
   disponibilidad: string;
   renta: number;
   nivel: NivelCandidato;
@@ -132,11 +134,23 @@ export class CandidatosList implements OnInit {
       width: 160,
     },
     {
+      key: 'fechaPostulacion',
+      label: 'Fecha postulación',
+      width: 150,
+    },
+    {
       key: 'estado',
-      label: 'Estado del candidato',
+      label: 'Estado postulación',
       width: 170,
       type: 'badge',
       className: (candidato) => this.estadoClase(candidato.estado),
+    },
+    {
+      key: 'estadoUsuario',
+      label: 'Estado cuenta',
+      width: 140,
+      type: 'badge',
+      className: (candidato) => this.estadoClase(candidato.estadoUsuario),
     },
     {
       key: 'disponibilidad',
@@ -182,19 +196,20 @@ export class CandidatosList implements OnInit {
     },
     {
       id: 'desactivar',
-      label: 'Desactivar candidato',
+      label: 'Desactivar cuenta',
       icon: 'trash',
-      visible: (candidato) => candidato.estado !== 'Desactivado',
+      visible: (candidato) => candidato.estadoUsuario !== 'Inactivo',
     },
   ];
 
   estados: EstadoCandidato[] = [
     'Todos',
     'En revision',
-    'Contactado',
-    'Entrevista',
+    'En entrevista',
+    'Inhabilitado',
+    'Seleccionado',
     'Descartado',
-    'Desactivado',
+    'Contratado',
   ];
 
   niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
@@ -208,7 +223,9 @@ export class CandidatosList implements OnInit {
       correo: 'macarena.lopez@mail.com',
       telefono: '+56 9 5634 8547',
       cargo: 'Frontend',
+      fechaPostulacion: '18/05/2025',
       estado: 'En revision',
+      estadoUsuario: 'Activo',
       disponibilidad: 'Inmediata',
       renta: 800000,
       nivel: 'Junior',
@@ -221,7 +238,9 @@ export class CandidatosList implements OnInit {
       correo: 'valentina.rojas@mail.com',
       telefono: '+56 9 6721 1184',
       cargo: 'Frontend',
-      estado: 'Contactado',
+      fechaPostulacion: '18/05/2025',
+      estado: 'En entrevista',
+      estadoUsuario: 'Activo',
       disponibilidad: '2 semanas',
       renta: 950000,
       nivel: 'Senior',
@@ -234,7 +253,9 @@ export class CandidatosList implements OnInit {
       correo: 'diego.martinez@mail.com',
       telefono: '+56 9 7765 4402',
       cargo: 'Backend',
-      estado: 'Entrevista',
+      fechaPostulacion: '17/05/2025',
+      estado: 'En entrevista',
+      estadoUsuario: 'Activo',
       disponibilidad: 'Inmediata',
       renta: 1200000,
       nivel: 'Senior',
@@ -247,7 +268,9 @@ export class CandidatosList implements OnInit {
       correo: 'camila.fuentes@mail.com',
       telefono: '+56 9 3324 9811',
       cargo: 'UX Research',
+      fechaPostulacion: '16/05/2025',
       estado: 'En revision',
+      estadoUsuario: 'Activo',
       disponibilidad: '1 mes',
       renta: 900000,
       nivel: 'Semi senior',
@@ -260,7 +283,9 @@ export class CandidatosList implements OnInit {
       correo: 'sebastian.araya@mail.com',
       telefono: '+56 9 4218 7256',
       cargo: 'QA Automation',
+      fechaPostulacion: '15/05/2025',
       estado: 'Descartado',
+      estadoUsuario: 'Activo',
       disponibilidad: '2 semanas',
       renta: 1100000,
       nivel: 'Junior',
@@ -287,7 +312,7 @@ export class CandidatosList implements OnInit {
 
   cargarCatalogosFiltros() {
     // Integración catálogos candidatos -> filtros del listado:
-    // - estados-solicitud-candidato alimenta "Estado del candidato".
+    // - estados-solicitud-candidato alimenta "Estado postulación" (slcd_estado_solicitud_candidato_id).
     // - disponibilidades alimenta el selector "Disponibilidad".
     // - niveles-habilidad alimenta el selector "Nivel".
     forkJoin({
@@ -440,6 +465,7 @@ export class CandidatosList implements OnInit {
           telefono: candidato.telefono,
           cargo: candidato.cargo,
           estado: candidato.estado,
+          estadoUsuario: candidato.estadoUsuario,
           disponibilidad: candidato.disponibilidad,
           renta: candidato.renta,
         },
@@ -462,6 +488,7 @@ export class CandidatosList implements OnInit {
           telefono: evento.row.telefono,
           cargo: evento.row.cargo,
           estado: evento.row.estado,
+          estadoUsuario: evento.row.estadoUsuario,
           disponibilidad: evento.row.disponibilidad,
           renta: evento.row.renta,
           tab: 'evaluaciones',
@@ -493,12 +520,12 @@ export class CandidatosList implements OnInit {
       return;
     }
 
-    this.candidatoSeleccionadoDesactivacion.estado = 'Desactivado';
+    this.candidatoSeleccionadoDesactivacion.estadoUsuario = 'Inactivo';
     this.seleccionados.delete(this.obtenerIdCandidato(this.candidatoSeleccionadoDesactivacion));
     this.alerta = {
       tipo: 'success',
       variante: 'soft',
-      mensaje: `${this.candidatoSeleccionadoDesactivacion.nombre} fue desactivado correctamente.`,
+      mensaje: `${this.candidatoSeleccionadoDesactivacion.nombre} quedó con cuenta inactiva.`,
     };
     this.cerrarConfirmacionDesactivacion();
   }
@@ -628,7 +655,7 @@ export class CandidatosList implements OnInit {
   }
 
   estadoClase(estado: Candidato['estado']) {
-    return estado.toLowerCase().replace(' ', '-');
+    return estado.toLowerCase().replace(/\s+/g, '-');
   }
 
   private filtrosIniciales(): FiltrosCandidatos {

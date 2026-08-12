@@ -66,8 +66,8 @@ export class EntrevistasList implements OnInit {
   entrevistaSeleccionada: EntrevistaResumen | null = null;
   modoEstado: 'reprogramar' | 'cancelar' = 'reprogramar';
 
-  estados: EstadoEntrevista[] = ['En curso', 'Pendiente', 'Cerrada', 'Cancelada'];
-  tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
+  estados: EstadoEntrevista[] = ['Pendiente', 'Confirmada', 'Realizada', 'Reprogramada', 'Cancelada', 'No Asistio'];
+  tipos: TipoEntrevista[] = ['RRHH', 'Tecnica', 'Cliente', 'Psicolaboral', 'Gerencial', 'Ingles'];
 
   readonly columnas: DataTableColumn<EntrevistaResumen>[] = [
     { key: 'idSolicitud', label: 'ID solicitud', width: 112, sticky: 'left' },
@@ -93,7 +93,7 @@ export class EntrevistasList implements OnInit {
       id: 'cancelar',
       label: 'Cancelar entrevista',
       icon: 'cancel',
-      disabled: (entrevista) => entrevista.estado === 'Cancelada' || entrevista.estado === 'Cerrada',
+      disabled: (entrevista) => entrevista.estado === 'Cancelada' || entrevista.estado === 'Realizada',
     },
   ];
 

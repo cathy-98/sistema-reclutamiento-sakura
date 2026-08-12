@@ -41,8 +41,7 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
   @Output() candidatosChange = new EventEmitter<EntrevistaCandidatoSeleccionado[]>();
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
 
-  tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
-  modalidades: EntrevistaPayload['modalidad'][] = ['Online', 'Presencial', 'Híbrida'];
+  tipos: TipoEntrevista[] = ['RRHH', 'Tecnica', 'Cliente', 'Psicolaboral', 'Gerencial', 'Ingles'];
   readonly duraciones = ['30 min', '45 min', '60 min', '90 min'];
   integrantesSeleccionados = new Set(['macarena-lopez', 'felipe-valdes']);
   tabFormulario = 'datos';
@@ -56,7 +55,7 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   camposPorPaso: Record<string, string[]> = {
     datos: ['idSolicitud', 'candidato', 'cargo'],
-    agenda: ['tipo', 'fecha', 'horaInicio', 'horaFin', 'modalidad'],
+    agenda: ['tipo', 'fecha', 'horaInicio', 'horaFin'],
     integrantes: ['entrevistador'],
     detalle: ['asunto'],
   };
@@ -89,7 +88,6 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     horaInicio: new UntypedFormControl('', Validators.required),
     horaFin: new UntypedFormControl('', Validators.required),
     duracion: new UntypedFormControl('45 min', Validators.required),
-    modalidad: new UntypedFormControl('Online', Validators.required),
     entrevistador: new UntypedFormControl('', Validators.required),
     linkReunion: new UntypedFormControl(''),
     observacion: new UntypedFormControl(''),
@@ -222,25 +220,18 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
   cargarCatalogosEntrevista() {
     // Integración de catálogos para agenda de entrevistas:
     // - tipos-entrevista alimenta las opciones "Tipo de entrevista".
-    // - modalidades alimenta el selector "Modalidad".
     // - usuarios alimenta la tabla de integrantes/entrevistadores.
+    // Nota BD: tbl_cita_entrevista no tiene columna de modalidad; por eso no se carga aquí.
     forkJoin({
       tipos: this.catalogosService.listarTiposEntrevista().pipe(timeout(4000), catchError(() => of([]))),
-      modalidades: this.catalogosService.listarModalidades().pipe(timeout(4000), catchError(() => of([]))),
       usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
     })
       .pipe(take(1))
-      .subscribe(({ tipos, modalidades, usuarios }) => {
+      .subscribe(({ tipos, usuarios }) => {
         const tiposCatalogo = tipos.map((tipo) => tipo.tpet_nombre).filter((nombre): nombre is string => Boolean(nombre));
-        const modalidadesCatalogo = modalidades.map((modalidad) => modalidad.mdld_nombre).filter((nombre): nombre is string => Boolean(nombre));
 
         if (tiposCatalogo.length > 0) {
           this.tipos = tiposCatalogo;
-        }
-
-        if (modalidadesCatalogo.length > 0) {
-          this.modalidades = modalidadesCatalogo;
-          this.formulario.get('modalidad')?.setValue(modalidadesCatalogo[0]);
         }
 
         if (usuarios.length > 0) {

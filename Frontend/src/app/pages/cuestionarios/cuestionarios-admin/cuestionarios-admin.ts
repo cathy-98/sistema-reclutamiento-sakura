@@ -22,8 +22,9 @@ import { CuestionarioEnvioModal, CuestionarioEnvioPayload } from '../cuestionari
 
 interface TecnologiaResumen {
   tecnologia: TecnologiaCuestionario;
-  trainee: number;
+  basico: number;
   junior: number;
+  semiSenior: number;
   senior: number;
   cantidad: number;
 }
@@ -125,8 +126,9 @@ export class CuestionariosAdmin implements OnInit {
       width: 220,
       value: (row) => row.tecnologia.nombre,
     },
-    { key: 'trainee', label: 'Trainee', width: 140 },
+    { key: 'basico', label: 'Basico', width: 140 },
     { key: 'junior', label: 'Junior', width: 140 },
+    { key: 'semiSenior', label: 'Semi Senior', width: 140 },
     { key: 'senior', label: 'Senior', width: 140 },
     { key: 'cantidad', label: 'Total', width: 140 },
   ];
@@ -222,7 +224,7 @@ export class CuestionariosAdmin implements OnInit {
     const busquedaNormalizada = this.normalizar(this.busquedaTecnologia);
 
     return this.resumenTecnologias.filter((row) => {
-      const texto = `${row.tecnologia.nombre} ${row.trainee} ${row.junior} ${row.senior} ${row.cantidad}`;
+      const texto = `${row.tecnologia.nombre} ${row.basico} ${row.junior} ${row.semiSenior} ${row.senior} ${row.cantidad}`;
       return !busquedaNormalizada || this.normalizar(texto).includes(busquedaNormalizada);
     });
   }
@@ -423,11 +425,14 @@ export class CuestionariosAdmin implements OnInit {
     }
 
     const nivel = this.obtenerNombreNivel(Number(this.nivelBancoActivo)).toLowerCase();
-    if (nivel === 'trainee') {
-      return row.trainee;
+    if (nivel === 'basico') {
+      return row.basico;
     }
     if (nivel === 'junior') {
       return row.junior;
+    }
+    if (nivel === 'semi senior') {
+      return row.semiSenior;
     }
     return row.senior;
   }
@@ -517,14 +522,16 @@ export class CuestionariosAdmin implements OnInit {
 
   private actualizarResumen() {
     const obtenerNivelId = (nombre: string) => this.niveles.find((nivel) => nivel.nombre === nombre)?.id;
-    const traineeId = obtenerNivelId('Trainee');
+    const basicoId = obtenerNivelId('Basico');
     const juniorId = obtenerNivelId('Junior');
+    const semiSeniorId = obtenerNivelId('Semi Senior');
     const seniorId = obtenerNivelId('Senior');
 
     this.resumenTecnologias = this.tecnologias.map((tecnologia) => ({
       tecnologia,
-      trainee: this.contarPreguntas(tecnologia.id, traineeId),
+      basico: this.contarPreguntas(tecnologia.id, basicoId),
       junior: this.contarPreguntas(tecnologia.id, juniorId),
+      semiSenior: this.contarPreguntas(tecnologia.id, semiSeniorId),
       senior: this.contarPreguntas(tecnologia.id, seniorId),
       cantidad: this.preguntas.filter((pregunta) => pregunta.tecnologiaId === tecnologia.id).length,
     }));

@@ -64,9 +64,11 @@
       <select [(ngModel)]="filtros.estado">
         <option value="">Todos</option>
         <option>Pendiente</option>
-        <option>En curso</option>
-        <option>Cerrada</option>
-        <option>Cancelada</option>
+        <option>En Curso</option>
+        <option>En Entrevistas</option>
+        <option>Cancelado</option>
+        <option>Cerrado</option>
+        <option>Pausado</option>
       </select>
     </label>
   </app-filter-panel>
@@ -106,7 +108,7 @@
 <app-confirm-dialog
   *ngIf="mostrarConfirmacionCancelacion"
   titulo="Cancelar solicitud"
-  mensaje="Esta acción cambiará el estado de la solicitud a Cancelada."
+  mensaje="Esta acción cambiará el estado de la solicitud a Cancelado."
   [detalle]="'Solicitud seleccionada: ' + (solicitudSeleccionadaCodigo || solicitudSeleccionadaId)"
   textoCancelar="Volver"
   textoConfirmar="Confirmar cancelación"

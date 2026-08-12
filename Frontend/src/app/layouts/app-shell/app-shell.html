@@ -8,7 +8,7 @@
     <p class="sidebar-section">Principal</p>
 
     <nav class="sidebar-nav">
-      <ng-container *ngFor="let item of menuItemsVisibles">
+      <ng-container *ngFor="let item of menuItemsVisibles; trackBy: trackMenuItem">
         <button
           *ngIf="item.children?.length; else menuWithoutChildren"
           class="sidebar-link sidebar-link-module"
@@ -28,7 +28,7 @@
         </button>
 
         <div class="sidebar-submenu" *ngIf="item.children?.length && estaSubmenuAbierto(item)">
-          <ng-container *ngFor="let child of item.children">
+          <ng-container *ngFor="let child of item.children; trackBy: trackSubMenuItem">
             <a
               *ngIf="child.route; else submenuButton"
               class="sidebar-submenu-link"

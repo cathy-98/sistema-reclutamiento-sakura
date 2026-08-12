@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import {
   AbstractControl,
+  FormsModule,
   ReactiveFormsModule,
   UntypedFormArray,
   UntypedFormControl,
@@ -12,6 +13,7 @@ import {
 import { Observable, catchError, forkJoin, of, switchMap, take, timeout } from 'rxjs';
 import {
   CargoCatalogoApi,
+  CatalogoPath,
   CatalogosService,
   EstadoSolicitudCatalogoApi,
   HabilidadCatalogoApi,
@@ -24,6 +26,7 @@ import {
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
+import { CompactSelect } from '../../../shared/components/compact-select/compact-select';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { FormSection } from '../../../shared/components/form-section/form-section';
 import { Modal } from '../../../shared/components/modal/modal';
@@ -49,11 +52,25 @@ interface CatalogoOpcion {
   nombre: string;
 }
 
-type CatalogoActivo = '' | 'cargo' | 'area' | 'cliente' | 'habilidad';
+type CatalogoEditable =
+  | 'cargo'
+  | 'prioridad'
+  | 'modalidad'
+  | 'tipoContrato'
+  | 'estadoSolicitud'
+  | 'habilidad'
+  | 'nivelHabilidad';
+
+interface CatalogoEditor {
+  tipo: CatalogoEditable | null;
+  nombre: string;
+  descripcion: string;
+  guardando: boolean;
+}
 
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, ReactiveFormsModule, AlertRegion, Button, FormActions, FormSection, Modal, Stepper],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AlertRegion, Button, CompactSelect, FormActions, FormSection, Modal, Stepper],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })
@@ -66,10 +83,14 @@ export class SolicitudFormModal implements OnInit {
   cargandoDetalle = false;
   guardando = false;
   tabFormulario = 'general';
-  catalogoActivo: CatalogoActivo = '';
   alerta: AlertaUi | null = null;
-  nuevoValorCatalogo = new UntypedFormControl('');
   codigoSolicitud: string | null = null;
+  catalogoEditor: CatalogoEditor = {
+    tipo: null,
+    nombre: '',
+    descripcion: '',
+    guardando: false,
+  };
 
   pasosFormulario = [
     { clave: 'general', numero: 1, titulo: 'Información general' },
@@ -88,7 +109,6 @@ export class SolicitudFormModal implements OnInit {
   };
 
   cargosCatalogo: CatalogoOpcion[] = [];
-  areasCatalogo: CatalogoOpcion[] = [];
   clientesCatalogo: CatalogoOpcion[] = [];
   usuariosCatalogo: CatalogoOpcion[] = [];
   prioridadesCatalogo: CatalogoOpcion[] = [];
@@ -116,7 +136,6 @@ export class SolicitudFormModal implements OnInit {
       fecha_cierre_busqueda: new UntypedFormControl(''),
       fecha_inicio_cliente: new UntypedFormControl(''),
       id_estado_solicitud: new UntypedFormControl(null, Validators.required),
-      id_area: new UntypedFormControl(null),
       hora_inicio_jornada: new UntypedFormControl(''),
       hora_fin_jornada: new UntypedFormControl(''),
       habilidades: new UntypedFormArray([]),
@@ -282,13 +301,11 @@ export class SolicitudFormModal implements OnInit {
     if (this.modo === 'ver') {
       this.formularioSolicitud.disable();
       this.nuevaHabilidad.disable();
-      this.nuevoValorCatalogo.disable();
       return;
     }
 
     this.formularioSolicitud.enable();
     this.nuevaHabilidad.enable();
-    this.nuevoValorCatalogo.enable();
   }
 
   cambiarTabFormulario(tab: string) {
@@ -379,72 +396,78 @@ export class SolicitudFormModal implements OnInit {
     return pasoValido;
   }
 
-  manejarSeleccionCatalogo(catalogo: CatalogoActivo, valor: string | number | null) {
-    if (valor !== 'crear') {
+  abrirCrearCatalogo(tipo: CatalogoEditable) {
+    if (this.modo === 'ver') {
       return;
     }
 
-    this.catalogoActivo = catalogo;
-    this.nuevoValorCatalogo.setValue('');
-
-    if (catalogo === 'cargo') {
-      this.formularioSolicitud.get('id_cargo')?.setValue(null);
-    }
-
-    if (catalogo === 'area') {
-      this.formularioSolicitud.get('id_area')?.setValue(null);
-    }
-
-    if (catalogo === 'cliente') {
-      this.formularioSolicitud.get('id_cliente')?.setValue(null);
-    }
-
-    if (catalogo === 'habilidad') {
-      this.nuevaHabilidad.get('id_habilidad')?.setValue(null);
-    }
+    this.catalogoEditor = {
+      tipo,
+      nombre: '',
+      descripcion: '',
+      guardando: false,
+    };
   }
 
-  guardarNuevoCatalogo() {
-    const nombre = String(this.nuevoValorCatalogo.value ?? '').trim();
+  guardarCatalogo() {
+    const editor = this.catalogoEditor;
+    const nombre = editor.nombre.trim();
 
-    if (!nombre) {
+    if (!editor.tipo || !nombre || editor.guardando) {
       return;
     }
 
-    if (this.catalogoActivo === 'cargo') {
-      const nuevoId = this.siguienteId(this.cargosCatalogo);
-      this.cargosCatalogo.push({ id: nuevoId, nombre });
-      this.formularioSolicitud.get('id_cargo')?.setValue(nuevoId);
-    }
+    const tipo = editor.tipo;
+    editor.guardando = true;
+    const payload = this.crearPayloadCatalogo(tipo, nombre, editor.descripcion);
+    const request = this.catalogosService.crearCatalogo<Record<string, unknown>, Record<string, unknown>>(this.pathCatalogo(tipo), payload);
 
-    if (this.catalogoActivo === 'area') {
-      const nuevoId = this.siguienteId(this.areasCatalogo);
-      this.areasCatalogo.push({ id: nuevoId, nombre });
-      this.formularioSolicitud.get('id_area')?.setValue(nuevoId);
-    }
+    request.pipe(take(1)).subscribe({
+      next: (respuesta) => {
+        const nuevoId = this.idRespuestaCatalogo(tipo, respuesta);
+        this.alerta = {
+          tipo: 'success',
+          variante: 'soft',
+          mensaje: 'Opción creada correctamente.',
+        };
+        this.cerrarEditorCatalogo();
+        this.cargarCatalogosFormulario();
 
-    if (this.catalogoActivo === 'cliente') {
-      const nuevoId = this.siguienteId(this.clientesCatalogo);
-      this.clientesCatalogo.push({ id: nuevoId, nombre });
-      this.formularioSolicitud.get('id_cliente')?.setValue(nuevoId);
-    }
-
-    if (this.catalogoActivo === 'habilidad') {
-      const nuevoId = this.siguienteId(this.habilidadesCatalogo);
-      this.habilidadesCatalogo.push({ id: nuevoId, nombre });
-      this.nuevaHabilidad.get('id_habilidad')?.setValue(nuevoId);
-    }
-
-    this.cancelarNuevoCatalogo();
+        // Si el catálogo alimenta un campo del formulario, dejamos seleccionado el registro recién guardado.
+        if (nuevoId) {
+          this.controlPorCatalogo(tipo)?.setValue(nuevoId);
+        }
+      },
+      error: (error) => {
+        editor.guardando = false;
+        this.alerta = {
+          tipo: 'danger',
+          variante: 'soft',
+          mensaje: obtenerMensajeError(error, 'No se pudo guardar la opción.'),
+        };
+      },
+    });
   }
 
-  cancelarNuevoCatalogo() {
-    this.catalogoActivo = '';
-    this.nuevoValorCatalogo.setValue('');
+  cerrarEditorCatalogo() {
+    this.catalogoEditor = {
+      tipo: null,
+      nombre: '',
+      descripcion: '',
+      guardando: false,
+    };
   }
 
-  siguienteId(catalogo: { id: number; nombre: string }[]) {
-    return Math.max(...catalogo.map((item) => item.id), 0) + 1;
+  editorActivo(tipo: CatalogoEditable) {
+    return this.catalogoEditor.tipo === tipo;
+  }
+
+  tituloEditorCatalogo() {
+    if (!this.catalogoEditor.tipo) {
+      return '';
+    }
+
+    return `Crear ${this.nombreCatalogo(this.catalogoEditor.tipo)}`;
   }
 
   agregarHabilidad() {
@@ -497,8 +520,6 @@ export class SolicitudFormModal implements OnInit {
       fecha_cierre_busqueda: this.fechaParaInput(solicitud.sol_fecha_cierre_busqueda),
       fecha_inicio_cliente: this.fechaParaInput(solicitud.sol_fecha_inicio_cliente),
       id_estado_solicitud: solicitud.sol_estado_solicitud_id ?? null,
-      // Pendiente: SolicitudResponse no expone área/departamento de la solicitud.
-      id_area: null,
       hora_inicio_jornada: this.horaParaInput(solicitud.sol_hora_inicio_jornada),
       hora_fin_jornada: this.horaParaInput(solicitud.sol_hora_fin_jornada),
     });
@@ -637,7 +658,7 @@ export class SolicitudFormModal implements OnInit {
       this.alerta = {
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'No hay catálogo de clientes disponible para seleccionar un cliente real.',
+        mensaje: 'No hay clientes disponibles para seleccionar.',
       };
       this.tabFormulario = 'general';
       return true;
@@ -691,7 +712,7 @@ export class SolicitudFormModal implements OnInit {
       this.alerta = {
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'No hay catálogo de clientes disponible para seleccionar un cliente real.',
+        mensaje: 'No hay clientes disponibles para seleccionar.',
       };
       this.tabFormulario = 'general';
       return null;
@@ -836,6 +857,86 @@ export class SolicitudFormModal implements OnInit {
 
   habilidadExcluyenteClase(esExcluyente: boolean) {
     return esExcluyente ? 'excluyente' : 'no-excluyente';
+  }
+
+  private controlPorCatalogo(tipo: CatalogoEditable) {
+    const controles: Partial<Record<CatalogoEditable, string>> = {
+      cargo: 'id_cargo',
+      prioridad: 'id_prioridad',
+      modalidad: 'id_modalidad',
+      tipoContrato: 'id_tipo_contrato',
+      estadoSolicitud: 'id_estado_solicitud',
+      habilidad: 'id_habilidad',
+      nivelHabilidad: 'id_nivel_habilidad',
+    };
+
+    const nombreControl = controles[tipo];
+    return nombreControl ? this.formularioSolicitud.get(nombreControl) ?? this.nuevaHabilidad.get(nombreControl) : null;
+  }
+
+  private pathCatalogo(tipo: CatalogoEditable): CatalogoPath {
+    const paths: Record<CatalogoEditable, CatalogoPath> = {
+      cargo: 'cargos',
+      prioridad: 'prioridades-solicitud',
+      modalidad: 'modalidades',
+      tipoContrato: 'tipos-contrato',
+      estadoSolicitud: 'estados-solicitud',
+      habilidad: 'habilidades',
+      nivelHabilidad: 'niveles-habilidad',
+    };
+
+    return paths[tipo];
+  }
+
+  private nombreCatalogo(tipo: CatalogoEditable) {
+    const nombres: Record<CatalogoEditable, string> = {
+      cargo: 'cargo',
+      prioridad: 'prioridad',
+      modalidad: 'modalidad',
+      tipoContrato: 'tipo de contrato',
+      estadoSolicitud: 'estado',
+      habilidad: 'habilidad',
+      nivelHabilidad: 'nivel técnico',
+    };
+
+    return nombres[tipo];
+  }
+
+  private crearPayloadCatalogo(tipo: CatalogoEditable, nombre: string, descripcion: string) {
+    const detalle = this.textoONull(descripcion);
+
+    // Cada catálogo usa la nomenclatura física expuesta por su schema del backend.
+    switch (tipo) {
+      case 'cargo':
+        return { crgo_nombre: nombre, crgo_descripcion: detalle };
+      case 'prioridad':
+        return { prsol_nombre: nombre, prsol_descripcion: detalle };
+      case 'modalidad':
+        return { mdld_nombre: nombre, mdld_descripcion: detalle };
+      case 'tipoContrato':
+        return { tpct_nombre: nombre, tpct_descripcion: detalle };
+      case 'estadoSolicitud':
+        return { essl_nombre: nombre, essl_descripcion: detalle };
+      case 'habilidad':
+        return { hab_nombre: nombre, hab_descripcion: detalle };
+      case 'nivelHabilidad':
+        return { nvhb_nombre: nombre, nvhb_descripcion: detalle };
+    }
+  }
+
+  private idRespuestaCatalogo(tipo: CatalogoEditable, respuesta: Record<string, unknown>) {
+    const ids: Record<CatalogoEditable, string> = {
+      cargo: 'crgo_id',
+      prioridad: 'prsol_id',
+      modalidad: 'mdld_id',
+      tipoContrato: 'tpct_id',
+      estadoSolicitud: 'essl_id',
+      habilidad: 'hab_id',
+      nivelHabilidad: 'nvhb_id',
+    };
+
+    const id = Number(respuesta[ids[tipo]]);
+    return Number.isNaN(id) ? null : id;
   }
 
   private validarHabilidadesSolicitud() {

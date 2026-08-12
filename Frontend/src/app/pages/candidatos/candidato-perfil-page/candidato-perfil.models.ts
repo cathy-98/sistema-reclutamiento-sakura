@@ -10,6 +10,7 @@ export interface CandidatoPerfil {
   estado: string;
   disponibilidad: string;
   renta: number;
+  rut: string;
   fechaNacimiento: string;
   fechaRegistro: string;
   tituloProfesional: string;
@@ -31,7 +32,6 @@ export interface ExperienciaPerfil {
 export interface EstudioPerfil {
   titulo: string;
   institucion: string;
-  estado: string;
   fecha: string;
 }
 

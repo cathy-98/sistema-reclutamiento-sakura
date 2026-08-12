@@ -15,7 +15,7 @@ import { CandidatoPerfil } from '../../candidato-perfil.models';
 export class CandidateEditableMetrics implements OnInit {
   @Input({ required: true }) candidato!: CandidatoPerfil;
   @Input() matchClass = '';
-  disponibilidades = ['Inmediata', '15 días', '30 días', 'A convenir'];
+  public disponibilidades: string[] = ['Inmediata', '15 días', '30 días', 'A convenir'];
 
   constructor(private catalogosService: CatalogosService) {}
 

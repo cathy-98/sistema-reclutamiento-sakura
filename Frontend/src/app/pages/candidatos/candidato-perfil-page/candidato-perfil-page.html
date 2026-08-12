@@ -38,7 +38,7 @@
         @case ('estudios') {
           <section class="section-stack">
             @defer {
-              <app-candidate-education-section [estudios]="estudios" [idiomas]="idiomas"></app-candidate-education-section>
+              <app-candidate-education-section [estudios]="estudios"></app-candidate-education-section>
             } @placeholder {
               <p class="section-loading">Cargando estudios...</p>
             }
@@ -135,7 +135,7 @@
         }
 
         @case ('documentos') {
-          <section class="section-stack">
+          <section class="section-stack" *ngIf="mostrarModuloDocumentos">
             @defer {
               <app-candidate-documents-section
                 [documentos]="documentos"
@@ -172,10 +172,10 @@
   >
     <div class="observation-modal-body">
       <label>
-        Observación
+        Observación de postulación
         <textarea
           [(ngModel)]="nota"
-          maxlength="1000"
+          maxlength="300"
           placeholder="Escribe una observación clara y breve"
         ></textarea>
       </label>
