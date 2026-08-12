@@ -180,6 +180,10 @@ export class CuestionariosAdmin implements OnInit {
     return this.obtenerNombreNivel(Number(this.formulario.value.nivelId));
   }
 
+  get duracionFormulario() {
+    return this.formatearDuracion(this.obtenerDuracionNivelActual(), 0);
+  }
+
   get tituloVistaActiva() {
     return this.vistaActiva === 'crear' ? 'Crear pregunta' : 'Armar y enviar test';
   }
@@ -352,6 +356,7 @@ export class CuestionariosAdmin implements OnInit {
     }
 
     const valor = this.formulario.getRawValue();
+    const duracionMinutos = this.obtenerDuracionNivelActual();
     this.cuestionariosService
       .crear({
         texto: valor.texto ?? '',
@@ -359,8 +364,9 @@ export class CuestionariosAdmin implements OnInit {
         nivelId: Number(valor.nivelId),
         respuestas: valor.respuestas.map((respuesta) => respuesta ?? ''),
         respuestaCorrecta: Number(valor.respuestaCorrecta),
-        duracionMinutos: Number(valor.duracionMinutos),
-        duracionSegundos: Number(valor.duracionSegundos),
+        // La duracion no se captura manualmente: viene precargada desde nvhb_duracion del nivel.
+        duracionMinutos,
+        duracionSegundos: 0,
       })
       .pipe(take(1))
       .subscribe(() => {
@@ -515,9 +521,17 @@ export class CuestionariosAdmin implements OnInit {
     this.formulario.get('nivelId')?.valueChanges.subscribe((nivelId) => {
       const nivel = this.niveles.find((item) => item.id === Number(nivelId));
       if (nivel) {
-        this.formulario.patchValue({ duracionMinutos: nivel.duracionMinutos }, { emitEvent: false });
+        this.formulario.patchValue(
+          { duracionMinutos: nivel.duracionMinutos, duracionSegundos: 0 },
+          { emitEvent: false },
+        );
       }
     });
+  }
+
+  private obtenerDuracionNivelActual() {
+    const nivelId = Number(this.formulario.value.nivelId);
+    return this.niveles.find((nivel) => nivel.id === nivelId)?.duracionMinutos ?? 45;
   }
 
   private actualizarResumen() {

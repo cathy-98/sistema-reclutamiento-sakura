@@ -163,6 +163,7 @@ export class SolicitudFormModal implements OnInit {
     }
 
     this.cargarCatalogosFormulario();
+    this.prepararCodigoSolicitudProvisorio();
   }
 
   get habilidadesFormArray() {
@@ -648,7 +649,7 @@ export class SolicitudFormModal implements OnInit {
       this.alerta = {
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'Falta definir cómo se generará el código SOL-XXX desde backend o UI.',
+        mensaje: 'No se pudo preparar el código de solicitud. Intenta nuevamente.',
       };
       this.tabFormulario = 'general';
       return true;
@@ -702,7 +703,7 @@ export class SolicitudFormModal implements OnInit {
       this.alerta = {
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'Falta definir cómo se generará el código SOL-XXX desde backend o UI.',
+        mensaje: 'No se pudo preparar el código de solicitud. Intenta nuevamente.',
       };
       this.tabFormulario = 'general';
       return null;
@@ -744,6 +745,27 @@ export class SolicitudFormModal implements OnInit {
       ...this.crearPayloadBase(),
       sol_cliente_id: this.numeroONull(valor.id_cliente),
     };
+  }
+
+  private prepararCodigoSolicitudProvisorio() {
+    // Generación provisional frontend: backend aún exige sol_codigo en el POST.
+    // Cuando backend genere el correlativo con transacción, este cálculo debe quedar solo como vista previa.
+    this.solicitudesService
+      .listar()
+      .pipe(take(1), catchError(() => of([])))
+      .subscribe((solicitudes) => {
+        this.codigoSolicitud = this.generarSiguienteCodigoSolicitud(solicitudes);
+      });
+  }
+
+  private generarSiguienteCodigoSolicitud(solicitudes: Array<{ codigo: string }>) {
+    const ultimoNumero = solicitudes.reduce((maximo, solicitud) => {
+      const coincidencia = /^SOL-(\d{3})$/.exec(solicitud.codigo);
+      const numero = coincidencia ? Number(coincidencia[1]) : 0;
+      return Math.max(maximo, numero);
+    }, 0);
+
+    return `SOL-${String(ultimoNumero + 1).padStart(3, '0')}`;
   }
 
   private crearPayloadBase() {
