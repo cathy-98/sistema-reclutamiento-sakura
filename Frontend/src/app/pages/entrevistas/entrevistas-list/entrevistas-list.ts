@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { catchError, forkJoin, of, take, timeout } from 'rxjs';
 import {
   EntrevistaPayload,
   EntrevistaResumen,
@@ -22,6 +23,7 @@ import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
+import { CatalogosService } from '../../../services/catalogos.service';
 import { EntrevistaEstadoModal } from '../entrevista-estado-modal/entrevista-estado-modal';
 import { EntrevistaFormModal } from '../entrevista-form-modal/entrevista-form-modal';
 
@@ -64,8 +66,8 @@ export class EntrevistasList implements OnInit {
   entrevistaSeleccionada: EntrevistaResumen | null = null;
   modoEstado: 'reprogramar' | 'cancelar' = 'reprogramar';
 
-  readonly estados: EstadoEntrevista[] = ['En curso', 'Pendiente', 'Cerrada', 'Cancelada'];
-  readonly tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
+  estados: EstadoEntrevista[] = ['En curso', 'Pendiente', 'Cerrada', 'Cancelada'];
+  tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
 
   readonly columnas: DataTableColumn<EntrevistaResumen>[] = [
     { key: 'idSolicitud', label: 'ID solicitud', width: 112, sticky: 'left' },
@@ -95,9 +97,13 @@ export class EntrevistasList implements OnInit {
     },
   ];
 
-  constructor(private entrevistasService: EntrevistasService) {}
+  constructor(
+    private entrevistasService: EntrevistasService,
+    private catalogosService: CatalogosService,
+  ) {}
 
   ngOnInit() {
+    this.cargarCatalogosFiltros();
     this.cargarEntrevistas();
   }
 
@@ -155,6 +161,29 @@ export class EntrevistasList implements OnInit {
         this.errorCarga = obtenerMensajeError(error, 'No se pudieron cargar las entrevistas.');
       },
     });
+  }
+
+  cargarCatalogosFiltros() {
+    // Integración catálogos entrevistas -> filtros del listado:
+    // - estados-entrevista llena "Estado entrevista".
+    // - tipos-entrevista llena "Tipo de entrevista".
+    forkJoin({
+      estados: this.catalogosService.listarEstadosEntrevista().pipe(timeout(4000), catchError(() => of([]))),
+      tipos: this.catalogosService.listarTiposEntrevista().pipe(timeout(4000), catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe(({ estados, tipos }) => {
+        const estadosCatalogo = estados.map((estado) => estado.esev_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const tiposCatalogo = tipos.map((tipo) => tipo.tpet_nombre).filter((nombre): nombre is string => Boolean(nombre));
+
+        if (estadosCatalogo.length > 0) {
+          this.estados = estadosCatalogo;
+        }
+
+        if (tiposCatalogo.length > 0) {
+          this.tipos = tiposCatalogo;
+        }
+      });
   }
 
   guardarEntrevista(payload: EntrevistaPayload) {

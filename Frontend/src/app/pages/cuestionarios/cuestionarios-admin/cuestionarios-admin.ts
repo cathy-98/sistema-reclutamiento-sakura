@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs';
+import { forkJoin, take } from 'rxjs';
 import {
   CuestionariosService,
   NivelCuestionario,
@@ -148,11 +148,7 @@ export class CuestionariosAdmin implements OnInit {
 
   ngOnInit() {
     this.vistaActiva = this.route.snapshot.data['vista'] === 'crear' ? 'crear' : 'armar';
-    this.tecnologias = this.cuestionariosService.tecnologias;
-    this.niveles = this.cuestionariosService.niveles;
-    this.tabsBanco = [{ id: 'todos', label: 'Todos' }, ...this.niveles.map((nivel) => ({ id: String(nivel.id), label: nivel.nombre }))];
-    this.actualizarResumen();
-    this.seleccionarTecnologiaInicial();
+    this.cargarCatalogosCuestionarios();
     this.cargarPreguntas();
     this.sincronizarDuracionConNivel();
   }
@@ -321,6 +317,29 @@ export class CuestionariosAdmin implements OnInit {
           this.seleccionarTecnologiaInicial();
           this.cargando = false;
         },
+      });
+  }
+
+  cargarCatalogosCuestionarios() {
+    // Integración de catálogos para cuestionarios:
+    // - habilidades alimenta el listado de tecnologías.
+    // - niveles-habilidad alimenta los niveles y duración sugerida.
+    forkJoin({
+      tecnologias: this.cuestionariosService.listarTecnologias(),
+      niveles: this.cuestionariosService.listarNiveles(),
+    })
+      .pipe(take(1))
+      .subscribe(({ tecnologias, niveles }) => {
+        this.tecnologias = tecnologias;
+        this.niveles = niveles;
+        this.tabsBanco = [{ id: 'todos', label: 'Todos' }, ...this.niveles.map((nivel) => ({ id: String(nivel.id), label: nivel.nombre }))];
+        this.formulario.patchValue({
+          tecnologiaId: this.tecnologias[0]?.id ?? 1,
+          nivelId: this.niveles[0]?.id ?? 1,
+          duracionMinutos: this.niveles[0]?.duracionMinutos ?? 45,
+        });
+        this.actualizarResumen();
+        this.seleccionarTecnologiaInicial();
       });
   }
 

@@ -18,6 +18,7 @@ import {
   ModalidadCatalogoApi,
   NivelHabilidadCatalogoApi,
   PrioridadSolicitudCatalogoApi,
+  TipoContratoCatalogoApi,
   UsuarioCatalogoApi,
 } from '../../../services/catalogos.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
@@ -93,6 +94,7 @@ export class SolicitudFormModal implements OnInit {
   prioridadesCatalogo: CatalogoOpcion[] = [];
   estadosSolicitudCatalogo: CatalogoOpcion[] = [];
   modalidadesCatalogo: CatalogoOpcion[] = [];
+  tiposContratoCatalogo: CatalogoOpcion[] = [];
   habilidadesCatalogo: CatalogoOpcion[] = [];
   nivelesHabilidadCatalogo: CatalogoOpcion[] = [];
 
@@ -107,6 +109,7 @@ export class SolicitudFormModal implements OnInit {
       id_usuario_solicitante: new UntypedFormControl(null, Validators.required),
       id_usuario_responsable: new UntypedFormControl(null),
       id_modalidad: new UntypedFormControl(null, Validators.required),
+      id_tipo_contrato: new UntypedFormControl(null),
       salario_minimo: new UntypedFormControl(null),
       salario_maximo: new UntypedFormControl(null),
       fecha_inicio_busqueda: new UntypedFormControl(''),
@@ -211,6 +214,7 @@ export class SolicitudFormModal implements OnInit {
       prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(4000), catchError(() => of([]))),
       estados: this.catalogosService.listarEstadosSolicitud().pipe(timeout(4000), catchError(() => of([]))),
       modalidades: this.catalogosService.listarModalidades().pipe(timeout(4000), catchError(() => of([]))),
+      tiposContrato: this.catalogosService.listarTiposContrato().pipe(timeout(4000), catchError(() => of([]))),
       habilidades: this.catalogosService.listarHabilidades().pipe(timeout(4000), catchError(() => of([]))),
       nivelesHabilidad: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
     })
@@ -223,10 +227,11 @@ export class SolicitudFormModal implements OnInit {
           prioridades,
           estados,
           modalidades,
+          tiposContrato,
           habilidades,
           nivelesHabilidad,
         }) => {
-          this.aplicarCatalogos({ cargos, usuarios, prioridades, estados, modalidades, habilidades, nivelesHabilidad });
+          this.aplicarCatalogos({ cargos, usuarios, prioridades, estados, modalidades, tiposContrato, habilidades, nivelesHabilidad });
           this.aplicarSolicitudDetalle(solicitud);
           this.cargandoDetalle = false;
           this.aplicarModoFormulario();
@@ -252,17 +257,19 @@ export class SolicitudFormModal implements OnInit {
       prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(4000), catchError(() => of([]))),
       estados: this.catalogosService.listarEstadosSolicitud().pipe(timeout(4000), catchError(() => of([]))),
       modalidades: this.catalogosService.listarModalidades().pipe(timeout(4000), catchError(() => of([]))),
+      tiposContrato: this.catalogosService.listarTiposContrato().pipe(timeout(4000), catchError(() => of([]))),
       habilidades: this.catalogosService.listarHabilidades().pipe(timeout(4000), catchError(() => of([]))),
       nivelesHabilidad: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
     })
       .pipe(take(1))
-      .subscribe(({ cargos, usuarios, prioridades, estados, modalidades, habilidades, nivelesHabilidad }) => {
+      .subscribe(({ cargos, usuarios, prioridades, estados, modalidades, tiposContrato, habilidades, nivelesHabilidad }) => {
         this.aplicarCatalogos({
           cargos,
           usuarios,
           prioridades,
           estados,
           modalidades,
+          tiposContrato,
           habilidades,
           nivelesHabilidad,
         });
@@ -483,6 +490,7 @@ export class SolicitudFormModal implements OnInit {
       id_usuario_solicitante: solicitud.sol_usuario_creador_id ?? null,
       id_usuario_responsable: solicitud.sol_usuario_asignado_id ?? null,
       id_modalidad: solicitud.sol_modalidad_id ?? null,
+      id_tipo_contrato: solicitud.sol_tipo_contrato_id ?? null,
       salario_minimo: solicitud.sol_salario_min ?? null,
       salario_maximo: solicitud.sol_salario_max ?? null,
       fecha_inicio_busqueda: this.fechaParaInput(solicitud.sol_fecha_inicio_busqueda),
@@ -516,33 +524,46 @@ export class SolicitudFormModal implements OnInit {
     prioridades: PrioridadSolicitudCatalogoApi[];
     estados: EstadoSolicitudCatalogoApi[];
     modalidades: ModalidadCatalogoApi[];
+    tiposContrato: TipoContratoCatalogoApi[];
     habilidades: HabilidadCatalogoApi[];
     nivelesHabilidad: NivelHabilidadCatalogoApi[];
   }) {
+    // Integración catálogo de cargos -> selector "Cargo solicitado" del formulario de solicitudes.
     this.cargosCatalogo = catalogos.cargos.map((cargo) => ({
       id: cargo.crgo_id,
       nombre: cargo.crgo_nombre ?? 'Cargo sin nombre',
     }));
+    // Integración catálogo de usuarios -> selectores "Solicitante" y "Responsable".
     this.usuariosCatalogo = catalogos.usuarios.map((usuario) => ({
       id: usuario.usr_id,
       nombre: this.nombreUsuario(usuario),
     }));
+    // Integración catálogo de prioridades -> selector "Prioridad".
     this.prioridadesCatalogo = catalogos.prioridades.map((prioridad) => ({
       id: prioridad.prsol_id,
       nombre: prioridad.prsol_nombre ?? 'Sin prioridad',
     }));
+    // Integración catálogo de estados de solicitud -> selector "Estado".
     this.estadosSolicitudCatalogo = catalogos.estados.map((estado) => ({
       id: estado.essl_id,
       nombre: estado.essl_nombre ?? 'Sin estado',
     }));
+    // Integración catálogo de modalidades -> selector "Modalidad".
     this.modalidadesCatalogo = catalogos.modalidades.map((modalidad) => ({
       id: modalidad.mdld_id,
       nombre: modalidad.mdld_nombre ?? 'Sin modalidad',
     }));
+    // Integración catálogo de tipos de contrato -> selector "Tipo de contrato".
+    this.tiposContratoCatalogo = catalogos.tiposContrato.map((tipoContrato) => ({
+      id: tipoContrato.tpct_id,
+      nombre: tipoContrato.tpct_nombre ?? 'Sin tipo de contrato',
+    }));
+    // Integración catálogo de habilidades -> selector "Tecnología" en requisitos técnicos.
     this.habilidadesCatalogo = catalogos.habilidades.map((habilidad) => ({
       id: habilidad.hab_id,
       nombre: habilidad.hab_nombre ?? 'Habilidad sin nombre',
     }));
+    // Integración catálogo de niveles de habilidad -> selector "Nivel técnico".
     this.nivelesHabilidadCatalogo = catalogos.nivelesHabilidad.map((nivel) => ({
       id: nivel.nvhb_id,
       nombre: nivel.nvhb_nombre ?? 'Nivel sin nombre',
@@ -723,6 +744,7 @@ export class SolicitudFormModal implements OnInit {
       sol_usuario_asignado_id: this.numeroONull(valor.id_usuario_responsable),
       sol_modalidad_id: this.numeroONull(valor.id_modalidad),
       sol_estado_solicitud_id: this.numeroONull(valor.id_estado_solicitud),
+      sol_tipo_contrato_id: this.numeroONull(valor.id_tipo_contrato),
     };
   }
 

@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, delay, of, throwError } from 'rxjs';
 
-export type EstadoEntrevista = 'En curso' | 'Pendiente' | 'Cerrada' | 'Cancelada';
-export type TipoEntrevista = 'Reclutamiento' | 'Técnica' | 'Operacional';
+export type EstadoEntrevista = string;
+export type TipoEntrevista = string;
 
 // Modelo físico/API esperado para citas de entrevista.
 // Backend/BD usa ctev_*; este tipo se debe usar cuando exista el endpoint real.
@@ -42,7 +42,7 @@ export interface EntrevistaResumen {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  modalidad: 'Online' | 'Presencial' | 'Híbrida';
+  modalidad: string;
   entrevistador: string;
   linkReunion?: string;
   observacion?: string;
@@ -57,7 +57,7 @@ export interface EntrevistaPayload {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  modalidad: 'Online' | 'Presencial' | 'Híbrida';
+  modalidad: string;
   entrevistador: string;
   linkReunion?: string;
   observacion?: string;

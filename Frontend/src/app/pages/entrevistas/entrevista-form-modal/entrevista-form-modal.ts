@@ -10,6 +10,8 @@ import { IconButton } from '../../../shared/components/icon-button/icon-button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { Stepper } from '../../../shared/components/stepper/stepper';
 import { EntrevistaPayload, TipoEntrevista } from '../../../services/entrevistas.service';
+import { CatalogosService, UsuarioCatalogoApi } from '../../../services/catalogos.service';
+import { catchError, forkJoin, of, take, timeout } from 'rxjs';
 
 interface IntegranteEntrevista {
   id: string;
@@ -39,8 +41,8 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
   @Output() candidatosChange = new EventEmitter<EntrevistaCandidatoSeleccionado[]>();
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
 
-  readonly tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
-  readonly modalidades: EntrevistaPayload['modalidad'][] = ['Online', 'Presencial', 'Híbrida'];
+  tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
+  modalidades: EntrevistaPayload['modalidad'][] = ['Online', 'Presencial', 'Híbrida'];
   readonly duraciones = ['30 min', '45 min', '60 min', '90 min'];
   integrantesSeleccionados = new Set(['macarena-lopez', 'felipe-valdes']);
   tabFormulario = 'datos';
@@ -93,7 +95,10 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     observacion: new UntypedFormControl(''),
   });
 
+  constructor(private catalogosService: CatalogosService) {}
+
   ngOnInit() {
+    this.cargarCatalogosEntrevista();
     this.aplicarDatosIniciales();
   }
 
@@ -214,6 +219,37 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     this.formulario.get('tipo')?.markAsTouched();
   }
 
+  cargarCatalogosEntrevista() {
+    // Integración de catálogos para agenda de entrevistas:
+    // - tipos-entrevista alimenta las opciones "Tipo de entrevista".
+    // - modalidades alimenta el selector "Modalidad".
+    // - usuarios alimenta la tabla de integrantes/entrevistadores.
+    forkJoin({
+      tipos: this.catalogosService.listarTiposEntrevista().pipe(timeout(4000), catchError(() => of([]))),
+      modalidades: this.catalogosService.listarModalidades().pipe(timeout(4000), catchError(() => of([]))),
+      usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe(({ tipos, modalidades, usuarios }) => {
+        const tiposCatalogo = tipos.map((tipo) => tipo.tpet_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const modalidadesCatalogo = modalidades.map((modalidad) => modalidad.mdld_nombre).filter((nombre): nombre is string => Boolean(nombre));
+
+        if (tiposCatalogo.length > 0) {
+          this.tipos = tiposCatalogo;
+        }
+
+        if (modalidadesCatalogo.length > 0) {
+          this.modalidades = modalidadesCatalogo;
+          this.formulario.get('modalidad')?.setValue(modalidadesCatalogo[0]);
+        }
+
+        if (usuarios.length > 0) {
+          this.integrantes = usuarios.map((usuario) => this.mapearUsuarioAIntegrante(usuario));
+          this.integrantesSeleccionados = new Set(this.integrantes.slice(0, 2).map((integrante) => integrante.id));
+        }
+      });
+  }
+
   agregarIntegrante() {
     const entrevistador = String(this.formulario.get('entrevistador')?.value ?? '').trim();
 
@@ -237,6 +273,20 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   obtenerIdIntegrante(integrante: IntegranteEntrevista) {
     return integrante.id;
+  }
+
+  private mapearUsuarioAIntegrante(usuario: UsuarioCatalogoApi): IntegranteEntrevista {
+    // Mapeo catálogo usuarios -> tabla "Integrantes": muestra nombre completo y rol del usuario.
+    const nombre = [usuario.usr_nombres, usuario.usr_apellido_paterno, usuario.usr_apellido_materno]
+      .filter(Boolean)
+      .join(' ') || usuario.usr_email;
+
+    return {
+      id: String(usuario.usr_id),
+      nombre,
+      rol: usuario.rol?.rol_nombre ?? 'Usuario',
+      fechaAgendamiento: 'Sin fecha',
+    };
   }
 
   actualizarSeleccionIntegrantes(ids: Set<string>) {

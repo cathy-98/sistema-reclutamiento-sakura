@@ -23,6 +23,7 @@ export interface SolicitudApi {
   sol_usuario_asignado_id?: number | null;
   sol_modalidad_id?: number | null;
   sol_estado_solicitud_id?: number | null;
+  sol_tipo_contrato_id?: number | null;
   habilidades?: SolicitudHabilidadApi[];
 }
 
@@ -63,6 +64,7 @@ export interface SolicitudCreatePayload {
   sol_usuario_asignado_id?: number | null;
   sol_modalidad_id?: number | null;
   sol_estado_solicitud_id?: number | null;
+  sol_tipo_contrato_id?: number | null;
   habilidades?: SolicitudHabilidadPayload[];
 }
 
@@ -84,6 +86,7 @@ export interface SolicitudUpdatePayload {
   sol_usuario_asignado_id?: number | null;
   sol_modalidad_id?: number | null;
   sol_estado_solicitud_id?: number | null;
+  sol_tipo_contrato_id?: number | null;
 }
 
 // Modelo de pantalla: nombres simples usados por tablas/componentes del front.

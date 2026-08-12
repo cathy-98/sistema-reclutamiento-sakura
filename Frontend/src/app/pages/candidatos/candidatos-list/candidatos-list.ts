@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { catchError, forkJoin, of, take, timeout } from 'rxjs';
 import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
+import { CatalogosService } from '../../../services/catalogos.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import {
   DataTable,
@@ -25,8 +27,8 @@ import {
   EntrevistaFormModal,
 } from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 
-type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado' | 'Desactivado';
-type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
+type EstadoCandidato = 'Todos' | string;
+type NivelCandidato = string;
 
 interface Candidato {
   idSolicitud: string;
@@ -75,7 +77,7 @@ interface FiltrosCandidatos {
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
-export class CandidatosList {
+export class CandidatosList implements OnInit {
   cargando = false;
   errorCarga = '';
   alerta: AlertaUi | null = null;
@@ -186,7 +188,7 @@ export class CandidatosList {
     },
   ];
 
-  readonly estados: EstadoCandidato[] = [
+  estados: EstadoCandidato[] = [
     'Todos',
     'En revision',
     'Contactado',
@@ -195,7 +197,8 @@ export class CandidatosList {
     'Desactivado',
   ];
 
-  readonly niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
+  niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
+  disponibilidades: string[] = [];
 
   readonly candidatos: Candidato[] = [
     {
@@ -269,12 +272,47 @@ export class CandidatosList {
     private currencyCl: CurrencyClPipe,
     private router: Router,
     private entrevistasService: EntrevistasService,
+    private catalogosService: CatalogosService,
   ) {}
+
+  ngOnInit() {
+    this.cargarCatalogosFiltros();
+  }
 
   cargarCandidatos() {
     this.cargando = false;
     this.errorCarga = '';
     this.paginaActual = 1;
+  }
+
+  cargarCatalogosFiltros() {
+    // Integración catálogos candidatos -> filtros del listado:
+    // - estados-solicitud-candidato alimenta "Estado del candidato".
+    // - disponibilidades alimenta el selector "Disponibilidad".
+    // - niveles-habilidad alimenta el selector "Nivel".
+    forkJoin({
+      estados: this.catalogosService.listarEstadosSolicitudCandidato().pipe(timeout(4000), catchError(() => of([]))),
+      disponibilidades: this.catalogosService.listarDisponibilidades().pipe(timeout(4000), catchError(() => of([]))),
+      niveles: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe(({ estados, disponibilidades, niveles }) => {
+        const estadosCatalogo = estados.map((estado) => estado.essc_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const disponibilidadesCatalogo = disponibilidades.map((disponibilidad) => disponibilidad.disp_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const nivelesCatalogo = niveles.map((nivel) => nivel.nvhb_nombre).filter((nombre): nombre is string => Boolean(nombre));
+
+        if (estadosCatalogo.length > 0) {
+          this.estados = ['Todos', ...estadosCatalogo];
+        }
+
+        if (disponibilidadesCatalogo.length > 0) {
+          this.disponibilidades = disponibilidadesCatalogo;
+        }
+
+        if (nivelesCatalogo.length > 0) {
+          this.niveles = nivelesCatalogo;
+        }
+      });
   }
 
   get candidatosFiltrados() {

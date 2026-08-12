@@ -54,7 +54,15 @@
     </label>
     <label>
       Disponibilidad
-      <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Ej. Inmediata" />
+      <select *ngIf="disponibilidades.length > 0; else disponibilidadTexto" [(ngModel)]="filtros.disponibilidad">
+        <option value="">Todas</option>
+        <option *ngFor="let disponibilidad of disponibilidades" [ngValue]="disponibilidad">
+          {{ disponibilidad }}
+        </option>
+      </select>
+      <ng-template #disponibilidadTexto>
+        <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Ej. Inmediata" />
+      </ng-template>
     </label>
     <label>
       Pretensión de renta

@@ -175,6 +175,16 @@
           </label>
 
           <label class="form-field">
+            Tipo de contrato
+            <select formControlName="id_tipo_contrato">
+              <option [ngValue]="null">Selecciona tipo de contrato</option>
+              <option *ngFor="let tipoContrato of tiposContratoCatalogo" [ngValue]="tipoContrato.id">
+                {{ tipoContrato.nombre }}
+              </option>
+            </select>
+          </label>
+
+          <label class="form-field">
             Estado *
             <select formControlName="id_estado_solicitud">
               <option [ngValue]="null">Selecciona estado</option>

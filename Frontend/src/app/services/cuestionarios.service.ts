@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, delay, map, of } from 'rxjs';
+import { BehaviorSubject, catchError, delay, map, of } from 'rxjs';
+import { CatalogosService } from './catalogos.service';
 
 // Modelos físicos/API esperados. Se usan como referencia para integrar contra backend/BD.
 export interface PreguntaApi {
@@ -64,7 +65,7 @@ export interface PreguntaCuestionarioCreate {
 export class CuestionariosService {
   // Temporal/mock: aún no existe router de cuestionarios registrado en backend.
   // Al integrar, consumir PreguntaApi/CuestionarioApi y mapear a PreguntaCuestionario.
-  readonly tecnologias: TecnologiaCuestionario[] = [
+  private readonly tecnologiasMock: TecnologiaCuestionario[] = [
     { id: 1, nombre: 'JAVA' },
     { id: 2, nombre: 'Python' },
     { id: 3, nombre: 'CSS' },
@@ -72,7 +73,7 @@ export class CuestionariosService {
     { id: 5, nombre: 'Javascript' },
   ];
 
-  readonly niveles: NivelCuestionario[] = [
+  private readonly nivelesMock: NivelCuestionario[] = [
     { id: 1, nombre: 'Trainee', duracionMinutos: 45 },
     { id: 2, nombre: 'Junior', duracionMinutos: 50 },
     { id: 3, nombre: 'Senior', duracionMinutos: 60 },
@@ -136,6 +137,35 @@ export class CuestionariosService {
     },
   ]);
 
+  constructor(private catalogosService: CatalogosService) {}
+
+  listarTecnologias() {
+    // Integración catálogo de habilidades -> tecnologías disponibles para crear/filtrar preguntas.
+    return this.catalogosService.listarHabilidades().pipe(
+      map((habilidades) =>
+        habilidades.map((habilidad) => ({
+          id: habilidad.hab_id,
+          nombre: habilidad.hab_nombre ?? 'Tecnología sin nombre',
+        })),
+      ),
+      catchError(() => of(this.tecnologiasMock)),
+    );
+  }
+
+  listarNiveles() {
+    // Integración catálogo de niveles de habilidad -> niveles y duración base de preguntas.
+    return this.catalogosService.listarNivelesHabilidad().pipe(
+      map((niveles) =>
+        niveles.map((nivel) => ({
+          id: nivel.nvhb_id,
+          nombre: nivel.nvhb_nombre ?? 'Nivel sin nombre',
+          duracionMinutos: nivel.nvhb_duracion ?? 45,
+        })),
+      ),
+      catchError(() => of(this.nivelesMock)),
+    );
+  }
+
   listar() {
     // Integración pendiente: reemplazar por GET real y mapeo preg_* -> PreguntaCuestionario.
     return this.preguntas.asObservable().pipe(delay(120));
@@ -156,11 +186,11 @@ export class CuestionariosService {
 
   contarPorTecnologia() {
     // Función de vista: resume preguntas ya mapeadas para mostrar conteos por tecnología.
-    return this.listar().pipe(
-      map((preguntas) =>
-        this.tecnologias.map((tecnologia) => ({
+    return this.listarTecnologias().pipe(
+      map((tecnologias) =>
+        tecnologias.map((tecnologia) => ({
           tecnologia,
-          cantidad: preguntas.filter((pregunta) => pregunta.tecnologiaId === tecnologia.id).length,
+          cantidad: this.preguntas.value.filter((pregunta) => pregunta.tecnologiaId === tecnologia.id).length,
         })),
       ),
     );

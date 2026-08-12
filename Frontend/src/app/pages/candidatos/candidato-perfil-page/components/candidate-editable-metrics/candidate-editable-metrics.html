@@ -11,10 +11,7 @@
   <article>
     <span>Disponibilidad</span>
     <select [(ngModel)]="candidato.disponibilidad" aria-label="Disponibilidad">
-      <option>Inmediata</option>
-      <option>15 días</option>
-      <option>30 días</option>
-      <option>A convenir</option>
+      <option *ngFor="let disponibilidad of disponibilidades">{{ disponibilidad }}</option>
     </select>
   </article>
 </div>
