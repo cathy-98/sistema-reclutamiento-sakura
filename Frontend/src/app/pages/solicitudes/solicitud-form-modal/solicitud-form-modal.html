@@ -72,15 +72,12 @@
           </div>
 
           <div class="form-field">
-            <span>Solicitante *</span>
+            <span>Solicitante</span>
             <app-compact-select
               formControlName="id_usuario_solicitante"
               placeholder="Selecciona solicitante"
               [options]="usuariosCatalogo"
             ></app-compact-select>
-            <small class="form-error" *ngIf="control('id_usuario_solicitante')?.touched && control('id_usuario_solicitante')?.hasError('required')">
-              Campo obligatorio.
-            </small>
           </div>
 
           <div class="form-field">
@@ -88,7 +85,7 @@
             <app-compact-select
               formControlName="id_usuario_responsable"
               placeholder="Sin asignar"
-              [options]="usuariosCatalogo"
+              [options]="reclutadoresCatalogo"
             ></app-compact-select>
           </div>
         </div>
@@ -180,10 +177,10 @@
           </div>
 
           <div class="form-field">
-            <span>Estado *</span>
+            <span>Estado</span>
             <app-compact-select
               formControlName="id_estado_solicitud"
-              placeholder="Selecciona estado"
+              placeholder="Pendiente al guardar"
               [options]="estadosSolicitudCatalogo"
             ></app-compact-select>
             <div class="catalog-actions" *ngIf="modo !== 'ver'">
@@ -198,9 +195,6 @@
                 <button type="button" (click)="cerrarEditorCatalogo()">Cancelar</button>
               </div>
             </div>
-            <small class="form-error" *ngIf="control('id_estado_solicitud')?.touched && control('id_estado_solicitud')?.hasError('required')">
-              Campo obligatorio.
-            </small>
           </div>
 
           <label class="form-field">

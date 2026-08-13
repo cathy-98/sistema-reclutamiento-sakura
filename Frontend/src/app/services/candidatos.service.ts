@@ -68,7 +68,7 @@ export interface CandidatoHabilidadPayload {
   providedIn: 'root',
 })
 export class CandidatosService {
-  private readonly apiUrl = '/candidatos';
+  private readonly apiUrl = '/api/candidatos';
 
   constructor(private http: HttpClient) {}
 

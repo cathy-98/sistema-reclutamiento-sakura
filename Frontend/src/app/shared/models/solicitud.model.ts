@@ -53,10 +53,9 @@ export interface SolicitudHabilidadPayload {
 
 // Payload de integración: crear solicitud usa nombres sol_* para evitar traducciones al enviar.
 export interface SolicitudCreatePayload {
-  sol_codigo: string;
   sol_titulo: string;
   sol_descripcion?: string | null;
-  sol_cantidad_vacantes?: number | null;
+  sol_cantidad_vacantes: number;
   sol_salario_min?: number | null;
   sol_salario_max?: number | null;
   sol_fecha_inicio_busqueda?: string | null;
@@ -67,10 +66,8 @@ export interface SolicitudCreatePayload {
   sol_cargo_id?: number | null;
   sol_prioridad_id?: number | null;
   sol_cliente_id: number;
-  sol_usuario_creador_id: number;
   sol_usuario_asignado_id?: number | null;
   sol_modalidad_id?: number | null;
-  sol_estado_solicitud_id?: number | null;
   sol_tipo_contrato_id?: number | null;
   habilidades?: SolicitudHabilidadPayload[];
 }
@@ -92,7 +89,6 @@ export interface SolicitudUpdatePayload {
   sol_cliente_id?: number | null;
   sol_usuario_asignado_id?: number | null;
   sol_modalidad_id?: number | null;
-  sol_estado_solicitud_id?: number | null;
   sol_tipo_contrato_id?: number | null;
 }
 

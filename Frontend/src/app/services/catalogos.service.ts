@@ -208,8 +208,8 @@ export interface UsuarioCatalogoApi {
   providedIn: 'root',
 })
 export class CatalogosService {
-  private readonly apiUrl = '/catalogos';
-  private readonly usuariosApiUrl = '/usuarios';
+  private readonly apiUrl = '/api/catalogos';
+  private readonly usuariosApiUrl = '/api/usuarios';
 
   constructor(private http: HttpClient) {}
 

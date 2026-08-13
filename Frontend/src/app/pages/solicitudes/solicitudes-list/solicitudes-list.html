@@ -13,7 +13,7 @@
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar solicitudes."
-    quickSearchPlaceholder="Ej. SOL-021, Banco BICE o Frontend"
+    quickSearchPlaceholder="Ej. SOL-000001, Banco BICE o Frontend"
     [(quickSearch)]="filtros.busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
@@ -26,7 +26,7 @@
 
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.id" type="text" placeholder="Ej. SOL-021" />
+      <input [(ngModel)]="filtros.id" type="text" placeholder="Ej. SOL-000001" />
     </label>
 
     <label>

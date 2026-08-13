@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, forkJoin, map, of, timeout } from 'rxjs';
+import { map, timeout } from 'rxjs';
 import { CatalogosService, UsuarioCatalogoApi } from './catalogos.service';
+import { ClienteApi, ClientesService } from './clientes.service';
 import {
   EstadoSolicitud,
   PrioridadSolicitud,
@@ -17,52 +18,18 @@ import { mapearSolicitudResumen } from '../shared/mappers/solicitud.mapper';
   providedIn: 'root',
 })
 export class SolicitudesService {
-  private readonly apiUrl = '/solicitudes';
+  private readonly apiUrl = '/api/solicitudes';
 
   constructor(
     private http: HttpClient,
     private catalogosService: CatalogosService,
+    private clientesService: ClientesService,
   ) {}
 
   listar() {
-    // Integración: se consultan solicitudes y catálogos con nomenclatura backend/BD.
-    // El mapeo a SolicitudResumen ocurre al final para alimentar la tabla del front.
-    return forkJoin({
-      solicitudes: this.http.get<SolicitudApi[]>(`${this.apiUrl}/`),
-      cargos: this.catalogosService.listarCargos().pipe(
-        timeout(4000),
-        catchError(() => of([])),
-      ),
-      usuarios: this.catalogosService.listarUsuarios().pipe(
-        timeout(4000),
-        catchError(() => of([])),
-      ),
-      prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(
-        timeout(4000),
-        catchError(() => of([])),
-      ),
-      estados: this.catalogosService.listarEstadosSolicitud().pipe(
-        timeout(4000),
-        catchError(() => of([])),
-      ),
-    }).pipe(
-      map(({ solicitudes, cargos, usuarios, prioridades, estados }) => {
-        const cargosPorId = new Map(cargos.map((cargo) => [cargo.crgo_id, cargo.crgo_nombre ?? 'Cargo sin nombre']));
-        const usuariosPorId = new Map(usuarios.map((usuario) => [usuario.usr_id, this.nombreUsuario(usuario)]));
-        const prioridadesPorId = new Map(
-          prioridades.map((prioridad) => [prioridad.prsol_id, prioridad.prsol_nombre ?? 'Sin prioridad']),
-        );
-        const estadosPorId = new Map(estados.map((estado) => [estado.essl_id, estado.essl_nombre ?? 'Sin estado']));
-
-        return solicitudes.map((solicitud) =>
-          mapearSolicitudResumen(solicitud, {
-            cargosPorId,
-            usuariosPorId,
-            prioridadesPorId,
-            estadosPorId,
-          }),
-        );
-      }),
+    return this.http.get<SolicitudApi[]>(`${this.apiUrl}/`).pipe(
+      timeout(3000),
+      map((solicitudes) => this.mapearSolicitudes(solicitudes)),
     );
   }
 
@@ -100,5 +67,43 @@ export class SolicitudesService {
     return [usuario.usr_nombres, usuario.usr_apellido_paterno, usuario.usr_apellido_materno]
       .filter(Boolean)
       .join(' ') || usuario.usr_email;
+  }
+
+  private nombreCliente(cliente: ClienteApi, empresasPorId: Map<number, string>) {
+    const empresa = cliente.cli_empresa_id ? empresasPorId.get(cliente.cli_empresa_id) : null;
+    return empresa ? `${cliente.cli_nombre} - ${empresa}` : cliente.cli_nombre;
+  }
+
+  private mapearSolicitudes(
+    solicitudes: SolicitudApi[],
+    catalogos?: {
+      clientes: ClienteApi[];
+      empresas: { emp_id: number; emp_nombre?: string | null }[];
+      cargos: { crgo_id: number; crgo_nombre?: string | null }[];
+      usuarios: UsuarioCatalogoApi[];
+      prioridades: { prsol_id: number; prsol_nombre?: string | null }[];
+      estados: { essl_id: number; essl_nombre?: string | null }[];
+    },
+  ) {
+    const empresasPorId = new Map((catalogos?.empresas ?? []).map((empresa) => [empresa.emp_id, empresa.emp_nombre ?? 'Empresa sin nombre']));
+    const clientesPorId = new Map(
+      (catalogos?.clientes ?? []).map((cliente) => [cliente.cli_id, this.nombreCliente(cliente, empresasPorId)]),
+    );
+    const cargosPorId = new Map((catalogos?.cargos ?? []).map((cargo) => [cargo.crgo_id, cargo.crgo_nombre ?? 'Cargo sin nombre']));
+    const usuariosPorId = new Map((catalogos?.usuarios ?? []).map((usuario) => [usuario.usr_id, this.nombreUsuario(usuario)]));
+    const prioridadesPorId = new Map(
+      (catalogos?.prioridades ?? []).map((prioridad) => [prioridad.prsol_id, prioridad.prsol_nombre ?? 'Sin prioridad']),
+    );
+    const estadosPorId = new Map((catalogos?.estados ?? []).map((estado) => [estado.essl_id, estado.essl_nombre ?? 'Sin estado']));
+
+    return solicitudes.map((solicitud) =>
+      mapearSolicitudResumen(solicitud, {
+        cargosPorId,
+        clientesPorId,
+        usuariosPorId,
+        prioridadesPorId,
+        estadosPorId,
+      }),
+    );
   }
 }

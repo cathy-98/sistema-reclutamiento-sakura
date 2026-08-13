@@ -23,6 +23,7 @@ import {
   TipoContratoCatalogoApi,
   UsuarioCatalogoApi,
 } from '../../../services/catalogos.service';
+import { ClienteApi, ClientesService, EmpresaApi } from '../../../services/clientes.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
@@ -101,8 +102,8 @@ export class SolicitudFormModal implements OnInit {
   ];
 
   camposPorPaso: Record<string, string[]> = {
-    general: ['titulo', 'id_cargo', 'id_cliente', 'id_usuario_solicitante'],
-    condiciones: ['id_prioridad', 'cantidad_vacantes', 'id_modalidad', 'id_estado_solicitud'],
+    general: ['titulo', 'id_cargo', 'id_cliente'],
+    condiciones: ['id_prioridad', 'cantidad_vacantes', 'id_modalidad'],
     cronograma: [],
     descripcion: [],
     habilidades: [],
@@ -111,6 +112,7 @@ export class SolicitudFormModal implements OnInit {
   cargosCatalogo: CatalogoOpcion[] = [];
   clientesCatalogo: CatalogoOpcion[] = [];
   usuariosCatalogo: CatalogoOpcion[] = [];
+  reclutadoresCatalogo: CatalogoOpcion[] = [];
   prioridadesCatalogo: CatalogoOpcion[] = [];
   estadosSolicitudCatalogo: CatalogoOpcion[] = [];
   modalidadesCatalogo: CatalogoOpcion[] = [];
@@ -126,7 +128,7 @@ export class SolicitudFormModal implements OnInit {
       id_prioridad: new UntypedFormControl(null, Validators.required),
       cantidad_vacantes: new UntypedFormControl(1, [Validators.required, Validators.min(1)]),
       id_cliente: new UntypedFormControl(null, Validators.required),
-      id_usuario_solicitante: new UntypedFormControl(null, Validators.required),
+      id_usuario_solicitante: new UntypedFormControl(null),
       id_usuario_responsable: new UntypedFormControl(null),
       id_modalidad: new UntypedFormControl(null, Validators.required),
       id_tipo_contrato: new UntypedFormControl(null),
@@ -135,7 +137,7 @@ export class SolicitudFormModal implements OnInit {
       fecha_inicio_busqueda: new UntypedFormControl(''),
       fecha_cierre_busqueda: new UntypedFormControl(''),
       fecha_inicio_cliente: new UntypedFormControl(''),
-      id_estado_solicitud: new UntypedFormControl(null, Validators.required),
+      id_estado_solicitud: new UntypedFormControl(null),
       hora_inicio_jornada: new UntypedFormControl(''),
       hora_fin_jornada: new UntypedFormControl(''),
       habilidades: new UntypedFormArray([]),
@@ -154,6 +156,7 @@ export class SolicitudFormModal implements OnInit {
   constructor(
     private solicitudesService: SolicitudesService,
     private catalogosService: CatalogosService,
+    private clientesService: ClientesService,
   ) {}
 
   ngOnInit() {
@@ -163,7 +166,6 @@ export class SolicitudFormModal implements OnInit {
     }
 
     this.cargarCatalogosFormulario();
-    this.prepararCodigoSolicitudProvisorio();
   }
 
   get habilidadesFormArray() {
@@ -209,7 +211,7 @@ export class SolicitudFormModal implements OnInit {
       return `Solicitud ${this.idSolicitud}`;
     }
 
-    return 'Completa la información para crear una solicitud.';
+    return 'El código se asignará automáticamente al guardar.';
   }
 
   validarRangoSalario(control: AbstractControl): ValidationErrors | null {
@@ -229,6 +231,8 @@ export class SolicitudFormModal implements OnInit {
 
     forkJoin({
       solicitud: this.solicitudesService.obtenerPorId(id),
+      clientes: this.clientesService.listarClientes().pipe(timeout(4000), catchError(() => of([]))),
+      empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError(() => of([]))),
       cargos: this.catalogosService.listarCargos().pipe(timeout(4000), catchError(() => of([]))),
       usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
       prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(4000), catchError(() => of([]))),
@@ -242,6 +246,8 @@ export class SolicitudFormModal implements OnInit {
       .subscribe({
         next: ({
           solicitud,
+          clientes,
+          empresas,
           cargos,
           usuarios,
           prioridades,
@@ -251,7 +257,18 @@ export class SolicitudFormModal implements OnInit {
           habilidades,
           nivelesHabilidad,
         }) => {
-          this.aplicarCatalogos({ cargos, usuarios, prioridades, estados, modalidades, tiposContrato, habilidades, nivelesHabilidad });
+          this.aplicarCatalogos({
+            clientes,
+            empresas,
+            cargos,
+            usuarios,
+            prioridades,
+            estados,
+            modalidades,
+            tiposContrato,
+            habilidades,
+            nivelesHabilidad,
+          });
           this.aplicarSolicitudDetalle(solicitud);
           this.cargandoDetalle = false;
           this.aplicarModoFormulario();
@@ -272,6 +289,8 @@ export class SolicitudFormModal implements OnInit {
     this.cargandoDetalle = true;
 
     forkJoin({
+      clientes: this.clientesService.listarClientes().pipe(timeout(4000), catchError(() => of([]))),
+      empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError(() => of([]))),
       cargos: this.catalogosService.listarCargos().pipe(timeout(4000), catchError(() => of([]))),
       usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
       prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(4000), catchError(() => of([]))),
@@ -282,8 +301,10 @@ export class SolicitudFormModal implements OnInit {
       nivelesHabilidad: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
     })
       .pipe(take(1))
-      .subscribe(({ cargos, usuarios, prioridades, estados, modalidades, tiposContrato, habilidades, nivelesHabilidad }) => {
+      .subscribe(({ clientes, empresas, cargos, usuarios, prioridades, estados, modalidades, tiposContrato, habilidades, nivelesHabilidad }) => {
         this.aplicarCatalogos({
+          clientes,
+          empresas,
           cargos,
           usuarios,
           prioridades,
@@ -502,7 +523,6 @@ export class SolicitudFormModal implements OnInit {
 
   private aplicarSolicitudDetalle(solicitud: SolicitudApi) {
     this.codigoSolicitud = solicitud.sol_codigo ?? null;
-    this.registrarClientePendiente(solicitud.sol_cliente_id);
 
     this.formularioSolicitud.patchValue({
       titulo: solicitud.sol_titulo ?? '',
@@ -541,6 +561,8 @@ export class SolicitudFormModal implements OnInit {
   }
 
   private aplicarCatalogos(catalogos: {
+    clientes: ClienteApi[];
+    empresas: EmpresaApi[];
     cargos: CargoCatalogoApi[];
     usuarios: UsuarioCatalogoApi[];
     prioridades: PrioridadSolicitudCatalogoApi[];
@@ -550,6 +572,13 @@ export class SolicitudFormModal implements OnInit {
     habilidades: HabilidadCatalogoApi[];
     nivelesHabilidad: NivelHabilidadCatalogoApi[];
   }) {
+    const empresasPorId = new Map(
+      catalogos.empresas.map((empresa) => [empresa.emp_id, empresa.emp_nombre ?? 'Empresa sin nombre']),
+    );
+    this.clientesCatalogo = catalogos.clientes.map((cliente) => ({
+      id: cliente.cli_id,
+      nombre: this.nombreCliente(cliente, empresasPorId),
+    }));
     // Integración catálogo de cargos -> selector "Cargo solicitado" del formulario de solicitudes.
     this.cargosCatalogo = catalogos.cargos.map((cargo) => ({
       id: cargo.crgo_id,
@@ -560,6 +589,12 @@ export class SolicitudFormModal implements OnInit {
       id: usuario.usr_id,
       nombre: this.nombreUsuario(usuario),
     }));
+    this.reclutadoresCatalogo = catalogos.usuarios
+      .filter((usuario) => this.esReclutadorActivo(usuario))
+      .map((usuario) => ({
+        id: usuario.usr_id,
+        nombre: this.nombreUsuario(usuario),
+      }));
     // Integración catálogo de prioridades -> selector "Prioridad".
     this.prioridadesCatalogo = catalogos.prioridades.map((prioridad) => ({
       id: prioridad.prsol_id,
@@ -592,21 +627,21 @@ export class SolicitudFormModal implements OnInit {
     }));
   }
 
-  private registrarClientePendiente(clienteId: number | null | undefined) {
-    this.clientesCatalogo = [];
-
-    if (clienteId == null) {
-      return;
-    }
-
-    // Pendiente: no existe endpoint de clientes para resolver cli_nombre.
-    this.clientesCatalogo = [{ id: clienteId, nombre: 'Cliente pendiente' }];
-  }
-
   private nombreUsuario(usuario: UsuarioCatalogoApi) {
     return [usuario.usr_nombres, usuario.usr_apellido_paterno, usuario.usr_apellido_materno]
       .filter(Boolean)
       .join(' ') || usuario.usr_email;
+  }
+
+  private nombreCliente(cliente: ClienteApi, empresasPorId: Map<number, string>) {
+    const empresa = cliente.cli_empresa_id ? empresasPorId.get(cliente.cli_empresa_id) : null;
+    return empresa ? `${cliente.cli_nombre} - ${empresa}` : cliente.cli_nombre;
+  }
+
+  private esReclutadorActivo(usuario: UsuarioCatalogoApi) {
+    const rol = usuario.rol?.rol_nombre ?? '';
+    const estado = usuario.estado?.esusr_nombre ?? '';
+    return rol.toLowerCase() === 'reclutador' && estado.toLowerCase() === 'activo';
   }
 
   private fechaParaInput(fecha?: string | null) {
@@ -645,16 +680,6 @@ export class SolicitudFormModal implements OnInit {
   }
 
   private creacionBloqueadaPorDependencias() {
-    if (!this.codigoSolicitud?.trim()) {
-      this.alerta = {
-        tipo: 'warning',
-        variante: 'soft',
-        mensaje: 'No se pudo preparar el código de solicitud. Intenta nuevamente.',
-      };
-      this.tabFormulario = 'general';
-      return true;
-    }
-
     if (this.clientesCatalogo.length === 0) {
       this.alerta = {
         tipo: 'warning',
@@ -695,19 +720,8 @@ export class SolicitudFormModal implements OnInit {
 
   private crearPayloadCreacion(): SolicitudCreatePayload | null {
     const valor = this.formularioSolicitud.getRawValue();
-    const solCodigo = this.codigoSolicitud?.trim();
     const clienteId = this.numeroONull(valor.id_cliente);
-    const creadorId = this.numeroONull(valor.id_usuario_solicitante);
-
-    if (!solCodigo) {
-      this.alerta = {
-        tipo: 'warning',
-        variante: 'soft',
-        mensaje: 'No se pudo preparar el código de solicitud. Intenta nuevamente.',
-      };
-      this.tabFormulario = 'general';
-      return null;
-    }
+    const { sol_cantidad_vacantes: _vacantes, ...payloadBase } = this.crearPayloadBase();
 
     if (clienteId == null) {
       this.alerta = {
@@ -719,21 +733,10 @@ export class SolicitudFormModal implements OnInit {
       return null;
     }
 
-    if (creadorId == null) {
-      this.alerta = {
-        tipo: 'warning',
-        variante: 'soft',
-        mensaje: 'Selecciona un solicitante válido.',
-      };
-      this.tabFormulario = 'general';
-      return null;
-    }
-
     return {
-      ...this.crearPayloadBase(),
-      sol_codigo: solCodigo,
+      ...payloadBase,
+      sol_cantidad_vacantes: this.numeroOValor(valor.cantidad_vacantes, 1),
       sol_cliente_id: clienteId,
-      sol_usuario_creador_id: creadorId,
       habilidades: this.crearPayloadHabilidades(),
     };
   }
@@ -745,27 +748,6 @@ export class SolicitudFormModal implements OnInit {
       ...this.crearPayloadBase(),
       sol_cliente_id: this.numeroONull(valor.id_cliente),
     };
-  }
-
-  private prepararCodigoSolicitudProvisorio() {
-    // Generación provisional frontend: backend aún exige sol_codigo en el POST.
-    // Cuando backend genere el correlativo con transacción, este cálculo debe quedar solo como vista previa.
-    this.solicitudesService
-      .listar()
-      .pipe(take(1), catchError(() => of([])))
-      .subscribe((solicitudes) => {
-        this.codigoSolicitud = this.generarSiguienteCodigoSolicitud(solicitudes);
-      });
-  }
-
-  private generarSiguienteCodigoSolicitud(solicitudes: Array<{ codigo: string }>) {
-    const ultimoNumero = solicitudes.reduce((maximo, solicitud) => {
-      const coincidencia = /^SOL-(\d{3})$/.exec(solicitud.codigo);
-      const numero = coincidencia ? Number(coincidencia[1]) : 0;
-      return Math.max(maximo, numero);
-    }, 0);
-
-    return `SOL-${String(ultimoNumero + 1).padStart(3, '0')}`;
   }
 
   private crearPayloadBase() {
@@ -786,7 +768,6 @@ export class SolicitudFormModal implements OnInit {
       sol_prioridad_id: this.numeroONull(valor.id_prioridad),
       sol_usuario_asignado_id: this.numeroONull(valor.id_usuario_responsable),
       sol_modalidad_id: this.numeroONull(valor.id_modalidad),
-      sol_estado_solicitud_id: this.numeroONull(valor.id_estado_solicitud),
       sol_tipo_contrato_id: this.numeroONull(valor.id_tipo_contrato),
     };
   }
@@ -848,6 +829,10 @@ export class SolicitudFormModal implements OnInit {
 
     const numero = Number(valor);
     return Number.isNaN(numero) ? null : numero;
+  }
+
+  private numeroOValor(valor: unknown, fallback: number) {
+    return this.numeroONull(valor) ?? fallback;
   }
 
   private textoONull(valor: unknown) {

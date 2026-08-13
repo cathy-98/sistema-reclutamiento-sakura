@@ -7,6 +7,7 @@ import {
 
 export interface SolicitudResumenCatalogos {
   cargosPorId: Map<number, string>;
+  clientesPorId: Map<number, string>;
   usuariosPorId: Map<number, string>;
   prioridadesPorId: Map<number, string>;
   estadosPorId: Map<number, string>;
@@ -31,9 +32,9 @@ export function mapearSolicitudResumen(
 ): SolicitudResumen {
   return {
     id: String(solicitud.sol_id),
-    codigo: solicitud.sol_codigo || `Solicitud ${solicitud.sol_id}`,
+    codigo: solicitud.sol_codigo || `SOL-${String(solicitud.sol_id).padStart(6, '0')}`,
     nombre: solicitud.sol_titulo || 'Sin nombre',
-    cliente: 'Cliente pendiente',
+    cliente: obtenerNombre(catalogos.clientesPorId, solicitud.sol_cliente_id, 'Cliente pendiente'),
     cargo: obtenerNombre(catalogos.cargosPorId, solicitud.sol_cargo_id, 'Cargo pendiente'),
     vacantes: solicitud.sol_cantidad_vacantes ?? 0,
     responsable: obtenerNombre(catalogos.usuariosPorId, solicitud.sol_usuario_asignado_id, 'Sin asignar'),

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
@@ -20,6 +20,8 @@ import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal';
+
+const SOLICITUDES_LOAD_TIMEOUT_MS = 4000;
 
 interface FiltrosSolicitudes {
   busquedaRapida: string;
@@ -131,6 +133,7 @@ export class SolicitudesList implements OnInit {
   constructor(
     private authService: AuthService,
     private solicitudesService: SolicitudesService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -218,39 +221,38 @@ export class SolicitudesList implements OnInit {
     this.cargando = true;
     this.errorCarga = '';
     this.alerta = null;
+    this.cdr.detectChanges();
     this.limpiarTimeoutCarga();
-    this.cargaTimeoutId = setTimeout(() => {
-      if (!this.cargando) {
-        return;
-      }
 
+    this.cargaTimeoutId = window.setTimeout(() => {
       this.cargando = false;
       this.solicitudes = [];
-      this.errorCarga = 'El servidor tardó demasiado en responder. Intenta recargar el listado.';
-    }, 10000);
+      this.errorCarga = 'El listado superó 4 segundos de espera. Reintenta la carga.';
+      this.cdr.detectChanges();
+    }, SOLICITUDES_LOAD_TIMEOUT_MS);
 
     this.solicitudesService
       .listar()
       .pipe(
-        timeout(10000),
+        timeout(SOLICITUDES_LOAD_TIMEOUT_MS),
         take(1),
         finalize(() => {
-          this.cargando = false;
           this.limpiarTimeoutCarga();
         }),
       )
       .subscribe({
         next: (solicitudes) => {
+          this.cargando = false;
           this.solicitudes = solicitudes;
           this.paginaActual = 1;
           this.errorCarga = '';
+          this.cdr.detectChanges();
         },
         error: (error) => {
+          this.cargando = false;
           this.solicitudes = [];
-          this.errorCarga =
-            error.name === 'TimeoutError'
-              ? 'El servidor tardó demasiado en responder. Intenta recargar el listado.'
-              : obtenerMensajeError(error, 'No se pudieron cargar las solicitudes.');
+          this.errorCarga = obtenerMensajeError(error, 'El listado superó 4 segundos de espera. Reintenta la carga.');
+          this.cdr.detectChanges();
         },
       });
   }
@@ -405,15 +407,6 @@ export class SolicitudesList implements OnInit {
     return solicitud.id;
   }
 
-  private limpiarTimeoutCarga() {
-    if (!this.cargaTimeoutId) {
-      return;
-    }
-
-    clearTimeout(this.cargaTimeoutId);
-    this.cargaTimeoutId = null;
-  }
-
   private filtrosIniciales(): FiltrosSolicitudes {
     return {
       busquedaRapida: '',
@@ -433,6 +426,15 @@ export class SolicitudesList implements OnInit {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private limpiarTimeoutCarga() {
+    if (!this.cargaTimeoutId) {
+      return;
+    }
+
+    window.clearTimeout(this.cargaTimeoutId);
+    this.cargaTimeoutId = null;
   }
 }
 
