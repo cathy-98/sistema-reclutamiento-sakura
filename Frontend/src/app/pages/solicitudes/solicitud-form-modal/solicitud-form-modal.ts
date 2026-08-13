@@ -60,6 +60,7 @@ interface CatalogoOpcion {
 export class SolicitudFormModal implements OnInit {
   @Input() idSolicitud: string | null = null;
   @Input() modo: 'crear' | 'ver' | 'editar' = 'crear';
+  @Input() codigoSolicitudInicial = '';
   @Input() codigoSolicitudSugerido = '';
   @Output() cerrar = new EventEmitter<void>();
   @Output() guardado = new EventEmitter<void>();
@@ -164,7 +165,7 @@ export class SolicitudFormModal implements OnInit {
       return this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? 'Estado registrado';
     }
 
-    return 'Pendiente al guardar';
+    return 'Pendiente';
   }
 
   get pasosCompletados() {
@@ -202,11 +203,45 @@ export class SolicitudFormModal implements OnInit {
   }
 
   get codigoEncabezado() {
-    return this.codigoSolicitud || this.codigoSolicitudSugerido || 'SOL-000001';
+    return this.codigoSolicitud || this.codigoSolicitudInicial || this.codigoSolicitudSugerido || 'Pendiente';
   }
 
   get etiquetaCodigoEncabezado() {
     return 'Código solicitud';
+  }
+
+  get detalleCliente() {
+    return this.detalleCatalogo('id_cliente', this.clientesCatalogo, 'Sin cliente');
+  }
+
+  get detalleCargo() {
+    return this.detalleCatalogo('id_cargo', this.cargosCatalogo, 'Sin cargo');
+  }
+
+  get detalleRangoSalario() {
+    const minimo = this.numeroONull(this.formularioSolicitud.get('salario_minimo')?.value);
+    const maximo = this.numeroONull(this.formularioSolicitud.get('salario_maximo')?.value);
+
+    if (minimo == null && maximo == null) {
+      return 'Sin rango informado';
+    }
+
+    if (minimo != null && maximo != null) {
+      return `${this.formatearMonto(minimo)} - ${this.formatearMonto(maximo)}`;
+    }
+
+    return minimo != null ? `Desde ${this.formatearMonto(minimo)}` : `Hasta ${this.formatearMonto(maximo as number)}`;
+  }
+
+  get detalleJornada() {
+    const inicio = this.detalleTexto('hora_inicio_jornada', 'Sin hora');
+    const fin = this.detalleTexto('hora_fin_jornada', 'Sin hora');
+
+    if (inicio === 'Sin hora' && fin === 'Sin hora') {
+      return 'Sin jornada informada';
+    }
+
+    return `${inicio} - ${fin}`;
   }
 
   validarRangoSalario(control: AbstractControl): ValidationErrors | null {
@@ -442,6 +477,36 @@ export class SolicitudFormModal implements OnInit {
     this.alerta = null;
   }
 
+  detalleTexto(control: string, fallback = 'Sin información') {
+    const valor = String(this.formularioSolicitud.get(control)?.value ?? '').trim();
+    return valor || fallback;
+  }
+
+  detalleNumero(control: string, fallback = 'Sin información') {
+    const valor = this.numeroONull(this.formularioSolicitud.get(control)?.value);
+    return valor == null ? fallback : String(valor);
+  }
+
+  detalleFecha(control: string) {
+    const valor = this.detalleTexto(control, '');
+
+    if (!valor) {
+      return 'Sin fecha';
+    }
+
+    const [year, month, day] = valor.split('-');
+    return year && month && day ? `${day}-${month}-${year}` : valor;
+  }
+
+  detalleCatalogo(control: string, catalogo: CatalogoOpcion[], fallback: string) {
+    const id = this.numeroONull(this.formularioSolicitud.get(control)?.value);
+    return id == null ? fallback : catalogo.find((item) => item.id === id)?.nombre ?? fallback;
+  }
+
+  detalleUsuario(control: string) {
+    return this.detalleCatalogo(control, this.usuariosCatalogo, 'Sin asignar');
+  }
+
   private aplicarSolicitudDetalle(solicitud: SolicitudApi) {
     this.codigoSolicitud = solicitud.sol_codigo ?? null;
 
@@ -571,6 +636,14 @@ export class SolicitudFormModal implements OnInit {
 
   private horaParaInput(hora?: string | null) {
     return hora ? hora.slice(0, 5) : '';
+  }
+
+  private formatearMonto(valor: number) {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      maximumFractionDigits: 0,
+    }).format(valor);
   }
 
   private crearSolicitud() {

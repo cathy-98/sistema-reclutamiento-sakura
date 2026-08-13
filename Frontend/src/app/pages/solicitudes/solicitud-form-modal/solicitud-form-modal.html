@@ -1,6 +1,6 @@
 <app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
-    <div modal-header-extra class="request-code-card">
-      <span>{{ etiquetaCodigoEncabezado }}</span>
+    <div modal-header-extra>
+      <span>{{ etiquetaCodigoEncabezado }}: </span>
       <strong>{{ codigoEncabezado }}</strong>
     </div>
 
@@ -12,7 +12,64 @@
 
       <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
-      <form class="modal-form" [formGroup]="formularioSolicitud">
+      <div class="request-detail" *ngIf="modo === 'ver' && !cargandoDetalle">
+        <section class="detail-summary">
+          <h3>{{ detalleTexto('titulo') }}</h3>
+          <p>{{ detalleCliente }}</p>
+          <div>
+            <span>{{ estadoSolicitudTexto }}</span>
+            <span>{{ detalleNumero('cantidad_vacantes') }} vacantes</span>
+            <span>{{ detalleCatalogo('id_prioridad', prioridadesCatalogo, 'Sin prioridad') }}</span>
+          </div>
+        </section>
+
+        <div class="detail-columns">
+          <section class="detail-section">
+            <h3>Solicitud</h3>
+            <dl class="detail-grid">
+              <div><dt>Cargo</dt><dd>{{ detalleCargo }}</dd></div>
+              <div><dt>Responsable</dt><dd>{{ detalleUsuario('id_usuario_responsable') }}</dd></div>
+              <div><dt>Solicitante</dt><dd>{{ detalleUsuario('id_usuario_solicitante') }}</dd></div>
+              <div><dt>Modalidad</dt><dd>{{ detalleCatalogo('id_modalidad', modalidadesCatalogo, 'Sin modalidad') }}</dd></div>
+              <div><dt>Contrato</dt><dd>{{ detalleCatalogo('id_tipo_contrato', tiposContratoCatalogo, 'Sin tipo de contrato') }}</dd></div>
+              <div><dt>Salario</dt><dd>{{ detalleRangoSalario }}</dd></div>
+            </dl>
+          </section>
+
+          <section class="detail-section">
+            <h3>Fechas y jornada</h3>
+            <dl class="detail-grid">
+              <div><dt>Inicio selección</dt><dd>{{ detalleFecha('fecha_inicio_busqueda') }}</dd></div>
+              <div><dt>Fin selección</dt><dd>{{ detalleFecha('fecha_cierre_busqueda') }}</dd></div>
+              <div><dt>Inicio empleo</dt><dd>{{ detalleFecha('fecha_inicio_cliente') }}</dd></div>
+              <div><dt>Jornada</dt><dd>{{ detalleJornada }}</dd></div>
+            </dl>
+          </section>
+        </div>
+
+        <section class="detail-section detail-section--wide">
+          <h3>Descripción</h3>
+          <p class="detail-text">{{ detalleTexto('descripcion') }}</p>
+        </section>
+
+        <section class="detail-section detail-section--wide">
+          <h3>Habilidades técnicas</h3>
+          <div class="detail-skills" *ngIf="habilidadesSolicitud.length > 0; else sinHabilidadesDetalle">
+            <article *ngFor="let habilidad of habilidadesSolicitud">
+              <strong>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</strong>
+              <span>{{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }} · {{ habilidad.anios_experiencia }} años</span>
+              <small class="skill-importance" [ngClass]="habilidadExcluyenteClase(habilidad.es_excluyente)">
+                {{ habilidad.es_excluyente ? 'Excluyente' : 'No excluyente' }}
+              </small>
+            </article>
+          </div>
+          <ng-template #sinHabilidadesDetalle>
+            <p class="detail-text">Sin habilidades registradas.</p>
+          </ng-template>
+        </section>
+      </div>
+
+      <form class="modal-form" *ngIf="modo !== 'ver'" [formGroup]="formularioSolicitud">
       <app-stepper
         [pasos]="pasosFormulario"
         [pasoActivo]="tabFormulario"
@@ -276,12 +333,14 @@
     </div>
 
     <app-form-actions modal-footer>
-      <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
+      <app-button formActionsStart [variant]="modo === 'ver' ? 'primary' : 'ghost'" type="button" (pressed)="cerrar.emit()">
+        {{ modo === 'ver' ? 'Aceptar' : 'Cancelar' }}
+      </app-button>
 
-      <app-button variant="ghost" type="button" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
+      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver'" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
         Volver
       </app-button>
-      <app-button type="button" *ngIf="!esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
-      <app-button type="button" *ngIf="esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
     </app-form-actions>
 </app-modal>

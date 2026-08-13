@@ -6,29 +6,55 @@
   padding: 24px;
 }
 
-.request-code-card {
+.request-detail {
   display: grid;
-  align-content: center;
-  min-width: 188px;
-  min-height: 46px;
-  padding: 7px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-page-bg);
-  text-align: right;
+  gap: 12px;
 }
 
-.request-code-card span {
+.detail-summary,
+.detail-section {
+  padding: 14px;
+  border: 1px solid var(--color-border);
+}
+
+.detail-summary div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-summary h3,
+.detail-section h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 20px;
+  margin: 0;
+}
+
+.detail-grid dt {
+  margin: 0 0 4px;
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
-.request-code-card strong {
-  color: var(--color-sakura);
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0;
+.detail-grid dd,
+.detail-text {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .modal-loading {
@@ -250,6 +276,8 @@ textarea::placeholder {
 }
 
 @media (max-width: 640px) {
+  .detail-columns,
+  .detail-grid,
   .skills-form-grid,
   .form-grid {
     grid-template-columns: 1fr;

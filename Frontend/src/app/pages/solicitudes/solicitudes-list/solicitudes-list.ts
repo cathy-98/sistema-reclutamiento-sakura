@@ -284,21 +284,21 @@ export class SolicitudesList implements OnInit {
     this.mostrarFormulario = true;
   }
 
-  abrirDetalleSolicitud(id: string) {
+  abrirDetalleSolicitud(id: string, codigo?: string) {
     this.solicitudSeleccionadaId = id;
-    this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaCodigo = codigo ?? null;
     this.modoFormulario = 'ver';
     this.mostrarFormulario = true;
   }
 
-  abrirEdicionSolicitud(id: string) {
+  abrirEdicionSolicitud(id: string, codigo?: string) {
     if (!this.puedeEditarSolicitud) {
       this.mostrarAlertaPermisos();
       return;
     }
 
     this.solicitudSeleccionadaId = id;
-    this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaCodigo = codigo ?? null;
     this.modoFormulario = 'editar';
     this.mostrarFormulario = true;
   }
@@ -329,12 +329,12 @@ export class SolicitudesList implements OnInit {
 
   manejarAccionTabla(evento: DataTableActionEvent<SolicitudResumen>) {
     if (evento.action === 'ver') {
-      this.abrirDetalleSolicitud(evento.row.id);
+      this.abrirDetalleSolicitud(evento.row.id, evento.row.codigo);
       return;
     }
 
     if (evento.action === 'editar') {
-      this.abrirEdicionSolicitud(evento.row.id);
+      this.abrirEdicionSolicitud(evento.row.id, evento.row.codigo);
       return;
     }
 
