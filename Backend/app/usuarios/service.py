@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -129,8 +129,23 @@ def _validate_rut_pair(rut: str | None, dv: str | None) -> None:
         raise ValidationError("usr_rut_sin_dv y usr_dv deben informarse juntos")
 
 
+
+
+def _validate_email_not_candidate(db: Session, email: str | None) -> None:
+    if not email or not inspect(db.get_bind()).has_table("tbl_candidato"):
+        return
+    from app.candidatos.models import Candidato
+    exists = db.scalar(
+        select(Candidato.cand_id)
+        .where(func.lower(Candidato.cand_email) == email.strip().lower())
+        .limit(1)
+    )
+    if exists is not None:
+        raise ConflictError("El correo pertenece a un candidato y no puede utilizarse como usuario interno")
+
 def create_usuario(db: Session, payload: schemas.UsuarioCreate) -> models.Usuario:
     data = payload.model_dump()
+    _validate_email_not_candidate(db, data.get("usr_email"))
     _validate_refs(
         db,
         rol_id=data.get("usr_rol_id"),
@@ -152,6 +167,7 @@ def replace_usuario(
     payload: schemas.UsuarioReplace,
 ) -> models.Usuario:
     data = payload.model_dump()
+    _validate_email_not_candidate(db, data.get("usr_email"))
     _validate_refs(
         db,
         rol_id=data.get("usr_rol_id"),
@@ -173,6 +189,8 @@ def update_usuario(
     data = payload.model_dump(exclude_unset=True)
     if not data:
         raise ValidationError("Debe enviar al menos un campo para actualizar")
+    if "usr_email" in data:
+        _validate_email_not_candidate(db, data.get("usr_email"))
 
     rol_id = data.get("usr_rol_id", usuario.usr_rol_id)
     estado_id = data.get("usr_estado_usuario_id", usuario.usr_estado_usuario_id)

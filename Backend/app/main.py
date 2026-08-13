@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.usuarios import router as usuarios_router
 from app.catalogos import router as catalogos_router
+from app.candidatos import router as candidatos_router                                                      
 from app.clientes import router as clientes_router                                                  
 from app.solicitudes import router as solicitudes_router
 
@@ -15,7 +16,7 @@ from app.solicitudes import router as solicitudes_router
 app = FastAPI( # Instancia de FastAPI
     title="Reclutamiento y Selección Sakura Backend API",
     description="Backend de Reclutamiento y Selección para Sakura - 2026",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 
@@ -32,6 +33,7 @@ app.add_middleware( # Añadir el middleware de CORS
     allow_credentials=True, # Permitir credenciales
     allow_methods=["*"], # Permitir todos los métodos
     allow_headers=["*"], # Permitir todos los headers
+    expose_headers=["X-Sakura-Warning"],
 )
 
 # ==========================================================
@@ -40,9 +42,9 @@ app.add_middleware( # Añadir el middleware de CORS
 # Registrar los enrutadores en la aplicación principal
 app.include_router(auth_router.router) # Registrar el enrutador de autenticación
 app.include_router(usuarios_router.router) # Registrar el enrutador de usuarios
-# 🌟 NUEVO: Fechas 20/07/2026: Registrar el enrutador de catálogos en FastAPI
 app.include_router(catalogos_router.router) # Registrar el enrutador de catálogos
 app.include_router(clientes_router.router)                                          
+app.include_router(candidatos_router.router)                                            
 app.include_router(solicitudes_router.router) # Registrar el enrutador de solicitudes
 
 

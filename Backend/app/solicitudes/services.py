@@ -5,13 +5,14 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.catalogos.models import (
     Cargo,
     EstadoSolicitud,
+    EstadoSolicitudCandidato,
     Habilidad,
     Modalidad,
     NivelHabilidad,
@@ -457,14 +458,40 @@ def change_state(
     if target_name == "en curso":
         _assert_ready_for_in_progress(db, solicitud)
 
-    # Regla Cerrado + candidato contratado queda deliberadamente pendiente hasta Módulo 3.
+    closure_warning = None
+    if target_name == "cerrado" and inspect(db.get_bind()).has_table("tbl_solicitud_candidato"):
+        contratado = db.scalar(
+            select(EstadoSolicitudCandidato).where(
+                func.lower(EstadoSolicitudCandidato.essc_nombre) == "contratado"
+            )
+        )
+        if contratado is None:
+            raise ValidationError("No existe el estado de postulación Contratado")
+        contratados = db.scalar(
+            select(func.count(models.SolicitudCandidato.slcd_id)).where(
+                models.SolicitudCandidato.slcd_solicitud_id == solicitud.sol_id,
+                models.SolicitudCandidato.slcd_estado_solicitud_candidato_id == contratado.essc_id,
+            )
+        ) or 0
+        if contratados == 0:
+            raise ConflictError(
+                "La solicitud no puede cerrarse porque no existe ningún candidato contratado. "
+                "Si el proceso finalizó sin contratación, utilice Cancelado."
+            )
+        vacantes = solicitud.sol_cantidad_vacantes or 0
+        if contratados < vacantes:
+            closure_warning = (
+                f"La solicitud fue cerrada con {contratados} de {vacantes} vacante(s) cubierta(s)."
+            )
     solicitud._audit_user_id = actor_user_id
     solicitud._audit_comment = payload.observacion or (
         f"Cambio de estado: {current.essl_nombre} -> {target.essl_nombre}"
     )
     solicitud.sol_estado_solicitud_id = target.essl_id
     _commit(db)
-    return get_solicitud(db, solicitud.sol_id)
+    result = get_solicitud(db, solicitud.sol_id)
+    result._closure_warning = closure_warning
+    return result
 
 
 def list_habilidades(db: Session, solicitud_id: int) -> list[models.SolicitudHabilidad]:
@@ -614,6 +641,6 @@ def evaluar_candidato_cumple_excluyentes(
     cumple = not faltantes
     return {
         "cumple_excluyentes": cumple,
-        "descartado_automaticamente": not cumple,
+        "descartado_automaticamente": False,
         "habilidades_faltantes": faltantes,
     }

@@ -1,0 +1,6 @@
+QA Candidato
+cv-m3-17b5f4d2@sakura.cl
++56 9 1234 5678
+Python 4 anos
+Backend QA
+Profesional con experiencia suficiente para validar la importacion automatizada de CV del modulo tres Sakura.
