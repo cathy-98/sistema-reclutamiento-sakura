@@ -204,15 +204,21 @@ class HistorialSolicitud(Base):
     usuario: Mapped["Usuario | None"] = relationship("Usuario")
 
 
-# Módulo 3: esta entidad se mantiene deliberadamente mínima por ahora.
-# Solo se corrige la FK física cand_id para no romper el mapper. Su alineación
-# completa con PostgreSQL se implementará al desarrollar el Módulo 3.
+# Módulo 3: relación física completa entre solicitud y candidato.
+                                                                                
+                                                                       
 class SolicitudCandidato(Base):
     __tablename__ = "tbl_solicitud_candidato"
 
     slcd_id = Column(Integer, primary_key=True, index=True)
-    slcd_solicitud_id = Column(Integer, ForeignKey("tbl_solicitud.sol_id"))
+                                                                           
     slcd_candidato_id = Column(Integer, ForeignKey("tbl_candidato.cand_id"))
-    slcd_pretension_renta = Column(Numeric(12, 2))
+    slcd_solicitud_id = Column(Integer, ForeignKey("tbl_solicitud.sol_id"))
+    slcd_pretension_renta = Column(Integer)
     slcd_puntaje_compatibilidad = Column(Numeric(5, 2))
-    slcd_estado_solicitud_candidato_id = Column(Integer)
+    slcd_estado_solicitud_candidato_id = Column(
+        Integer, ForeignKey("tbl_estado_solicitud_candidato.essc_id")
+    )
+    slcd_fecha_postulacion = Column(DateTime)
+    slcd_observaciones = Column(String(300))
+    slcd_motivo_rechazo_id = Column(Integer, ForeignKey("tbl_motivo_rechazo.mtrc_id"))

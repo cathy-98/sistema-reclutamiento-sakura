@@ -161,6 +161,7 @@ def actualizar_solicitud(
 def cambiar_estado_solicitud(
     solicitud_id: int,
     payload: schemas.SolicitudEstadoUpdate,
+    response: Response,                       
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(
         require_permissions("SOL_UPDATE", "SOL_DELETE", match_all=False)
@@ -168,12 +169,16 @@ def cambiar_estado_solicitud(
 ):
     _ensure_state_permission(db, payload.sol_estado_solicitud_id, current_user)
     try:
-        return services.change_state(
+        result = services.change_state(
             db,
             services.get_solicitud(db, solicitud_id),
             payload,
             actor_user_id=current_user.usr_id,
         )
+        warning = getattr(result, "_closure_warning", None)
+        if warning:
+            response.headers["X-Sakura-Warning"] = warning
+        return result                    
     except services.SolicitudModuleError as exc:
         raise _translate_error(exc) from exc
 
