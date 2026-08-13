@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import {
   AbstractControl,
-  FormsModule,
   ReactiveFormsModule,
   UntypedFormArray,
   UntypedFormControl,
@@ -13,7 +12,6 @@ import {
 import { Observable, catchError, forkJoin, of, switchMap, take, timeout } from 'rxjs';
 import {
   CargoCatalogoApi,
-  CatalogoPath,
   CatalogosService,
   EstadoSolicitudCatalogoApi,
   HabilidadCatalogoApi,
@@ -53,25 +51,9 @@ interface CatalogoOpcion {
   nombre: string;
 }
 
-type CatalogoEditable =
-  | 'cargo'
-  | 'prioridad'
-  | 'modalidad'
-  | 'tipoContrato'
-  | 'estadoSolicitud'
-  | 'habilidad'
-  | 'nivelHabilidad';
-
-interface CatalogoEditor {
-  tipo: CatalogoEditable | null;
-  nombre: string;
-  descripcion: string;
-  guardando: boolean;
-}
-
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, AlertRegion, Button, CompactSelect, FormActions, FormSection, Modal, Stepper],
+  imports: [CommonModule, ReactiveFormsModule, AlertRegion, Button, CompactSelect, FormActions, FormSection, Modal, Stepper],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })
@@ -86,12 +68,6 @@ export class SolicitudFormModal implements OnInit {
   tabFormulario = 'general';
   alerta: AlertaUi | null = null;
   codigoSolicitud: string | null = null;
-  catalogoEditor: CatalogoEditor = {
-    tipo: null,
-    nombre: '',
-    descripcion: '',
-    guardando: false,
-  };
 
   pasosFormulario = [
     { clave: 'general', numero: 1, titulo: 'Información general' },
@@ -178,6 +154,16 @@ export class SolicitudFormModal implements OnInit {
 
   get descripcionLength() {
     return String(this.formularioSolicitud.get('descripcion')?.value ?? '').length;
+  }
+
+  get estadoSolicitudTexto() {
+    const estadoId = this.numeroONull(this.formularioSolicitud.get('id_estado_solicitud')?.value);
+
+    if (estadoId != null) {
+      return this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? 'Estado registrado';
+    }
+
+    return 'Pendiente al guardar';
   }
 
   get pasosCompletados() {
@@ -416,80 +402,6 @@ export class SolicitudFormModal implements OnInit {
     }
 
     return pasoValido;
-  }
-
-  abrirCrearCatalogo(tipo: CatalogoEditable) {
-    if (this.modo === 'ver') {
-      return;
-    }
-
-    this.catalogoEditor = {
-      tipo,
-      nombre: '',
-      descripcion: '',
-      guardando: false,
-    };
-  }
-
-  guardarCatalogo() {
-    const editor = this.catalogoEditor;
-    const nombre = editor.nombre.trim();
-
-    if (!editor.tipo || !nombre || editor.guardando) {
-      return;
-    }
-
-    const tipo = editor.tipo;
-    editor.guardando = true;
-    const payload = this.crearPayloadCatalogo(tipo, nombre, editor.descripcion);
-    const request = this.catalogosService.crearCatalogo<Record<string, unknown>, Record<string, unknown>>(this.pathCatalogo(tipo), payload);
-
-    request.pipe(take(1)).subscribe({
-      next: (respuesta) => {
-        const nuevoId = this.idRespuestaCatalogo(tipo, respuesta);
-        this.alerta = {
-          tipo: 'success',
-          variante: 'soft',
-          mensaje: 'Opción creada correctamente.',
-        };
-        this.cerrarEditorCatalogo();
-        this.cargarCatalogosFormulario();
-
-        // Si el catálogo alimenta un campo del formulario, dejamos seleccionado el registro recién guardado.
-        if (nuevoId) {
-          this.controlPorCatalogo(tipo)?.setValue(nuevoId);
-        }
-      },
-      error: (error) => {
-        editor.guardando = false;
-        this.alerta = {
-          tipo: 'danger',
-          variante: 'soft',
-          mensaje: obtenerMensajeError(error, 'No se pudo guardar la opción.'),
-        };
-      },
-    });
-  }
-
-  cerrarEditorCatalogo() {
-    this.catalogoEditor = {
-      tipo: null,
-      nombre: '',
-      descripcion: '',
-      guardando: false,
-    };
-  }
-
-  editorActivo(tipo: CatalogoEditable) {
-    return this.catalogoEditor.tipo === tipo;
-  }
-
-  tituloEditorCatalogo() {
-    if (!this.catalogoEditor.tipo) {
-      return '';
-    }
-
-    return `Crear ${this.nombreCatalogo(this.catalogoEditor.tipo)}`;
   }
 
   agregarHabilidad() {
@@ -864,86 +776,6 @@ export class SolicitudFormModal implements OnInit {
 
   habilidadExcluyenteClase(esExcluyente: boolean) {
     return esExcluyente ? 'excluyente' : 'no-excluyente';
-  }
-
-  private controlPorCatalogo(tipo: CatalogoEditable) {
-    const controles: Partial<Record<CatalogoEditable, string>> = {
-      cargo: 'id_cargo',
-      prioridad: 'id_prioridad',
-      modalidad: 'id_modalidad',
-      tipoContrato: 'id_tipo_contrato',
-      estadoSolicitud: 'id_estado_solicitud',
-      habilidad: 'id_habilidad',
-      nivelHabilidad: 'id_nivel_habilidad',
-    };
-
-    const nombreControl = controles[tipo];
-    return nombreControl ? this.formularioSolicitud.get(nombreControl) ?? this.nuevaHabilidad.get(nombreControl) : null;
-  }
-
-  private pathCatalogo(tipo: CatalogoEditable): CatalogoPath {
-    const paths: Record<CatalogoEditable, CatalogoPath> = {
-      cargo: 'cargos',
-      prioridad: 'prioridades-solicitud',
-      modalidad: 'modalidades',
-      tipoContrato: 'tipos-contrato',
-      estadoSolicitud: 'estados-solicitud',
-      habilidad: 'habilidades',
-      nivelHabilidad: 'niveles-habilidad',
-    };
-
-    return paths[tipo];
-  }
-
-  private nombreCatalogo(tipo: CatalogoEditable) {
-    const nombres: Record<CatalogoEditable, string> = {
-      cargo: 'cargo',
-      prioridad: 'prioridad',
-      modalidad: 'modalidad',
-      tipoContrato: 'tipo de contrato',
-      estadoSolicitud: 'estado',
-      habilidad: 'habilidad',
-      nivelHabilidad: 'nivel técnico',
-    };
-
-    return nombres[tipo];
-  }
-
-  private crearPayloadCatalogo(tipo: CatalogoEditable, nombre: string, descripcion: string) {
-    const detalle = this.textoONull(descripcion);
-
-    // Cada catálogo usa la nomenclatura física expuesta por su schema del backend.
-    switch (tipo) {
-      case 'cargo':
-        return { crgo_nombre: nombre, crgo_descripcion: detalle };
-      case 'prioridad':
-        return { prsol_nombre: nombre, prsol_descripcion: detalle };
-      case 'modalidad':
-        return { mdld_nombre: nombre, mdld_descripcion: detalle };
-      case 'tipoContrato':
-        return { tpct_nombre: nombre, tpct_descripcion: detalle };
-      case 'estadoSolicitud':
-        return { essl_nombre: nombre, essl_descripcion: detalle };
-      case 'habilidad':
-        return { hab_nombre: nombre, hab_descripcion: detalle };
-      case 'nivelHabilidad':
-        return { nvhb_nombre: nombre, nvhb_descripcion: detalle };
-    }
-  }
-
-  private idRespuestaCatalogo(tipo: CatalogoEditable, respuesta: Record<string, unknown>) {
-    const ids: Record<CatalogoEditable, string> = {
-      cargo: 'crgo_id',
-      prioridad: 'prsol_id',
-      modalidad: 'mdld_id',
-      tipoContrato: 'tpct_id',
-      estadoSolicitud: 'essl_id',
-      habilidad: 'hab_id',
-      nivelHabilidad: 'nvhb_id',
-    };
-
-    const id = Number(respuesta[ids[tipo]]);
-    return Number.isNaN(id) ? null : id;
   }
 
   private validarHabilidadesSolicitud() {

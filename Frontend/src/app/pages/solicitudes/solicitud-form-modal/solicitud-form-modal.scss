@@ -95,56 +95,6 @@ textarea {
   resize: vertical;
 }
 
-.catalog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 28px;
-}
-
-.catalog-actions button,
-.catalog-editor button {
-  min-height: 26px;
-  padding: 0 9px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-white);
-  color: var(--color-text-soft);
-  cursor: pointer;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.catalog-actions button:hover,
-.catalog-editor button:hover {
-  border-color: var(--color-sakura);
-  color: var(--color-sakura);
-}
-
-.catalog-editor {
-  display: grid;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-page-bg);
-}
-
-.catalog-editor strong {
-  color: var(--color-text);
-  font-size: 12px;
-}
-
-.catalog-editor div {
-  display: flex;
-  gap: 8px;
-}
-
-.catalog-editor--full {
-  margin-top: 14px;
-}
-
 input::placeholder,
 textarea::placeholder {
   color: var(--color-input-placeholder);
