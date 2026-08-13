@@ -17,7 +17,7 @@ import { mapearSolicitudResumen } from '../shared/mappers/solicitud.mapper';
   providedIn: 'root',
 })
 export class SolicitudesService {
-  private readonly apiUrl = 'http://localhost:8000/solicitudes';
+  private readonly apiUrl = '/solicitudes';
 
   constructor(
     private http: HttpClient,
@@ -83,7 +83,7 @@ export class SolicitudesService {
 
   cambiarEstado(id: string, estado: EstadoSolicitud, observacion: string) {
     return this.http.patch<any>(`${this.apiUrl}/${id}/estado`, {
-      sol_estado_solicitud_id: estado === 'Cancelada' ? 4 : 1,
+      sol_estado_solicitud_id: estado === 'Cancelado' ? 4 : 1,
       observacion,
     });
   }

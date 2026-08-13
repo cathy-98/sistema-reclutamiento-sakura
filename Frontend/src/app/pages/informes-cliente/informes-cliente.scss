@@ -1,0 +1,31 @@
+.informes-tabs {
+  width: min(100%, 1180px);
+  margin: -8px auto 12px;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+:host ::ng-deep .informes-tabs .tabs {
+  gap: 0;
+  overflow-x: hidden;
+  padding: 0;
+}
+
+:host ::ng-deep .informes-tabs button {
+  flex: 1 1 0;
+  min-width: 0;
+  border-width: 0 0 2px;
+  border-radius: 0;
+  background: transparent;
+}
+
+:host ::ng-deep .informes-tabs button.is-active {
+  border-color: var(--color-sakura);
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .informes-tabs {
+    margin-inline: 12px;
+    width: auto;
+  }
+}

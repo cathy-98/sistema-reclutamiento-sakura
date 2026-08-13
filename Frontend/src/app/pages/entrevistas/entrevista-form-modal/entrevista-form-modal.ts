@@ -10,6 +10,8 @@ import { IconButton } from '../../../shared/components/icon-button/icon-button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { Stepper } from '../../../shared/components/stepper/stepper';
 import { EntrevistaPayload, TipoEntrevista } from '../../../services/entrevistas.service';
+import { CatalogosService, UsuarioCatalogoApi } from '../../../services/catalogos.service';
+import { catchError, forkJoin, of, take, timeout } from 'rxjs';
 
 interface IntegranteEntrevista {
   id: string;
@@ -39,8 +41,7 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
   @Output() candidatosChange = new EventEmitter<EntrevistaCandidatoSeleccionado[]>();
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
 
-  readonly tipos: TipoEntrevista[] = ['Reclutamiento', 'Técnica', 'Operacional'];
-  readonly modalidades: EntrevistaPayload['modalidad'][] = ['Online', 'Presencial', 'Híbrida'];
+  tipos: TipoEntrevista[] = ['RRHH', 'Tecnica', 'Cliente', 'Psicolaboral', 'Gerencial', 'Ingles'];
   readonly duraciones = ['30 min', '45 min', '60 min', '90 min'];
   integrantesSeleccionados = new Set(['macarena-lopez', 'felipe-valdes']);
   tabFormulario = 'datos';
@@ -54,7 +55,7 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   camposPorPaso: Record<string, string[]> = {
     datos: ['idSolicitud', 'candidato', 'cargo'],
-    agenda: ['tipo', 'fecha', 'horaInicio', 'horaFin', 'modalidad'],
+    agenda: ['tipo', 'fecha', 'horaInicio', 'horaFin'],
     integrantes: ['entrevistador'],
     detalle: ['asunto'],
   };
@@ -87,13 +88,15 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     horaInicio: new UntypedFormControl('', Validators.required),
     horaFin: new UntypedFormControl('', Validators.required),
     duracion: new UntypedFormControl('45 min', Validators.required),
-    modalidad: new UntypedFormControl('Online', Validators.required),
     entrevistador: new UntypedFormControl('', Validators.required),
     linkReunion: new UntypedFormControl(''),
     observacion: new UntypedFormControl(''),
   });
 
+  constructor(private catalogosService: CatalogosService) {}
+
   ngOnInit() {
+    this.cargarCatalogosEntrevista();
     this.aplicarDatosIniciales();
   }
 
@@ -214,6 +217,30 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     this.formulario.get('tipo')?.markAsTouched();
   }
 
+  cargarCatalogosEntrevista() {
+    // Integración de catálogos para agenda de entrevistas:
+    // - tipos-entrevista alimenta las opciones "Tipo de entrevista".
+    // - usuarios alimenta la tabla de integrantes/entrevistadores.
+    // Nota BD: tbl_cita_entrevista no tiene columna de modalidad; por eso no se carga aquí.
+    forkJoin({
+      tipos: this.catalogosService.listarTiposEntrevista().pipe(timeout(4000), catchError(() => of([]))),
+      usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe(({ tipos, usuarios }) => {
+        const tiposCatalogo = tipos.map((tipo) => tipo.tpet_nombre).filter((nombre): nombre is string => Boolean(nombre));
+
+        if (tiposCatalogo.length > 0) {
+          this.tipos = tiposCatalogo;
+        }
+
+        if (usuarios.length > 0) {
+          this.integrantes = usuarios.map((usuario) => this.mapearUsuarioAIntegrante(usuario));
+          this.integrantesSeleccionados = new Set(this.integrantes.slice(0, 2).map((integrante) => integrante.id));
+        }
+      });
+  }
+
   agregarIntegrante() {
     const entrevistador = String(this.formulario.get('entrevistador')?.value ?? '').trim();
 
@@ -237,6 +264,20 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   obtenerIdIntegrante(integrante: IntegranteEntrevista) {
     return integrante.id;
+  }
+
+  private mapearUsuarioAIntegrante(usuario: UsuarioCatalogoApi): IntegranteEntrevista {
+    // Mapeo catálogo usuarios -> tabla "Integrantes": muestra nombre completo y rol del usuario.
+    const nombre = [usuario.usr_nombres, usuario.usr_apellido_paterno, usuario.usr_apellido_materno]
+      .filter(Boolean)
+      .join(' ') || usuario.usr_email;
+
+    return {
+      id: String(usuario.usr_id),
+      nombre,
+      rol: usuario.rol?.rol_nombre ?? 'Usuario',
+      fechaAgendamiento: 'Sin fecha',
+    };
   }
 
   actualizarSeleccionIntegrantes(ids: Set<string>) {

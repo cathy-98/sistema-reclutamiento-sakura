@@ -195,12 +195,6 @@
           </select>
         </app-form-field>
 
-        <app-form-field label="Modalidad" [required]="true">
-          <select formControlName="modalidad">
-            <option *ngFor="let modalidad of modalidades">{{ modalidad }}</option>
-          </select>
-        </app-form-field>
-
         <app-form-field label="Link reunión">
           <input type="url" formControlName="linkReunion" placeholder="https://..." />
         </app-form-field>

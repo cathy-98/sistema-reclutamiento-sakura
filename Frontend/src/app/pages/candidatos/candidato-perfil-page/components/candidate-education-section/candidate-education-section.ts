@@ -10,5 +10,4 @@ import { EstudioPerfil } from '../../candidato-perfil.models';
 })
 export class CandidateEducationSection {
   @Input() estudios: EstudioPerfil[] = [];
-  @Input() idiomas: string[] = [];
 }

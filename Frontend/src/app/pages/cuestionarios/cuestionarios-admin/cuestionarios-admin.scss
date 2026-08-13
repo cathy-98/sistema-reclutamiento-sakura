@@ -166,6 +166,27 @@ legend {
   margin-top: 22px;
 }
 
+.duration-summary {
+  align-self: end;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.duration-summary * {
+  display: block;
+}
+
+.duration-summary strong {
+  margin-top: 2px;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
 fieldset {
   margin: 0;
   padding: 0;

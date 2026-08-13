@@ -1,20 +1,21 @@
-<div class="hero-summary" aria-label="Datos clave del candidato">
-  <article>
-    <span>Match</span>
+<section class="hero-summary" aria-labelledby="candidate-metrics-title">
+  <h2 id="candidate-metrics-title" class="sr-only">Datos clave del candidato</h2>
+
+  <article class="metric-item" aria-labelledby="candidate-match-title">
+    <h3 id="candidate-match-title" class="metric-title">Match</h3>
     <app-match-score [value]="candidato.match + '%'" [scoreClass]="matchClass"></app-match-score>
   </article>
-  <article>
-    <span>Renta esperada</span>
-    <input type="number" [(ngModel)]="rentaInput" aria-label="Renta esperada" />
+
+  <article class="metric-item" aria-labelledby="candidate-income-title">
+    <label id="candidate-income-title" class="metric-title" for="candidate-income-input">Renta esperada</label>
+    <input id="candidate-income-input" type="number" [(ngModel)]="rentaInput" />
     <small>{{ rentaFormateada }}</small>
   </article>
-  <article>
-    <span>Disponibilidad</span>
-    <select [(ngModel)]="candidato.disponibilidad" aria-label="Disponibilidad">
-      <option>Inmediata</option>
-      <option>15 días</option>
-      <option>30 días</option>
-      <option>A convenir</option>
+
+  <article class="metric-item" aria-labelledby="candidate-availability-title">
+    <label id="candidate-availability-title" class="metric-title" for="candidate-availability-select">Disponibilidad</label>
+    <select id="candidate-availability-select" [(ngModel)]="candidato.disponibilidad">
+      <option *ngFor="let disponibilidad of disponibilidades">{{ disponibilidad }}</option>
     </select>
   </article>
-</div>
+</section>

@@ -1,7 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
-export type EstadoCandidatoApi = 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado' | 'Desactivado';
+export type EstadoSolicitudCandidatoApi =
+  | 'En revision'
+  | 'En entrevista'
+  | 'Inhabilitado'
+  | 'Seleccionado'
+  | 'Descartado'
+  | 'Contratado';
 
 // Modelo físico/API esperado para candidatos: usar estos nombres cand_* cuando exista el endpoint real.
 export interface CandidatoApi {
@@ -27,15 +33,18 @@ export interface CandidatoResumen {
   correo: string;
   telefono?: string;
   cargo?: string;
-  estado: EstadoCandidatoApi;
+  estado: EstadoSolicitudCandidatoApi;
+  estadoUsuario?: string;
   match?: number;
   idSolicitud?: string;
+  fechaPostulacion?: string;
   fechaRegistro?: string;
 }
 
 export interface CandidatoPerfil extends CandidatoResumen {
   disponibilidad?: string;
   renta?: number;
+  rut?: string;
   fechaNacimiento?: string;
   tituloProfesional?: string;
   resumenProfesional?: string;
@@ -59,7 +68,7 @@ export interface CandidatoHabilidadPayload {
   providedIn: 'root',
 })
 export class CandidatosService {
-  private readonly apiUrl = 'http://localhost:8000/candidatos';
+  private readonly apiUrl = '/candidatos';
 
   constructor(private http: HttpClient) {}
 

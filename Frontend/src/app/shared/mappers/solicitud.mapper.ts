@@ -47,9 +47,7 @@ export function mapearSolicitudResumen(
       solicitud.sol_prioridad_id,
       'Sin prioridad',
     ) as PrioridadSolicitud,
-    estado: normalizarEstado(
-      obtenerNombre(catalogos.estadosPorId, solicitud.sol_estado_solicitud_id, 'Sin estado'),
-    ),
+    estado: obtenerNombre(catalogos.estadosPorId, solicitud.sol_estado_solicitud_id, 'Sin estado'),
     observacion: solicitud.sol_observacion || 'Sin observación',
   };
 }
@@ -85,20 +83,4 @@ function formatearFecha(fecha?: string | null) {
   }
 
   return new Intl.DateTimeFormat('es-CL').format(fechaNormalizada);
-}
-
-function normalizarEstado(estado: string): EstadoSolicitud {
-  if (estado === 'En Curso') {
-    return 'En curso';
-  }
-
-  if (estado === 'Cancelado') {
-    return 'Cancelada';
-  }
-
-  if (estado === 'Cerrado') {
-    return 'Cerrada';
-  }
-
-  return estado;
 }

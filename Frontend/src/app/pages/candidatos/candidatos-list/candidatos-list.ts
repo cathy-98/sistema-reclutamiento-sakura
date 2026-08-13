@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { catchError, forkJoin, of, take, timeout } from 'rxjs';
 import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
+import { CatalogosService } from '../../../services/catalogos.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import {
   DataTable,
@@ -25,8 +27,8 @@ import {
   EntrevistaFormModal,
 } from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 
-type EstadoCandidato = 'Todos' | 'En revision' | 'Contactado' | 'Entrevista' | 'Descartado' | 'Desactivado';
-type NivelCandidato = 'Junior' | 'Semi senior' | 'Senior';
+type EstadoCandidato = 'Todos' | string;
+type NivelCandidato = string;
 
 interface Candidato {
   idSolicitud: string;
@@ -35,7 +37,9 @@ interface Candidato {
   correo: string;
   telefono: string;
   cargo: string;
+  fechaPostulacion: string;
   estado: Exclude<EstadoCandidato, 'Todos'>;
+  estadoUsuario: string;
   disponibilidad: string;
   renta: number;
   nivel: NivelCandidato;
@@ -75,7 +79,7 @@ interface FiltrosCandidatos {
   templateUrl: './candidatos-list.html',
   styleUrl: './candidatos-list.scss',
 })
-export class CandidatosList {
+export class CandidatosList implements OnInit {
   cargando = false;
   errorCarga = '';
   alerta: AlertaUi | null = null;
@@ -130,11 +134,23 @@ export class CandidatosList {
       width: 160,
     },
     {
+      key: 'fechaPostulacion',
+      label: 'Fecha postulación',
+      width: 150,
+    },
+    {
       key: 'estado',
-      label: 'Estado del candidato',
+      label: 'Estado postulación',
       width: 170,
       type: 'badge',
       className: (candidato) => this.estadoClase(candidato.estado),
+    },
+    {
+      key: 'estadoUsuario',
+      label: 'Estado cuenta',
+      width: 140,
+      type: 'badge',
+      className: (candidato) => this.estadoClase(candidato.estadoUsuario),
     },
     {
       key: 'disponibilidad',
@@ -180,22 +196,24 @@ export class CandidatosList {
     },
     {
       id: 'desactivar',
-      label: 'Desactivar candidato',
+      label: 'Desactivar cuenta',
       icon: 'trash',
-      visible: (candidato) => candidato.estado !== 'Desactivado',
+      visible: (candidato) => candidato.estadoUsuario !== 'Inactivo',
     },
   ];
 
-  readonly estados: EstadoCandidato[] = [
+  estados: EstadoCandidato[] = [
     'Todos',
     'En revision',
-    'Contactado',
-    'Entrevista',
+    'En entrevista',
+    'Inhabilitado',
+    'Seleccionado',
     'Descartado',
-    'Desactivado',
+    'Contratado',
   ];
 
-  readonly niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
+  niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
+  disponibilidades: string[] = [];
 
   readonly candidatos: Candidato[] = [
     {
@@ -205,7 +223,9 @@ export class CandidatosList {
       correo: 'macarena.lopez@mail.com',
       telefono: '+56 9 5634 8547',
       cargo: 'Frontend',
+      fechaPostulacion: '18/05/2025',
       estado: 'En revision',
+      estadoUsuario: 'Activo',
       disponibilidad: 'Inmediata',
       renta: 800000,
       nivel: 'Junior',
@@ -218,7 +238,9 @@ export class CandidatosList {
       correo: 'valentina.rojas@mail.com',
       telefono: '+56 9 6721 1184',
       cargo: 'Frontend',
-      estado: 'Contactado',
+      fechaPostulacion: '18/05/2025',
+      estado: 'En entrevista',
+      estadoUsuario: 'Activo',
       disponibilidad: '2 semanas',
       renta: 950000,
       nivel: 'Senior',
@@ -231,7 +253,9 @@ export class CandidatosList {
       correo: 'diego.martinez@mail.com',
       telefono: '+56 9 7765 4402',
       cargo: 'Backend',
-      estado: 'Entrevista',
+      fechaPostulacion: '17/05/2025',
+      estado: 'En entrevista',
+      estadoUsuario: 'Activo',
       disponibilidad: 'Inmediata',
       renta: 1200000,
       nivel: 'Senior',
@@ -244,7 +268,9 @@ export class CandidatosList {
       correo: 'camila.fuentes@mail.com',
       telefono: '+56 9 3324 9811',
       cargo: 'UX Research',
+      fechaPostulacion: '16/05/2025',
       estado: 'En revision',
+      estadoUsuario: 'Activo',
       disponibilidad: '1 mes',
       renta: 900000,
       nivel: 'Semi senior',
@@ -257,7 +283,9 @@ export class CandidatosList {
       correo: 'sebastian.araya@mail.com',
       telefono: '+56 9 4218 7256',
       cargo: 'QA Automation',
+      fechaPostulacion: '15/05/2025',
       estado: 'Descartado',
+      estadoUsuario: 'Activo',
       disponibilidad: '2 semanas',
       renta: 1100000,
       nivel: 'Junior',
@@ -269,12 +297,47 @@ export class CandidatosList {
     private currencyCl: CurrencyClPipe,
     private router: Router,
     private entrevistasService: EntrevistasService,
+    private catalogosService: CatalogosService,
   ) {}
+
+  ngOnInit() {
+    this.cargarCatalogosFiltros();
+  }
 
   cargarCandidatos() {
     this.cargando = false;
     this.errorCarga = '';
     this.paginaActual = 1;
+  }
+
+  cargarCatalogosFiltros() {
+    // Integración catálogos candidatos -> filtros del listado:
+    // - estados-solicitud-candidato alimenta "Estado postulación" (slcd_estado_solicitud_candidato_id).
+    // - disponibilidades alimenta el selector "Disponibilidad".
+    // - niveles-habilidad alimenta el selector "Nivel".
+    forkJoin({
+      estados: this.catalogosService.listarEstadosSolicitudCandidato().pipe(timeout(4000), catchError(() => of([]))),
+      disponibilidades: this.catalogosService.listarDisponibilidades().pipe(timeout(4000), catchError(() => of([]))),
+      niveles: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe(({ estados, disponibilidades, niveles }) => {
+        const estadosCatalogo = estados.map((estado) => estado.essc_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const disponibilidadesCatalogo = disponibilidades.map((disponibilidad) => disponibilidad.disp_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const nivelesCatalogo = niveles.map((nivel) => nivel.nvhb_nombre).filter((nombre): nombre is string => Boolean(nombre));
+
+        if (estadosCatalogo.length > 0) {
+          this.estados = ['Todos', ...estadosCatalogo];
+        }
+
+        if (disponibilidadesCatalogo.length > 0) {
+          this.disponibilidades = disponibilidadesCatalogo;
+        }
+
+        if (nivelesCatalogo.length > 0) {
+          this.niveles = nivelesCatalogo;
+        }
+      });
   }
 
   get candidatosFiltrados() {
@@ -402,6 +465,7 @@ export class CandidatosList {
           telefono: candidato.telefono,
           cargo: candidato.cargo,
           estado: candidato.estado,
+          estadoUsuario: candidato.estadoUsuario,
           disponibilidad: candidato.disponibilidad,
           renta: candidato.renta,
         },
@@ -424,6 +488,7 @@ export class CandidatosList {
           telefono: evento.row.telefono,
           cargo: evento.row.cargo,
           estado: evento.row.estado,
+          estadoUsuario: evento.row.estadoUsuario,
           disponibilidad: evento.row.disponibilidad,
           renta: evento.row.renta,
           tab: 'evaluaciones',
@@ -455,12 +520,12 @@ export class CandidatosList {
       return;
     }
 
-    this.candidatoSeleccionadoDesactivacion.estado = 'Desactivado';
+    this.candidatoSeleccionadoDesactivacion.estadoUsuario = 'Inactivo';
     this.seleccionados.delete(this.obtenerIdCandidato(this.candidatoSeleccionadoDesactivacion));
     this.alerta = {
       tipo: 'success',
       variante: 'soft',
-      mensaje: `${this.candidatoSeleccionadoDesactivacion.nombre} fue desactivado correctamente.`,
+      mensaje: `${this.candidatoSeleccionadoDesactivacion.nombre} quedó con cuenta inactiva.`,
     };
     this.cerrarConfirmacionDesactivacion();
   }
@@ -590,7 +655,7 @@ export class CandidatosList {
   }
 
   estadoClase(estado: Candidato['estado']) {
-    return estado.toLowerCase().replace(' ', '-');
+    return estado.toLowerCase().replace(/\s+/g, '-');
   }
 
   private filtrosIniciales(): FiltrosCandidatos {

@@ -339,7 +339,7 @@ export class SolicitudesList implements OnInit {
     this.solicitudesService
       .cambiarEstado(
         this.solicitudSeleccionadaId,
-        'Cancelada',
+        'Cancelado',
         'Solicitud cancelada por confirmación del usuario.',
       )
       .subscribe({

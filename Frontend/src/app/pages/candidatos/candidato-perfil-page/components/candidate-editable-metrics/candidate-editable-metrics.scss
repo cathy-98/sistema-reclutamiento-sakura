@@ -4,7 +4,7 @@
   gap: 14px;
 }
 
-.hero-summary article {
+.metric-item {
   display: grid;
   gap: 8px;
   padding: 16px;
@@ -13,7 +13,13 @@
   background: var(--color-surface-soft);
 }
 
-.hero-summary span,
+.metric-title {
+  color: var(--color-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+}
+
 .hero-summary small {
   color: var(--color-muted);
 }
@@ -26,6 +32,18 @@
   border-radius: 8px;
   font: inherit;
   font-weight: 700;
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 @media (max-width: 1050px) {

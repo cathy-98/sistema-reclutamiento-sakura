@@ -1,0 +1,21 @@
+<div class="compact-select" [class.is-open]="abierto" [class.is-disabled]="disabled">
+  <button class="select-trigger" type="button" [disabled]="disabled" (click)="alternar()">
+    <span>{{ selectedLabel }}</span>
+    <span aria-hidden="true">⌄</span>
+  </button>
+
+  <div class="select-menu" *ngIf="abierto">
+    <button class="select-option is-placeholder" type="button" (click)="seleccionar(null)">
+      {{ placeholder }}
+    </button>
+    <button
+      class="select-option"
+      type="button"
+      *ngFor="let option of options"
+      [class.is-selected]="option.id === value"
+      (click)="seleccionar(option.id)"
+    >
+      {{ option.nombre }}
+    </button>
+  </div>
+</div>

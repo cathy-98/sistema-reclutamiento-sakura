@@ -10,12 +10,14 @@ export interface LoginRequest {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
+  expires_in?: number;
 }
 
-export type RolUsuario = 'Administrador' | 'Reclutador' | 'Entrevistador';
+export type RolUsuario = 'Administrador' | 'Reclutador' | 'Candidato' | 'Entrevistador';
 
 interface TokenPayload {
   sub?: string;
+  email?: string;
   usuario_id?: number;
   rol_id?: number;
   exp?: number;
@@ -26,6 +28,7 @@ interface UsuarioPerfilResponse {
   usr_apellido_paterno: string;
   usr_apellido_materno?: string | null;
   usr_email: string;
+  usr_rol_id?: number | null;
   rol?: {
     rol_id: number;
     rol_nombre: string;
@@ -36,14 +39,16 @@ interface UsuarioPerfilResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly apiUrl = 'http://localhost:8000/auth/login';
-  private readonly usuariosApiUrl = 'http://localhost:8000/usuarios';
+  private readonly authApiUrl = '/auth';
+  private readonly apiUrl = `${this.authApiUrl}/login`;
+  private readonly usuariosApiUrl = '/usuarios';
   private readonly tokenKey = 'sakura_access_token';
   private readonly nombreKey = 'sakura_nombre';
   private readonly rolKey = 'sakura_rol';
   private readonly rolesPorId: Record<number, RolUsuario> = {
     1: 'Administrador',
     2: 'Reclutador',
+    3: 'Candidato',
     4: 'Entrevistador',
   };
 
@@ -63,16 +68,22 @@ export class AuthService {
   }
 
   cargarPerfilUsuario() {
-    const usuarioId = this.obtenerPayload()?.usuario_id;
-
-    if (!usuarioId) {
-      return of(null);
-    }
-
-    // Integración: el perfil se consulta en /usuarios/{id} con campos usr_*.
-    return this.http.get<UsuarioPerfilResponse>(`${this.usuariosApiUrl}/${usuarioId}`).pipe(
+    // Integración backend nuevo: /auth/me devuelve el usuario actual a partir del Bearer token.
+    // Fallback backend anterior: si /auth/me no existe, consulta /usuarios/{id} usando el payload viejo.
+    return this.http.get<UsuarioPerfilResponse>(`${this.authApiUrl}/me`).pipe(
       tap((perfil) => this.guardarPerfil(perfil)),
-      catchError(() => of(null))
+      catchError(() => {
+        const usuarioId = this.obtenerUsuarioIdDesdeToken();
+
+        if (!usuarioId) {
+          return of(null);
+        }
+
+        return this.http.get<UsuarioPerfilResponse>(`${this.usuariosApiUrl}/${usuarioId}`).pipe(
+          tap((perfil) => this.guardarPerfil(perfil)),
+          catchError(() => of(null))
+        );
+      })
     );
   }
 
@@ -90,6 +101,11 @@ export class AuthService {
 
     if (perfil.rol?.rol_nombre) {
       localStorage.setItem(this.rolKey, perfil.rol.rol_nombre);
+      return;
+    }
+
+    if (perfil.usr_rol_id && this.rolesPorId[perfil.usr_rol_id]) {
+      localStorage.setItem(this.rolKey, this.rolesPorId[perfil.usr_rol_id]);
     }
   }
 
@@ -118,7 +134,8 @@ export class AuthService {
   }
 
   obtenerUsuario() {
-    return this.obtenerPayload()?.sub ?? '';
+    const payload = this.obtenerPayload();
+    return payload?.email ?? payload?.sub ?? '';
   }
 
   obtenerRol() {
@@ -166,5 +183,16 @@ export class AuthService {
     }
 
     return payload.exp * 1000 > Date.now();
+  }
+
+  private obtenerUsuarioIdDesdeToken() {
+    const payload = this.obtenerPayload();
+    const idDesdeSub = Number(payload?.sub);
+
+    if (payload?.usuario_id) {
+      return payload.usuario_id;
+    }
+
+    return Number.isNaN(idDesdeSub) ? null : idDesdeSub;
   }
 }

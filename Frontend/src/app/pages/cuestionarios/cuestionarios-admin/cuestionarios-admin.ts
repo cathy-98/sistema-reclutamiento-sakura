@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs';
+import { forkJoin, take } from 'rxjs';
 import {
   CuestionariosService,
   NivelCuestionario,
@@ -22,8 +22,9 @@ import { CuestionarioEnvioModal, CuestionarioEnvioPayload } from '../cuestionari
 
 interface TecnologiaResumen {
   tecnologia: TecnologiaCuestionario;
-  trainee: number;
+  basico: number;
   junior: number;
+  semiSenior: number;
   senior: number;
   cantidad: number;
 }
@@ -125,8 +126,9 @@ export class CuestionariosAdmin implements OnInit {
       width: 220,
       value: (row) => row.tecnologia.nombre,
     },
-    { key: 'trainee', label: 'Trainee', width: 140 },
+    { key: 'basico', label: 'Basico', width: 140 },
     { key: 'junior', label: 'Junior', width: 140 },
+    { key: 'semiSenior', label: 'Semi Senior', width: 140 },
     { key: 'senior', label: 'Senior', width: 140 },
     { key: 'cantidad', label: 'Total', width: 140 },
   ];
@@ -148,11 +150,7 @@ export class CuestionariosAdmin implements OnInit {
 
   ngOnInit() {
     this.vistaActiva = this.route.snapshot.data['vista'] === 'crear' ? 'crear' : 'armar';
-    this.tecnologias = this.cuestionariosService.tecnologias;
-    this.niveles = this.cuestionariosService.niveles;
-    this.tabsBanco = [{ id: 'todos', label: 'Todos' }, ...this.niveles.map((nivel) => ({ id: String(nivel.id), label: nivel.nombre }))];
-    this.actualizarResumen();
-    this.seleccionarTecnologiaInicial();
+    this.cargarCatalogosCuestionarios();
     this.cargarPreguntas();
     this.sincronizarDuracionConNivel();
   }
@@ -180,6 +178,10 @@ export class CuestionariosAdmin implements OnInit {
 
   get nivelFormularioNombre() {
     return this.obtenerNombreNivel(Number(this.formulario.value.nivelId));
+  }
+
+  get duracionFormulario() {
+    return this.formatearDuracion(this.obtenerDuracionNivelActual(), 0);
   }
 
   get tituloVistaActiva() {
@@ -226,7 +228,7 @@ export class CuestionariosAdmin implements OnInit {
     const busquedaNormalizada = this.normalizar(this.busquedaTecnologia);
 
     return this.resumenTecnologias.filter((row) => {
-      const texto = `${row.tecnologia.nombre} ${row.trainee} ${row.junior} ${row.senior} ${row.cantidad}`;
+      const texto = `${row.tecnologia.nombre} ${row.basico} ${row.junior} ${row.semiSenior} ${row.senior} ${row.cantidad}`;
       return !busquedaNormalizada || this.normalizar(texto).includes(busquedaNormalizada);
     });
   }
@@ -324,6 +326,29 @@ export class CuestionariosAdmin implements OnInit {
       });
   }
 
+  cargarCatalogosCuestionarios() {
+    // Integración de catálogos para cuestionarios:
+    // - habilidades alimenta el listado de tecnologías.
+    // - niveles-habilidad alimenta los niveles y duración sugerida.
+    forkJoin({
+      tecnologias: this.cuestionariosService.listarTecnologias(),
+      niveles: this.cuestionariosService.listarNiveles(),
+    })
+      .pipe(take(1))
+      .subscribe(({ tecnologias, niveles }) => {
+        this.tecnologias = tecnologias;
+        this.niveles = niveles;
+        this.tabsBanco = [{ id: 'todos', label: 'Todos' }, ...this.niveles.map((nivel) => ({ id: String(nivel.id), label: nivel.nombre }))];
+        this.formulario.patchValue({
+          tecnologiaId: this.tecnologias[0]?.id ?? 1,
+          nivelId: this.niveles[0]?.id ?? 1,
+          duracionMinutos: this.niveles[0]?.duracionMinutos ?? 45,
+        });
+        this.actualizarResumen();
+        this.seleccionarTecnologiaInicial();
+      });
+  }
+
   agregarPregunta() {
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
@@ -331,6 +356,7 @@ export class CuestionariosAdmin implements OnInit {
     }
 
     const valor = this.formulario.getRawValue();
+    const duracionMinutos = this.obtenerDuracionNivelActual();
     this.cuestionariosService
       .crear({
         texto: valor.texto ?? '',
@@ -338,8 +364,9 @@ export class CuestionariosAdmin implements OnInit {
         nivelId: Number(valor.nivelId),
         respuestas: valor.respuestas.map((respuesta) => respuesta ?? ''),
         respuestaCorrecta: Number(valor.respuestaCorrecta),
-        duracionMinutos: Number(valor.duracionMinutos),
-        duracionSegundos: Number(valor.duracionSegundos),
+        // La duracion no se captura manualmente: viene precargada desde nvhb_duracion del nivel.
+        duracionMinutos,
+        duracionSegundos: 0,
       })
       .pipe(take(1))
       .subscribe(() => {
@@ -404,11 +431,14 @@ export class CuestionariosAdmin implements OnInit {
     }
 
     const nivel = this.obtenerNombreNivel(Number(this.nivelBancoActivo)).toLowerCase();
-    if (nivel === 'trainee') {
-      return row.trainee;
+    if (nivel === 'basico') {
+      return row.basico;
     }
     if (nivel === 'junior') {
       return row.junior;
+    }
+    if (nivel === 'semi senior') {
+      return row.semiSenior;
     }
     return row.senior;
   }
@@ -491,21 +521,31 @@ export class CuestionariosAdmin implements OnInit {
     this.formulario.get('nivelId')?.valueChanges.subscribe((nivelId) => {
       const nivel = this.niveles.find((item) => item.id === Number(nivelId));
       if (nivel) {
-        this.formulario.patchValue({ duracionMinutos: nivel.duracionMinutos }, { emitEvent: false });
+        this.formulario.patchValue(
+          { duracionMinutos: nivel.duracionMinutos, duracionSegundos: 0 },
+          { emitEvent: false },
+        );
       }
     });
   }
 
+  private obtenerDuracionNivelActual() {
+    const nivelId = Number(this.formulario.value.nivelId);
+    return this.niveles.find((nivel) => nivel.id === nivelId)?.duracionMinutos ?? 45;
+  }
+
   private actualizarResumen() {
     const obtenerNivelId = (nombre: string) => this.niveles.find((nivel) => nivel.nombre === nombre)?.id;
-    const traineeId = obtenerNivelId('Trainee');
+    const basicoId = obtenerNivelId('Basico');
     const juniorId = obtenerNivelId('Junior');
+    const semiSeniorId = obtenerNivelId('Semi Senior');
     const seniorId = obtenerNivelId('Senior');
 
     this.resumenTecnologias = this.tecnologias.map((tecnologia) => ({
       tecnologia,
-      trainee: this.contarPreguntas(tecnologia.id, traineeId),
+      basico: this.contarPreguntas(tecnologia.id, basicoId),
       junior: this.contarPreguntas(tecnologia.id, juniorId),
+      semiSenior: this.contarPreguntas(tecnologia.id, semiSeniorId),
       senior: this.contarPreguntas(tecnologia.id, seniorId),
       cantidad: this.preguntas.filter((pregunta) => pregunta.tecnologiaId === tecnologia.id).length,
     }));

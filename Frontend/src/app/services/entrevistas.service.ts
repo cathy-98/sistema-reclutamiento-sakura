@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, delay, of, throwError } from 'rxjs';
 
-export type EstadoEntrevista = 'En curso' | 'Pendiente' | 'Cerrada' | 'Cancelada';
-export type TipoEntrevista = 'Reclutamiento' | 'Técnica' | 'Operacional';
+export type EstadoEntrevista = string;
+export type TipoEntrevista = string;
 
 // Modelo físico/API esperado para citas de entrevista.
 // Backend/BD usa ctev_*; este tipo se debe usar cuando exista el endpoint real.
@@ -42,7 +42,6 @@ export interface EntrevistaResumen {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  modalidad: 'Online' | 'Presencial' | 'Híbrida';
   entrevistador: string;
   linkReunion?: string;
   observacion?: string;
@@ -57,7 +56,6 @@ export interface EntrevistaPayload {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  modalidad: 'Online' | 'Presencial' | 'Híbrida';
   entrevistador: string;
   linkReunion?: string;
   observacion?: string;
@@ -72,14 +70,13 @@ export class EntrevistasService {
       id: 'ENT-001',
       idSolicitud: 'SOL-021',
       candidato: 'Macarena Lopez',
-      estado: 'En curso',
-      tipo: 'Reclutamiento',
+      estado: 'Confirmada',
+      tipo: 'RRHH',
       asunto: 'Entrevista 1',
       cargo: 'Backend',
       fecha: '2025-11-02',
       horaInicio: '18:00',
       horaFin: '18:45',
-      modalidad: 'Online',
       entrevistador: 'María Fernanda López',
       linkReunion: 'https://meet.example.com/ent-001',
     },
@@ -88,69 +85,64 @@ export class EntrevistasService {
       idSolicitud: 'SOL-022',
       candidato: 'Valentina Rojas',
       estado: 'Pendiente',
-      tipo: 'Técnica',
+      tipo: 'Tecnica',
       asunto: 'Entrevista 1',
       cargo: 'QA',
       fecha: '2025-11-02',
       horaInicio: '18:00',
       horaFin: '19:00',
-      modalidad: 'Online',
       entrevistador: 'Diego Salazar',
     },
     {
       id: 'ENT-003',
       idSolicitud: 'SOL-023',
       candidato: 'Diego Martinez',
-      estado: 'Cerrada',
-      tipo: 'Reclutamiento',
+      estado: 'Realizada',
+      tipo: 'RRHH',
       asunto: 'Entrevista 1',
       cargo: 'Diseñadora',
       fecha: '2025-11-02',
       horaInicio: '18:00',
       horaFin: '18:30',
-      modalidad: 'Híbrida',
       entrevistador: 'María Fernanda López',
     },
     {
       id: 'ENT-004',
       idSolicitud: 'SOL-024',
       candidato: 'Camila Fuentes',
-      estado: 'Cerrada',
-      tipo: 'Técnica',
+      estado: 'Realizada',
+      tipo: 'Tecnica',
       asunto: 'Entrevista 1',
       cargo: 'QA',
       fecha: '2025-11-02',
       horaInicio: '18:00',
       horaFin: '18:45',
-      modalidad: 'Presencial',
       entrevistador: 'Carlos Rojas',
     },
     {
       id: 'ENT-005',
       idSolicitud: 'SOL-025',
       candidato: 'Sebastian Araya',
-      estado: 'Cerrada',
-      tipo: 'Operacional',
+      estado: 'Realizada',
+      tipo: 'Cliente',
       asunto: 'Entrevista 1',
       cargo: 'Backend',
       fecha: '2025-11-02',
       horaInicio: '18:00',
       horaFin: '18:30',
-      modalidad: 'Online',
       entrevistador: 'María Fernanda López',
     },
     {
       id: 'ENT-006',
       idSolicitud: 'SOL-026',
       candidato: 'Juan Perez Gonzalez',
-      estado: 'Cerrada',
-      tipo: 'Técnica',
+      estado: 'Realizada',
+      tipo: 'Tecnica',
       asunto: 'Entrevista 1',
       cargo: 'Frontend',
       fecha: '2025-11-02',
       horaInicio: '18:00',
       horaFin: '19:00',
-      modalidad: 'Online',
       entrevistador: 'Diego Salazar',
     },
   ]);
@@ -192,7 +184,7 @@ export class EntrevistasService {
 
     const actualizadas = this.entrevistas.value.map((entrevista) =>
       entrevista.id === id
-        ? { ...entrevista, fecha, horaInicio, horaFin, observacion, estado: 'Pendiente' as EstadoEntrevista }
+        ? { ...entrevista, fecha, horaInicio, horaFin, observacion, estado: 'Reprogramada' as EstadoEntrevista }
         : entrevista,
     );
 

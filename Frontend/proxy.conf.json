@@ -1,0 +1,32 @@
+{
+  "/auth": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/usuarios": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/catalogos": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/solicitudes": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/candidatos": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

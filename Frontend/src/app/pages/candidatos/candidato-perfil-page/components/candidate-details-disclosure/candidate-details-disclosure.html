@@ -18,15 +18,8 @@
     <section aria-labelledby="candidate-identification-title">
       <h3 id="candidate-identification-title">Identificación</h3>
       <dl>
-        <div><dt>RUT</dt><dd>18.123.456-7</dd></div>
+        <div><dt>RUT</dt><dd>{{ candidato.rut }}</dd></div>
         <div><dt>Fecha nacimiento</dt><dd>{{ candidato.fechaNacimiento }}</dd></div>
-      </dl>
-    </section>
-
-    <section aria-labelledby="candidate-contact-extra-title">
-      <h3 id="candidate-contact-extra-title">Contacto</h3>
-      <dl>
-        <div><dt>Teléfono 2</dt><dd>+56 2 2345 6789</dd></div>
       </dl>
     </section>
 
@@ -42,7 +35,6 @@
       <h3 id="candidate-work-profile-title">Perfil laboral</h3>
       <dl>
         <div><dt>Título</dt><dd>{{ candidato.tituloProfesional }}</dd></div>
-        <div><dt>Modalidad</dt><dd>Híbrida</dd></div>
         <div><dt>Registro</dt><dd>{{ candidato.fechaRegistro }}</dd></div>
       </dl>
     </section>

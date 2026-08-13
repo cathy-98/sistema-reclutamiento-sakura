@@ -52,6 +52,9 @@ import {
   styleUrl: './candidato-perfil-page.scss',
 })
 export class CandidatoPerfilPage {
+  // Función futura: documentos queda oculto porque la BD actual no tiene tbl_documento.
+  // Para habilitarla cuando exista soporte backend/BD, cambiar a true.
+  readonly mostrarModuloDocumentos = false;
   tabActiva: PerfilTab = 'postulaciones';
   postulacionSeleccionadaId = 'SOL-021';
   busquedaPostulacion = '';
@@ -63,15 +66,22 @@ export class CandidatoPerfilPage {
 
   readonly candidato: CandidatoPerfil;
 
-  readonly tabs: CandidatoProfileTab[] = [
-    { id: 'experiencia', label: 'Experiencia', icon: 'briefcase' },
-    { id: 'estudios', label: 'Estudios', icon: 'graduation' },
-    { id: 'postulaciones', label: 'Postulaciones', icon: 'puzzle' },
-    { id: 'match', label: 'Match', icon: 'users' },
-    { id: 'evaluaciones', label: 'Evaluaciones técnicas', icon: 'file' },
-    { id: 'documentos', label: 'Documentos', icon: 'file' },
-    { id: 'observaciones', label: 'Observaciones', icon: 'list' },
-  ];
+  get tabs(): CandidatoProfileTab[] {
+    const tabs: CandidatoProfileTab[] = [
+      { id: 'experiencia', label: 'Experiencia', icon: 'briefcase' },
+      { id: 'estudios', label: 'Estudios', icon: 'graduation' },
+      { id: 'postulaciones', label: 'Postulaciones', icon: 'puzzle' },
+      { id: 'match', label: 'Match', icon: 'users' },
+      { id: 'evaluaciones', label: 'Evaluaciones técnicas', icon: 'file' },
+      { id: 'observaciones', label: 'Observaciones', icon: 'list' },
+    ];
+
+    if (this.mostrarModuloDocumentos) {
+      tabs.splice(5, 0, { id: 'documentos', label: 'Documentos', icon: 'file' });
+    }
+
+    return tabs;
+  }
 
   readonly experiencias: ExperienciaPerfil[] = [
     {
@@ -102,50 +112,46 @@ export class CandidatoPerfilPage {
     {
       titulo: 'Ingeniería Civil Informática',
       institucion: 'Universidad de Chile',
-      estado: 'Graduado',
-      fecha: 'Dic 2020',
+      fecha: '2016 - 2020',
     },
     {
       titulo: 'Técnico en Programación',
       institucion: 'Instituto Profesional AIEP',
-      estado: 'Graduado',
-      fecha: 'Dic 2016',
+      fecha: '2014 - 2016',
     },
   ];
 
-  readonly idiomas = ['Español (Nativo)', 'Inglés (B2)'];
-
   readonly postulaciones: PostulacionPerfil[] = [
-    ['SOL-021', 'Latam', 'Backend', '18/05/2025', 'En curso'],
-    ['SOL-026', 'Banco de Chile', 'Frontend', '18/05/2025', 'Cerrada'],
-    ['SOL-028', 'SParta', 'QA', '18/05/2025', 'Cerrada'],
-    ['SOL-029', 'Servicios Financieros', 'QA', '18/05/2025', 'En curso'],
-    ['SOL-030', 'Latam', 'Frontend', '18/05/2025', 'Cerrada'],
+    ['SOL-021', 'Latam', 'Backend', '18/05/2025', 'En Curso'],
+    ['SOL-026', 'Banco de Chile', 'Frontend', '18/05/2025', 'Cerrado'],
+    ['SOL-028', 'SParta', 'QA', '18/05/2025', 'Cerrado'],
+    ['SOL-029', 'Servicios Financieros', 'QA', '18/05/2025', 'En Curso'],
+    ['SOL-030', 'Latam', 'Frontend', '18/05/2025', 'Cerrado'],
   ];
 
   readonly procesoBase: EtapaSeleccion[] = [
     {
-      etapa: 'Entrevista Reclutamiento',
+      etapa: 'Entrevista RRHH',
       estado: 'Realizada',
       fecha: '10 Oct 2023',
       entrevistador: 'MACARENA LÓPEZ',
-      resultado: 'Aprobó',
+      resultado: 'Aprobado',
       observaciones: 'Buen perfil comunicacional, expectativas salariales alineadas.',
     },
     {
-      etapa: 'Entrevista Operacional',
+      etapa: 'Entrevista Cliente',
       estado: 'Realizada',
       fecha: '15 Oct 2023',
       entrevistador: 'Rodrigo Riquelme (PM)',
-      resultado: 'Aprobó',
+      resultado: 'Aprobado',
       observaciones: 'Preparado para avanzar.',
     },
     {
-      etapa: 'Entrevista Técnica',
+      etapa: 'Entrevista Tecnica',
       estado: 'Realizada',
       fecha: '15 Oct 2023',
       entrevistador: 'Carlos Ruiz (Líder)',
-      resultado: 'Aprobó',
+      resultado: 'Aprobado',
       observaciones: 'Sólidos conocimientos en React. Resolvió el caso práctico eficientemente.',
     },
     {
@@ -166,8 +172,8 @@ export class CandidatoPerfilPage {
         etapa: 'Cierre de proceso',
         estado: 'Realizada',
         fecha: '22 Oct 2023',
-        entrevistador: 'Equipo Reclutamiento',
-        resultado: 'No seleccionado',
+        entrevistador: 'Equipo RRHH',
+        resultado: 'No Aprobado',
         observaciones: 'Proceso cerrado por ajuste de presupuesto interno.',
       },
     ],
@@ -187,15 +193,16 @@ export class CandidatoPerfilPage {
   readonly fortalezasMatch = ['Excelente arquitectura en React y manejo de estados complejos.'];
   readonly areasMejoraMatch = ['Requiere nivelar conocimientos en el entorno backend con Node.js.'];
 
+  readonly evaluacionesTecnicas: EvaluacionTecnicaPerfil[] = [
+    ['Test Angular Junior', 'Enviado', 'SOL-021', '45 min', 'Pendiente'],
+    ['Code Challenge Backend', 'Pendiente', 'SOL-021', '60 min', 'Sin enviar'],
+  ];
+
+  // Función futura oculta: lista de documentos visible solo si mostrarModuloDocumentos=true.
   readonly documentos: DocumentoPerfil[] = [
     ['CV_Juan_Perez_Gonzalez.pdf', 'Currículum', '24 oct 2024', '10:30'],
     ['Carta_de_presentacion.docx', 'Carta de presentación', '24 oct 2024', '10:36'],
     ['Certificado_Titulo_Ingenieria.pdf', 'Certificado', '24 oct 2024', '11:05'],
-  ];
-
-  readonly evaluacionesTecnicas: EvaluacionTecnicaPerfil[] = [
-    ['Test Angular Junior', 'Enviado', 'SOL-021', '45 min', 'Pendiente'],
-    ['Code Challenge Backend', 'Pendiente', 'SOL-021', '60 min', 'Sin enviar'],
   ];
 
   readonly historialObservaciones: ObservacionPerfil[] = [
@@ -219,13 +226,14 @@ export class CandidatoPerfilPage {
       correo: params.get('correo') || 'juan.perez@gmail.com',
       telefono: params.get('telefono') || '+56 9 1234 5678',
       cargo: params.get('cargo') || 'Senior React Developer',
-      estado: params.get('estado') || 'En proceso',
+      estado: params.get('estado') || 'En revision',
       disponibilidad: params.get('disponibilidad') || 'Inmediata',
       renta: Number(params.get('renta') || 2800000),
+      rut: params.get('rut') || '18.123.456-7',
       fechaNacimiento: '12 may 1994',
       fechaRegistro: '24 oct 2024',
       tituloProfesional: 'Ingeniera Civil Informática',
-      estadoUsuario: 'Activo',
+      estadoUsuario: params.get('estadoUsuario') || 'Activo',
       resumenProfesional: 'Desarrolladora frontend con experiencia en React, TypeScript y plataformas SaaS.',
       urlPerfil: 'linkedin.com/in/juanperez',
       comuna: 'Providencia',
@@ -255,9 +263,8 @@ export class CandidatoPerfilPage {
       idSolicitud: this.candidato.idSolicitud,
       candidato: this.candidato.nombre,
       cargo: this.candidato.cargo,
-      tipo: 'Reclutamiento',
+      tipo: 'RRHH',
       asunto: `Entrevista ${this.candidato.cargo}`,
-      modalidad: 'Online',
     };
   }
 

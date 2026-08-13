@@ -89,17 +89,17 @@ export class EntrevistasAgenda implements OnInit {
         return entrevista.fecha === hoy;
       }
       if (this.tabActiva === 'proximas') {
-        return entrevista.fecha >= hoy && entrevista.fecha <= limiteProximas && entrevista.estado !== 'Cancelada' && entrevista.estado !== 'Cerrada';
+        return entrevista.fecha >= hoy && entrevista.fecha <= limiteProximas && entrevista.estado !== 'Cancelada' && entrevista.estado !== 'Realizada';
       }
       if (this.tabActiva === 'pendientes') {
         return (
-          (entrevista.estado === 'Pendiente' || entrevista.estado === 'En curso') &&
+          (entrevista.estado === 'Pendiente' || entrevista.estado === 'Confirmada' || entrevista.estado === 'Reprogramada') &&
           entrevista.fecha >= hoy &&
           entrevista.fecha <= limitePendientes
         );
       }
       if (this.tabActiva === 'realizadas') {
-        return entrevista.estado === 'Cerrada' && entrevista.fecha >= limiteHistorico && entrevista.fecha <= hoy;
+        return entrevista.estado === 'Realizada' && entrevista.fecha >= limiteHistorico && entrevista.fecha <= hoy;
       }
       if (this.tabActiva === 'canceladas') {
         return entrevista.estado === 'Cancelada' && entrevista.fecha >= limiteHistorico && entrevista.fecha <= hoy;
