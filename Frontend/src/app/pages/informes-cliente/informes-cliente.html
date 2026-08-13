@@ -1,4 +1,105 @@
-<app-page-header
-  title="Informes al Cliente"
-  subtitle="Genera informes de cierre y entrega para clientes."
-></app-page-header>
+<app-page-layout>
+  <app-page-header
+    title="Listado de informes"
+    subtitle="Gestión de informes"
+  >
+    <div pageHeaderActions>
+      <app-button type="button" (pressed)="generarInforme()">
+        Generar informe
+      </app-button>
+    </div>
+  </app-page-header>
+
+  <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+
+  <app-filter-panel
+    description="Usa uno o más campos para encontrar informes de candidatos."
+    quickSearchPlaceholder="Ej. SOL-021, Macarena Lopez o Frontend"
+    [(quickSearch)]="busquedaRapida"
+    (search)="buscar()"
+    (clear)="limpiarFiltros()"
+  >
+    <label>
+      ID solicitud
+      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. SOL-021" />
+    </label>
+
+    <label>
+      Nombre
+      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Ej. Macarena Lopez" />
+    </label>
+
+    <label>
+      Estado
+      <select [(ngModel)]="filtros.estado">
+        <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
+      </select>
+    </label>
+
+    <label>
+      Disponibilidad
+      <select [(ngModel)]="filtros.disponibilidad">
+        <option value="">Todas</option>
+        <option *ngFor="let disponibilidad of disponibilidades" [ngValue]="disponibilidad">
+          {{ disponibilidad }}
+        </option>
+      </select>
+    </label>
+  </app-filter-panel>
+
+  <section class="informes-tabs" aria-label="Estado de aprobación de informes">
+    <app-tabs
+      [tabs]="tabsInformes"
+      [activeTab]="vistaActiva"
+      ariaLabel="Estado de aprobación"
+      (activeTabChange)="cambiarVista($event)"
+    ></app-tabs>
+  </section>
+
+  <app-action-bar
+    [message]="mensajeAccionesMasivas"
+    aria-label="Acciones masivas de informes"
+    *ngIf="informesFiltrados.length > 0"
+  >
+    <app-button
+      type="button"
+      size="sm"
+      [disabled]="seleccionados.size === 0"
+      (pressed)="descargarCvsMasivo()"
+    >
+      <span aria-hidden="true">↓</span>
+      Descargar CVs corporativos masivos
+    </app-button>
+
+    <app-button
+      type="button"
+      size="sm"
+      variant="secondary"
+      [disabled]="seleccionados.size === 0"
+      (pressed)="enviarCorreoMasivo()"
+    >
+      <span aria-hidden="true">✉</span>
+      Correo masivo
+    </app-button>
+  </app-action-bar>
+
+  <app-data-table
+    [title]="vistaActiva === 'aprobados' ? 'Informes aprobados' : 'Informes no aprobados'"
+    [columns]="columnas"
+    [rows]="informesPaginados"
+    [total]="informesFiltrados.length"
+    [page]="paginaActual"
+    [pageSize]="registrosPorPagina"
+    [rowId]="obtenerIdInforme"
+    [actions]="acciones"
+    [compactActions]="true"
+    [selectedIds]="seleccionados"
+    emptyTitle="No hay informes para mostrar"
+    emptyMessage="Ajusta los filtros o cambia la vista de aprobación."
+    (selectedIdsChange)="seleccionados = $event"
+    (pageChange)="cambiarPagina($event)"
+    (pageSizeChange)="cambiarRegistrosPorPagina($event)"
+    (actionClick)="manejarAccionTabla($event)"
+    (clear)="limpiarFiltros()"
+  ></app-data-table>
+</app-page-layout>
