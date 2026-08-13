@@ -71,61 +71,67 @@ export class SolicitudesList implements OnInit {
     {
       key: 'codigo',
       label: 'ID solicitud',
-      width: 112,
+      width: 138,
       sticky: 'left',
     },
     {
       key: 'nombre',
       label: 'Nombre de solicitud',
-      width: 260,
+      width: 300,
       type: 'stack',
+      wrap: true,
       value: (solicitud) => solicitud.nombre,
       secondaryValue: (solicitud) => `${solicitud.vacantes} vacantes`,
     },
     {
       key: 'cliente',
       label: 'Cliente',
-      width: 180,
+      width: 260,
+      wrap: true,
     },
     {
       key: 'cargo',
       label: 'Cargo / vacantes',
-      width: 155,
+      width: 250,
+      wrap: true,
       value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
     },
     {
       key: 'responsable',
       label: 'Responsable',
-      width: 155,
+      width: 190,
+      wrap: true,
     },
     {
       key: 'seleccion',
       label: 'Inicio y fin selección',
-      width: 190,
+      width: 150,
+      wrap: true,
     },
     {
       key: 'inicioEmpleo',
       label: 'Inicio empleo',
-      width: 190,
+      width: 132,
     },
     {
       key: 'prioridad',
       label: 'Prioridad',
-      width: 155,
+      width: 118,
       type: 'badge',
       className: (solicitud) => this.prioridadClase(solicitud.prioridad),
     },
     {
       key: 'estado',
       label: 'Estado',
-      width: 155,
+      width: 132,
       type: 'badge',
       className: (solicitud) => this.estadoClase(solicitud.estado),
     },
     {
       key: 'observacion',
       label: 'Observación',
-      width: 220,
+      width: 180,
+      wrap: true,
       title: (solicitud) => solicitud.observacion,
     },
   ];
@@ -150,6 +156,16 @@ export class SolicitudesList implements OnInit {
 
   get puedeCancelarSolicitud() {
     return this.authService.tieneRol(['Administrador']);
+  }
+
+  get codigoSolicitudEstimado() {
+    const correlativos = this.solicitudes
+      .map((solicitud) => /^SOL-(\d{6})$/.exec(solicitud.codigo)?.[1])
+      .filter((codigo): codigo is string => Boolean(codigo))
+      .map((codigo) => Number(codigo));
+    const siguiente = (correlativos.length > 0 ? Math.max(...correlativos) : 0) + 1;
+
+    return `SOL-${String(siguiente).padStart(6, '0')}`;
   }
 
   get solicitudesPaginadas() {

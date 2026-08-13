@@ -73,7 +73,7 @@ export class InformesCliente {
     {
       key: 'idSolicitud',
       label: 'ID solicitud',
-      width: 112,
+      width: 138,
       sticky: 'left',
     },
     {
@@ -89,6 +89,7 @@ export class InformesCliente {
       label: 'Nombre completo',
       width: 210,
       type: 'person',
+      wrap: true,
       value: (informe) => informe.nombre,
       secondaryValue: (informe) => this.iniciales(informe.nombre),
     },
@@ -96,6 +97,7 @@ export class InformesCliente {
       key: 'correo',
       label: 'Correo electrónico',
       width: 220,
+      wrap: true,
     },
     {
       key: 'telefono',
@@ -106,6 +108,7 @@ export class InformesCliente {
       key: 'cargo',
       label: 'Cargo postulado',
       width: 160,
+      wrap: true,
     },
     {
       key: 'estado',

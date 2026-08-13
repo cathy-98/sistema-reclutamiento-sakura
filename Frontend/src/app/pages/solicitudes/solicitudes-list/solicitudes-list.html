@@ -101,6 +101,7 @@
   *ngIf="mostrarFormulario"
   [idSolicitud]="solicitudSeleccionadaId"
   [modo]="modoFormulario"
+  [codigoSolicitudSugerido]="codigoSolicitudEstimado"
   (cerrar)="cerrarFormulario()"
   (guardado)="manejarFormularioGuardado()"
 ></app-solicitud-form-modal>

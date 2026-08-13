@@ -61,8 +61,8 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
   };
 
   columnasIntegrantes: DataTableColumn<IntegranteEntrevista>[] = [
-    { key: 'nombre', label: 'Nombre', width: 180 },
-    { key: 'rol', label: 'Rol', width: 150 },
+    { key: 'nombre', label: 'Nombre', width: 190, wrap: true },
+    { key: 'rol', label: 'Rol', width: 160, wrap: true },
     {
       key: 'fechaAgendamiento',
       label: 'Fecha agendamiento',

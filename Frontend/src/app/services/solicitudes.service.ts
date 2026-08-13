@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, timeout } from 'rxjs';
+import { catchError, forkJoin, map, of, timeout } from 'rxjs';
 import { CatalogosService, UsuarioCatalogoApi } from './catalogos.service';
 import { ClienteApi, ClientesService } from './clientes.service';
 import {
@@ -27,9 +27,25 @@ export class SolicitudesService {
   ) {}
 
   listar() {
-    return this.http.get<SolicitudApi[]>(`${this.apiUrl}/`).pipe(
-      timeout(3000),
-      map((solicitudes) => this.mapearSolicitudes(solicitudes)),
+    return forkJoin({
+      solicitudes: this.http.get<SolicitudApi[]>(`${this.apiUrl}/`).pipe(timeout(3000)),
+      clientes: this.clientesService.listarClientes().pipe(timeout(4000), catchError(() => of([]))),
+      empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError(() => of([]))),
+      cargos: this.catalogosService.listarCargos().pipe(timeout(4000), catchError(() => of([]))),
+      usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
+      prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(4000), catchError(() => of([]))),
+      estados: this.catalogosService.listarEstadosSolicitud().pipe(timeout(4000), catchError(() => of([]))),
+    }).pipe(
+      map(({ solicitudes, clientes, empresas, cargos, usuarios, prioridades, estados }) =>
+        this.mapearSolicitudes(solicitudes, {
+          clientes,
+          empresas,
+          cargos,
+          usuarios,
+          prioridades,
+          estados,
+        }),
+      ),
     );
   }
 

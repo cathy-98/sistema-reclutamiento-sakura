@@ -1,4 +1,9 @@
 <app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
+    <div modal-header-extra class="request-code-card">
+      <span>{{ etiquetaCodigoEncabezado }}</span>
+      <strong>{{ codigoEncabezado }}</strong>
+    </div>
+
     <div class="request-modal-body">
       <div class="modal-loading" *ngIf="cargandoDetalle">
         <span></span>

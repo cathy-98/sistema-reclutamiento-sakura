@@ -14,6 +14,10 @@
         <p *ngIf="subtitulo" [id]="subtituloId">{{ subtitulo }}</p>
       </div>
 
+      <div class="modal-header-extra">
+        <ng-content select="[modal-header-extra]"></ng-content>
+      </div>
+
       <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrar.emit()">
         ×
       </button>

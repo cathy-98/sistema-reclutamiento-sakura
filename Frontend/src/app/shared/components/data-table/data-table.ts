@@ -15,6 +15,7 @@ export interface DataTableColumn<T> {
   label: string;
   width: number;
   type?: DataTableColumnType;
+  wrap?: boolean;
   sticky?: 'left' | 'right';
   value?: (row: T) => string | number;
   secondaryValue?: (row: T) => string | number;

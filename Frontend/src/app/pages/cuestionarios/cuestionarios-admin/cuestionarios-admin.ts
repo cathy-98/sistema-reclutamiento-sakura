@@ -110,7 +110,7 @@ export class CuestionariosAdmin implements OnInit {
       width: 120,
       value: (pregunta) => this.obtenerNombreNivel(pregunta.nivelId),
     },
-    { key: 'texto', label: 'Pregunta', width: 300 },
+    { key: 'texto', label: 'Pregunta', width: 360, wrap: true },
     {
       key: 'duracion',
       label: 'Duracion',
@@ -124,6 +124,7 @@ export class CuestionariosAdmin implements OnInit {
       key: 'tecnologia',
       label: 'Tecnologia',
       width: 220,
+      wrap: true,
       value: (row) => row.tecnologia.nombre,
     },
     { key: 'basico', label: 'Basico', width: 140 },
@@ -138,6 +139,7 @@ export class CuestionariosAdmin implements OnInit {
       key: 'tecnologia',
       label: 'Tecnologia',
       width: 280,
+      wrap: true,
       value: (row) => row.tecnologia.nombre,
     },
     {

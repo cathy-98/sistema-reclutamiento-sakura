@@ -45,6 +45,21 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.modal-header > div:first-child {
+  min-width: 0;
+}
+
+.modal-header-extra {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.modal-header-extra:empty {
+  display: none;
+}
+
 .modal-header h2 {
   margin: 0 0 4px;
   font-size: 20px;

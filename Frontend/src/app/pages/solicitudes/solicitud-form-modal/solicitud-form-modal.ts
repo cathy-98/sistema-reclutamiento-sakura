@@ -60,6 +60,7 @@ interface CatalogoOpcion {
 export class SolicitudFormModal implements OnInit {
   @Input() idSolicitud: string | null = null;
   @Input() modo: 'crear' | 'ver' | 'editar' = 'crear';
+  @Input() codigoSolicitudSugerido = '';
   @Output() cerrar = new EventEmitter<void>();
   @Output() guardado = new EventEmitter<void>();
 
@@ -198,6 +199,14 @@ export class SolicitudFormModal implements OnInit {
     }
 
     return 'El código se asignará automáticamente al guardar.';
+  }
+
+  get codigoEncabezado() {
+    return this.codigoSolicitud || this.codigoSolicitudSugerido || 'SOL-000001';
+  }
+
+  get etiquetaCodigoEncabezado() {
+    return 'Código solicitud';
   }
 
   validarRangoSalario(control: AbstractControl): ValidationErrors | null {

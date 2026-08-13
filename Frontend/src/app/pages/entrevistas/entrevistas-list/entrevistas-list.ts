@@ -70,7 +70,7 @@ export class EntrevistasList implements OnInit {
   tipos: TipoEntrevista[] = ['RRHH', 'Tecnica', 'Cliente', 'Psicolaboral', 'Gerencial', 'Ingles'];
 
   readonly columnas: DataTableColumn<EntrevistaResumen>[] = [
-    { key: 'idSolicitud', label: 'ID solicitud', width: 112, sticky: 'left' },
+    { key: 'idSolicitud', label: 'ID solicitud', width: 138, sticky: 'left' },
     {
       key: 'estado',
       label: 'Estado entrevista',
@@ -79,11 +79,11 @@ export class EntrevistasList implements OnInit {
       className: (entrevista) => this.estadoClase(entrevista.estado),
     },
     { key: 'tipo', label: 'Tipo de entrevista', width: 170 },
-    { key: 'asunto', label: 'Asunto del evento', width: 180 },
-    { key: 'cargo', label: 'Cargo vacante', width: 160 },
+    { key: 'asunto', label: 'Asunto del evento', width: 220, wrap: true },
+    { key: 'cargo', label: 'Cargo vacante', width: 190, wrap: true },
     { key: 'fecha', label: 'Fecha', width: 135, value: (entrevista) => this.formatearFecha(entrevista.fecha) },
     { key: 'horaInicio', label: 'Hora', width: 110, value: (entrevista) => entrevista.horaInicio },
-    { key: 'entrevistador', label: 'Entrevistador', width: 210 },
+    { key: 'entrevistador', label: 'Entrevistador', width: 210, wrap: true },
   ];
 
   readonly acciones: DataTableAction<EntrevistaResumen>[] = [

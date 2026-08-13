@@ -43,7 +43,7 @@ table {
 th,
 td {
   overflow: hidden;
-  padding: 16px 14px;
+  padding: 18px 14px;
   text-align: left;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -105,6 +105,19 @@ tbody tr:hover .sticky-right {
 .actions-column {
   overflow: visible;
   text-overflow: clip;
+}
+
+td.wrap-cell {
+  white-space: normal;
+}
+
+td.wrap-cell > span,
+td.wrap-cell .stack-cell span {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 th.sticky-left,
@@ -169,6 +182,12 @@ select:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
+}
+
+td.wrap-cell .person-cell strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .stack-cell {

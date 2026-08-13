@@ -88,6 +88,7 @@
             *ngFor="let column of visibleColumns; trackBy: trackColumn"
             [class.sticky-left]="column.sticky === 'left'"
             [class.sticky-right]="column.sticky === 'right'"
+            [class.wrap-cell]="column.wrap"
             [ngStyle]="columnStyle(column)"
             [title]="cellTitle(row, column)"
           >

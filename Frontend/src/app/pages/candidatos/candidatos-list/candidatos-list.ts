@@ -99,7 +99,7 @@ export class CandidatosList implements OnInit {
     {
       key: 'idSolicitud',
       label: 'ID solicitud',
-      width: 112,
+      width: 138,
       sticky: 'left',
     },
     {
@@ -115,6 +115,7 @@ export class CandidatosList implements OnInit {
       label: 'Nombre completo',
       width: 220,
       type: 'person',
+      wrap: true,
       value: (candidato) => candidato.nombre,
       secondaryValue: (candidato) => this.iniciales(candidato.nombre),
     },
@@ -122,6 +123,7 @@ export class CandidatosList implements OnInit {
       key: 'correo',
       label: 'Correo electrónico',
       width: 230,
+      wrap: true,
     },
     {
       key: 'telefono',
@@ -132,6 +134,7 @@ export class CandidatosList implements OnInit {
       key: 'cargo',
       label: 'Cargo postulado',
       width: 160,
+      wrap: true,
     },
     {
       key: 'fechaPostulacion',
@@ -168,6 +171,7 @@ export class CandidatosList implements OnInit {
       label: 'Habilidades técnicas',
       width: 180,
       type: 'stack',
+      wrap: true,
       value: (candidato) => candidato.nivel,
       secondaryValue: (candidato) => `${candidato.experiencia} años de experiencia`,
     },
