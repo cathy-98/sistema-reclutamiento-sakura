@@ -46,6 +46,8 @@ CATALOG_TABLES = [
     models.Institucion.__table__,
     models.Carrera.__table__,
     models.NivelEducacional.__table__,
+    models.CategoriaHabilidad.__table__,
+    models.Idioma.__table__,
     models.Habilidad.__table__,
     models.NivelHabilidad.__table__,
     models.Cargo.__table__,
@@ -172,6 +174,16 @@ TIPO_INST_DEP = DependencyDefinition(
     payload={"tint_tipo_institucion": "QA Tipo Institución"},
 )
 
+CATEGORIA_HABILIDAD_DEP = DependencyDefinition(
+    resource="categorias-habilidad",
+    id_field="cthb_id",
+    export_as="categoria_id",
+    payload={
+        "cthb_nombre": "QA Lenguajes",
+        "cthb_descripcion": "Categoría padre QA",
+    },
+)
+
 
 CASES = [
     CatalogTestCase("paises", "pais_id", {"pais_nombre": "QA País"}, {"pais_nombre": "QA País PUT"}, {"pais_nombre": "QA País PATCH"}),
@@ -181,7 +193,9 @@ CASES = [
     CatalogTestCase("instituciones", "inst_id", {"inst_nombre": "QA Instituto", "inst_tipo_institucion_id": "$tipo_institucion_id"}, {"inst_nombre": "QA Inst PUT", "inst_tipo_institucion_id": "$tipo_institucion_id"}, {"inst_nombre": "QA Inst PATCH"}, (TIPO_INST_DEP,), "tipo_institucion_id", "tipo_institucion_id"),
     CatalogTestCase("carreras", "crra_id", {"crra_nombre": "QA Ingeniería Software"}, {"crra_nombre": "QA Ingeniería Informática"}, {"crra_nombre": "QA Ingeniería PATCH"}),
     CatalogTestCase("niveles-educacionales", "nved_id", {"nved_nombre": "QA Profesional"}, {"nved_nombre": "QA Magíster"}, {"nved_nombre": "QA Doctorado"}),
-    CatalogTestCase("habilidades", "hab_id", {"hab_nombre": "QA Python", "hab_descripcion": "Habilidad prueba Python"}, {"hab_nombre": "QA FastAPI", "hab_descripcion": "Actualización PUT"}, {"hab_descripcion": "Actualización PATCH"}),
+    CatalogTestCase("categorias-habilidad", "cthb_id", {"cthb_nombre": "QA Lenguajes", "cthb_descripcion": "Lenguajes QA"}, {"cthb_nombre": "QA Frameworks", "cthb_descripcion": "Frameworks QA"}, {"cthb_descripcion": "Categoría PATCH"}),
+    CatalogTestCase("idiomas", "idio_id", {"idio_nombre": "QA Español"}, {"idio_nombre": "QA Inglés"}, {"idio_nombre": "QA Portugués"}),
+    CatalogTestCase("habilidades", "hab_id", {"hab_nombre": "QA Python", "hab_descripcion": "Habilidad prueba Python", "hab_categoria_habilidad_id": "$categoria_id"}, {"hab_nombre": "QA FastAPI", "hab_descripcion": "Actualización PUT", "hab_categoria_habilidad_id": "$categoria_id"}, {"hab_descripcion": "Actualización PATCH"}, (CATEGORIA_HABILIDAD_DEP,), "categoria_id", "categoria_id"),
     CatalogTestCase("niveles-habilidad", "nvhb_id", {"nvhb_nombre": "QA Junior", "nvhb_descripcion": "Nivel QA inicial", "nvhb_puntaje_base": 20, "nvhb_duracion": 12}, {"nvhb_nombre": "QA Senior", "nvhb_descripcion": "Nivel actualizado", "nvhb_puntaje_base": 80, "nvhb_duracion": 60}, {"nvhb_puntaje_base": 90}),
     CatalogTestCase("cargos", "crgo_id", {"crgo_nombre": "QA Developer", "crgo_descripcion": "Cargo de prueba"}, {"crgo_nombre": "QA Backend", "crgo_descripcion": "Cargo PUT"}, {"crgo_descripcion": "Cargo PATCH"}),
     CatalogTestCase("modalidades", "mdld_id", {"mdld_nombre": "QA Remoto", "mdld_descripcion": "Modalidad QA"}, {"mdld_nombre": "QA Híbrido", "mdld_descripcion": "Modalidad PUT"}, {"mdld_descripcion": "Modalidad PATCH"}),
@@ -308,3 +322,70 @@ def test_filtro_region_por_pais(client: TestClient):
     response = client.get("/catalogos/regiones", params={"pais_id": pais_id})
     assert response.status_code == 200
     assert any(item["reg_id"] == reg_id for item in response.json())
+
+
+def test_habilidad_retorna_categoria_anidada(client: TestClient):
+    categoria = client.post(
+        "/catalogos/categorias-habilidad",
+        json={"cthb_nombre": "QA Bases de Datos", "cthb_descripcion": "BD QA"},
+    )
+    assert categoria.status_code == 201
+    categoria_id = categoria.json()["cthb_id"]
+
+    habilidad = client.post(
+        "/catalogos/habilidades",
+        json={
+            "hab_nombre": "QA PostgreSQL",
+            "hab_descripcion": "BD",
+            "hab_categoria_habilidad_id": categoria_id,
+        },
+    )
+    assert habilidad.status_code == 201, habilidad.text
+    body = habilidad.json()
+    assert body["hab_categoria_habilidad_id"] == categoria_id
+    assert body["categoria"]["cthb_id"] == categoria_id
+    assert body["categoria"]["cthb_nombre"] == "QA Bases de Datos"
+
+
+def test_habilidades_filtran_por_categoria(client: TestClient):
+    cat1 = client.post("/catalogos/categorias-habilidad", json={"cthb_nombre": "QA Lenguajes"}).json()
+    cat2 = client.post("/catalogos/categorias-habilidad", json={"cthb_nombre": "QA Cloud"}).json()
+    h1 = client.post("/catalogos/habilidades", json={"hab_nombre": "QA Python", "hab_categoria_habilidad_id": cat1["cthb_id"]}).json()
+    client.post("/catalogos/habilidades", json={"hab_nombre": "QA AWS", "hab_categoria_habilidad_id": cat2["cthb_id"]})
+
+    response = client.get("/catalogos/habilidades", params={"categoria_id": cat1["cthb_id"]})
+    assert response.status_code == 200
+    ids = {x["hab_id"] for x in response.json()}
+    assert h1["hab_id"] in ids
+    assert all(x["hab_categoria_habilidad_id"] == cat1["cthb_id"] for x in response.json())
+
+
+def test_habilidad_categoria_inexistente_retorna_422(client: TestClient):
+    response = client.post(
+        "/catalogos/habilidades",
+        json={"hab_nombre": "QA Rust", "hab_categoria_habilidad_id": 999999},
+    )
+    assert response.status_code == 422
+    assert "categor" in str(response.json()).lower()
+
+
+def test_categoria_en_uso_no_se_puede_eliminar(client: TestClient):
+    categoria = client.post(
+        "/catalogos/categorias-habilidad", json={"cthb_nombre": "QA Categoria En Uso"}
+    ).json()
+    client.post(
+        "/catalogos/habilidades",
+        json={"hab_nombre": "QA Habilidad Dependiente", "hab_categoria_habilidad_id": categoria["cthb_id"]},
+    )
+    response = client.delete(f"/catalogos/categorias-habilidad/{categoria['cthb_id']}")
+    assert response.status_code == 409
+
+
+def test_habilidad_permite_categoria_nula(client: TestClient):
+    response = client.post(
+        "/catalogos/habilidades",
+        json={"hab_nombre": "QA Sin Categoria", "hab_categoria_habilidad_id": None},
+    )
+    assert response.status_code == 201
+    assert response.json()["hab_categoria_habilidad_id"] is None
+    assert response.json()["categoria"] is None

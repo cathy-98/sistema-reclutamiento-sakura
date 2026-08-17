@@ -48,12 +48,14 @@ class CatalogCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         search_fields: Iterable[str],
         allowed_filter_fields: Iterable[str] = (),
         required_fields: Iterable[str] = (),
+        foreign_key_validators: Mapping[str, tuple[type[Base], str, str]] | None = None,
     ) -> None:
         self.model = model
         self.id_field = id_field
         self.search_fields = tuple(search_fields)
         self.allowed_filter_fields = set(allowed_filter_fields)
         self.required_fields = set(required_fields)
+        self.foreign_key_validators = dict(foreign_key_validators or {})
 
         # Validación temprana de la configuración del repository.
         for field_name in (
@@ -61,10 +63,16 @@ class CatalogCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             *self.search_fields,
             *self.allowed_filter_fields,
             *self.required_fields,
+            *self.foreign_key_validators.keys(),
         ):
             if not hasattr(self.model, field_name):
                 raise RuntimeError(
                     f"Configuración CRUD inválida: {self.model.__name__} no posee {field_name}"
+                )
+        for target_model, target_id_field, _label in self.foreign_key_validators.values():
+            if not hasattr(target_model, target_id_field):
+                raise RuntimeError(
+                    f"Configuración CRUD inválida: {target_model.__name__} no posee {target_id_field}"
                 )
 
     def list(
@@ -113,6 +121,7 @@ class CatalogCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def create(self, db: Session, payload: CreateSchemaType) -> ModelType:
         data = payload.model_dump()
         self._validate_required_fields(data)
+        self._validate_foreign_keys(db, data)
         instance = self.model(**data)
         db.add(instance)
 
@@ -133,6 +142,7 @@ class CatalogCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """PUT: reemplaza los campos editables usando el schema de creación completo."""
         data = payload.model_dump()
         self._validate_required_fields(data)
+        self._validate_foreign_keys(db, data)
         return self._apply_update(db, instance, data)
 
     def update(
@@ -146,6 +156,7 @@ class CatalogCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if not data:
             raise CatalogValidationError("Debe enviar al menos un campo para actualizar")
         self._validate_required_fields(data, partial=True)
+        self._validate_foreign_keys(db, data)
         return self._apply_update(db, instance, data)
 
     def delete(self, db: Session, instance: ModelType) -> None:
@@ -189,6 +200,16 @@ class CatalogCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 raise CatalogValidationError(
                     f"El campo '{field_name}' no puede quedar nulo"
                 )
+
+    def _validate_foreign_keys(self, db: Session, data: Mapping[str, Any]) -> None:
+        for field_name, (target_model, target_id_field, label) in self.foreign_key_validators.items():
+            if field_name not in data or data[field_name] is None:
+                continue
+            stmt = select(target_model).where(
+                getattr(target_model, target_id_field) == data[field_name]
+            )
+            if db.scalar(stmt) is None:
+                raise CatalogValidationError(f"{label} no existe")
 
     @staticmethod
     def _translate_integrity_error(

@@ -208,9 +208,47 @@ class NivelEducacionalRead(BaseRead):
 # PUESTO, EXPERIENCIA Y CONDICIONES DE TRABAJO
 # ==========================================================
 
+class CategoriaHabilidadBase(BaseCreate):
+    cthb_nombre: Text100
+    cthb_descripcion: Optional[Text300] = None
+
+
+class CategoriaHabilidadCreate(CategoriaHabilidadBase):
+    pass
+
+
+class CategoriaHabilidadUpdate(BaseUpdate):
+    cthb_nombre: Optional[Text100] = None
+    cthb_descripcion: Optional[Text300] = None
+
+
+class CategoriaHabilidadRead(BaseRead):
+    cthb_id: int
+    cthb_nombre: str
+    cthb_descripcion: Optional[str] = None
+
+
+class IdiomaBase(BaseCreate):
+    idio_nombre: Text100
+
+
+class IdiomaCreate(IdiomaBase):
+    pass
+
+
+class IdiomaUpdate(BaseUpdate):
+    idio_nombre: Optional[Text100] = None
+
+
+class IdiomaRead(BaseRead):
+    idio_id: int
+    idio_nombre: str
+
+
 class HabilidadBase(BaseCreate):
     hab_nombre: Text255
     hab_descripcion: Optional[Text300] = None
+    hab_categoria_habilidad_id: Optional[int] = Field(default=None, ge=1)
 
 
 class HabilidadCreate(HabilidadBase):
@@ -220,12 +258,15 @@ class HabilidadCreate(HabilidadBase):
 class HabilidadUpdate(BaseUpdate):
     hab_nombre: Optional[Text255] = None
     hab_descripcion: Optional[Text300] = None
+    hab_categoria_habilidad_id: Optional[int] = Field(default=None, ge=1)
 
 
 class HabilidadRead(BaseRead):
     hab_id: int
     hab_nombre: Optional[str] = None
     hab_descripcion: Optional[str] = None
+    hab_categoria_habilidad_id: Optional[int] = None
+    categoria: Optional[CategoriaHabilidadRead] = None
 
 
 class NivelHabilidadBase(BaseCreate):
