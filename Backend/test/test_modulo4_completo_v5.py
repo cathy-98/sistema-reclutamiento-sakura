@@ -140,8 +140,8 @@ SUPPORT_TABLES_DDL = [
     """,
     """
     CREATE TABLE tbl_estado_solicitud_candidato (
-        escc_id INTEGER PRIMARY KEY,
-        escc_nombre VARCHAR(100) NOT NULL UNIQUE
+        essc_id INTEGER PRIMARY KEY,
+        essc_nombre VARCHAR(100) NOT NULL UNIQUE
     )
     """,
 ]
@@ -299,7 +299,7 @@ def _seed():
                 (6,'Error Tecnico')
         """))
         db.execute(text("""
-            INSERT INTO tbl_estado_solicitud_candidato(escc_id,escc_nombre)
+            INSERT INTO tbl_estado_solicitud_candidato(essc_id,essc_nombre)
             VALUES
                 (1,'En revision'),
                 (2,'En entrevista'),
@@ -1073,7 +1073,7 @@ def test_asignado_vencido_pasa_a_vencido(client, create_token, assign_token, can
     db = TestingSessionLocal()
     try:
         a = db.get(m4_models.CandidatoCuestionario, aid)
-        a.cdcu_fecha_vencimiento = datetime.utcnow() - timedelta(minutes=1)
+        a.cdcu_fecha_vencimiento = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
         db.commit()
     finally:
         db.close()
@@ -1089,7 +1089,7 @@ def test_no_inicia_vencido(client, create_token, assign_token, candidate1_token)
     db = TestingSessionLocal()
     try:
         a = db.get(m4_models.CandidatoCuestionario, aid)
-        a.cdcu_fecha_vencimiento = datetime.utcnow() - timedelta(minutes=1)
+        a.cdcu_fecha_vencimiento = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
         db.commit()
     finally:
         db.close()
@@ -1106,7 +1106,7 @@ def test_limite_tiempo_finaliza_automaticamente(client, create_token, assign_tok
     try:
         a = db.get(m4_models.CandidatoCuestionario, aid)
         # Duración total 8 min; forzamos 9 min transcurridos.
-        a.cdcu_fecha_inicio = datetime.utcnow() - timedelta(minutes=9)
+        a.cdcu_fecha_inicio = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=9)
         db.commit()
     finally:
         db.close()
