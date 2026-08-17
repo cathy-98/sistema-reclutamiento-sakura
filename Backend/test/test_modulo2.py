@@ -969,9 +969,14 @@ def test_evaluacion_candidato_no_cumple_por_experiencia(client: TestClient, seed
         headers=_headers(seed_info["view_user_id"]),
     )
     assert response.status_code == 200
-    assert response.json()["cumple_excluyentes"] is False
-    assert response.json()["descartado_automaticamente"] is True
-    assert response.json()["habilidades_faltantes"]
+    body = response.json()
+    assert body["cumple_excluyentes"] is False
+    # Regla vigente M2/M3: la evaluación es informativa y no cambia automáticamente
+    # el estado de postulación del candidato.
+    assert body["descartado_automaticamente"] is False
+    assert body["habilidades_faltantes"]
+    assert body["habilidades_faltantes"][0]["habilidad_id"] == seed_info["habilidad1_id"]
+    assert "Experiencia insuficiente" in body["habilidades_faltantes"][0]["motivo"]
 
 
 def test_evaluacion_candidato_no_cumple_por_habilidad_faltante(client: TestClient, seed_info: SeedInfo):
@@ -982,7 +987,92 @@ def test_evaluacion_candidato_no_cumple_por_habilidad_faltante(client: TestClien
         headers=_headers(seed_info["view_user_id"]),
     )
     assert response.status_code == 200
-    assert response.json()["cumple_excluyentes"] is False
+    body = response.json()
+    assert body["cumple_excluyentes"] is False
+    assert body["descartado_automaticamente"] is False
+    assert body["habilidades_faltantes"]
+    assert body["habilidades_faltantes"][0]["habilidad_id"] == seed_info["habilidad1_id"]
+    assert "no informada" in body["habilidades_faltantes"][0]["motivo"].lower()
+
+
+
+
+def test_evaluacion_excluyentes_requiere_sol_view(client: TestClient, seed_info: SeedInfo):
+    req = _create_request(client, seed_info)
+    response = client.post(
+        f"/solicitudes/{req['sol_id']}/evaluar-candidato",
+        json=[{"habilidad_id": seed_info["habilidad1_id"], "anios_experiencia": 3}],
+        headers=_headers(seed_info["no_perm_user_id"]),
+    )
+    assert response.status_code == 403
+
+
+def test_evaluacion_excluyentes_sin_token_401(client: TestClient, seed_info: SeedInfo):
+    req = _create_request(client, seed_info)
+    response = client.post(
+        f"/solicitudes/{req['sol_id']}/evaluar-candidato",
+        json=[{"habilidad_id": seed_info["habilidad1_id"], "anios_experiencia": 3}],
+    )
+    assert response.status_code == 401
+
+
+def test_evaluacion_excluyentes_solicitud_inexistente_404(client: TestClient, seed_info: SeedInfo):
+    response = client.post(
+        "/solicitudes/999999/evaluar-candidato",
+        json=[{"habilidad_id": seed_info["habilidad1_id"], "anios_experiencia": 3}],
+        headers=_headers(seed_info["view_user_id"]),
+    )
+    assert response.status_code == 404
+
+
+def test_evaluacion_excluyentes_payload_invalido_422(client: TestClient, seed_info: SeedInfo):
+    req = _create_request(client, seed_info)
+    response = client.post(
+        f"/solicitudes/{req['sol_id']}/evaluar-candidato",
+        json=[{"habilidad_id": 0, "anios_experiencia": -1}],
+        headers=_headers(seed_info["view_user_id"]),
+    )
+    assert response.status_code == 422
+
+
+def test_evaluacion_excluyentes_ignora_habilidades_no_excluyentes(client: TestClient, seed_info: SeedInfo):
+    req = _create_request(client, seed_info)
+    response = client.post(
+        f"/solicitudes/{req['sol_id']}/evaluar-candidato",
+        json=[
+            {"habilidad_id": seed_info["habilidad1_id"], "anios_experiencia": 2},
+            {"habilidad_id": seed_info["habilidad2_id"], "anios_experiencia": 0},
+        ],
+        headers=_headers(seed_info["view_user_id"]),
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cumple_excluyentes"] is True
+    assert body["descartado_automaticamente"] is False
+    assert body["habilidades_faltantes"] == []
+
+
+def test_evaluacion_excluyentes_no_modifica_solicitud(client: TestClient, seed_info: SeedInfo):
+    req = _create_request(client, seed_info)
+    before = client.get(
+        f"/solicitudes/{req['sol_id']}",
+        headers=_headers(seed_info["view_user_id"]),
+    ).json()
+
+    response = client.post(
+        f"/solicitudes/{req['sol_id']}/evaluar-candidato",
+        json=[{"habilidad_id": seed_info["habilidad1_id"], "anios_experiencia": 0}],
+        headers=_headers(seed_info["view_user_id"]),
+    )
+    assert response.status_code == 200
+    assert response.json()["descartado_automaticamente"] is False
+
+    after = client.get(
+        f"/solicitudes/{req['sol_id']}",
+        headers=_headers(seed_info["view_user_id"]),
+    ).json()
+    assert after["sol_estado_solicitud_id"] == before["sol_estado_solicitud_id"]
+    assert after["sol_usuario_creador_id"] == before["sol_usuario_creador_id"]
 
 
 # =============================================================================
