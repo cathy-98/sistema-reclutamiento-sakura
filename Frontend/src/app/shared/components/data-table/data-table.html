@@ -64,9 +64,18 @@
             scope="col"
             [class.sticky-left]="column.sticky === 'left'"
             [class.sticky-right]="column.sticky === 'right'"
+            [class.is-sortable]="column.sortable"
+            [class.is-sorted]="sortKey === column.key"
+            [attr.aria-sort]="sortKey === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null"
             [ngStyle]="columnStyle(column)"
+            (click)="toggleSort(column)"
           >
-            {{ column.label }}
+            <button class="sort-button" type="button" *ngIf="column.sortable; else plainHeader">
+              <span>{{ column.label }}</span>
+              <span class="sort-indicator" aria-hidden="true">{{ sortKey === column.key ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+              <span class="sr-only">{{ sortLabel(column) }}</span>
+            </button>
+            <ng-template #plainHeader>{{ column.label }}</ng-template>
           </th>
           <th *ngIf="hasActions" class="actions-column sticky-right" scope="col" [ngStyle]="actionsColumnStyle()">
             Acciones
@@ -75,7 +84,7 @@
       </thead>
 
       <tbody>
-        <tr *ngFor="let row of rows; trackBy: trackRow">
+        <tr *ngFor="let row of sortedRows; trackBy: trackRow">
           <td *ngIf="selectable" class="select-column sticky-left" [ngStyle]="selectColumnStyle()">
             <input
               type="checkbox"

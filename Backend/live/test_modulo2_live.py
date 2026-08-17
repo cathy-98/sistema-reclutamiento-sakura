@@ -325,7 +325,9 @@ def run():
         raise LiveQAError(f"Código de solicitud inesperado: {code!r}")
     if int(created["sol_estado_solicitud_id"]) != ctx.estado_ids["Pendiente"]:
         raise LiveQAError("La nueva solicitud no quedó en estado Pendiente")
-    pass_msg(f"Solicitud creada -> {code}")
+    if not created.get("sol_usuario_creador_id"):
+        raise LiveQAError("La solicitud no registró sol_usuario_creador_id desde el JWT")
+    pass_msg(f"Solicitud creada -> {code} y creador registrado")
 
     request("GET", f"/solicitudes/{sol_id}", expected=(200,), token=token)
     listing = request(
@@ -361,7 +363,35 @@ def run():
     ).json()
     if evaluation.get("cumple_excluyentes") is not True:
         raise LiveQAError(f"Evaluación excluyentes inesperada: {evaluation}")
-    pass_msg("Evaluación de habilidades excluyentes")
+    if evaluation.get("descartado_automaticamente") is not False:
+        raise LiveQAError(f"La evaluación positiva no debe descartar automáticamente: {evaluation}")
+    pass_msg("Evaluación excluyentes: cumple y no descarta automáticamente")
+
+    insufficient = request(
+        "POST", f"/solicitudes/{sol_id}/evaluar-candidato", expected=(200,), token=token,
+        json=[{"habilidad_id": ctx.habilidad_id, "anios_experiencia": 0}],
+    ).json()
+    if insufficient.get("cumple_excluyentes") is not False:
+        raise LiveQAError(f"Se esperaba incumplimiento por experiencia: {insufficient}")
+    if insufficient.get("descartado_automaticamente") is not False:
+        raise LiveQAError(
+            "Regla vigente M2/M3 violada: incumplir excluyentes no debe descartar automáticamente"
+        )
+    if not insufficient.get("habilidades_faltantes"):
+        raise LiveQAError(f"Faltó detalle de habilidad/experiencia insuficiente: {insufficient}")
+    pass_msg("Evaluación excluyentes: experiencia insuficiente sin descarte automático")
+
+    missing = request(
+        "POST", f"/solicitudes/{sol_id}/evaluar-candidato", expected=(200,), token=token,
+        json=[],
+    ).json()
+    if missing.get("cumple_excluyentes") is not False:
+        raise LiveQAError(f"Se esperaba incumplimiento por habilidad faltante: {missing}")
+    if missing.get("descartado_automaticamente") is not False:
+        raise LiveQAError("Habilidad faltante no debe descartar automáticamente")
+    if not missing.get("habilidades_faltantes"):
+        raise LiveQAError(f"No se informó habilidad obligatoria faltante: {missing}")
+    pass_msg("Evaluación excluyentes: habilidad faltante sin descarte automático")
 
     # Estados: Pendiente -> En Curso -> Pausado -> En Curso -> Cancelado.
     request(

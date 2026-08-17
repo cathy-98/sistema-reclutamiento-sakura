@@ -15,6 +15,7 @@ export interface DataTableColumn<T> {
   label: string;
   width: number;
   type?: DataTableColumnType;
+  sortable?: boolean;
   wrap?: boolean;
   sticky?: 'left' | 'right';
   value?: (row: T) => string | number;
@@ -71,6 +72,8 @@ export class DataTable<T> {
 
   readonly tableId = `table-${Math.random().toString(36).slice(2)}`;
   openActionMenuRowId = '';
+  sortKey = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   get titleId() {
     return `${this.tableId}-title`;
@@ -90,6 +93,25 @@ export class DataTable<T> {
 
   get allVisibleSelected() {
     return this.rows.length > 0 && this.rows.every((row) => this.isSelected(row));
+  }
+
+  get sortedRows() {
+    if (!this.sortKey) {
+      return this.rows;
+    }
+
+    const column = this.columns.find((item) => item.key === this.sortKey);
+
+    if (!column) {
+      return this.rows;
+    }
+
+    return [...this.rows].sort((a, b) => {
+      const valueA = this.valorOrden(a, column);
+      const valueB = this.valorOrden(b, column);
+      const result = valueA.localeCompare(valueB, 'es-CL', { numeric: true, sensitivity: 'base' });
+      return this.sortDirection === 'asc' ? result : -result;
+    });
   }
 
   get hasActions() {
@@ -208,6 +230,32 @@ export class DataTable<T> {
     this.pageSizeChange.emit(size);
   }
 
+  toggleSort(column: DataTableColumn<T>) {
+    if (!column.sortable) {
+      return;
+    }
+
+    if (this.sortKey === column.key) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+
+    this.sortKey = column.key;
+    this.sortDirection = 'asc';
+  }
+
+  sortLabel(column: DataTableColumn<T>) {
+    if (!column.sortable) {
+      return null;
+    }
+
+    if (this.sortKey !== column.key) {
+      return 'Ordenar';
+    }
+
+    return this.sortDirection === 'asc' ? 'Ascendente' : 'Descendente';
+  }
+
   visibleAction(action: DataTableAction<T>, row: T) {
     return action.visible ? action.visible(row) : true;
   }
@@ -245,6 +293,10 @@ export class DataTable<T> {
   trackRow = (_index: number, row: T) => this.rowId(row);
   trackColumn = (_index: number, column: DataTableColumn<T>) => column.key;
   trackAction = (_index: number, action: DataTableAction<T>) => action.id;
+
+  private valorOrden(row: T, column: DataTableColumn<T>) {
+    return `${this.columnValue(row, column)} ${this.secondaryValue(row, column)}`.trim();
+  }
 
   private leftOffset(column: DataTableColumn<T>) {
     const selectableWidth = this.selectable ? 52 : 0;

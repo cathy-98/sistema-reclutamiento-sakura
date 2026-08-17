@@ -74,6 +74,7 @@ export class SolicitudesList implements OnInit {
       label: 'ID solicitud',
       width: 138,
       sticky: 'left',
+      sortable: true,
     },
     {
       key: 'nombre',
@@ -83,12 +84,14 @@ export class SolicitudesList implements OnInit {
       wrap: true,
       value: (solicitud) => solicitud.nombre,
       secondaryValue: (solicitud) => `${solicitud.vacantes} vacantes`,
+      sortable: true,
     },
     {
       key: 'cliente',
       label: 'Cliente',
       width: 260,
       wrap: true,
+      sortable: true,
     },
     {
       key: 'cargo',
@@ -96,12 +99,14 @@ export class SolicitudesList implements OnInit {
       width: 250,
       wrap: true,
       value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
+      sortable: true,
     },
     {
       key: 'responsable',
-      label: 'Responsable',
+      label: 'Reclutador asignado',
       width: 190,
       wrap: true,
+      sortable: true,
     },
     {
       key: 'seleccion',
@@ -110,11 +115,13 @@ export class SolicitudesList implements OnInit {
       type: 'stack',
       value: (solicitud) => `Inicio: ${this.fechaInicioSeleccion(solicitud)}`,
       secondaryValue: (solicitud) => `Fin: ${this.fechaFinSeleccion(solicitud)}`,
+      sortable: true,
     },
     {
       key: 'inicioEmpleo',
       label: 'Inicio empleo',
       width: 132,
+      sortable: true,
     },
     {
       key: 'prioridad',
@@ -122,6 +129,7 @@ export class SolicitudesList implements OnInit {
       width: 118,
       type: 'badge',
       className: (solicitud) => this.prioridadClase(solicitud.prioridad),
+      sortable: true,
     },
     {
       key: 'estado',
@@ -129,6 +137,7 @@ export class SolicitudesList implements OnInit {
       width: 132,
       type: 'badge',
       className: (solicitud) => this.estadoClase(solicitud.estado),
+      sortable: true,
     },
     {
       key: 'descripcion',

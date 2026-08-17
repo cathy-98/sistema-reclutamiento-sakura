@@ -9,6 +9,7 @@ from app.candidatos import router as candidatos_router
 from app.clientes import router as clientes_router                                                  
 from app.solicitudes import router as solicitudes_router
 from app.cuestionarios.router import router as cuestionarios_router
+from app.entrevistas.router import router as entrevistas_router
 
 
 # ==========================================================
@@ -48,6 +49,7 @@ app.include_router(clientes_router.router)
 app.include_router(candidatos_router.router)                                            
 app.include_router(solicitudes_router.router) # Registrar el enrutador de solicitudes
 app.include_router(cuestionarios_router)
+app.include_router(entrevistas_router)
 
 
 # ==========================================================

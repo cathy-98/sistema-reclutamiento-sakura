@@ -29,6 +29,7 @@ export class CompactSelect implements ControlValueAccessor {
   @Input() searchable = false;
   @Input() searchPlaceholder = 'Buscar...';
   @Output() actionSelected = new EventEmitter<void>();
+  @Output() valueChange = new EventEmitter<number | null>();
 
   value: number | null = null;
   disabled = false;
@@ -98,6 +99,7 @@ export class CompactSelect implements ControlValueAccessor {
     this.abierto = false;
     this.searchTerm = '';
     this.onChange(value);
+    this.valueChange.emit(value);
     this.onTouched();
   }
 
