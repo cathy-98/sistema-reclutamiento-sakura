@@ -113,9 +113,12 @@
   titulo="Cancelar solicitud"
   mensaje="Esta acción cambiará el estado de la solicitud a Cancelado."
   [detalle]="'Solicitud seleccionada: ' + (solicitudSeleccionadaCodigo || solicitudSeleccionadaId)"
+  observacionLabel="Observación de cancelación *"
+  observacionPlaceholder="Ej. Cancelada por solicitud del cliente"
+  [observacionRequerida]="true"
   textoCancelar="Volver"
   textoConfirmar="Confirmar cancelación"
   variante="danger"
   (cancelar)="cerrarConfirmacionCancelacion()"
-  (confirmar)="confirmarCancelacionSolicitud()"
+  (confirmar)="confirmarCancelacionSolicitud($event)"
 ></app-confirm-dialog>

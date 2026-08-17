@@ -281,12 +281,30 @@
 
           <label class="form-field">
             Salario mínimo
-            <input type="number" min="0" placeholder="Ej. 1200000" formControlName="salario_minimo" />
+            <input
+              type="number"
+              min="0"
+              [max]="salarioMaximoPermitido"
+              placeholder="Ej. 1200000"
+              formControlName="salario_minimo"
+            />
+            <small class="form-error" *ngIf="control('salario_minimo')?.touched && control('salario_minimo')?.hasError('max')">
+              Ingresa un monto menor a $100.000.000.
+            </small>
           </label>
 
           <label class="form-field">
             Salario máximo
-            <input type="number" min="0" placeholder="Ej. 1800000" formControlName="salario_maximo" />
+            <input
+              type="number"
+              min="0"
+              [max]="salarioMaximoPermitido"
+              placeholder="Ej. 1800000"
+              formControlName="salario_maximo"
+            />
+            <small class="form-error" *ngIf="control('salario_maximo')?.touched && control('salario_maximo')?.hasError('max')">
+              Ingresa un monto menor a $100.000.000.
+            </small>
           </label>
 
           <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('rangoSalarioInvalido')">

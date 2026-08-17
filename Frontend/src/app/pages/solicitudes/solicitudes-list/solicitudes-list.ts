@@ -60,6 +60,7 @@ export class SolicitudesList implements OnInit {
   solicitudSeleccionadaId: string | null = null;
   solicitudSeleccionadaCodigo: string | null = null;
   solicitudSeleccionadaResumen: SolicitudResumen | null = null;
+  observacionCancelacion = '';
   modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
   solicitudes: SolicitudResumen[] = [];
   seleccionados = new Set<string>();
@@ -170,6 +171,10 @@ export class SolicitudesList implements OnInit {
     return this.authService.tieneRol(['Administrador']);
   }
 
+  puedeCancelarSolicitudFila(solicitud: SolicitudResumen) {
+    return this.puedeCancelarSolicitud && this.estadoPermiteCancelacion(solicitud.estado);
+  }
+
   get codigoSolicitudEstimado() {
     const correlativos = this.solicitudes
       .map((solicitud) => /^SOL-(\d{6})$/.exec(solicitud.codigo)?.[1])
@@ -233,6 +238,7 @@ export class SolicitudesList implements OnInit {
         label: 'Cancelar solicitud',
         icon: 'cancel',
         visible: () => this.puedeCancelarSolicitud,
+        disabled: (solicitud) => !this.puedeCancelarSolicitudFila(solicitud),
       },
     ];
   }
@@ -245,10 +251,12 @@ export class SolicitudesList implements OnInit {
     return prioridad.toLowerCase();
   }
 
-  cargarSolicitudes() {
+  cargarSolicitudes(opciones: { conservarAlerta?: boolean } = {}) {
     this.cargando = true;
     this.errorCarga = '';
-    this.alerta = null;
+    if (!opciones.conservarAlerta) {
+      this.alerta = null;
+    }
     this.cdr.detectChanges();
     this.limpiarTimeoutCarga();
 
@@ -325,8 +333,19 @@ export class SolicitudesList implements OnInit {
       return;
     }
 
+    if (!this.estadoPermiteCancelacion(solicitud.estado)) {
+      this.mostrarAlerta({
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: `No puedes cancelar una solicitud en estado "${solicitud.estado}".`,
+      });
+      return;
+    }
+
     this.solicitudSeleccionadaId = solicitud.id;
     this.solicitudSeleccionadaCodigo = solicitud.codigo;
+    this.solicitudSeleccionadaResumen = solicitud;
+    this.observacionCancelacion = '';
     this.mostrarConfirmacionCancelacion = true;
   }
 
@@ -363,10 +382,23 @@ export class SolicitudesList implements OnInit {
     this.mostrarConfirmacionCancelacion = false;
     this.solicitudSeleccionadaId = null;
     this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaResumen = null;
+    this.observacionCancelacion = '';
   }
 
-  confirmarCancelacionSolicitud() {
+  confirmarCancelacionSolicitud(observacion: string) {
     if (!this.solicitudSeleccionadaId) {
+      return;
+    }
+
+    const observacionCancelacion = observacion.trim();
+
+    if (!observacionCancelacion) {
+      this.mostrarAlerta({
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Ingresa una observación para cancelar la solicitud.',
+      });
       return;
     }
 
@@ -374,24 +406,24 @@ export class SolicitudesList implements OnInit {
       .cambiarEstado(
         this.solicitudSeleccionadaId,
         'Cancelado',
-        'Solicitud cancelada por confirmación del usuario.',
+        observacionCancelacion,
       )
       .subscribe({
         next: () => {
-          this.alerta = {
+          this.aplicarCancelacionEnListado(this.solicitudSeleccionadaId as string, observacionCancelacion);
+          this.mostrarAlerta({
             tipo: 'success',
             variante: 'soft',
             mensaje: 'Solicitud cancelada correctamente.',
-          };
+          });
           this.cerrarConfirmacionCancelacion();
-          this.cargarSolicitudes();
         },
         error: (error) => {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo cancelar la solicitud.'),
-          };
+          });
           this.cerrarConfirmacionCancelacion();
         },
       });
@@ -407,12 +439,12 @@ export class SolicitudesList implements OnInit {
 
   manejarFormularioGuardado() {
     this.cerrarFormulario();
-    this.alerta = {
+    this.mostrarAlerta({
       tipo: 'success',
       variante: 'soft',
       mensaje: 'Solicitud guardada correctamente.',
-    };
-    this.cargarSolicitudes();
+    });
+    this.cargarSolicitudes({ conservarAlerta: true });
   }
 
   cerrarAlerta() {
@@ -429,11 +461,32 @@ export class SolicitudesList implements OnInit {
   }
 
   private mostrarAlertaPermisos() {
-    this.alerta = {
+    this.mostrarAlerta({
       tipo: 'warning',
       variante: 'soft',
       mensaje: 'No tienes permisos para realizar esta acción.',
-    };
+    });
+  }
+
+  private mostrarAlerta(alerta: AlertaUi) {
+    this.alerta = alerta;
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  private estadoPermiteCancelacion(estado: string) {
+    return ['pendiente', 'en curso', 'en entrevistas', 'pausado'].includes(this.normalizar(estado));
+  }
+
+  private aplicarCancelacionEnListado(idSolicitud: string, observacion: string) {
+    this.solicitudes = this.solicitudes.map((solicitud) =>
+      solicitud.id === idSolicitud
+        ? {
+            ...solicitud,
+            estado: 'Cancelado',
+            descripcion: observacion,
+          }
+        : solicitud,
+    );
   }
 
   obtenerIdSolicitud(solicitud: SolicitudResumen) {
