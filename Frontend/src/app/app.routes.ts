@@ -24,6 +24,12 @@ export const routes: Routes = [
         data: { roles: ['Administrador', 'Reclutador', 'Entrevistador'] }
       },
       {
+        path: 'portal-candidato',
+        loadComponent: () =>
+          import('./pages/candidatos/candidato-perfil-page/candidato-perfil-page').then((m) => m.CandidatoPerfilPage),
+        data: { roles: ['Candidato'], autoservicio: true }
+      },
+      {
         path: 'candidatos/perfil/:id',
         loadComponent: () =>
           import('./pages/candidatos/candidato-perfil-page/candidato-perfil-page').then((m) => m.CandidatoPerfilPage),

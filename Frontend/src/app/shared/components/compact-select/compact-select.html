@@ -5,17 +5,38 @@
   </button>
 
   <div class="select-menu" *ngIf="abierto">
-    <button class="select-option is-placeholder" type="button" (click)="seleccionar(null)">
-      {{ placeholder }}
-    </button>
-    <button
-      class="select-option"
-      type="button"
-      *ngFor="let option of options"
-      [class.is-selected]="option.id === value"
-      (click)="seleccionar(option.id)"
-    >
-      {{ option.nombre }}
-    </button>
+    <div class="select-menu-header" *ngIf="actionLabel || searchable">
+      <button
+        class="select-action"
+        type="button"
+        *ngIf="actionLabel"
+        [disabled]="actionDisabled"
+        (click)="ejecutarAccion($event)"
+      >
+        {{ actionLabel }}
+      </button>
+      <div class="select-search" *ngIf="searchable">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          [placeholder]="searchPlaceholder"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+    </div>
+    <div class="select-options">
+      <button
+        class="select-option"
+        type="button"
+        *ngFor="let option of filteredOptions"
+        [class.is-selected]="option.id === value"
+        (click)="seleccionar(option.id)"
+      >
+        {{ option.nombre }}
+      </button>
+      <div class="select-empty" *ngIf="filteredOptions.length === 0">
+        Sin coincidencias
+      </div>
+    </div>
   </div>
 </div>

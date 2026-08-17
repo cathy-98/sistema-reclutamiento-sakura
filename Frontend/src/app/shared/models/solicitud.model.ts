@@ -98,6 +98,7 @@ export interface SolicitudResumen {
   codigo: string;
   nombre: string;
   cliente: string;
+  empresaCliente: string;
   cargo: string;
   vacantes: number;
   responsable: string;
@@ -105,5 +106,5 @@ export interface SolicitudResumen {
   inicioEmpleo: string;
   prioridad: PrioridadSolicitud;
   estado: EstadoSolicitud;
-  observacion: string;
+  descripcion: string;
 }

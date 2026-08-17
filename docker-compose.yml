@@ -79,6 +79,10 @@ services:
 
     restart: unless-stopped
 
+    environment:
+      # Frontend dentro de Docker debe resolver el backend por nombre de servicio.
+      SAKURA_API_TARGET: http://backend:8000
+
     ports:
       - "4200:4200"
 
