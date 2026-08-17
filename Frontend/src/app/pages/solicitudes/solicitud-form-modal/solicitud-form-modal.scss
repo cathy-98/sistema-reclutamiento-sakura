@@ -205,6 +205,14 @@
   accent-color: var(--color-sakura);
 }
 
+.detail-skills-message {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
 .modal-loading {
   align-self: center;
   justify-self: center;
@@ -260,7 +268,7 @@
 
 .inline-create-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
   gap: 8px;
   padding: 10px;
   border: 1px dashed var(--color-border);
@@ -283,6 +291,20 @@
 .inline-create-panel button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.skills-form-grid .inline-create-panel {
+  grid-template-columns: 1fr 1fr;
+}
+
+.skills-form-grid .inline-create-panel input {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.skills-form-grid .inline-create-panel button {
+  width: 100%;
+  min-width: 0;
 }
 
 .form-field small {
@@ -379,52 +401,15 @@ textarea::placeholder {
 }
 
 .skills-preview {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   margin-top: 18px;
   padding: 12px 14px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface-soft);
-}
-
-.skills-preview div {
-  display: grid;
-  gap: 3px;
-}
-
-.skills-preview strong {
-  font-size: 12px;
-}
-
-.skills-preview span {
-  color: var(--color-muted);
-  font-size: 11px;
-}
-
-.skill-importance {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: start;
-  width: fit-content;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.skill-importance.excluyente {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
-}
-
-.skill-importance.no-excluyente {
-  background: var(--color-success-bg);
-  color: var(--color-success);
 }
 
 .skills-preview button {
@@ -435,6 +420,43 @@ textarea::placeholder {
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
+}
+
+.skill-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(160px, 0.85fr) 96px 146px;
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.skill-edit-grid .form-field {
+  min-height: auto;
+}
+
+.skill-edit-grid input:not([type="checkbox"]) {
+  min-height: 42px;
+}
+
+.skill-inline-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.skill-inline-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-sakura);
 }
 
 .skills-empty {
@@ -461,6 +483,10 @@ textarea::placeholder {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .skill-edit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .skills-form-grid app-button {
     margin-top: 0;
   }
@@ -470,7 +496,12 @@ textarea::placeholder {
   .detail-columns,
   .detail-grid,
   .skills-form-grid,
+  .skill-edit-grid,
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skills-preview {
     grid-template-columns: 1fr;
   }
 }

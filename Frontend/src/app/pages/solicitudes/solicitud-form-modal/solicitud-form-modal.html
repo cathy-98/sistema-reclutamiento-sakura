@@ -76,7 +76,7 @@
             <span class="detail-step">5</span>
             Habilidades
           </h3>
-          <table *ngIf="habilidadesSolicitud.length > 0; else sinHabilidadesDetalle">
+          <table *ngIf="habilidadesDetalleVisibles.length > 0">
             <thead>
               <tr>
                 <th>Excluyente</th>
@@ -86,7 +86,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let habilidad of habilidadesSolicitud">
+              <tr *ngFor="let habilidad of habilidadesDetalleVisibles">
                 <td><input type="checkbox" [checked]="habilidad.es_excluyente" disabled /></td>
                 <td>{{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }}</td>
                 <td>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</td>
@@ -94,10 +94,10 @@
               </tr>
             </tbody>
           </table>
+          <p class="detail-text detail-skills-message" *ngIf="mensajeHabilidadesDetalle">
+            {{ mensajeHabilidadesDetalle }}
+          </p>
         </section>
-        <ng-template #sinHabilidadesDetalle>
-          <p class="detail-text">Sin habilidades registradas.</p>
-        </ng-template>
       </div>
 
       <form class="modal-form" *ngIf="modo !== 'ver' && !cargandoDetalle" [formGroup]="formularioSolicitud">
@@ -315,18 +315,31 @@
         <div class="form-grid">
           <label class="form-field">
             Inicio selección
-            <input type="date" formControlName="fecha_inicio_busqueda" />
+            <app-date-picker [min]="fechaHoyInput" formControlName="fecha_inicio_busqueda"></app-date-picker>
           </label>
 
           <label class="form-field">
             Fin selección
-            <input type="date" formControlName="fecha_cierre_busqueda" />
+            <app-date-picker [min]="control('fecha_inicio_busqueda')?.value || fechaHoyInput" formControlName="fecha_cierre_busqueda"></app-date-picker>
           </label>
 
           <label class="form-field">
             Inicio empleo
-            <input type="date" formControlName="fecha_inicio_cliente" />
+            <app-date-picker [min]="control('fecha_cierre_busqueda')?.value || control('fecha_inicio_busqueda')?.value || fechaHoyInput" formControlName="fecha_inicio_cliente"></app-date-picker>
           </label>
+
+          <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('inicioSeleccionPasado')">
+            El inicio de selección no puede ser anterior a la fecha de hoy.
+          </small>
+          <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('finSeleccionPasado')">
+            El fin de selección no puede ser anterior a la fecha de hoy.
+          </small>
+          <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('finSeleccionAntesInicio')">
+            El fin de selección no puede ser anterior al inicio de selección.
+          </small>
+          <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('inicioEmpleoFueraRango')">
+            El inicio de empleo debe ser posterior al inicio y fin de selección.
+          </small>
         </div>
       </app-form-section>
 
@@ -363,7 +376,26 @@
               formControlName="id_habilidad"
               placeholder="Selecciona habilidad"
               [options]="habilidadesCatalogo"
+              [searchable]="true"
+              actionLabel="+ Crear nueva tecnología"
+              (actionSelected)="mostrarCreacionHabilidad = true"
+              (valueChange)="mostrarCreacionHabilidad = false"
             ></app-compact-select>
+            <div class="inline-create-panel" *ngIf="mostrarCreacionHabilidad">
+              <input
+                #nuevaTecnologia
+                type="text"
+                placeholder="Nombre de la tecnología"
+                [value]="control('nueva_habilidad_nombre')?.value || ''"
+                (input)="control('nueva_habilidad_nombre')?.setValue(nuevaTecnologia.value)"
+              />
+              <button type="button" (click)="crearTecnologiaSolicitada()" [disabled]="creandoHabilidad">
+                {{ creandoHabilidad ? 'Creando' : 'Crear' }}
+              </button>
+              <button type="button" (click)="mostrarCreacionHabilidad = false" [disabled]="creandoHabilidad">
+                Cancelar
+              </button>
+            </div>
           </div>
 
           <div class="form-field">
@@ -397,16 +429,36 @@
           Todavía no agregaste habilidades.
         </div>
 
-        <div class="skills-preview" *ngFor="let habilidad of habilidadesSolicitud; let i = index">
-          <div>
-            <strong>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</strong>
-            <span>
-              {{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }} ·
-              {{ habilidad.anios_experiencia }} años
-            </span>
-            <small class="skill-importance" [ngClass]="habilidadExcluyenteClase(habilidad.es_excluyente)">
-              {{ habilidad.es_excluyente ? 'Excluyente' : 'No excluyente' }}
-            </small>
+        <div class="skills-preview" *ngFor="let habilidadForm of habilidadesFormArray.controls; let i = index" [formGroup]="habilidadFormGroup(i)">
+          <div class="skill-edit-grid">
+            <div class="form-field">
+              <span>Tecnología</span>
+              <app-compact-select
+                formControlName="id_habilidad"
+                placeholder="Selecciona habilidad"
+                [options]="habilidadesCatalogo"
+                [searchable]="true"
+              ></app-compact-select>
+            </div>
+
+            <div class="form-field">
+              <span>Nivel</span>
+              <app-compact-select
+                formControlName="id_nivel_habilidad"
+                placeholder="Selecciona nivel"
+                [options]="nivelesHabilidadCatalogo"
+              ></app-compact-select>
+            </div>
+
+            <label class="form-field">
+              Años
+              <input type="number" min="0" formControlName="anios_experiencia" />
+            </label>
+
+            <label class="skill-inline-toggle">
+              <input type="checkbox" formControlName="es_excluyente" />
+              <span>{{ habilidadForm.get('es_excluyente')?.value ? 'Excluyente' : 'No excluyente' }}</span>
+            </label>
           </div>
           <button type="button" aria-label="Eliminar habilidad" (click)="eliminarHabilidad(i)">
             Eliminar
