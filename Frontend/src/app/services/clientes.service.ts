@@ -14,12 +14,28 @@ export interface EmpresaApi {
   emp_identificacion?: string | null;
 }
 
+export interface EmpresaCreatePayload {
+  emp_nombre: string;
+  emp_identificacion?: string | null;
+}
+
 export interface ClienteApi {
   cli_id: number;
   cli_nombre: string;
   cli_cargo_empresa_id?: number | null;
   cli_area_empresa_id?: number | null;
   cli_empresa_id?: number | null;
+  cli_email?: string | null;
+  cli_email2?: string | null;
+  cli_telefono1?: string | null;
+  cli_telefono2?: string | null;
+}
+
+export interface ClienteCreatePayload {
+  cli_nombre: string;
+  cli_empresa_id: number;
+  cli_cargo_empresa_id?: number | null;
+  cli_area_empresa_id?: number | null;
   cli_email?: string | null;
   cli_email2?: string | null;
   cli_telefono1?: string | null;
@@ -40,6 +56,14 @@ export class ClientesService {
 
   listarEmpresas(params?: Omit<ClienteListParams, 'empresa_id'>) {
     return this.http.get<EmpresaApi[]>(`${this.apiUrl}/empresas`, { params: this.crearParams(params) });
+  }
+
+  crearEmpresa(payload: EmpresaCreatePayload) {
+    return this.http.post<EmpresaApi>(`${this.apiUrl}/empresas`, payload);
+  }
+
+  crearCliente(payload: ClienteCreatePayload) {
+    return this.http.post<ClienteApi>(this.apiUrl, payload);
   }
 
   obtenerCliente(id: number) {

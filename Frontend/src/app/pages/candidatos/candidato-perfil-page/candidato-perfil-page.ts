@@ -1,13 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, forkJoin, of, take, timeout } from 'rxjs';
 import { CandidatoProfileTab, CandidatoProfileTabs } from '../candidato-profile-tabs/candidato-profile-tabs';
 import { Button } from '../../../shared/components/button/button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { EntrevistaFormModal } from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
+import {
+  CandidatoPerfilCompletoApi,
+  CandidatosService,
+  EstudioCandidatoApi,
+  ExperienciaCandidatoApi,
+  HabilidadCandidatoApi,
+  PostulacionCandidatoApi,
+} from '../../../services/candidatos.service';
 import { CandidateApplicationsSection } from './components/candidate-applications-section/candidate-applications-section';
 import { CandidateDocumentsSection } from './components/candidate-documents-section/candidate-documents-section';
 import { CandidateEducationSection } from './components/candidate-education-section/candidate-education-section';
@@ -51,7 +60,7 @@ import {
   templateUrl: './candidato-perfil-page.html',
   styleUrl: './candidato-perfil-page.scss',
 })
-export class CandidatoPerfilPage {
+export class CandidatoPerfilPage implements OnInit {
   // Función futura: documentos queda oculto porque la BD actual no tiene tbl_documento.
   // Para habilitarla cuando exista soporte backend/BD, cambiar a true.
   readonly mostrarModuloDocumentos = false;
@@ -64,7 +73,7 @@ export class CandidatoPerfilPage {
   mostrarModalTest = false;
   nota = '';
 
-  readonly candidato: CandidatoPerfil;
+  candidato: CandidatoPerfil;
 
   get tabs(): CandidatoProfileTab[] {
     const tabs: CandidatoProfileTab[] = [
@@ -83,7 +92,7 @@ export class CandidatoPerfilPage {
     return tabs;
   }
 
-  readonly experiencias: ExperienciaPerfil[] = [
+  experiencias: ExperienciaPerfil[] = [
     {
       empresa: 'TechSolutions S.A.',
       cargo: 'Desarrollador Full Stack Senior',
@@ -108,7 +117,7 @@ export class CandidatoPerfilPage {
     },
   ];
 
-  readonly estudios: EstudioPerfil[] = [
+  estudios: EstudioPerfil[] = [
     {
       titulo: 'Ingeniería Civil Informática',
       institucion: 'Universidad de Chile',
@@ -121,7 +130,7 @@ export class CandidatoPerfilPage {
     },
   ];
 
-  readonly postulaciones: PostulacionPerfil[] = [
+  postulaciones: PostulacionPerfil[] = [
     ['SOL-021', 'Latam', 'Backend', '18/05/2025', 'En Curso'],
     ['SOL-026', 'Banco de Chile', 'Frontend', '18/05/2025', 'Cerrado'],
     ['SOL-028', 'SParta', 'QA', '18/05/2025', 'Cerrado'],
@@ -182,7 +191,7 @@ export class CandidatoPerfilPage {
     'SOL-030': this.procesoBase.slice(0, 2),
   };
 
-  readonly habilidadesComparadas: HabilidadComparada[] = [
+  habilidadesComparadas: HabilidadComparada[] = [
     ['Html', 'Junior', '4', 'Html', 'Junior', '4', '95%', 'success'],
     ['Python', 'Junior', '5', 'Python', 'Junior', '5', '95%', 'success'],
     ['Css', 'Junior', '8', 'Css', 'Junior', '8', '95%', 'success'],
@@ -215,6 +224,7 @@ export class CandidatoPerfilPage {
     private route: ActivatedRoute,
     private router: Router,
     private entrevistasService: EntrevistasService,
+    private candidatosService: CandidatosService,
   ) {
     const params = this.route.snapshot.queryParamMap;
     const tabInicial = params.get('tab') as PerfilTab | null;
@@ -243,6 +253,10 @@ export class CandidatoPerfilPage {
     if (tabInicial && this.tabs.some((tab) => tab.id === tabInicial)) {
       this.tabActiva = tabInicial;
     }
+  }
+
+  ngOnInit() {
+    this.cargarPerfilM3();
   }
 
   get iniciales() {
@@ -343,6 +357,171 @@ export class CandidatoPerfilPage {
   }
 
   volver() {
-    this.router.navigate(['/candidatos']);
+    this.router.navigate([this.esAutoservicio ? '/portal-candidato' : '/candidatos']);
+  }
+
+  private cargarPerfilM3() {
+    const candidatoId = this.route.snapshot.paramMap.get('id');
+    const perfil$ = this.esAutoservicio
+      ? this.candidatosService.obtenerMiPerfilCompleto()
+      : this.candidatosService.obtenerPerfilCompleto(candidatoId ?? '');
+    const solicitudes$ = this.esAutoservicio
+      ? this.candidatosService.listarMisSolicitudes()
+      : this.candidatosService.listarSolicitudes(candidatoId ?? '');
+
+    if (!this.esAutoservicio && !candidatoId) {
+      return;
+    }
+
+    // Integracion interna M3:
+    // - Admin: GET /candidatos/{id}/perfil-completo + GET /candidatos/{id}/solicitudes.
+    // - Portal: GET /candidatos/me/perfil-completo + GET /candidatos/me/solicitudes.
+    // Si falla, se conservan datos de respaldo para evitar pantalla en blanco.
+    forkJoin({
+      perfil: perfil$.pipe(timeout(6000), catchError((error) => {
+        console.warn('Perfil M3 no disponible; se conserva respaldo local.', error);
+        return of(null);
+      })),
+      solicitudes: solicitudes$.pipe(timeout(6000), catchError((error) => {
+        console.warn('Solicitudes del candidato no disponibles; se conserva respaldo local.', error);
+        return of([] as PostulacionCandidatoApi[]);
+      })),
+    })
+      .pipe(take(1))
+      .subscribe(({ perfil, solicitudes }) => {
+        if (perfil) {
+          this.candidato = this.mapearPerfilM3(perfil, solicitudes);
+          this.experiencias = this.mapearExperienciasM3(perfil.experiencias ?? []);
+          this.estudios = this.mapearEstudiosM3(perfil.estudios ?? []);
+          this.habilidadesComparadas = this.mapearHabilidadesM3(perfil.habilidades ?? []);
+        }
+
+        if (solicitudes.length > 0) {
+          this.postulaciones = this.mapearPostulacionesM3(solicitudes);
+          this.postulacionSeleccionadaId = this.postulaciones[0][0];
+        }
+      });
+  }
+
+  private get esAutoservicio() {
+    return Boolean(this.route.snapshot.data['autoservicio']);
+  }
+
+  private mapearPerfilM3(
+    perfil: CandidatoPerfilCompletoApi,
+    solicitudes: PostulacionCandidatoApi[],
+  ): CandidatoPerfil {
+    // Integracion interna M3: transforma cand_* + bloques anidados al modelo visual del perfil.
+    const nombre = [
+      perfil.cand_nombres,
+      perfil.cand_apellido_paterno,
+      perfil.cand_apellido_materno,
+    ]
+      .filter(Boolean)
+      .join(' ') || 'Candidato sin nombre';
+    const primeraSolicitud = solicitudes[0];
+    const direccion = perfil.direccion;
+
+    return {
+      ...this.candidato,
+      idSolicitud: primeraSolicitud ? String(primeraSolicitud.slcd_solicitud_id) : String(perfil.cand_id),
+      match: this.normalizarNumero(primeraSolicitud?.slcd_puntaje_compatibilidad) ?? this.candidato.match,
+      nombre,
+      correo: perfil.cand_email ?? 'Sin correo',
+      telefono: perfil.cand_telefono ?? '',
+      cargo: perfil.cand_titulo ?? this.candidato.cargo,
+      estado: this.candidato.estado,
+      disponibilidad: perfil.cand_disponibilidad_id ? `ID ${perfil.cand_disponibilidad_id}` : this.candidato.disponibilidad,
+      renta: primeraSolicitud?.slcd_pretension_renta ?? this.candidato.renta,
+      rut: this.formatearRut(perfil.cand_rut_sin_dv, perfil.cand_dv) ?? this.candidato.rut,
+      fechaNacimiento: this.formatearFecha(perfil.cand_fecha_nacimiento) || this.candidato.fechaNacimiento,
+      fechaRegistro: this.formatearFecha(perfil.cand_fecha_creacion) || this.candidato.fechaRegistro,
+      tituloProfesional: perfil.cand_titulo ?? this.candidato.tituloProfesional,
+      estadoUsuario: perfil.cand_estado_usuario_id === 1 ? 'Activo' : this.candidato.estadoUsuario,
+      resumenProfesional: perfil.cand_resumen_profesional ?? this.candidato.resumenProfesional,
+      urlPerfil: perfil.cand_url_1 ?? this.candidato.urlPerfil,
+      direccion: [direccion?.drcd_calle, direccion?.drcd_numero, direccion?.drcd_dpto_oficina]
+        .filter(Boolean)
+        .join(' ') || this.candidato.direccion,
+    };
+  }
+
+  private mapearExperienciasM3(experiencias: ExperienciaCandidatoApi[]): ExperienciaPerfil[] {
+    if (experiencias.length === 0) {
+      return this.experiencias;
+    }
+
+    return experiencias.map((experiencia) => ({
+      empresa: experiencia.cdex_empresa ?? 'Empresa sin nombre',
+      cargo: experiencia.cdex_cargo ?? 'Cargo sin nombre',
+      fecha: this.rangoFechas(experiencia.cdex_fecha_inicio, experiencia.cdex_fecha_fin),
+      descripcion: experiencia.cdex_descripcion ?? 'Sin descripcion registrada.',
+      tags: [],
+    }));
+  }
+
+  private mapearEstudiosM3(estudios: EstudioCandidatoApi[]): EstudioPerfil[] {
+    if (estudios.length === 0) {
+      return this.estudios;
+    }
+
+    return estudios.map((estudio) => ({
+      titulo: estudio.carrera?.crra_nombre ?? estudio.nivel_educacional?.nved_nombre ?? 'Estudio sin titulo',
+      institucion: estudio.institucion?.inst_nombre ?? 'Institucion sin nombre',
+      fecha: this.rangoFechas(estudio.cdet_fecha_inicio, estudio.cdet_fecha_fin),
+    }));
+  }
+
+  private mapearHabilidadesM3(habilidades: HabilidadCandidatoApi[]): HabilidadComparada[] {
+    if (habilidades.length === 0) {
+      return this.habilidadesComparadas;
+    }
+
+    return habilidades.map((habilidad) => {
+      const nombre = habilidad.habilidad?.hab_nombre ?? `Habilidad ${habilidad.cdhb_habilidad_id ?? ''}`.trim();
+      const nivel = habilidad.nivel_habilidad?.nvhb_nombre ?? 'Sin nivel';
+      const anios = String(habilidad.cdhb_anios_experiencia ?? 0);
+      return [nombre, nivel, anios, nombre, nivel, anios, '100%', 'success'];
+    });
+  }
+
+  private mapearPostulacionesM3(solicitudes: PostulacionCandidatoApi[]): PostulacionPerfil[] {
+    return solicitudes.map((solicitud) => [
+      String(solicitud.slcd_solicitud_id),
+      'Solicitud',
+      `Solicitud ${solicitud.slcd_solicitud_id}`,
+      this.formatearFecha(solicitud.slcd_fecha_postulacion),
+      `Estado ${solicitud.slcd_estado_solicitud_candidato_id ?? '-'}`,
+    ]);
+  }
+
+  private rangoFechas(inicio?: string | null, fin?: string | null) {
+    const desde = this.formatearFecha(inicio) || 'Sin fecha';
+    const hasta = this.formatearFecha(fin) || 'Actual';
+    return `${desde} - ${hasta}`;
+  }
+
+  private formatearRut(rut?: number | null, dv?: number | string | null) {
+    return rut == null || dv == null ? undefined : `${rut}-${dv}`;
+  }
+
+  private formatearFecha(fecha?: string | null) {
+    if (!fecha) {
+      return '';
+    }
+
+    const fechaNormalizada = new Date(fecha);
+    return Number.isNaN(fechaNormalizada.getTime())
+      ? fecha
+      : new Intl.DateTimeFormat('es-CL').format(fechaNormalizada);
+  }
+
+  private normalizarNumero(valor?: number | string | null) {
+    if (valor == null || valor === '') {
+      return undefined;
+    }
+
+    const numero = Number(valor);
+    return Number.isNaN(numero) ? undefined : numero;
   }
 }

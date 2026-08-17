@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { catchError, of, take, timeout } from 'rxjs';
+import { take } from 'rxjs';
 import { MatchScore } from '../../../../../shared/components/match-score/match-score';
 import { CatalogosService } from '../../../../../services/catalogos.service';
 import { CandidatoPerfil } from '../../candidato-perfil.models';
@@ -36,10 +36,11 @@ export class CandidateEditableMetrics implements OnInit {
   }
 
   cargarCatalogoDisponibilidades() {
-    // Integración catálogo de disponibilidades -> selector "Disponibilidad" del perfil candidato.
+    // M3 catalogos: GET /catalogos/disponibilidades -> selector Disponibilidad del perfil.
+    // Si el catalogo falla, CatalogosService devuelve [] y se mantienen las opciones locales.
     this.catalogosService
-      .listarDisponibilidades()
-      .pipe(timeout(4000), catchError(() => of([])), take(1))
+      .listarDisponibilidadesSeguro()
+      .pipe(take(1))
       .subscribe((disponibilidades) => {
         const opciones = disponibilidades
           .map((disponibilidad) => disponibilidad.disp_nombre)

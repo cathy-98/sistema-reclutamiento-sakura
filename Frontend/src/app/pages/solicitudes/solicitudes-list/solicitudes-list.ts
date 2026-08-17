@@ -59,6 +59,7 @@ export class SolicitudesList implements OnInit {
   mostrarConfirmacionCancelacion = false;
   solicitudSeleccionadaId: string | null = null;
   solicitudSeleccionadaCodigo: string | null = null;
+  solicitudSeleccionadaResumen: SolicitudResumen | null = null;
   modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
   solicitudes: SolicitudResumen[] = [];
   seleccionados = new Set<string>();
@@ -280,25 +281,29 @@ export class SolicitudesList implements OnInit {
     }
 
     this.solicitudSeleccionadaId = null;
+    this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaResumen = null;
     this.modoFormulario = 'crear';
     this.mostrarFormulario = true;
   }
 
-  abrirDetalleSolicitud(id: string, codigo?: string) {
-    this.solicitudSeleccionadaId = id;
-    this.solicitudSeleccionadaCodigo = codigo ?? null;
+  abrirDetalleSolicitud(solicitud: SolicitudResumen) {
+    this.solicitudSeleccionadaId = solicitud.id;
+    this.solicitudSeleccionadaCodigo = solicitud.codigo;
+    this.solicitudSeleccionadaResumen = solicitud;
     this.modoFormulario = 'ver';
     this.mostrarFormulario = true;
   }
 
-  abrirEdicionSolicitud(id: string, codigo?: string) {
+  abrirEdicionSolicitud(solicitud: SolicitudResumen) {
     if (!this.puedeEditarSolicitud) {
       this.mostrarAlertaPermisos();
       return;
     }
 
-    this.solicitudSeleccionadaId = id;
-    this.solicitudSeleccionadaCodigo = codigo ?? null;
+    this.solicitudSeleccionadaId = solicitud.id;
+    this.solicitudSeleccionadaCodigo = solicitud.codigo;
+    this.solicitudSeleccionadaResumen = solicitud;
     this.modoFormulario = 'editar';
     this.mostrarFormulario = true;
   }
@@ -329,12 +334,12 @@ export class SolicitudesList implements OnInit {
 
   manejarAccionTabla(evento: DataTableActionEvent<SolicitudResumen>) {
     if (evento.action === 'ver') {
-      this.abrirDetalleSolicitud(evento.row.id, evento.row.codigo);
+      this.abrirDetalleSolicitud(evento.row);
       return;
     }
 
     if (evento.action === 'editar') {
-      this.abrirEdicionSolicitud(evento.row.id, evento.row.codigo);
+      this.abrirEdicionSolicitud(evento.row);
       return;
     }
 
@@ -385,6 +390,7 @@ export class SolicitudesList implements OnInit {
     this.mostrarFormulario = false;
     this.solicitudSeleccionadaId = null;
     this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaResumen = null;
     this.modoFormulario = 'crear';
   }
 

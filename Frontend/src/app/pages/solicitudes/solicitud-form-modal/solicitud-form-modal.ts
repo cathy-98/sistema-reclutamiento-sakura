@@ -9,7 +9,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Observable, catchError, forkJoin, of, switchMap, take, timeout } from 'rxjs';
+import { Observable, catchError, finalize, forkJoin, of, switchMap, take, timeout } from 'rxjs';
 import {
   CargoCatalogoApi,
   CatalogosService,
@@ -22,6 +22,7 @@ import {
   UsuarioCatalogoApi,
 } from '../../../services/catalogos.service';
 import { ClienteApi, ClientesService, EmpresaApi } from '../../../services/clientes.service';
+import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
@@ -35,6 +36,7 @@ import {
   SolicitudApi,
   SolicitudCreatePayload,
   SolicitudHabilidadPayload,
+  SolicitudResumen,
   SolicitudUpdatePayload,
 } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
@@ -51,6 +53,22 @@ interface CatalogoOpcion {
   nombre: string;
 }
 
+interface CatalogosSolicitud {
+  clientes: ClienteApi[];
+  empresas: EmpresaApi[];
+  cargos: CargoCatalogoApi[];
+  usuarios: UsuarioCatalogoApi[];
+  prioridades: PrioridadSolicitudCatalogoApi[];
+  estados: EstadoSolicitudCatalogoApi[];
+  modalidades: ModalidadCatalogoApi[];
+  tiposContrato: TipoContratoCatalogoApi[];
+  habilidades: HabilidadCatalogoApi[];
+  nivelesHabilidad: NivelHabilidadCatalogoApi[];
+}
+
+const SOLICITUD_DETALLE_TIMEOUT_MS = 6000;
+const CATALOGOS_DETALLE_TIMEOUT_MS = 3000;
+
 @Component({
   selector: 'app-solicitud-form-modal',
   imports: [CommonModule, ReactiveFormsModule, AlertRegion, Button, CompactSelect, FormActions, FormSection, Modal, Stepper],
@@ -62,6 +80,7 @@ export class SolicitudFormModal implements OnInit {
   @Input() modo: 'crear' | 'ver' | 'editar' = 'crear';
   @Input() codigoSolicitudInicial = '';
   @Input() codigoSolicitudSugerido = '';
+  @Input() solicitudResumenInicial: SolicitudResumen | null = null;
   @Output() cerrar = new EventEmitter<void>();
   @Output() guardado = new EventEmitter<void>();
 
@@ -80,7 +99,7 @@ export class SolicitudFormModal implements OnInit {
   ];
 
   camposPorPaso: Record<string, string[]> = {
-    general: ['titulo', 'id_cargo', 'id_cliente'],
+    general: ['titulo', 'id_cargo', 'id_empresa_cliente', 'id_cliente'],
     condiciones: ['id_prioridad', 'cantidad_vacantes', 'id_modalidad'],
     cronograma: [],
     descripcion: [],
@@ -89,6 +108,7 @@ export class SolicitudFormModal implements OnInit {
 
   cargosCatalogo: CatalogoOpcion[] = [];
   clientesCatalogo: CatalogoOpcion[] = [];
+  empresasCatalogo: CatalogoOpcion[] = [];
   usuariosCatalogo: CatalogoOpcion[] = [];
   reclutadoresCatalogo: CatalogoOpcion[] = [];
   prioridadesCatalogo: CatalogoOpcion[] = [];
@@ -97,6 +117,13 @@ export class SolicitudFormModal implements OnInit {
   tiposContratoCatalogo: CatalogoOpcion[] = [];
   habilidadesCatalogo: CatalogoOpcion[] = [];
   nivelesHabilidadCatalogo: CatalogoOpcion[] = [];
+  creandoEmpresa = false;
+  creandoCliente = false;
+  creandoCargo = false;
+  mostrarCreacionCargo = false;
+  mostrarCreacionEmpresa = false;
+  mostrarCreacionCliente = false;
+  private clientesBase: ClienteApi[] = [];
 
   formularioSolicitud = new UntypedFormGroup(
     {
@@ -105,6 +132,7 @@ export class SolicitudFormModal implements OnInit {
       id_cargo: new UntypedFormControl(null, Validators.required),
       id_prioridad: new UntypedFormControl(null, Validators.required),
       cantidad_vacantes: new UntypedFormControl(1, [Validators.required, Validators.min(1)]),
+      id_empresa_cliente: new UntypedFormControl(null, Validators.required),
       id_cliente: new UntypedFormControl(null, Validators.required),
       id_usuario_solicitante: new UntypedFormControl(null),
       id_usuario_responsable: new UntypedFormControl(null),
@@ -118,6 +146,9 @@ export class SolicitudFormModal implements OnInit {
       id_estado_solicitud: new UntypedFormControl(null),
       hora_inicio_jornada: new UntypedFormControl(''),
       hora_fin_jornada: new UntypedFormControl(''),
+      nuevo_cargo_nombre: new UntypedFormControl(''),
+      nueva_empresa_nombre: new UntypedFormControl(''),
+      nuevo_cliente_nombre: new UntypedFormControl(''),
       habilidades: new UntypedFormArray([]),
     },
     { validators: this.validarRangoSalario },
@@ -135,9 +166,14 @@ export class SolicitudFormModal implements OnInit {
     private solicitudesService: SolicitudesService,
     private catalogosService: CatalogosService,
     private clientesService: ClientesService,
+    private authService: AuthService,
   ) {}
 
   ngOnInit() {
+    this.formularioSolicitud.get('id_empresa_cliente')?.valueChanges.subscribe(() => {
+      this.actualizarClientesCatalogo();
+    });
+
     if (this.idSolicitud) {
       this.cargarSolicitud(this.idSolicitud);
       return;
@@ -162,7 +198,7 @@ export class SolicitudFormModal implements OnInit {
     const estadoId = this.numeroONull(this.formularioSolicitud.get('id_estado_solicitud')?.value);
 
     if (estadoId != null) {
-      return this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? 'Estado registrado';
+      return this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? this.solicitudResumenInicial?.estado ?? 'Pendiente';
     }
 
     return 'Pendiente';
@@ -191,6 +227,10 @@ export class SolicitudFormModal implements OnInit {
   }
 
   get subtituloModal() {
+    if (this.modo === 'ver') {
+      return '';
+    }
+
     if (this.codigoSolicitud) {
       return `Solicitud ${this.codigoSolicitud}`;
     }
@@ -203,7 +243,11 @@ export class SolicitudFormModal implements OnInit {
   }
 
   get codigoEncabezado() {
-    return this.codigoSolicitud || this.codigoSolicitudInicial || this.codigoSolicitudSugerido || 'Pendiente';
+    if (this.modo !== 'crear') {
+      return this.codigoSolicitud || this.codigoSolicitudInicial || 'Pendiente';
+    }
+
+    return this.codigoSolicitud || this.codigoSolicitudSugerido || 'Pendiente';
   }
 
   get etiquetaCodigoEncabezado() {
@@ -211,11 +255,35 @@ export class SolicitudFormModal implements OnInit {
   }
 
   get detalleCliente() {
-    return this.detalleCatalogo('id_cliente', this.clientesCatalogo, 'Sin cliente');
+    return this.detalleCatalogo('id_cliente', this.clientesCatalogo, this.solicitudResumenInicial?.cliente ?? 'Sin cliente');
+  }
+
+  get detalleEmpresaCliente() {
+    return this.detalleCatalogo('id_empresa_cliente', this.empresasCatalogo, 'Sin empresa cliente');
   }
 
   get detalleCargo() {
-    return this.detalleCatalogo('id_cargo', this.cargosCatalogo, 'Sin cargo');
+    return this.detalleCatalogo('id_cargo', this.cargosCatalogo, this.solicitudResumenInicial?.cargo ?? 'Sin cargo');
+  }
+
+  get detallePrioridad() {
+    return this.detalleCatalogo('id_prioridad', this.prioridadesCatalogo, this.solicitudResumenInicial?.prioridad ?? 'Sin prioridad');
+  }
+
+  get detalleResponsable() {
+    return this.detalleCatalogo(
+      'id_usuario_responsable',
+      this.usuariosCatalogo,
+      this.solicitudResumenInicial?.responsable ?? 'Sin asignar',
+    );
+  }
+
+  get solicitanteInternoActual() {
+    return this.detalleUsuario('id_usuario_solicitante') || this.authService.obtenerNombreVisible();
+  }
+
+  get empresaClienteSeleccionada() {
+    return this.numeroONull(this.formularioSolicitud.get('id_empresa_cliente')?.value) != null;
   }
 
   get detalleRangoSalario() {
@@ -256,68 +324,68 @@ export class SolicitudFormModal implements OnInit {
   }
 
   cargarSolicitud(id: string) {
-    this.cargandoDetalle = true;
+    const puedeMostrarResumen = this.modo === 'ver' && this.solicitudResumenInicial;
+    this.cargandoDetalle = !puedeMostrarResumen;
     this.alerta = null;
 
+    if (puedeMostrarResumen) {
+      this.aplicarSolicitudResumenInicial();
+      this.aplicarModoFormulario();
+    }
+
     forkJoin({
-      solicitud: this.solicitudesService.obtenerPorId(id),
-      clientes: this.clientesService.listarClientes().pipe(timeout(4000), catchError(() => of([]))),
-      empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError(() => of([]))),
-      cargos: this.catalogosService.listarCargos().pipe(timeout(4000), catchError(() => of([]))),
-      usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
-      prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(4000), catchError(() => of([]))),
-      estados: this.catalogosService.listarEstadosSolicitud().pipe(timeout(4000), catchError(() => of([]))),
-      modalidades: this.catalogosService.listarModalidades().pipe(timeout(4000), catchError(() => of([]))),
-      tiposContrato: this.catalogosService.listarTiposContrato().pipe(timeout(4000), catchError(() => of([]))),
-      habilidades: this.catalogosService.listarHabilidades().pipe(timeout(4000), catchError(() => of([]))),
-      nivelesHabilidad: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
+      solicitud: this.solicitudesService.obtenerPorId(id).pipe(
+        timeout(SOLICITUD_DETALLE_TIMEOUT_MS),
+        catchError((error) => {
+          console.warn('No se pudo cargar el detalle completo de la solicitud.', error);
+          return of(null);
+        }),
+      ),
+      catalogos: this.obtenerCatalogosDetalle(),
     })
       .pipe(take(1))
-      .subscribe({
-        next: ({
-          solicitud,
-          clientes,
-          empresas,
-          cargos,
-          usuarios,
-          prioridades,
-          estados,
-          modalidades,
-          tiposContrato,
-          habilidades,
-          nivelesHabilidad,
-        }) => {
-          this.aplicarCatalogos({
-            clientes,
-            empresas,
-            cargos,
-            usuarios,
-            prioridades,
-            estados,
-            modalidades,
-            tiposContrato,
-            habilidades,
-            nivelesHabilidad,
-          });
+      .subscribe(({ solicitud, catalogos }) => {
+        this.aplicarCatalogos(catalogos);
+
+        if (solicitud) {
           this.aplicarSolicitudDetalle(solicitud);
-          this.cargandoDetalle = false;
-          this.aplicarModoFormulario();
-        },
-        error: (error) => {
-          this.cargandoDetalle = false;
+        } else if (!puedeMostrarResumen) {
           this.alerta = {
             tipo: 'danger',
             variante: 'soft',
-            mensaje: obtenerMensajeError(error, 'No se pudo cargar el detalle de la solicitud.'),
+            mensaje: 'No se pudo cargar el detalle de la solicitud.',
           };
-          this.aplicarModoFormulario();
-        },
+        }
+
+        this.cargandoDetalle = false;
+        this.aplicarModoFormulario();
       });
   }
 
-  cargarCatalogosFormulario() {
-    this.cargandoDetalle = true;
+  cargarCatalogosDetalle() {
+    this.obtenerCatalogosDetalle()
+      .pipe(take(1))
+      .subscribe((catalogos) => {
+        this.aplicarCatalogos(catalogos);
+      });
+  }
 
+  private obtenerCatalogosDetalle(): Observable<CatalogosSolicitud> {
+    return forkJoin({
+      clientes: this.clientesService.listarClientes().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      empresas: this.clientesService.listarEmpresas().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      cargos: this.catalogosService.listarCargos().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      usuarios: this.catalogosService.listarUsuarios().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      prioridades: this.catalogosService.listarPrioridadesSolicitud().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      estados: this.catalogosService.listarEstadosSolicitud().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      modalidades: this.catalogosService.listarModalidades().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      tiposContrato: this.catalogosService.listarTiposContrato().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      habilidades: this.catalogosService.listarHabilidades().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+      nivelesHabilidad: this.catalogosService.listarNivelesHabilidad().pipe(timeout(CATALOGOS_DETALLE_TIMEOUT_MS), catchError(() => of([]))),
+    });
+  }
+
+  cargarCatalogosFormulario() {
     forkJoin({
       clientes: this.clientesService.listarClientes().pipe(timeout(4000), catchError(() => of([]))),
       empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError(() => of([]))),
@@ -344,7 +412,6 @@ export class SolicitudFormModal implements OnInit {
           habilidades,
           nivelesHabilidad,
         });
-        this.cargandoDetalle = false;
         this.aplicarModoFormulario();
       });
   }
@@ -465,6 +532,177 @@ export class SolicitudFormModal implements OnInit {
     });
   }
 
+  crearEmpresaCliente() {
+    const nombre = String(this.formularioSolicitud.get('nueva_empresa_nombre')?.value ?? '').trim();
+
+    if (!nombre || this.creandoEmpresa || this.modo === 'ver') {
+      this.formularioSolicitud.get('nueva_empresa_nombre')?.markAsTouched();
+      return;
+    }
+
+    const empresaExistente = this.empresasCatalogo.find((empresa) => this.normalizarTexto(empresa.nombre) === this.normalizarTexto(nombre));
+    if (empresaExistente) {
+      this.formularioSolicitud.patchValue({
+        nueva_empresa_nombre: '',
+        id_empresa_cliente: empresaExistente.id,
+        id_cliente: null,
+      });
+      this.mostrarCreacionEmpresa = false;
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'La empresa ya existe. La dejamos seleccionada.',
+      };
+      return;
+    }
+
+    this.creandoEmpresa = true;
+    this.clientesService
+      .crearEmpresa({ emp_nombre: nombre })
+      .pipe(
+        timeout(6000),
+        finalize(() => {
+          this.creandoEmpresa = false;
+        }),
+        take(1),
+      )
+      .subscribe({
+        next: (empresa) => {
+          this.mostrarCreacionEmpresa = false;
+          this.empresasCatalogo = [
+            ...this.empresasCatalogo,
+            { id: empresa.emp_id, nombre: empresa.emp_nombre ?? nombre },
+          ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+          this.formularioSolicitud.patchValue({
+            nueva_empresa_nombre: '',
+            id_empresa_cliente: empresa.emp_id,
+            id_cliente: null,
+          });
+          this.actualizarClientesCatalogo();
+        },
+        error: (error) => {
+          this.alerta = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo crear la empresa cliente.'),
+          };
+        },
+      });
+  }
+
+  crearCargoSolicitado() {
+    const nombre = String(this.formularioSolicitud.get('nuevo_cargo_nombre')?.value ?? '').trim();
+
+    if (!nombre || this.creandoCargo || this.modo === 'ver') {
+      this.formularioSolicitud.get('nuevo_cargo_nombre')?.markAsTouched();
+      return;
+    }
+
+    const cargoExistente = this.cargosCatalogo.find((cargo) => this.normalizarTexto(cargo.nombre) === this.normalizarTexto(nombre));
+    if (cargoExistente) {
+      this.formularioSolicitud.patchValue({
+        nuevo_cargo_nombre: '',
+        id_cargo: cargoExistente.id,
+      });
+      this.mostrarCreacionCargo = false;
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'El cargo ya existe. Lo dejamos seleccionado.',
+      };
+      return;
+    }
+
+    this.creandoCargo = true;
+    this.catalogosService
+      .crearCargo({ crgo_nombre: nombre })
+      .pipe(
+        timeout(6000),
+        finalize(() => {
+          this.creandoCargo = false;
+        }),
+        take(1),
+      )
+      .subscribe({
+        next: (cargo) => {
+          this.mostrarCreacionCargo = false;
+          this.cargosCatalogo = [
+            ...this.cargosCatalogo,
+            { id: cargo.crgo_id, nombre: cargo.crgo_nombre ?? nombre },
+          ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+          this.formularioSolicitud.patchValue({
+            nuevo_cargo_nombre: '',
+            id_cargo: cargo.crgo_id,
+          });
+        },
+        error: (error) => {
+          this.alerta = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo crear el cargo solicitado.'),
+          };
+        },
+      });
+  }
+
+  crearClienteSolicitante() {
+    const nombre = String(this.formularioSolicitud.get('nuevo_cliente_nombre')?.value ?? '').trim();
+    const empresaId = this.numeroONull(this.formularioSolicitud.get('id_empresa_cliente')?.value);
+
+    if (!nombre || empresaId == null || this.creandoCliente || this.modo === 'ver') {
+      this.formularioSolicitud.get('nuevo_cliente_nombre')?.markAsTouched();
+      this.formularioSolicitud.get('id_empresa_cliente')?.markAsTouched();
+      return;
+    }
+
+    const clienteExistente = this.clientesBase.find(
+      (cliente) => cliente.cli_empresa_id === empresaId && this.normalizarTexto(cliente.cli_nombre) === this.normalizarTexto(nombre),
+    );
+    if (clienteExistente) {
+      this.actualizarClientesCatalogo();
+      this.formularioSolicitud.patchValue({
+        nuevo_cliente_nombre: '',
+        id_cliente: clienteExistente.cli_id,
+      });
+      this.mostrarCreacionCliente = false;
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'El cliente solicitante ya existe para esa empresa. Lo dejamos seleccionado.',
+      };
+      return;
+    }
+
+    this.creandoCliente = true;
+    this.clientesService
+      .crearCliente({ cli_nombre: nombre, cli_empresa_id: empresaId })
+      .pipe(
+        timeout(6000),
+        finalize(() => {
+          this.creandoCliente = false;
+        }),
+        take(1),
+      )
+      .subscribe({
+        next: (cliente) => {
+          this.clientesBase = [...this.clientesBase, cliente];
+          this.actualizarClientesCatalogo();
+          this.formularioSolicitud.patchValue({
+            nuevo_cliente_nombre: '',
+            id_cliente: cliente.cli_id,
+          });
+          this.mostrarCreacionCliente = false;
+        },
+        error: (error) => {
+          this.alerta = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo crear el cliente solicitante.'),
+          };
+        },
+      });
+  }
+
   eliminarHabilidad(indice: number) {
     if (this.modo === 'ver') {
       return;
@@ -507,6 +745,23 @@ export class SolicitudFormModal implements OnInit {
     return this.detalleCatalogo(control, this.usuariosCatalogo, 'Sin asignar');
   }
 
+  private aplicarSolicitudResumenInicial() {
+    const resumen = this.solicitudResumenInicial;
+
+    if (!resumen) {
+      return;
+    }
+
+    this.codigoSolicitud = resumen.codigo;
+    this.formularioSolicitud.patchValue({
+      titulo: resumen.nombre ?? '',
+      descripcion: resumen.observacion ?? '',
+      cantidad_vacantes: resumen.vacantes ?? 1,
+      fecha_inicio_busqueda: this.fechaResumenParaInput(resumen.seleccion),
+      fecha_inicio_cliente: this.fechaResumenParaInput(resumen.inicioEmpleo),
+    }, { emitEvent: false });
+  }
+
   private aplicarSolicitudDetalle(solicitud: SolicitudApi) {
     this.codigoSolicitud = solicitud.sol_codigo ?? null;
 
@@ -544,6 +799,9 @@ export class SolicitudFormModal implements OnInit {
       this.habilidadesOriginales.push(habilidadFormulario);
       this.habilidadesFormArray.push(this.crearHabilidadForm(habilidadFormulario));
     });
+
+    this.actualizarEmpresaDesdeCliente();
+    this.actualizarClientesCatalogo();
   }
 
   private aplicarCatalogos(catalogos: {
@@ -558,23 +816,24 @@ export class SolicitudFormModal implements OnInit {
     habilidades: HabilidadCatalogoApi[];
     nivelesHabilidad: NivelHabilidadCatalogoApi[];
   }) {
-    const empresasPorId = new Map(
-      catalogos.empresas.map((empresa) => [empresa.emp_id, empresa.emp_nombre ?? 'Empresa sin nombre']),
-    );
-    this.clientesCatalogo = catalogos.clientes.map((cliente) => ({
-      id: cliente.cli_id,
-      nombre: this.nombreCliente(cliente, empresasPorId),
+    this.clientesBase = catalogos.clientes;
+    this.empresasCatalogo = catalogos.empresas.map((empresa) => ({
+      id: empresa.emp_id,
+      nombre: empresa.emp_nombre ?? 'Empresa sin nombre',
     }));
+    this.actualizarEmpresaDesdeCliente();
+    this.actualizarClientesCatalogo();
     // Integración catálogo de cargos -> selector "Cargo solicitado" del formulario de solicitudes.
     this.cargosCatalogo = catalogos.cargos.map((cargo) => ({
       id: cargo.crgo_id,
       nombre: cargo.crgo_nombre ?? 'Cargo sin nombre',
     }));
-    // Integración catálogo de usuarios -> selectores "Solicitante" y "Responsable".
+    // Integración catálogo de usuarios -> solicitante interno y reclutador asignado.
     this.usuariosCatalogo = catalogos.usuarios.map((usuario) => ({
       id: usuario.usr_id,
       nombre: this.nombreUsuario(usuario),
     }));
+    this.aplicarSolicitanteInternoPorDefecto();
     this.reclutadoresCatalogo = catalogos.usuarios
       .filter((usuario) => this.esReclutadorActivo(usuario))
       .map((usuario) => ({
@@ -624,6 +883,42 @@ export class SolicitudFormModal implements OnInit {
     return empresa ? `${cliente.cli_nombre} - ${empresa}` : cliente.cli_nombre;
   }
 
+  private actualizarEmpresaDesdeCliente() {
+    const clienteId = this.numeroONull(this.formularioSolicitud.get('id_cliente')?.value);
+    const empresaActual = this.numeroONull(this.formularioSolicitud.get('id_empresa_cliente')?.value);
+    const cliente = this.clientesBase.find((item) => item.cli_id === clienteId);
+
+    if (cliente?.cli_empresa_id && empresaActual == null) {
+      this.formularioSolicitud.patchValue({ id_empresa_cliente: cliente.cli_empresa_id }, { emitEvent: false });
+    }
+  }
+
+  private actualizarClientesCatalogo() {
+    const empresaId = this.numeroONull(this.formularioSolicitud.get('id_empresa_cliente')?.value);
+    const empresasPorId = new Map(this.empresasCatalogo.map((empresa) => [empresa.id, empresa.nombre]));
+    const clienteActual = this.numeroONull(this.formularioSolicitud.get('id_cliente')?.value);
+    const clientesFiltrados = this.clientesBase.filter((cliente) => empresaId == null || cliente.cli_empresa_id === empresaId);
+
+    this.clientesCatalogo = clientesFiltrados.map((cliente) => ({
+      id: cliente.cli_id,
+      nombre: empresaId == null ? this.nombreCliente(cliente, empresasPorId) : cliente.cli_nombre,
+    }));
+
+    if (clienteActual != null && !clientesFiltrados.some((cliente) => cliente.cli_id === clienteActual)) {
+      this.formularioSolicitud.patchValue({ id_cliente: null }, { emitEvent: false });
+    }
+  }
+
+  private aplicarSolicitanteInternoPorDefecto() {
+    const usuarioActualId = this.authService.obtenerUsuarioId();
+
+    if (usuarioActualId) {
+      this.formularioSolicitud.patchValue({
+        id_usuario_solicitante: this.formularioSolicitud.get('id_usuario_solicitante')?.value ?? usuarioActualId,
+      }, { emitEvent: false });
+    }
+  }
+
   private esReclutadorActivo(usuario: UsuarioCatalogoApi) {
     const rol = usuario.rol?.rol_nombre ?? '';
     const estado = usuario.estado?.esusr_nombre ?? '';
@@ -632,6 +927,15 @@ export class SolicitudFormModal implements OnInit {
 
   private fechaParaInput(fecha?: string | null) {
     return fecha ? fecha.slice(0, 10) : '';
+  }
+
+  private fechaResumenParaInput(fecha?: string | null) {
+    if (!fecha || fecha === 'Sin fecha') {
+      return '';
+    }
+
+    const [day, month, year] = fecha.split('-');
+    return year && month && day ? `${year}-${month}-${day}` : fecha;
   }
 
   private horaParaInput(hora?: string | null) {
@@ -674,11 +978,21 @@ export class SolicitudFormModal implements OnInit {
   }
 
   private creacionBloqueadaPorDependencias() {
+    if (this.empresasCatalogo.length === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Selecciona o crea una empresa cliente antes de guardar.',
+      };
+      this.tabFormulario = 'general';
+      return true;
+    }
+
     if (this.clientesCatalogo.length === 0) {
       this.alerta = {
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'No hay clientes disponibles para seleccionar.',
+        mensaje: 'Selecciona o crea un cliente solicitante antes de guardar.',
       };
       this.tabFormulario = 'general';
       return true;
@@ -721,7 +1035,7 @@ export class SolicitudFormModal implements OnInit {
       this.alerta = {
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'No hay clientes disponibles para seleccionar.',
+        mensaje: 'Selecciona o crea un cliente solicitante antes de guardar.',
       };
       this.tabFormulario = 'general';
       return null;
@@ -827,6 +1141,10 @@ export class SolicitudFormModal implements OnInit {
 
   private numeroOValor(valor: unknown, fallback: number) {
     return this.numeroONull(valor) ?? fallback;
+  }
+
+  private normalizarTexto(valor: string) {
+    return valor.trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
   private textoONull(valor: unknown) {

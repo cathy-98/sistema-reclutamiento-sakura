@@ -1,5 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable, catchError, of, timeout } from 'rxjs';
 
 export interface CatalogoListParams {
   q?: string;
@@ -39,6 +40,11 @@ export type CatalogoPath =
 export interface CargoCatalogoApi {
   crgo_id: number;
   crgo_nombre: string | null;
+  crgo_descripcion?: string | null;
+}
+
+export interface CargoCreatePayload {
+  crgo_nombre: string;
   crgo_descripcion?: string | null;
 }
 
@@ -210,11 +216,18 @@ export interface UsuarioCatalogoApi {
 export class CatalogosService {
   private readonly apiUrl = '/api/catalogos';
   private readonly usuariosApiUrl = '/api/usuarios';
+  private readonly catalogoTimeoutMs = 4000;
 
   constructor(private http: HttpClient) {}
 
   listarCatalogo<T>(path: CatalogoPath, params?: CatalogoListParams) {
     return this.http.get<T[]>(`${this.apiUrl}/${path}`, { params: this.crearParams(params) });
+  }
+
+  listarCatalogoSeguro<T>(path: CatalogoPath, params?: CatalogoListParams) {
+    // Integracion interna: llama GET /catalogos/{path}.
+    // Uso: alimentar selects/filtros sin bloquear la pantalla si el catalogo falla.
+    return this.listarCatalogo<T>(path, params).pipe(this.fallbackCatalogo<T>(path));
   }
 
   obtenerCatalogo<T>(path: CatalogoPath, id: number) {
@@ -255,6 +268,11 @@ export class CatalogosService {
     return this.listarCatalogo<ComunaCatalogoApi>('comunas', params);
   }
 
+  listarComunasSeguro(params?: CatalogoListParams) {
+    // Integracion interna M3: GET /catalogos/comunas para mostrar nombres de comunas.
+    return this.listarCatalogoSeguro<ComunaCatalogoApi>('comunas', params);
+  }
+
   listarTiposInstitucion(params?: CatalogoListParams) {
     return this.listarCatalogo<TipoInstitucionCatalogoApi>('tipos-institucion', params);
   }
@@ -267,13 +285,27 @@ export class CatalogosService {
     return this.listarCatalogo<CarreraCatalogoApi>('carreras', params);
   }
 
+  listarCarrerasSeguro(params?: CatalogoListParams) {
+    // Integracion interna M3: GET /catalogos/carreras para estudios/formacion.
+    return this.listarCatalogoSeguro<CarreraCatalogoApi>('carreras', params);
+  }
+
   listarNivelesEducacionales(params?: CatalogoListParams) {
     return this.listarCatalogo<NivelEducacionalCatalogoApi>('niveles-educacionales', params);
+  }
+
+  listarNivelesEducacionalesSeguro(params?: CatalogoListParams) {
+    // Integracion interna M3: GET /catalogos/niveles-educacionales para estudios del candidato.
+    return this.listarCatalogoSeguro<NivelEducacionalCatalogoApi>('niveles-educacionales', params);
   }
 
   listarCargos() {
     // Integración: los catálogos se consumen con la nomenclatura real del backend/BD.
     return this.http.get<CargoCatalogoApi[]>(`${this.apiUrl}/cargos`);
+  }
+
+  crearCargo(payload: CargoCreatePayload) {
+    return this.http.post<CargoCatalogoApi>(`${this.apiUrl}/cargos`, payload);
   }
 
   listarUsuarios() {
@@ -317,20 +349,45 @@ export class CatalogosService {
     return this.http.get<DisponibilidadCatalogoApi[]>(`${this.apiUrl}/disponibilidades`);
   }
 
+  listarDisponibilidadesSeguro() {
+    // Integracion interna M3: GET /catalogos/disponibilidades para disponibilidad del candidato.
+    return this.listarCatalogoSeguro<DisponibilidadCatalogoApi>('disponibilidades');
+  }
+
   listarHabilidades() {
     return this.http.get<HabilidadCatalogoApi[]>(`${this.apiUrl}/habilidades`);
+  }
+
+  listarHabilidadesSeguro() {
+    // Integracion interna M3: GET /catalogos/habilidades para skills de candidatos/solicitudes.
+    return this.listarCatalogoSeguro<HabilidadCatalogoApi>('habilidades');
   }
 
   listarNivelesHabilidad() {
     return this.http.get<NivelHabilidadCatalogoApi[]>(`${this.apiUrl}/niveles-habilidad`);
   }
 
+  listarNivelesHabilidadSeguro() {
+    // Integracion interna M3: GET /catalogos/niveles-habilidad para nivel tecnico de skills.
+    return this.listarCatalogoSeguro<NivelHabilidadCatalogoApi>('niveles-habilidad');
+  }
+
   listarEstadosSolicitudCandidato(params?: CatalogoListParams) {
     return this.listarCatalogo<EstadoSolicitudCandidatoCatalogoApi>('estados-solicitud-candidato', params);
   }
 
+  listarEstadosSolicitudCandidatoSeguro(params?: CatalogoListParams) {
+    // Integracion interna M3: GET /catalogos/estados-solicitud-candidato para estado de postulacion.
+    return this.listarCatalogoSeguro<EstadoSolicitudCandidatoCatalogoApi>('estados-solicitud-candidato', params);
+  }
+
   listarMotivosRechazo(params?: CatalogoListParams) {
     return this.listarCatalogo<MotivoRechazoCatalogoApi>('motivos-rechazo', params);
+  }
+
+  listarMotivosRechazoSeguro(params?: CatalogoListParams) {
+    // Integracion interna M3: GET /catalogos/motivos-rechazo para inhabilitar/descartar postulantes.
+    return this.listarCatalogoSeguro<MotivoRechazoCatalogoApi>('motivos-rechazo', params);
   }
 
   listarEstadosCuestionarioCandidato(params?: CatalogoListParams) {
@@ -359,5 +416,17 @@ export class CatalogosService {
     });
 
     return httpParams;
+  }
+
+  private fallbackCatalogo<T>(path: string) {
+    // Proteccion interna: evita spinner infinito; ante timeout/error retorna [] y registra consola.
+    return (source: Observable<T[]>) =>
+      source.pipe(
+        timeout(this.catalogoTimeoutMs),
+        catchError((error) => {
+          console.warn(`Catalogo ${path} no disponible; se usara lista vacia.`, error);
+          return of([] as T[]);
+        }),
+      );
   }
 }

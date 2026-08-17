@@ -16,5 +16,8 @@ export const authGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  return router.createUrlTree(['/dashboard']);
+  // Integracion interna M3: candidatos autenticados no deben caer en dashboard interno.
+  return router.createUrlTree([
+    authService.obtenerPrincipalType() === 'candidato' ? '/portal-candidato' : '/dashboard',
+  ]);
 };
