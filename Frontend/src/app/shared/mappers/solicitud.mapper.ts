@@ -22,7 +22,7 @@ export const camposSolicitudResumen = {
   responsable: 'sol_usuario_asignado_id',
   prioridad: 'sol_prioridad_id',
   estado: 'sol_estado_solicitud_id',
-  observacion: 'sol_observacion',
+  descripcion: 'sol_descripcion',
 } as const;
 
 // Mapeo API -> pantalla: traduce campos sol_* a nombres usados por la tabla de solicitudes.
@@ -49,8 +49,16 @@ export function mapearSolicitudResumen(
       'Sin prioridad',
     ) as PrioridadSolicitud,
     estado: obtenerNombre(catalogos.estadosPorId, solicitud.sol_estado_solicitud_id, 'Sin estado'),
-    observacion: solicitud.sol_observacion || 'Sin observación',
+    descripcion: obtenerTextoSolicitud(solicitud.sol_descripcion, 'Sin descripción'),
   };
+}
+
+function obtenerTextoSolicitud(...valores: Array<string | null | undefined>) {
+  const texto = valores
+    .map((valor) => valor?.trim())
+    .find((valor) => Boolean(valor));
+
+  return texto ?? 'Sin descripción';
 }
 
 function obtenerNombre(catalogo: Map<number, string>, id: number | null | undefined, fallback: string) {

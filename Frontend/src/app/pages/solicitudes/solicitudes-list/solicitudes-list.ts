@@ -105,9 +105,11 @@ export class SolicitudesList implements OnInit {
     },
     {
       key: 'seleccion',
-      label: 'Inicio y fin selección',
-      width: 150,
-      wrap: true,
+      label: 'Selección',
+      width: 178,
+      type: 'stack',
+      value: (solicitud) => `Inicio: ${this.fechaInicioSeleccion(solicitud)}`,
+      secondaryValue: (solicitud) => `Fin: ${this.fechaFinSeleccion(solicitud)}`,
     },
     {
       key: 'inicioEmpleo',
@@ -129,11 +131,11 @@ export class SolicitudesList implements OnInit {
       className: (solicitud) => this.estadoClase(solicitud.estado),
     },
     {
-      key: 'observacion',
-      label: 'Observación',
-      width: 180,
+      key: 'descripcion',
+      label: 'Descripción',
+      width: 360,
       wrap: true,
-      title: (solicitud) => solicitud.observacion,
+      title: (solicitud) => solicitud.descripcion,
     },
   ];
 
@@ -429,6 +431,14 @@ export class SolicitudesList implements OnInit {
     return solicitud.id;
   }
 
+  fechaInicioSeleccion(solicitud: SolicitudResumen) {
+    return this.partesSeleccion(solicitud)[0] ?? 'Sin fecha';
+  }
+
+  fechaFinSeleccion(solicitud: SolicitudResumen) {
+    return this.partesSeleccion(solicitud)[1] ?? 'Sin fecha';
+  }
+
   private filtrosIniciales(): FiltrosSolicitudes {
     return {
       busquedaRapida: '',
@@ -448,6 +458,14 @@ export class SolicitudesList implements OnInit {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private partesSeleccion(solicitud: SolicitudResumen) {
+    if (solicitud.seleccion === 'Sin fechas') {
+      return ['Sin fecha', 'Sin fecha'];
+    }
+
+    return solicitud.seleccion.split(' - ');
   }
 
   private limpiarTimeoutCarga() {

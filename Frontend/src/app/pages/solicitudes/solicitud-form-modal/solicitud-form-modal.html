@@ -17,7 +17,7 @@
         <small>Estamos preparando el detalle.</small>
       </div>
 
-      <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+      <app-alert-region *ngIf="!cargandoDetalle" [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
       <div class="request-detail" *ngIf="modo === 'ver' && !cargandoDetalle">
         <div class="detail-overview">
@@ -100,7 +100,7 @@
         </ng-template>
       </div>
 
-      <form class="modal-form" *ngIf="modo !== 'ver'" [formGroup]="formularioSolicitud">
+      <form class="modal-form" *ngIf="modo !== 'ver' && !cargandoDetalle" [formGroup]="formularioSolicitud">
       <app-stepper
         [pasos]="pasosFormulario"
         [pasoActivo]="tabFormulario"
@@ -334,11 +334,11 @@
         *ngIf="tabFormulario === 'descripcion'"
         step="4"
         title="Descripción"
-        description="Observaciones y detalle de la vacante."
+        description="Detalle de la vacante."
       >
 
         <label class="form-field">
-          Descripción / observaciones
+          Descripción
           <textarea
             rows="8"
             maxlength="500"
@@ -421,10 +421,10 @@
         {{ modo === 'ver' ? 'Listado de candidatos' : 'Cancelar' }}
       </app-button>
 
-      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver'" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
+      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver' && !cargandoDetalle" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
         Volver
       </app-button>
-      <app-button type="button" *ngIf="modo !== 'ver' && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
-      <app-button type="button" *ngIf="modo !== 'ver' && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
     </app-form-actions>
 </app-modal>

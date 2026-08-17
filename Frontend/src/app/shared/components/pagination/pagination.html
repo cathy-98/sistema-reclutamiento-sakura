@@ -11,8 +11,19 @@
     <button type="button" aria-label="Página anterior" [disabled]="page === 1" (click)="changePage(page - 1)">
       ‹
     </button>
-    <button class="is-active" type="button" aria-current="page">{{ page }}</button>
-    <span>de {{ totalPages }}</span>
+    <ng-container *ngFor="let item of pageItems; trackBy: trackPageItem">
+      <span *ngIf="item === 'ellipsis'" class="pagination-ellipsis" aria-hidden="true">...</span>
+      <button
+        *ngIf="item !== 'ellipsis'"
+        type="button"
+        [class.is-active]="item === page"
+        [attr.aria-current]="item === page ? 'page' : null"
+        [attr.aria-label]="'Ir a página ' + item"
+        (click)="changePage(item)"
+      >
+        {{ item }}
+      </button>
+    </ng-container>
     <button
       type="button"
       aria-label="Página siguiente"

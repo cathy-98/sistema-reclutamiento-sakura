@@ -105,5 +105,5 @@ export interface SolicitudResumen {
   inicioEmpleo: string;
   prioridad: PrioridadSolicitud;
   estado: EstadoSolicitud;
-  observacion: string;
+  descripcion: string;
 }

@@ -755,7 +755,7 @@ export class SolicitudFormModal implements OnInit {
     this.codigoSolicitud = resumen.codigo;
     this.formularioSolicitud.patchValue({
       titulo: resumen.nombre ?? '',
-      descripcion: resumen.observacion ?? '',
+      descripcion: resumen.descripcion ?? '',
       cantidad_vacantes: resumen.vacantes ?? 1,
       fecha_inicio_busqueda: this.fechaResumenParaInput(resumen.seleccion),
       fecha_inicio_cliente: this.fechaResumenParaInput(resumen.inicioEmpleo),
@@ -767,7 +767,7 @@ export class SolicitudFormModal implements OnInit {
 
     this.formularioSolicitud.patchValue({
       titulo: solicitud.sol_titulo ?? '',
-      descripcion: solicitud.sol_descripcion ?? solicitud.sol_observacion ?? '',
+      descripcion: solicitud.sol_descripcion ?? '',
       id_cargo: solicitud.sol_cargo_id ?? null,
       id_prioridad: solicitud.sol_prioridad_id ?? null,
       cantidad_vacantes: solicitud.sol_cantidad_vacantes ?? 1,
