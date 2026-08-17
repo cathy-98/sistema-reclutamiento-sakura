@@ -98,6 +98,7 @@ export interface SolicitudResumen {
   codigo: string;
   nombre: string;
   cliente: string;
+  empresaCliente: string;
   cargo: string;
   vacantes: number;
   responsable: string;

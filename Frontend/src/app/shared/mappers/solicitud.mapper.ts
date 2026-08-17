@@ -8,6 +8,7 @@ import {
 export interface SolicitudResumenCatalogos {
   cargosPorId: Map<number, string>;
   clientesPorId: Map<number, string>;
+  empresasPorClienteId: Map<number, string>;
   usuariosPorId: Map<number, string>;
   prioridadesPorId: Map<number, string>;
   estadosPorId: Map<number, string>;
@@ -35,6 +36,7 @@ export function mapearSolicitudResumen(
     codigo: solicitud.sol_codigo || `SOL-${String(solicitud.sol_id).padStart(6, '0')}`,
     nombre: solicitud.sol_titulo || 'Sin nombre',
     cliente: obtenerNombre(catalogos.clientesPorId, solicitud.sol_cliente_id, 'Cliente pendiente'),
+    empresaCliente: obtenerNombre(catalogos.empresasPorClienteId, solicitud.sol_cliente_id, 'Sin empresa cliente'),
     cargo: obtenerNombre(catalogos.cargosPorId, solicitud.sol_cargo_id, 'Cargo pendiente'),
     vacantes: solicitud.sol_cantidad_vacantes ?? 0,
     responsable: obtenerNombre(catalogos.usuariosPorId, solicitud.sol_usuario_asignado_id, 'Sin asignar'),
@@ -62,11 +64,22 @@ function obtenerTextoSolicitud(...valores: Array<string | null | undefined>) {
 }
 
 function obtenerNombre(catalogo: Map<number, string>, id: number | null | undefined, fallback: string) {
-  if (id == null) {
+  const idNormalizado = normalizarId(id);
+
+  if (idNormalizado == null) {
     return fallback;
   }
 
-  return catalogo.get(id) || fallback;
+  return catalogo.get(idNormalizado) || fallback;
+}
+
+function normalizarId(id: number | string | null | undefined) {
+  if (id == null || id === '') {
+    return null;
+  }
+
+  const numero = Number(id);
+  return Number.isFinite(numero) ? numero : null;
 }
 
 function formatearRangoFechas(inicio?: string | null, fin?: string | null) {

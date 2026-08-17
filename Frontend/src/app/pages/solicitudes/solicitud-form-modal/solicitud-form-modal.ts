@@ -259,7 +259,11 @@ export class SolicitudFormModal implements OnInit {
   }
 
   get detalleEmpresaCliente() {
-    return this.detalleCatalogo('id_empresa_cliente', this.empresasCatalogo, 'Sin empresa cliente');
+    return this.detalleCatalogo(
+      'id_empresa_cliente',
+      this.empresasCatalogo,
+      this.solicitudResumenInicial?.empresaCliente ?? 'Sin empresa cliente',
+    );
   }
 
   get detalleCargo() {
@@ -324,7 +328,7 @@ export class SolicitudFormModal implements OnInit {
   }
 
   cargarSolicitud(id: string) {
-    const puedeMostrarResumen = this.modo === 'ver' && this.solicitudResumenInicial;
+    const puedeMostrarResumen = this.modo !== 'crear' && this.solicitudResumenInicial;
     this.cargandoDetalle = !puedeMostrarResumen;
     this.alerta = null;
 
@@ -333,20 +337,23 @@ export class SolicitudFormModal implements OnInit {
       this.aplicarModoFormulario();
     }
 
-    forkJoin({
-      solicitud: this.solicitudesService.obtenerPorId(id).pipe(
+    this.obtenerCatalogosDetalle()
+      .pipe(take(1))
+      .subscribe((catalogos) => {
+        this.aplicarCatalogos(catalogos);
+      });
+
+    this.solicitudesService
+      .obtenerPorId(id)
+      .pipe(
         timeout(SOLICITUD_DETALLE_TIMEOUT_MS),
         catchError((error) => {
           console.warn('No se pudo cargar el detalle completo de la solicitud.', error);
           return of(null);
         }),
-      ),
-      catalogos: this.obtenerCatalogosDetalle(),
-    })
-      .pipe(take(1))
-      .subscribe(({ solicitud, catalogos }) => {
-        this.aplicarCatalogos(catalogos);
-
+        take(1),
+      )
+      .subscribe((solicitud) => {
         if (solicitud) {
           this.aplicarSolicitudDetalle(solicitud);
         } else if (!puedeMostrarResumen) {
@@ -354,6 +361,12 @@ export class SolicitudFormModal implements OnInit {
             tipo: 'danger',
             variante: 'soft',
             mensaje: 'No se pudo cargar el detalle de la solicitud.',
+          };
+        } else {
+          this.alerta = {
+            tipo: 'warning',
+            variante: 'soft',
+            mensaje: 'Mostramos la información disponible. No se pudo cargar el detalle completo.',
           };
         }
 

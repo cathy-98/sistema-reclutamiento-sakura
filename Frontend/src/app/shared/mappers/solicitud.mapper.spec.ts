@@ -6,6 +6,7 @@ import { mapearSolicitudResumen, SolicitudResumenCatalogos } from './solicitud.m
 const catalogos: SolicitudResumenCatalogos = {
   cargosPorId: new Map(),
   clientesPorId: new Map(),
+  empresasPorClienteId: new Map(),
   usuariosPorId: new Map(),
   prioridadesPorId: new Map(),
   estadosPorId: new Map(),
@@ -57,5 +58,36 @@ describe('mapearSolicitudResumen', () => {
     );
 
     expect(resumen.descripcion).toBe('Sin descripción');
+  });
+
+  it('mantiene cliente solicitante y empresa cliente como datos separados', () => {
+    const resumen = mapearSolicitudResumen(
+      solicitudBase({ sol_cliente_id: 8 }),
+      {
+        ...catalogos,
+        clientesPorId: new Map([[8, 'Jade Garcia']]),
+        empresasPorClienteId: new Map([[8, 'Banco de Chile']]),
+      },
+    );
+
+    expect(resumen.cliente).toBe('Jade Garcia');
+    expect(resumen.empresaCliente).toBe('Banco de Chile');
+  });
+
+  it('normaliza ids de catalogo aunque lleguen como texto', () => {
+    const resumen = mapearSolicitudResumen(
+      solicitudBase({
+        sol_prioridad_id: '1' as unknown as number,
+        sol_estado_solicitud_id: '2' as unknown as number,
+      }),
+      {
+        ...catalogos,
+        prioridadesPorId: new Map([[1, 'Alta']]),
+        estadosPorId: new Map([[2, 'En Curso']]),
+      },
+    );
+
+    expect(resumen.prioridad).toBe('Alta');
+    expect(resumen.estado).toBe('En Curso');
   });
 });
