@@ -52,6 +52,12 @@ export class AppShell {
       roles: ['Administrador', 'Reclutador', 'Entrevistador'],
     },
     {
+      label: 'Mi portal',
+      icon: 'users',
+      route: '/portal-candidato',
+      roles: ['Candidato'],
+    },
+    {
       label: 'Gestion de cuestionarios',
       icon: 'questionnaire',
       roles: ['Administrador', 'Reclutador'],

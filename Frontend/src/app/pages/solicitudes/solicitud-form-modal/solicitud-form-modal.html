@@ -1,75 +1,106 @@
 <app-modal [titulo]="tituloModal" [subtitulo]="subtituloModal" ancho="lg" (cerrar)="cerrar.emit()">
-    <div modal-header-extra>
-      <span>{{ etiquetaCodigoEncabezado }}: </span>
-      <strong>{{ codigoEncabezado }}</strong>
+    <div class="request-header-extra" modal-header-extra>
+      <span>
+        {{ etiquetaCodigoEncabezado }}:
+        <strong>{{ codigoEncabezado }}</strong>
+      </span>
+      <span class="request-header-status" *ngIf="modo === 'ver'">
+        Estado:
+        <strong>{{ estadoSolicitudTexto }}</strong>
+      </span>
     </div>
 
     <div class="request-modal-body">
-      <div class="modal-loading" *ngIf="cargandoDetalle">
-        <span></span>
-        Cargando datos de la solicitud...
+      <div class="modal-loading" *ngIf="cargandoDetalle && modo !== 'crear'">
+        <span aria-hidden="true"></span>
+        <strong>Cargando solicitud...</strong>
+        <small>Estamos preparando el detalle.</small>
       </div>
 
-      <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+      <app-alert-region *ngIf="!cargandoDetalle" [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
       <div class="request-detail" *ngIf="modo === 'ver' && !cargandoDetalle">
-        <section class="detail-summary">
-          <h3>{{ detalleTexto('titulo') }}</h3>
-          <p>{{ detalleCliente }}</p>
-          <div>
-            <span>{{ estadoSolicitudTexto }}</span>
-            <span>{{ detalleNumero('cantidad_vacantes') }} vacantes</span>
-            <span>{{ detalleCatalogo('id_prioridad', prioridadesCatalogo, 'Sin prioridad') }}</span>
-          </div>
-        </section>
-
-        <div class="detail-columns">
+        <div class="detail-overview">
           <section class="detail-section">
-            <h3>Solicitud</h3>
-            <dl class="detail-grid">
-              <div><dt>Cargo</dt><dd>{{ detalleCargo }}</dd></div>
-              <div><dt>Responsable</dt><dd>{{ detalleUsuario('id_usuario_responsable') }}</dd></div>
-              <div><dt>Solicitante</dt><dd>{{ detalleUsuario('id_usuario_solicitante') }}</dd></div>
-              <div><dt>Modalidad</dt><dd>{{ detalleCatalogo('id_modalidad', modalidadesCatalogo, 'Sin modalidad') }}</dd></div>
-              <div><dt>Contrato</dt><dd>{{ detalleCatalogo('id_tipo_contrato', tiposContratoCatalogo, 'Sin tipo de contrato') }}</dd></div>
-              <div><dt>Salario</dt><dd>{{ detalleRangoSalario }}</dd></div>
+            <h3>
+              <span class="detail-step">1</span>
+              Información general
+            </h3>
+            <dl class="detail-list">
+              <div><dt>Nombre de la solicitud</dt><dd>{{ detalleTexto('titulo') }}</dd></div>
+              <div><dt>Cargo solicitado</dt><dd>{{ detalleCargo }}</dd></div>
+              <div><dt>Empresa cliente</dt><dd>{{ detalleEmpresaCliente }}</dd></div>
+              <div><dt>Cliente solicitante</dt><dd>{{ detalleCliente }}</dd></div>
+              <div><dt>Reclutador asignado</dt><dd>{{ detalleResponsable }}</dd></div>
             </dl>
           </section>
 
           <section class="detail-section">
-            <h3>Fechas y jornada</h3>
-            <dl class="detail-grid">
-              <div><dt>Inicio selección</dt><dd>{{ detalleFecha('fecha_inicio_busqueda') }}</dd></div>
-              <div><dt>Fin selección</dt><dd>{{ detalleFecha('fecha_cierre_busqueda') }}</dd></div>
-              <div><dt>Inicio empleo</dt><dd>{{ detalleFecha('fecha_inicio_cliente') }}</dd></div>
+            <h3>
+              <span class="detail-step">2</span>
+              Condiciones
+            </h3>
+            <dl class="detail-list detail-list--two">
+              <div><dt>Prioridad</dt><dd>{{ detallePrioridad }}</dd></div>
+              <div><dt>Cantidad de vacantes</dt><dd>{{ detalleNumero('cantidad_vacantes') }}</dd></div>
+              <div><dt>Modalidad</dt><dd>{{ detalleCatalogo('id_modalidad', modalidadesCatalogo, 'Sin modalidad') }}</dd></div>
+              <div><dt>Tipo de contrato</dt><dd>{{ detalleCatalogo('id_tipo_contrato', tiposContratoCatalogo, 'Sin tipo de contrato') }}</dd></div>
+              <div><dt>Rango salarial</dt><dd>{{ detalleRangoSalario }}</dd></div>
               <div><dt>Jornada</dt><dd>{{ detalleJornada }}</dd></div>
             </dl>
           </section>
+
+          <section class="detail-section">
+            <h3>
+              <span class="detail-step">3</span>
+              Cronograma
+            </h3>
+            <dl class="detail-list detail-list--two">
+              <div><dt>Inicio selección</dt><dd>{{ detalleFecha('fecha_inicio_busqueda') }}</dd></div>
+              <div><dt>Fin selección</dt><dd>{{ detalleFecha('fecha_cierre_busqueda') }}</dd></div>
+              <div><dt>Inicio empleo</dt><dd>{{ detalleFecha('fecha_inicio_cliente') }}</dd></div>
+            </dl>
+          </section>
+
+          <section class="detail-section detail-section--wide">
+            <h3>
+              <span class="detail-step">4</span>
+              Descripción
+            </h3>
+            <p class="detail-text">{{ detalleTexto('descripcion') }}</p>
+          </section>
         </div>
 
-        <section class="detail-section detail-section--wide">
-          <h3>Descripción</h3>
-          <p class="detail-text">{{ detalleTexto('descripcion') }}</p>
+        <section class="detail-section detail-skills-table">
+          <h3>
+            <span class="detail-step">5</span>
+            Habilidades
+          </h3>
+          <table *ngIf="habilidadesSolicitud.length > 0; else sinHabilidadesDetalle">
+            <thead>
+              <tr>
+                <th>Excluyente</th>
+                <th>Nivel técnico</th>
+                <th>Tecnología</th>
+                <th>Años mínimo experiencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let habilidad of habilidadesSolicitud">
+                <td><input type="checkbox" [checked]="habilidad.es_excluyente" disabled /></td>
+                <td>{{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }}</td>
+                <td>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</td>
+                <td>{{ habilidad.anios_experiencia }}</td>
+              </tr>
+            </tbody>
+          </table>
         </section>
-
-        <section class="detail-section detail-section--wide">
-          <h3>Habilidades técnicas</h3>
-          <div class="detail-skills" *ngIf="habilidadesSolicitud.length > 0; else sinHabilidadesDetalle">
-            <article *ngFor="let habilidad of habilidadesSolicitud">
-              <strong>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</strong>
-              <span>{{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }} · {{ habilidad.anios_experiencia }} años</span>
-              <small class="skill-importance" [ngClass]="habilidadExcluyenteClase(habilidad.es_excluyente)">
-                {{ habilidad.es_excluyente ? 'Excluyente' : 'No excluyente' }}
-              </small>
-            </article>
-          </div>
-          <ng-template #sinHabilidadesDetalle>
-            <p class="detail-text">Sin habilidades registradas.</p>
-          </ng-template>
-        </section>
+        <ng-template #sinHabilidadesDetalle>
+          <p class="detail-text">Sin habilidades registradas.</p>
+        </ng-template>
       </div>
 
-      <form class="modal-form" *ngIf="modo !== 'ver'" [formGroup]="formularioSolicitud">
+      <form class="modal-form" *ngIf="modo !== 'ver' && !cargandoDetalle" [formGroup]="formularioSolicitud">
       <app-stepper
         [pasos]="pasosFormulario"
         [pasoActivo]="tabFormulario"
@@ -103,39 +134,92 @@
               formControlName="id_cargo"
               placeholder="Selecciona un cargo"
               [options]="cargosCatalogo"
+              [searchable]="true"
+              actionLabel="+ Crear nuevo cargo"
+              (actionSelected)="mostrarCreacionCargo = true"
             ></app-compact-select>
             <small class="form-error" *ngIf="control('id_cargo')?.touched && control('id_cargo')?.hasError('required')">
               Campo obligatorio.
             </small>
+            <div class="inline-create-panel" *ngIf="mostrarCreacionCargo">
+              <input
+                type="text"
+                placeholder="Nombre del cargo"
+                formControlName="nuevo_cargo_nombre"
+              />
+              <button type="button" (click)="crearCargoSolicitado()" [disabled]="creandoCargo">
+                {{ creandoCargo ? 'Creando' : 'Crear' }}
+              </button>
+              <button type="button" (click)="mostrarCreacionCargo = false" [disabled]="creandoCargo">
+                Cancelar
+              </button>
+            </div>
           </div>
 
           <div class="form-field">
-            <span>Cliente *</span>
+            <span>Empresa cliente *</span>
+            <app-compact-select
+              formControlName="id_empresa_cliente"
+              placeholder="Selecciona empresa"
+              [options]="empresasCatalogo"
+              [searchable]="true"
+              actionLabel="+ Crear nueva empresa"
+              (actionSelected)="mostrarCreacionEmpresa = true"
+            ></app-compact-select>
+            <small class="form-error" *ngIf="control('id_empresa_cliente')?.touched && control('id_empresa_cliente')?.hasError('required')">
+              Campo obligatorio.
+            </small>
+            <div class="inline-create-panel" *ngIf="mostrarCreacionEmpresa">
+              <input
+                type="text"
+                placeholder="Nombre de la empresa"
+                formControlName="nueva_empresa_nombre"
+              />
+              <button type="button" (click)="crearEmpresaCliente()" [disabled]="creandoEmpresa">
+                {{ creandoEmpresa ? 'Creando' : 'Crear' }}
+              </button>
+              <button type="button" (click)="mostrarCreacionEmpresa = false" [disabled]="creandoEmpresa">
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <span>Cliente solicitante *</span>
             <app-compact-select
               formControlName="id_cliente"
-              placeholder="Selecciona un cliente"
+              placeholder="Selecciona persona solicitante"
               [options]="clientesCatalogo"
+              [searchable]="true"
+              actionLabel="+ Crear nuevo contacto"
+              [actionDisabled]="!empresaClienteSeleccionada"
+              (actionSelected)="mostrarCreacionCliente = true"
             ></app-compact-select>
             <small class="form-error" *ngIf="control('id_cliente')?.touched && control('id_cliente')?.hasError('required')">
               Campo obligatorio.
             </small>
+            <div class="inline-create-panel" *ngIf="mostrarCreacionCliente">
+              <input
+                type="text"
+                placeholder="Nombre de la persona"
+                formControlName="nuevo_cliente_nombre"
+              />
+              <button type="button" (click)="crearClienteSolicitante()" [disabled]="creandoCliente || !empresaClienteSeleccionada">
+                {{ creandoCliente ? 'Creando' : 'Crear' }}
+              </button>
+              <button type="button" (click)="mostrarCreacionCliente = false" [disabled]="creandoCliente">
+                Cancelar
+              </button>
+            </div>
           </div>
 
           <div class="form-field">
-            <span>Solicitante</span>
-            <app-compact-select
-              formControlName="id_usuario_solicitante"
-              placeholder="Selecciona solicitante"
-              [options]="usuariosCatalogo"
-            ></app-compact-select>
-          </div>
-
-          <div class="form-field">
-            <span>Responsable</span>
+            <span>Reclutador asignado</span>
             <app-compact-select
               formControlName="id_usuario_responsable"
               placeholder="Sin asignar"
               [options]="reclutadoresCatalogo"
+              [searchable]="true"
             ></app-compact-select>
           </div>
         </div>
@@ -250,11 +334,11 @@
         *ngIf="tabFormulario === 'descripcion'"
         step="4"
         title="Descripción"
-        description="Observaciones y detalle de la vacante."
+        description="Detalle de la vacante."
       >
 
         <label class="form-field">
-          Descripción / observaciones
+          Descripción
           <textarea
             rows="8"
             maxlength="500"
@@ -333,14 +417,14 @@
     </div>
 
     <app-form-actions modal-footer>
-      <app-button formActionsStart [variant]="modo === 'ver' ? 'primary' : 'ghost'" type="button" (pressed)="cerrar.emit()">
-        {{ modo === 'ver' ? 'Aceptar' : 'Cancelar' }}
+      <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">
+        {{ modo === 'ver' ? 'Listado de candidatos' : 'Cancelar' }}
       </app-button>
 
-      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver'" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
+      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver' && !cargandoDetalle" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
         Volver
       </app-button>
-      <app-button type="button" *ngIf="modo !== 'ver' && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
-      <app-button type="button" *ngIf="modo !== 'ver' && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
     </app-form-actions>
 </app-modal>

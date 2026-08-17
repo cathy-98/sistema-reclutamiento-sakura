@@ -24,6 +24,78 @@ export interface CandidatoApi {
   cand_url_1?: string | null;
   cand_titulo?: string | null;
   cand_estado_usuario_id?: number | null;
+  cand_rut_sin_dv?: number | null;
+  cand_dv?: number | string | null;
+  cand_cv_urls?: string | null;
+}
+
+export interface DireccionCandidatoApi {
+  drcd_id?: number;
+  drcd_candidato_id?: number;
+  drcd_comuna_id?: number | null;
+  drcd_calle?: string | null;
+  drcd_numero?: number | string | null;
+  drcd_dpto_oficina?: string | null;
+}
+
+export interface HabilidadCandidatoApi {
+  cdhb_id?: number;
+  cdhb_habilidad_id?: number | null;
+  cdhb_nivel_habilidad_id?: number | null;
+  cdhb_anios_experiencia?: number | null;
+  habilidad?: { hab_nombre?: string | null } | null;
+  nivel_habilidad?: { nvhb_nombre?: string | null } | null;
+}
+
+export interface EstudioCandidatoApi {
+  cdet_id?: number;
+  cdet_institucion_id?: number | null;
+  cdet_carrera_id?: number | null;
+  cdet_nivel_educacional_id?: number | null;
+  cdet_fecha_inicio?: string | null;
+  cdet_fecha_fin?: string | null;
+  cdet_descripcion?: string | null;
+  institucion?: { inst_nombre?: string | null } | null;
+  carrera?: { crra_nombre?: string | null } | null;
+  nivel_educacional?: { nved_nombre?: string | null } | null;
+}
+
+export interface ExperienciaCandidatoApi {
+  cdex_id?: number;
+  cdex_empresa?: string | null;
+  cdex_cargo?: string | null;
+  cdex_fecha_inicio?: string | null;
+  cdex_fecha_fin?: string | null;
+  cdex_descripcion?: string | null;
+}
+
+export interface CursoCandidatoApi {
+  cdcu_id?: number;
+  cdcu_nombre?: string | null;
+  cdcu_institucion?: string | null;
+  cdcu_fecha_inicio?: string | null;
+  cdcu_fecha_fin?: string | null;
+}
+
+export interface PostulacionCandidatoApi {
+  slcd_id: number;
+  slcd_candidato_id: number;
+  slcd_solicitud_id: number;
+  slcd_pretension_renta?: number | null;
+  slcd_puntaje_compatibilidad?: number | string | null;
+  slcd_estado_solicitud_candidato_id?: number | null;
+  slcd_fecha_postulacion?: string | null;
+  slcd_observaciones?: string | null;
+  slcd_motivo_rechazo_id?: number | null;
+}
+
+export interface CandidatoPerfilCompletoApi extends CandidatoApi {
+  direccion?: DireccionCandidatoApi | null;
+  habilidades?: HabilidadCandidatoApi[];
+  estudios?: EstudioCandidatoApi[];
+  experiencias?: ExperienciaCandidatoApi[];
+  cursos?: CursoCandidatoApi[];
+  solicitudes?: PostulacionCandidatoApi[];
 }
 
 // Modelo de pantalla actual: se mantiene separado para no mezclar UI con nombres de BD.
@@ -73,13 +145,33 @@ export class CandidatosService {
   constructor(private http: HttpClient) {}
 
   listar() {
-    // Integración pendiente: reemplazar por mapeo cand_* -> modelo de pantalla cuando backend exponga /candidatos.
-    return this.http.get<CandidatoResumen[]>(this.apiUrl);
+    // Integracion interna M3: GET /candidatos lista candidatos para usuarios internos.
+    return this.http.get<CandidatoApi[]>(this.apiUrl);
   }
 
   obtenerPorId(id: string) {
-    // Integración pendiente: el detalle debe alinearse con la respuesta real de backend/BD.
-    return this.http.get<CandidatoPerfil>(`${this.apiUrl}/${id}`);
+    // Integracion interna M3: GET /candidatos/{id} mantiene compatibilidad con ficha base.
+    return this.http.get<CandidatoPerfilCompletoApi>(`${this.apiUrl}/${id}`);
+  }
+
+  obtenerPerfilCompleto(id: string) {
+    // Integracion interna M3: GET /candidatos/{id}/perfil-completo para vista administrativa.
+    return this.http.get<CandidatoPerfilCompletoApi>(`${this.apiUrl}/${id}/perfil-completo`);
+  }
+
+  obtenerMiPerfilCompleto() {
+    // Integracion interna M3 autoservicio: GET /candidatos/me/perfil-completo usa cand_id desde JWT.
+    return this.http.get<CandidatoPerfilCompletoApi>(`${this.apiUrl}/me/perfil-completo`);
+  }
+
+  listarSolicitudes(id: string) {
+    // Integracion interna M3: GET /candidatos/{id}/solicitudes para postulaciones administrativas.
+    return this.http.get<PostulacionCandidatoApi[]>(`${this.apiUrl}/${id}/solicitudes`);
+  }
+
+  listarMisSolicitudes() {
+    // Integracion interna M3 autoservicio: GET /candidatos/me/solicitudes sin exponer cand_id.
+    return this.http.get<PostulacionCandidatoApi[]>(`${this.apiUrl}/me/solicitudes`);
   }
 
   crear(payload: Partial<CandidatoApi>) {
@@ -99,11 +191,13 @@ export class CandidatosService {
   subirCv(archivo: File) {
     const formData = new FormData();
     formData.append('archivo', archivo);
-    return this.http.post<CandidatoPerfil>(`${this.apiUrl}/cv`, formData);
+    // Integracion interna M3: POST /candidatos/importar-cv importa/actualiza candidato desde un CV.
+    return this.http.post<CandidatoPerfilCompletoApi>(`${this.apiUrl}/importar-cv`, formData);
   }
 
   vincularVacante(candidatoId: string, payload: CandidatoVacantePayload) {
-    return this.http.post(`${this.apiUrl}/${candidatoId}/postulaciones`, payload);
+    // Integracion interna M3: POST /solicitudes/{solicitud_id}/candidatos/{candidato_id}.
+    return this.http.post(`/api/solicitudes/${payload.slcd_solicitud_id}/candidatos/${candidatoId}`, payload);
   }
 
   agregarHabilidad(candidatoId: string, payload: CandidatoHabilidadPayload) {

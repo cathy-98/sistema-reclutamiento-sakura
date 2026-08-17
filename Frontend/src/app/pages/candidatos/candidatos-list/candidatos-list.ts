@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, of, take, timeout } from 'rxjs';
+import { catchError, finalize, forkJoin, of, take, timeout } from 'rxjs';
 import { EntrevistaPayload, EntrevistasService } from '../../../services/entrevistas.service';
 import { CatalogosService } from '../../../services/catalogos.service';
+import { CandidatoApi, CandidatosService } from '../../../services/candidatos.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import {
   DataTable,
@@ -219,7 +220,9 @@ export class CandidatosList implements OnInit {
   niveles: NivelCandidato[] = ['Junior', 'Semi senior', 'Senior'];
   disponibilidades: string[] = [];
 
-  readonly candidatos: Candidato[] = [
+  candidatos: Candidato[] = [];
+
+  private readonly candidatosRespaldo: Candidato[] = [
     {
       idSolicitud: 'SOL-021',
       match: 90,
@@ -302,33 +305,62 @@ export class CandidatosList implements OnInit {
     private router: Router,
     private entrevistasService: EntrevistasService,
     private catalogosService: CatalogosService,
+    private candidatosService: CandidatosService,
   ) {}
 
   ngOnInit() {
-    this.cargarCatalogosFiltros();
+    this.cargarCandidatos();
   }
 
   cargarCandidatos() {
-    this.cargando = false;
+    this.cargando = true;
     this.errorCarga = '';
     this.paginaActual = 1;
-  }
 
-  cargarCatalogosFiltros() {
-    // Integración catálogos candidatos -> filtros del listado:
-    // - estados-solicitud-candidato alimenta "Estado postulación" (slcd_estado_solicitud_candidato_id).
-    // - disponibilidades alimenta el selector "Disponibilidad".
-    // - niveles-habilidad alimenta el selector "Nivel".
+    // Integracion interna M3:
+    // - GET /candidatos -> datos base cand_* para tabla administrativa.
+    // - GET /catalogos/estados-solicitud-candidato -> llena filtro Estado postulacion.
+    // - GET /catalogos/disponibilidades -> llena filtro Disponibilidad.
+    // - GET /catalogos/niveles-habilidad -> llena filtro Nivel tecnico.
+    // Catálogos seguros retornan [] ante error/timeout; candidatos usa respaldo local si falla.
     forkJoin({
-      estados: this.catalogosService.listarEstadosSolicitudCandidato().pipe(timeout(4000), catchError(() => of([]))),
-      disponibilidades: this.catalogosService.listarDisponibilidades().pipe(timeout(4000), catchError(() => of([]))),
-      niveles: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
+      candidatos: this.candidatosService.listar().pipe(
+        timeout(6000),
+        catchError((error) => {
+          console.warn('GET /candidatos no disponible; se usa respaldo local.', error);
+          this.errorCarga = 'No se pudo cargar candidatos reales. Se muestran datos de respaldo.';
+          return of([] as CandidatoApi[]);
+        }),
+      ),
+      estados: this.catalogosService.listarEstadosSolicitudCandidatoSeguro(),
+      disponibilidades: this.catalogosService.listarDisponibilidadesSeguro(),
+      niveles: this.catalogosService.listarNivelesHabilidadSeguro(),
     })
-      .pipe(take(1))
-      .subscribe(({ estados, disponibilidades, niveles }) => {
+      .pipe(
+        timeout(8000),
+        catchError((error) => {
+          console.warn('No se pudo completar la carga de candidatos; se usa respaldo local.', error);
+          this.errorCarga = 'No se pudo cargar candidatos reales. Se muestran datos de respaldo.';
+          return of({
+            candidatos: [] as CandidatoApi[],
+            estados: [],
+            disponibilidades: [],
+            niveles: [],
+          });
+        }),
+        take(1),
+        // Proteccion interna: apaga el loading aunque un error inesperado escape del forkJoin.
+        finalize(() => {
+          this.cargando = false;
+        }),
+      )
+      .subscribe(({ candidatos, estados, disponibilidades, niveles }) => {
         const estadosCatalogo = estados.map((estado) => estado.essc_nombre).filter((nombre): nombre is string => Boolean(nombre));
         const disponibilidadesCatalogo = disponibilidades.map((disponibilidad) => disponibilidad.disp_nombre).filter((nombre): nombre is string => Boolean(nombre));
         const nivelesCatalogo = niveles.map((nivel) => nivel.nvhb_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const disponibilidadesPorId = new Map(
+          disponibilidades.map((disponibilidad) => [disponibilidad.disp_id, disponibilidad.disp_nombre ?? 'Sin disponibilidad']),
+        );
 
         if (estadosCatalogo.length > 0) {
           this.estados = ['Todos', ...estadosCatalogo];
@@ -341,6 +373,14 @@ export class CandidatosList implements OnInit {
         if (nivelesCatalogo.length > 0) {
           this.niveles = nivelesCatalogo;
         }
+
+        this.candidatos = candidatos.length > 0
+          ? candidatos.map((candidato) => this.mapearCandidatoTabla(candidato, disponibilidadesPorId))
+          : this.candidatosRespaldo;
+      }, () => {
+        this.errorCarga = 'No se pudo cargar candidatos reales. Se muestran datos de respaldo.';
+        this.candidatos = this.candidatosRespaldo;
+        this.cargando = false;
       });
   }
 
@@ -683,6 +723,48 @@ export class CandidatosList implements OnInit {
   }
 
   obtenerIdCandidato(candidato: Candidato) {
-    return `${candidato.idSolicitud}-${candidato.correo}`;
+    // Integracion interna M3: en datos reales idSolicitud conserva cand_id para abrir /candidatos/{id}.
+    return candidato.idSolicitud;
+  }
+
+  private mapearCandidatoTabla(
+    candidato: CandidatoApi,
+    disponibilidadesPorId: Map<number, string>,
+  ): Candidato {
+    // Integracion interna M3: transforma campos cand_* del backend al modelo visual de la tabla.
+    const nombre = [
+      candidato.cand_nombres,
+      candidato.cand_apellido_paterno,
+      candidato.cand_apellido_materno,
+    ]
+      .filter(Boolean)
+      .join(' ') || 'Candidato sin nombre';
+
+    return {
+      idSolicitud: String(candidato.cand_id),
+      match: 0,
+      nombre,
+      correo: candidato.cand_email ?? 'Sin correo',
+      telefono: candidato.cand_telefono ?? '',
+      cargo: candidato.cand_titulo ?? 'Sin cargo',
+      fechaPostulacion: this.formatearFecha(candidato.cand_fecha_creacion),
+      estado: 'En revision',
+      estadoUsuario: candidato.cand_estado_usuario_id === 1 ? 'Activo' : 'Inactivo',
+      disponibilidad: disponibilidadesPorId.get(candidato.cand_disponibilidad_id ?? 0) ?? 'Sin disponibilidad',
+      renta: 0,
+      nivel: this.niveles[0] ?? 'Sin nivel',
+      experiencia: 0,
+    };
+  }
+
+  private formatearFecha(fecha?: string | null) {
+    if (!fecha) {
+      return '';
+    }
+
+    const fechaNormalizada = new Date(fecha);
+    return Number.isNaN(fechaNormalizada.getTime())
+      ? fecha
+      : new Intl.DateTimeFormat('es-CL').format(fechaNormalizada);
   }
 }

@@ -16,6 +16,11 @@
   gap: 8px;
 }
 
+.pagination {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 select,
 button {
   min-width: 38px;
@@ -50,6 +55,16 @@ select:focus-visible {
 .is-active {
   background: var(--color-sakura);
   color: var(--color-white);
+}
+
+.pagination-ellipsis {
+  display: inline-flex;
+  min-width: 22px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {

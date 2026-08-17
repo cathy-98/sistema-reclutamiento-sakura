@@ -103,6 +103,7 @@
   [modo]="modoFormulario"
   [codigoSolicitudInicial]="solicitudSeleccionadaCodigo || ''"
   [codigoSolicitudSugerido]="modoFormulario === 'crear' ? codigoSolicitudEstimado : ''"
+  [solicitudResumenInicial]="solicitudSeleccionadaResumen"
   (cerrar)="cerrarFormulario()"
   (guardado)="manejarFormularioGuardado()"
 ></app-solicitud-form-modal>

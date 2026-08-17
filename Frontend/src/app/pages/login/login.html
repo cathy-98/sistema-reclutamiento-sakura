@@ -9,7 +9,7 @@
       <p>Accede a tu cuenta para comenzar.</p>
     </header>
 
-    <form class="login-form" (ngSubmit)="ingresar()">
+    <form class="login-form" (ngSubmit)="ingresar()" novalidate>
       <div class="form-group">
         <label>Correo electrónico</label>
         <input
@@ -33,8 +33,8 @@
           />
         </div>
       </div>
-
-      <a class="forgot-password">¿Olvidaste tu contraseña?</a>
+<!-- Se oculta para futuro añadir esta función -->
+<!-- <a class="forgot-password">¿Olvidaste tu contraseña?</a> -->
 
       <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
