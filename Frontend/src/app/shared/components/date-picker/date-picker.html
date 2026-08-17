@@ -1,0 +1,39 @@
+<div class="date-picker" [class.is-disabled]="disabled">
+  <button class="date-trigger" type="button" [disabled]="disabled" (click)="alternar()">
+    <span [class.is-placeholder]="!valorVisible">{{ valorVisible || placeholder }}</span>
+    <svg class="date-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M7 3v3M17 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+      <path d="M8 13h2M12 13h2M16 13h2M8 16h2M12 16h2" />
+    </svg>
+  </button>
+
+  <div class="date-menu" *ngIf="abierto">
+    <div class="date-menu-header">
+      <button type="button" aria-label="Mes anterior" (click)="cambiarMes(-1)">‹</button>
+      <strong>{{ etiquetaMes }}</strong>
+      <button type="button" aria-label="Mes siguiente" (click)="cambiarMes(1)">›</button>
+    </div>
+
+    <div class="date-weekdays">
+      <span *ngFor="let dia of diasSemana">{{ dia }}</span>
+    </div>
+
+    <div class="date-days">
+      <button
+        type="button"
+        *ngFor="let dia of diasCalendario"
+        [class.is-muted]="!dia.esMesActual"
+        [class.is-selected]="dia.fecha === value"
+        [disabled]="dia.deshabilitado"
+        (click)="seleccionar(dia)"
+      >
+        {{ dia.dia }}
+      </button>
+    </div>
+
+    <div class="date-actions">
+      <button type="button" (click)="limpiar($event)">Limpiar</button>
+      <button type="button" (click)="seleccionarHoy($event)">Hoy</button>
+    </div>
+  </div>
+</div>

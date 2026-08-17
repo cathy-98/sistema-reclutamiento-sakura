@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import {
   AbstractControl,
   ReactiveFormsModule,
@@ -27,6 +27,7 @@ import { SolicitudesService } from '../../../services/solicitudes.service';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { Button } from '../../../shared/components/button/button';
 import { CompactSelect } from '../../../shared/components/compact-select/compact-select';
+import { DatePicker } from '../../../shared/components/date-picker/date-picker';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { FormSection } from '../../../shared/components/form-section/form-section';
 import { Modal } from '../../../shared/components/modal/modal';
@@ -35,6 +36,7 @@ import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import {
   SolicitudApi,
   SolicitudCreatePayload,
+  SolicitudHabilidadApi,
   SolicitudHabilidadPayload,
   SolicitudResumen,
   SolicitudUpdatePayload,
@@ -71,7 +73,7 @@ const CATALOGOS_DETALLE_TIMEOUT_MS = 3000;
 
 @Component({
   selector: 'app-solicitud-form-modal',
-  imports: [CommonModule, ReactiveFormsModule, AlertRegion, Button, CompactSelect, FormActions, FormSection, Modal, Stepper],
+  imports: [CommonModule, ReactiveFormsModule, AlertRegion, Button, CompactSelect, DatePicker, FormActions, FormSection, Modal, Stepper],
   templateUrl: './solicitud-form-modal.html',
   styleUrl: './solicitud-form-modal.scss',
 })
@@ -101,7 +103,7 @@ export class SolicitudFormModal implements OnInit {
   camposPorPaso: Record<string, string[]> = {
     general: ['titulo', 'id_cargo', 'id_empresa_cliente', 'id_cliente'],
     condiciones: ['id_prioridad', 'cantidad_vacantes', 'id_modalidad'],
-    cronograma: [],
+    cronograma: ['fecha_inicio_busqueda', 'fecha_cierre_busqueda', 'fecha_inicio_cliente'],
     descripcion: [],
     habilidades: [],
   };
@@ -117,12 +119,17 @@ export class SolicitudFormModal implements OnInit {
   tiposContratoCatalogo: CatalogoOpcion[] = [];
   habilidadesCatalogo: CatalogoOpcion[] = [];
   nivelesHabilidadCatalogo: CatalogoOpcion[] = [];
+  habilidadesDetalle: HabilidadSolicitud[] = [];
+  cargandoHabilidadesDetalle = false;
+  errorCargaHabilidadesDetalle = false;
   creandoEmpresa = false;
   creandoCliente = false;
   creandoCargo = false;
+  creandoHabilidad = false;
   mostrarCreacionCargo = false;
   mostrarCreacionEmpresa = false;
   mostrarCreacionCliente = false;
+  mostrarCreacionHabilidad = false;
   private clientesBase: ClienteApi[] = [];
 
   formularioSolicitud = new UntypedFormGroup(
@@ -149,9 +156,10 @@ export class SolicitudFormModal implements OnInit {
       nuevo_cargo_nombre: new UntypedFormControl(''),
       nueva_empresa_nombre: new UntypedFormControl(''),
       nuevo_cliente_nombre: new UntypedFormControl(''),
+      nueva_habilidad_nombre: new UntypedFormControl(''),
       habilidades: new UntypedFormArray([]),
     },
-    { validators: this.validarRangoSalario },
+    { validators: [this.validarRangoSalario, this.validarCronograma] },
   );
 
   nuevaHabilidad = new UntypedFormGroup({
@@ -167,6 +175,7 @@ export class SolicitudFormModal implements OnInit {
     private catalogosService: CatalogosService,
     private clientesService: ClientesService,
     private authService: AuthService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -174,12 +183,14 @@ export class SolicitudFormModal implements OnInit {
       this.actualizarClientesCatalogo();
     });
 
-    if (this.idSolicitud) {
-      this.cargarSolicitud(this.idSolicitud);
-      return;
-    }
+    setTimeout(() => {
+      if (this.idSolicitud) {
+        this.cargarSolicitud(this.idSolicitud);
+        return;
+      }
 
-    this.cargarCatalogosFormulario();
+      this.cargarCatalogosFormulario();
+    });
   }
 
   get habilidadesFormArray() {
@@ -190,8 +201,56 @@ export class SolicitudFormModal implements OnInit {
     return this.habilidadesFormArray.getRawValue() as HabilidadSolicitud[];
   }
 
+  habilidadFormGroup(indice: number) {
+    return this.habilidadesFormArray.at(indice) as UntypedFormGroup;
+  }
+
+  get habilidadesDetalleVisibles() {
+    return this.habilidadesDetalle.filter((habilidad) => this.habilidadDetalleValida(habilidad));
+  }
+
+  get habilidadesDetalleInvalidas() {
+    return this.habilidadesDetalle.length - this.habilidadesDetalleVisibles.length;
+  }
+
+  get tieneHabilidadExcluyenteDetalle() {
+    return this.habilidadesDetalleVisibles.some((habilidad) => habilidad.es_excluyente);
+  }
+
+  get mensajeHabilidadesDetalle() {
+    if (this.cargandoHabilidadesDetalle && this.habilidadesDetalleVisibles.length === 0) {
+      return 'Cargando habilidades de la solicitud...';
+    }
+
+    if (this.errorCargaHabilidadesDetalle && this.habilidadesDetalleVisibles.length === 0) {
+      return 'No se pudieron cargar las habilidades de esta solicitud. Intenta actualizar el detalle.';
+    }
+
+    if (this.habilidadesDetalle.length === 0) {
+      return 'Esta solicitud no tiene habilidades registradas. Edítala y agrega al menos una habilidad excluyente para poder evaluar candidatos.';
+    }
+
+    if (this.habilidadesDetalleVisibles.length === 0) {
+      return 'Las habilidades guardadas están incompletas y no se pueden visualizar. Revisa tecnología, nivel y años de experiencia.';
+    }
+
+    if (!this.tieneHabilidadExcluyenteDetalle) {
+      return 'Esta solicitud tiene habilidades, pero ninguna está marcada como excluyente. Debe tener al menos una para evaluación automática.';
+    }
+
+    if (this.habilidadesDetalleInvalidas > 0) {
+      return `${this.habilidadesDetalleInvalidas} habilidad(es) no se muestran porque tienen datos incompletos.`;
+    }
+
+    return '';
+  }
+
   get descripcionLength() {
     return String(this.formularioSolicitud.get('descripcion')?.value ?? '').length;
+  }
+
+  get fechaHoyInput() {
+    return this.fechaLocalInput(new Date());
   }
 
   get estadoSolicitudTexto() {
@@ -327,10 +386,41 @@ export class SolicitudFormModal implements OnInit {
     return salarioMinimo <= salarioMaximo ? null : { rangoSalarioInvalido: true };
   }
 
+  validarCronograma(control: AbstractControl): ValidationErrors | null {
+    const inicioSeleccion = String(control.get('fecha_inicio_busqueda')?.value ?? '');
+    const finSeleccion = String(control.get('fecha_cierre_busqueda')?.value ?? '');
+    const inicioEmpleo = String(control.get('fecha_inicio_cliente')?.value ?? '');
+    const hoy = SolicitudFormModal.fechaLocalInputEstatica(new Date());
+    const errores: ValidationErrors = {};
+
+    if (inicioSeleccion && inicioSeleccion < hoy) {
+      errores['inicioSeleccionPasado'] = true;
+    }
+
+    if (finSeleccion && finSeleccion < hoy) {
+      errores['finSeleccionPasado'] = true;
+    }
+
+    if (inicioSeleccion && finSeleccion && finSeleccion < inicioSeleccion) {
+      errores['finSeleccionAntesInicio'] = true;
+    }
+
+    if (
+      inicioEmpleo &&
+      ((inicioSeleccion && inicioEmpleo <= inicioSeleccion) || (finSeleccion && inicioEmpleo <= finSeleccion))
+    ) {
+      errores['inicioEmpleoFueraRango'] = true;
+    }
+
+    return Object.keys(errores).length ? errores : null;
+  }
+
   cargarSolicitud(id: string) {
     const puedeMostrarResumen = this.modo !== 'crear' && this.solicitudResumenInicial;
     this.cargandoDetalle = !puedeMostrarResumen;
     this.alerta = null;
+    this.cargandoHabilidadesDetalle = this.modo === 'ver' || this.modo === 'editar';
+    this.errorCargaHabilidadesDetalle = false;
 
     if (puedeMostrarResumen) {
       this.aplicarSolicitudResumenInicial();
@@ -341,21 +431,36 @@ export class SolicitudFormModal implements OnInit {
       .pipe(take(1))
       .subscribe((catalogos) => {
         this.aplicarCatalogos(catalogos);
+        this.cdr.detectChanges();
       });
 
-    this.solicitudesService
-      .obtenerPorId(id)
-      .pipe(
+    forkJoin({
+      solicitud: this.solicitudesService.obtenerPorId(id).pipe(
         timeout(SOLICITUD_DETALLE_TIMEOUT_MS),
         catchError((error) => {
           console.warn('No se pudo cargar el detalle completo de la solicitud.', error);
           return of(null);
         }),
-        take(1),
-      )
-      .subscribe((solicitud) => {
+      ),
+      habilidades: this.solicitudesService.listarHabilidadesSolicitud(id).pipe(
+        timeout(SOLICITUD_DETALLE_TIMEOUT_MS),
+        catchError((error) => {
+          console.warn('No se pudieron cargar las habilidades de la solicitud.', error);
+          this.errorCargaHabilidadesDetalle = true;
+          return of(null);
+        }),
+      ),
+    })
+      .pipe(take(1))
+      .subscribe(({ solicitud, habilidades }) => {
         if (solicitud) {
-          this.aplicarSolicitudDetalle(solicitud);
+          const habilidadesDetalle = this.seleccionarHabilidadesDetalle(habilidades, solicitud.habilidades);
+          this.aplicarSolicitudDetalle({
+            ...solicitud,
+            habilidades: habilidadesDetalle,
+          });
+        } else if (habilidades) {
+          this.aplicarHabilidadesDetalle(habilidades);
         } else if (!puedeMostrarResumen) {
           this.alerta = {
             tipo: 'danger',
@@ -371,7 +476,9 @@ export class SolicitudFormModal implements OnInit {
         }
 
         this.cargandoDetalle = false;
+        this.cargandoHabilidadesDetalle = false;
         this.aplicarModoFormulario();
+        this.cdr.detectChanges();
       });
   }
 
@@ -380,6 +487,7 @@ export class SolicitudFormModal implements OnInit {
       .pipe(take(1))
       .subscribe((catalogos) => {
         this.aplicarCatalogos(catalogos);
+        this.cdr.detectChanges();
       });
   }
 
@@ -426,6 +534,7 @@ export class SolicitudFormModal implements OnInit {
           nivelesHabilidad,
         });
         this.aplicarModoFormulario();
+        this.cdr.detectChanges();
       });
   }
 
@@ -494,6 +603,10 @@ export class SolicitudFormModal implements OnInit {
       return;
     }
 
+    if (!this.incorporarHabilidadPendiente()) {
+      return;
+    }
+
     if (this.formularioSolicitud.invalid || !this.validarHabilidadesSolicitud()) {
       this.formularioSolicitud.markAllAsTouched();
       return;
@@ -519,7 +632,11 @@ export class SolicitudFormModal implements OnInit {
 
     const pasoValido =
       controles.every((nombre) => this.control(nombre)?.valid) &&
-      !this.formularioSolicitud.hasError('rangoSalarioInvalido');
+      !this.formularioSolicitud.hasError('rangoSalarioInvalido') &&
+      !this.formularioSolicitud.hasError('inicioSeleccionPasado') &&
+      !this.formularioSolicitud.hasError('finSeleccionPasado') &&
+      !this.formularioSolicitud.hasError('finSeleccionAntesInicio') &&
+      !this.formularioSolicitud.hasError('inicioEmpleoFueraRango');
 
     if (clave === 'habilidades') {
       return pasoValido && this.validarHabilidadesSolicitud();
@@ -531,18 +648,7 @@ export class SolicitudFormModal implements OnInit {
   agregarHabilidad() {
     this.alerta = null;
 
-    if (this.nuevaHabilidad.invalid || this.modo === 'ver') {
-      this.nuevaHabilidad.markAllAsTouched();
-      return;
-    }
-
-    this.habilidadesFormArray.push(this.crearHabilidadForm(this.nuevaHabilidad.getRawValue()));
-    this.nuevaHabilidad.reset({
-      id_habilidad: null,
-      id_nivel_habilidad: null,
-      anios_experiencia: 0,
-      es_excluyente: false,
-    });
+    this.incorporarHabilidadPendiente();
   }
 
   crearEmpresaCliente() {
@@ -658,6 +764,57 @@ export class SolicitudFormModal implements OnInit {
       });
   }
 
+  crearTecnologiaSolicitada() {
+    const nombre = String(this.formularioSolicitud.get('nueva_habilidad_nombre')?.value ?? '').trim();
+
+    if (!nombre || this.creandoHabilidad || this.modo === 'ver') {
+      this.formularioSolicitud.get('nueva_habilidad_nombre')?.markAsTouched();
+      return;
+    }
+
+    const habilidadExistente = this.habilidadesCatalogo.find((habilidad) => this.normalizarTexto(habilidad.nombre) === this.normalizarTexto(nombre));
+    if (habilidadExistente) {
+      this.nuevaHabilidad.patchValue({ id_habilidad: habilidadExistente.id });
+      this.formularioSolicitud.patchValue({ nueva_habilidad_nombre: '' });
+      this.mostrarCreacionHabilidad = false;
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'La tecnología ya existe. La dejamos seleccionada.',
+      };
+      return;
+    }
+
+    this.creandoHabilidad = true;
+    this.catalogosService
+      .crearHabilidad({ hab_nombre: nombre })
+      .pipe(
+        timeout(6000),
+        finalize(() => {
+          this.creandoHabilidad = false;
+        }),
+        take(1),
+      )
+      .subscribe({
+        next: (habilidad) => {
+          this.mostrarCreacionHabilidad = false;
+          this.habilidadesCatalogo = [
+            ...this.habilidadesCatalogo,
+            { id: habilidad.hab_id, nombre: habilidad.hab_nombre ?? nombre },
+          ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+          this.formularioSolicitud.patchValue({ nueva_habilidad_nombre: '' });
+          this.nuevaHabilidad.patchValue({ id_habilidad: habilidad.hab_id });
+        },
+        error: (error) => {
+          this.alerta = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo crear la tecnología.'),
+          };
+        },
+      });
+  }
+
   crearClienteSolicitante() {
     const nombre = String(this.formularioSolicitud.get('nuevo_cliente_nombre')?.value ?? '').trim();
     const empresaId = this.numeroONull(this.formularioSolicitud.get('id_empresa_cliente')?.value);
@@ -746,7 +903,7 @@ export class SolicitudFormModal implements OnInit {
     }
 
     const [year, month, day] = valor.split('-');
-    return year && month && day ? `${day}-${month}-${year}` : valor;
+    return year && month && day ? `${day}/${month}/${year}` : valor;
   }
 
   detalleCatalogo(control: string, catalogo: CatalogoOpcion[], fallback: string) {
@@ -801,20 +958,63 @@ export class SolicitudFormModal implements OnInit {
 
     this.habilidadesFormArray.clear();
     this.habilidadesOriginales = [];
-    (solicitud.habilidades ?? []).forEach((habilidad) => {
-      const habilidadFormulario = {
-        id_habilidad: habilidad.solhb_habilidad_id ?? null,
-        id_nivel_habilidad: habilidad.solhb_nivel_habilidad_id ?? null,
-        anios_experiencia: habilidad.solhb_anios_experiencia_req ?? 0,
-        es_excluyente: habilidad.solhb_es_excluyente ?? false,
-      };
-
-      this.habilidadesOriginales.push(habilidadFormulario);
-      this.habilidadesFormArray.push(this.crearHabilidadForm(habilidadFormulario));
-    });
+    this.aplicarHabilidadesDetalle(solicitud.habilidades ?? []);
 
     this.actualizarEmpresaDesdeCliente();
     this.actualizarClientesCatalogo();
+  }
+
+  private aplicarHabilidadesDetalle(habilidades: SolicitudHabilidadApi[]) {
+    this.habilidadesFormArray.clear();
+    this.habilidadesOriginales = [];
+    this.habilidadesDetalle = [];
+    habilidades.forEach((habilidad) => {
+      const habilidadFormulario = this.normalizarHabilidadSolicitud(habilidad);
+
+      this.habilidadesOriginales.push(habilidadFormulario);
+      this.habilidadesDetalle.push(habilidadFormulario);
+      this.habilidadesFormArray.push(this.crearHabilidadForm(habilidadFormulario));
+    });
+  }
+
+  private seleccionarHabilidadesDetalle(
+    habilidadesEndpoint: SolicitudHabilidadApi[] | null,
+    habilidadesDetalle?: SolicitudHabilidadApi[],
+  ) {
+    const desdeEndpoint = habilidadesEndpoint ?? [];
+    const desdeDetalle = habilidadesDetalle ?? [];
+
+    if (desdeEndpoint.length > 0) {
+      return desdeEndpoint;
+    }
+
+    if (desdeDetalle.length > 0) {
+      return desdeDetalle;
+    }
+
+    return [];
+  }
+
+  private normalizarHabilidadSolicitud(habilidad: SolicitudHabilidadApi): HabilidadSolicitud {
+    const valor = habilidad as SolicitudHabilidadApi & {
+      habilidad_id?: number | string | null;
+      id_habilidad?: number | string | null;
+      nivel_habilidad_id?: number | string | null;
+      id_nivel_habilidad?: number | string | null;
+      anios_experiencia?: number | string | null;
+      anios_experiencia_req?: number | string | null;
+      es_excluyente?: boolean | string | number | null;
+    };
+
+    return {
+      id_habilidad: this.numeroONull(valor.solhb_habilidad_id ?? valor.habilidad_id ?? valor.id_habilidad),
+      id_nivel_habilidad: this.numeroONull(valor.solhb_nivel_habilidad_id ?? valor.nivel_habilidad_id ?? valor.id_nivel_habilidad),
+      anios_experiencia: this.numeroOValor(
+        valor.solhb_anios_experiencia_req ?? valor.anios_experiencia_req ?? valor.anios_experiencia,
+        0,
+      ),
+      es_excluyente: this.valorBooleano(valor.solhb_es_excluyente ?? valor.es_excluyente),
+    };
   }
 
   private aplicarCatalogos(catalogos: {
@@ -917,7 +1117,7 @@ export class SolicitudFormModal implements OnInit {
       nombre: empresaId == null ? this.nombreCliente(cliente, empresasPorId) : cliente.cli_nombre,
     }));
 
-    if (clienteActual != null && !clientesFiltrados.some((cliente) => cliente.cli_id === clienteActual)) {
+    if (this.clientesBase.length > 0 && clienteActual != null && !clientesFiltrados.some((cliente) => cliente.cli_id === clienteActual)) {
       this.formularioSolicitud.patchValue({ id_cliente: null }, { emitEvent: false });
     }
   }
@@ -942,12 +1142,20 @@ export class SolicitudFormModal implements OnInit {
     return fecha ? fecha.slice(0, 10) : '';
   }
 
+  private fechaLocalInput(fecha: Date) {
+    return SolicitudFormModal.fechaLocalInputEstatica(fecha);
+  }
+
+  private static fechaLocalInputEstatica(fecha: Date) {
+    return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+  }
+
   private fechaResumenParaInput(fecha?: string | null) {
     if (!fecha || fecha === 'Sin fecha') {
       return '';
     }
 
-    const [day, month, year] = fecha.split('-');
+    const [day, month, year] = fecha.includes('/') ? fecha.split('/') : fecha.split('-');
     return year && month && day ? `${year}-${month}-${day}` : fecha;
   }
 
@@ -1104,6 +1312,68 @@ export class SolicitudFormModal implements OnInit {
       }));
   }
 
+  private incorporarHabilidadPendiente() {
+    if (this.modo === 'ver') {
+      return false;
+    }
+
+    const habilidad = this.obtenerHabilidadPendiente();
+
+    if (!this.tieneHabilidadPendiente(habilidad)) {
+      return true;
+    }
+
+    if (this.nuevaHabilidad.invalid || habilidad.id_habilidad == null || habilidad.id_nivel_habilidad == null) {
+      this.tabFormulario = 'habilidades';
+      this.nuevaHabilidad.markAllAsTouched();
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Completa la habilidad seleccionada antes de guardar.',
+      };
+      return false;
+    }
+
+    if (this.habilidadesSolicitud.some((item) => item.id_habilidad === habilidad.id_habilidad)) {
+      this.tabFormulario = 'habilidades';
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Esa habilidad ya fue agregada a la solicitud.',
+      };
+      return false;
+    }
+
+    this.habilidadesFormArray.push(this.crearHabilidadForm(habilidad));
+    this.nuevaHabilidad.reset({
+      id_habilidad: null,
+      id_nivel_habilidad: null,
+      anios_experiencia: 0,
+      es_excluyente: false,
+    });
+    return true;
+  }
+
+  private obtenerHabilidadPendiente(): HabilidadSolicitud {
+    const valor = this.nuevaHabilidad.getRawValue();
+
+    return {
+      id_habilidad: this.numeroONull(valor.id_habilidad),
+      id_nivel_habilidad: this.numeroONull(valor.id_nivel_habilidad),
+      anios_experiencia: this.numeroOValor(valor.anios_experiencia, 0),
+      es_excluyente: Boolean(valor.es_excluyente),
+    };
+  }
+
+  private tieneHabilidadPendiente(habilidad: HabilidadSolicitud) {
+    return (
+      habilidad.id_habilidad != null ||
+      habilidad.id_nivel_habilidad != null ||
+      habilidad.anios_experiencia > 0 ||
+      habilidad.es_excluyente
+    );
+  }
+
   private sincronizarHabilidadesEditadas(idSolicitud: string): Observable<unknown> {
     const habilidadesActuales = this.habilidadesSolicitud;
     const eliminaciones = this.habilidadesOriginales
@@ -1156,6 +1426,23 @@ export class SolicitudFormModal implements OnInit {
     return this.numeroONull(valor) ?? fallback;
   }
 
+  private valorBooleano(valor: unknown) {
+    if (typeof valor === 'boolean') {
+      return valor;
+    }
+
+    if (typeof valor === 'number') {
+      return valor === 1;
+    }
+
+    if (typeof valor === 'string') {
+      const normalizado = valor.trim().toLowerCase();
+      return normalizado === 'true' || normalizado === '1' || normalizado === 'si' || normalizado === 'sí';
+    }
+
+    return false;
+  }
+
   private normalizarTexto(valor: string) {
     return valor.trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
@@ -1180,15 +1467,19 @@ export class SolicitudFormModal implements OnInit {
   }
 
   obtenerNombreHabilidad(id: number | null) {
-    return this.habilidadesCatalogo.find((habilidad) => habilidad.id === id)?.nombre ?? 'Habilidad';
+    return this.habilidadesCatalogo.find((habilidad) => habilidad.id === id)?.nombre ?? (id == null ? 'Habilidad' : `Habilidad #${id}`);
   }
 
   obtenerNombreNivel(id: number | null) {
-    return this.nivelesHabilidadCatalogo.find((nivel) => nivel.id === id)?.nombre ?? 'Nivel';
+    return this.nivelesHabilidadCatalogo.find((nivel) => nivel.id === id)?.nombre ?? (id == null ? 'Nivel' : `Nivel #${id}`);
   }
 
   habilidadExcluyenteClase(esExcluyente: boolean) {
     return esExcluyente ? 'excluyente' : 'no-excluyente';
+  }
+
+  private habilidadDetalleValida(habilidad: HabilidadSolicitud) {
+    return habilidad.id_habilidad != null && habilidad.id_habilidad > 0 && habilidad.anios_experiencia >= 0;
   }
 
   private validarHabilidadesSolicitud() {

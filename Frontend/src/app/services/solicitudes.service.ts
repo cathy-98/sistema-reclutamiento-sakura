@@ -8,6 +8,7 @@ import {
   PrioridadSolicitud,
   SolicitudApi,
   SolicitudCreatePayload,
+  SolicitudHabilidadApi,
   SolicitudHabilidadPayload,
   SolicitudResumen,
   SolicitudUpdatePayload,
@@ -64,6 +65,10 @@ export class SolicitudesService {
   obtenerPorId(id: string) {
     // Integración: el detalle queda en formato SolicitudApi para rellenar formularios con campos sol_*.
     return this.http.get<SolicitudApi>(`${this.apiUrl}/${id}`);
+  }
+
+  listarHabilidadesSolicitud(id: string) {
+    return this.http.get<SolicitudHabilidadApi[]>(`${this.apiUrl}/${id}/habilidades`);
   }
 
   crear(payload: SolicitudCreatePayload) {

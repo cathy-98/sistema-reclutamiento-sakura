@@ -117,6 +117,11 @@ export interface HabilidadCatalogoApi {
   hab_descripcion?: string | null;
 }
 
+export interface HabilidadCreatePayload {
+  hab_nombre: string;
+  hab_descripcion?: string | null;
+}
+
 export interface NivelHabilidadCatalogoApi {
   nvhb_id: number;
   nvhb_nombre: string | null;
@@ -356,6 +361,10 @@ export class CatalogosService {
 
   listarHabilidades() {
     return this.http.get<HabilidadCatalogoApi[]>(`${this.apiUrl}/habilidades`);
+  }
+
+  crearHabilidad(payload: HabilidadCreatePayload) {
+    return this.http.post<HabilidadCatalogoApi>(`${this.apiUrl}/habilidades`, payload);
   }
 
   listarHabilidadesSeguro() {
