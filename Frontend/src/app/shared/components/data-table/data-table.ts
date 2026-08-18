@@ -151,11 +151,14 @@ export class DataTable<T> {
     return column.title ? column.title(row) : String(this.columnValue(row, column));
   }
 
+  isSortable(column: DataTableColumn<T>) {
+    return column.sortable !== false;
+  }
+
   columnStyle(column: DataTableColumn<T>) {
     const style: Record<string, string> = {
       width: `${column.width}px`,
       minWidth: `${column.width}px`,
-      maxWidth: `${column.width}px`,
     };
 
     if (column.sticky === 'left') {
@@ -231,7 +234,7 @@ export class DataTable<T> {
   }
 
   toggleSort(column: DataTableColumn<T>) {
-    if (!column.sortable) {
+    if (!this.isSortable(column)) {
       return;
     }
 
@@ -245,7 +248,7 @@ export class DataTable<T> {
   }
 
   sortLabel(column: DataTableColumn<T>) {
-    if (!column.sortable) {
+    if (!this.isSortable(column)) {
       return null;
     }
 

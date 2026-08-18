@@ -48,6 +48,12 @@ export interface HabilidadCandidatoApi {
 }
 
 export interface EstudioCandidatoApi {
+  etcd_id?: number;
+  etcd_institucion_id?: number | null;
+  etcd_carrera_id?: number | null;
+  etcd_nivel_educacional_id?: number | null;
+  etcd_fecha_inicio?: string | null;
+  etcd_fecha_fin?: string | null;
   cdet_id?: number;
   cdet_institucion_id?: number | null;
   cdet_carrera_id?: number | null;
@@ -61,12 +67,20 @@ export interface EstudioCandidatoApi {
 }
 
 export interface ExperienciaCandidatoApi {
+  expl_id?: number;
+  expl_empresa_id?: number | null;
+  expl_cargo_id?: number | null;
+  expl_fecha_inicio?: string | null;
+  expl_fecha_fin?: string | null;
+  expl_descripcion_funciones?: string | null;
   cdex_id?: number;
   cdex_empresa?: string | null;
   cdex_cargo?: string | null;
   cdex_fecha_inicio?: string | null;
   cdex_fecha_fin?: string | null;
   cdex_descripcion?: string | null;
+  empresa?: { emp_nombre?: string | null } | null;
+  cargo?: { crgo_nombre?: string | null } | null;
 }
 
 export interface CursoCandidatoApi {

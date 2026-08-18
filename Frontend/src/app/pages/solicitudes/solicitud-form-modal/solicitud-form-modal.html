@@ -277,6 +277,10 @@
           <div class="form-field">
             <span>Estado</span>
             <input type="text" [value]="estadoSolicitudTexto" disabled />
+            <small class="state-help" *ngIf="mostrarAyudaEstadoPendiente">
+              <span class="state-help-icon" aria-hidden="true">i</span>
+              Queda pendiente hasta que la solicitud esté completa y sea tomada para iniciar el proceso.
+            </small>
           </div>
 
           <label class="form-field">

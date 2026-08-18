@@ -17,6 +17,7 @@ import {
   HabilidadCandidatoApi,
   PostulacionCandidatoApi,
 } from '../../../services/candidatos.service';
+import { extraerLinkedinUrl } from '../../../shared/mappers/candidato.mapper';
 import { CandidateApplicationsSection } from './components/candidate-applications-section/candidate-applications-section';
 import { CandidateDocumentsSection } from './components/candidate-documents-section/candidate-documents-section';
 import { CandidateEducationSection } from './components/candidate-education-section/candidate-education-section';
@@ -245,7 +246,7 @@ export class CandidatoPerfilPage implements OnInit {
       tituloProfesional: 'Ingeniera Civil Informática',
       estadoUsuario: params.get('estadoUsuario') || 'Activo',
       resumenProfesional: 'Desarrolladora frontend con experiencia en React, TypeScript y plataformas SaaS.',
-      urlPerfil: 'linkedin.com/in/juanperez',
+      urlPerfil: extraerLinkedinUrl(params.get('urlPerfil')) ?? '',
       comuna: 'Providencia',
       direccion: 'Av. Providencia 1234, Depto 502',
     };
@@ -439,7 +440,7 @@ export class CandidatoPerfilPage implements OnInit {
       tituloProfesional: perfil.cand_titulo ?? this.candidato.tituloProfesional,
       estadoUsuario: perfil.cand_estado_usuario_id === 1 ? 'Activo' : this.candidato.estadoUsuario,
       resumenProfesional: perfil.cand_resumen_profesional ?? this.candidato.resumenProfesional,
-      urlPerfil: perfil.cand_url_1 ?? this.candidato.urlPerfil,
+      urlPerfil: extraerLinkedinUrl(perfil.cand_url_1) ?? '',
       direccion: [direccion?.drcd_calle, direccion?.drcd_numero, direccion?.drcd_dpto_oficina]
         .filter(Boolean)
         .join(' ') || this.candidato.direccion,
@@ -452,10 +453,13 @@ export class CandidatoPerfilPage implements OnInit {
     }
 
     return experiencias.map((experiencia) => ({
-      empresa: experiencia.cdex_empresa ?? 'Empresa sin nombre',
-      cargo: experiencia.cdex_cargo ?? 'Cargo sin nombre',
-      fecha: this.rangoFechas(experiencia.cdex_fecha_inicio, experiencia.cdex_fecha_fin),
-      descripcion: experiencia.cdex_descripcion ?? 'Sin descripcion registrada.',
+      empresa: experiencia.empresa?.emp_nombre ?? experiencia.cdex_empresa ?? 'Empresa sin nombre',
+      cargo: experiencia.cargo?.crgo_nombre ?? experiencia.cdex_cargo ?? 'Cargo sin nombre',
+      fecha: this.rangoFechas(
+        experiencia.expl_fecha_inicio ?? experiencia.cdex_fecha_inicio,
+        experiencia.expl_fecha_fin ?? experiencia.cdex_fecha_fin,
+      ),
+      descripcion: experiencia.expl_descripcion_funciones ?? experiencia.cdex_descripcion ?? 'Sin descripción registrada.',
       tags: [],
     }));
   }
@@ -468,7 +472,10 @@ export class CandidatoPerfilPage implements OnInit {
     return estudios.map((estudio) => ({
       titulo: estudio.carrera?.crra_nombre ?? estudio.nivel_educacional?.nved_nombre ?? 'Estudio sin titulo',
       institucion: estudio.institucion?.inst_nombre ?? 'Institucion sin nombre',
-      fecha: this.rangoFechas(estudio.cdet_fecha_inicio, estudio.cdet_fecha_fin),
+      fecha: this.rangoFechas(
+        estudio.etcd_fecha_inicio ?? estudio.cdet_fecha_inicio,
+        estudio.etcd_fecha_fin ?? estudio.cdet_fecha_fin,
+      ),
     }));
   }
 

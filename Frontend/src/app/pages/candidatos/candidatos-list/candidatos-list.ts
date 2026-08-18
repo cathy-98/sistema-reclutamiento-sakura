@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { catchError, finalize, forkJoin, of, take, timeout } from 'rxjs';
@@ -134,7 +134,7 @@ export class CandidatosList implements OnInit {
     {
       key: 'cargo',
       label: 'Cargo postulado',
-      width: 160,
+      width: 260,
       wrap: true,
     },
     {
@@ -306,6 +306,7 @@ export class CandidatosList implements OnInit {
     private entrevistasService: EntrevistasService,
     private catalogosService: CatalogosService,
     private candidatosService: CandidatosService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -352,6 +353,7 @@ export class CandidatosList implements OnInit {
         // Proteccion interna: apaga el loading aunque un error inesperado escape del forkJoin.
         finalize(() => {
           this.cargando = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe(({ candidatos, estados, disponibilidades, niveles }) => {
@@ -377,10 +379,12 @@ export class CandidatosList implements OnInit {
         this.candidatos = candidatos.length > 0
           ? candidatos.map((candidato) => this.mapearCandidatoTabla(candidato, disponibilidadesPorId))
           : this.candidatosRespaldo;
+        this.cdr.detectChanges();
       }, () => {
         this.errorCarga = 'No se pudo cargar candidatos reales. Se muestran datos de respaldo.';
         this.candidatos = this.candidatosRespaldo;
         this.cargando = false;
+        this.cdr.detectChanges();
       });
   }
 

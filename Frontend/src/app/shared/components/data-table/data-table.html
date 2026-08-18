@@ -64,13 +64,13 @@
             scope="col"
             [class.sticky-left]="column.sticky === 'left'"
             [class.sticky-right]="column.sticky === 'right'"
-            [class.is-sortable]="column.sortable"
+            [class.is-sortable]="isSortable(column)"
             [class.is-sorted]="sortKey === column.key"
             [attr.aria-sort]="sortKey === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null"
             [ngStyle]="columnStyle(column)"
             (click)="toggleSort(column)"
           >
-            <button class="sort-button" type="button" *ngIf="column.sortable; else plainHeader">
+            <button class="sort-button" type="button" *ngIf="isSortable(column); else plainHeader">
               <span>{{ column.label }}</span>
               <span class="sort-indicator" aria-hidden="true">{{ sortKey === column.key ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
               <span class="sr-only">{{ sortLabel(column) }}</span>

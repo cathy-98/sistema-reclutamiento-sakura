@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
-import { AuthService, RolUsuario } from '../../services/auth.service';
+import { AuthService, PermisoUsuario, RolUsuario } from '../../services/auth.service';
 
 interface MenuItem {
   label: string;
   route?: string;
   icon: string;
   roles?: RolUsuario[];
+  permissions?: PermisoUsuario[];
   children?: SubMenuItem[];
 }
 
@@ -16,6 +17,7 @@ interface SubMenuItem {
   label: string;
   route?: string;
   roles?: RolUsuario[];
+  permissions?: PermisoUsuario[];
 }
 
 @Component({
@@ -45,6 +47,8 @@ export class AppShell {
   }
 
   menuItems: MenuItem[] = [
+    // M1 RBAC visual: este menu no llama endpoints; consume permisos guardados desde GET /auth/me.
+    // Backend valida de nuevo cada accion, por eso ocultar aqui es solo una ayuda de UX.
     {
       label: 'Inicio',
       icon: 'home',
@@ -61,17 +65,19 @@ export class AppShell {
       label: 'Gestion de cuestionarios',
       icon: 'questionnaire',
       roles: ['Administrador', 'Reclutador'],
+      permissions: ['CUEST_VIEW'],
       children: [
-        { label: 'Banco de preguntas', route: '/cuestionarios/banco', roles: ['Administrador', 'Reclutador'] },
-        { label: 'Armar y enviar test', route: '/cuestionarios/test', roles: ['Administrador', 'Reclutador'] },
+        { label: 'Banco de preguntas', route: '/cuestionarios/banco', roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_VIEW'] },
+        { label: 'Armar y enviar test', route: '/cuestionarios/test', roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE'] },
       ],
     },
     {
       label: 'Gestion de solicitudes',
       icon: 'requests',
       roles: ['Administrador', 'Reclutador'],
+      permissions: ['SOL_VIEW'],
       children: [
-        { label: 'Listado de solicitudes', route: '/solicitudes', roles: ['Administrador', 'Reclutador'] },
+        { label: 'Listado de solicitudes', route: '/solicitudes', roles: ['Administrador', 'Reclutador'], permissions: ['SOL_VIEW'] },
       ],
     },
     {
@@ -79,14 +85,16 @@ export class AppShell {
       icon: 'users',
       route: '/candidatos',
       roles: ['Administrador', 'Reclutador'],
+      permissions: ['CAN_VIEW'],
     },
     {
       label: 'Gestion de entrevistas',
       icon: 'calendar',
       roles: ['Administrador', 'Reclutador', 'Entrevistador'],
+      permissions: ['INT_VIEW'],
       children: [
-        { label: 'Listado de entrevistas', route: '/entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'] },
-        { label: 'Agenda de entrevistas', route: '/agenda-entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'] },
+        { label: 'Listado de entrevistas', route: '/entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'], permissions: ['INT_VIEW'] },
+        { label: 'Agenda de entrevistas', route: '/agenda-entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'], permissions: ['INT_VIEW'] },
       ],
     },
     {
@@ -94,16 +102,17 @@ export class AppShell {
       icon: 'requests',
       route: '/informes-cliente',
       roles: ['Administrador', 'Reclutador'],
+      permissions: ['REP_VIEW'],
     },
 
   ];
 
   actualizarMenuItemsVisibles() {
     this.menuItemsVisibles = this.menuItems
-      .filter((item) => this.puedeVerItem(item.roles))
+      .filter((item) => this.puedeVerItem(item.roles, item.permissions))
       .map((item) => ({
         ...item,
-        children: item.children?.filter((child) => this.puedeVerItem(child.roles)),
+        children: item.children?.filter((child) => this.puedeVerItem(child.roles, child.permissions)),
       }));
   }
 
@@ -161,8 +170,8 @@ export class AppShell {
     this.router.navigate(['/login']);
   }
 
-  private puedeVerItem(roles?: RolUsuario[]) {
-    return !roles?.length || this.authService.tieneRol(roles);
+  private puedeVerItem(roles?: RolUsuario[], permissions?: PermisoUsuario[]) {
+    return this.authService.puedeAcceder(roles, permissions);
   }
 
   private abrirSubmenuActivo() {

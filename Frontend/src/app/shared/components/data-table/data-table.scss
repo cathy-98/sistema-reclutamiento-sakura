@@ -1,5 +1,5 @@
 .data-table-panel {
-  width: min(100%, 1180px);
+  width: min(100%, 1280px);
   margin: 0 auto 22px;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -9,7 +9,7 @@
 }
 
 .table-header {
-  padding: 18px 18px 0;
+  padding: 16px 18px 0;
 }
 
 .table-header h3 {
@@ -29,25 +29,26 @@
   position: relative;
   width: 100%;
   overflow-x: auto;
-  padding-top: 14px;
+  padding-top: 12px;
 }
 
 table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: fixed;
+  table-layout: auto;
   font-size: 14px;
 }
 
 th,
 td {
   overflow: hidden;
-  padding: 18px 14px;
+  padding: 13px 14px;
   text-align: left;
   text-overflow: ellipsis;
-  vertical-align: middle;
-  white-space: nowrap;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 th {
@@ -55,6 +56,7 @@ th {
   color: var(--color-text-soft);
   font-size: 13px;
   font-weight: 700;
+  vertical-align: middle;
 }
 
 th.is-sortable {
@@ -149,6 +151,7 @@ tbody tr:hover .sticky-right {
 .actions-column {
   overflow: visible;
   text-overflow: clip;
+  vertical-align: middle;
 }
 
 td.wrap-cell {
@@ -157,11 +160,10 @@ td.wrap-cell {
 
 td.wrap-cell > span,
 td.wrap-cell .stack-cell span {
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
   overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  white-space: normal;
 }
 
 th.sticky-left,
@@ -223,20 +225,19 @@ select:focus-visible {
 }
 
 .person-cell strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 td.wrap-cell .person-cell strong {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: normal;
 }
 
 .stack-cell {
   display: grid;
   gap: 4px;
+  line-height: 1.35;
 }
 
 .row-actions {

@@ -160,15 +160,15 @@ export class SolicitudesList implements OnInit {
   }
 
   get puedeCrearSolicitud() {
-    return this.authService.tieneRol(['Administrador', 'Reclutador']);
+    return this.authService.puedeAcceder(['Administrador', 'Reclutador'], ['SOL_CREATE']);
   }
 
   get puedeEditarSolicitud() {
-    return this.authService.tieneRol(['Administrador', 'Reclutador']);
+    return this.authService.puedeAcceder(['Administrador', 'Reclutador'], ['SOL_UPDATE']);
   }
 
   get puedeCancelarSolicitud() {
-    return this.authService.tieneRol(['Administrador']);
+    return this.authService.puedeAcceder(['Administrador'], ['SOL_DELETE']);
   }
 
   puedeCancelarSolicitudFila(solicitud: SolicitudResumen) {

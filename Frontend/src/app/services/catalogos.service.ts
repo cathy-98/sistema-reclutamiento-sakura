@@ -59,16 +59,9 @@ export interface RegionCatalogoApi {
   reg_nombre: string | null;
 }
 
-export interface CiudadCatalogoApi {
-  ciu_id: number;
-  ciu_region_id?: number | null;
-  ciu_nombre: string | null;
-}
-
 export interface ComunaCatalogoApi {
   com_id: number;
   com_region_id?: number | null;
-  com_ciudad_id?: number | null;
   com_nombre: string | null;
 }
 
@@ -261,12 +254,6 @@ export class CatalogosService {
 
   listarRegiones(params?: CatalogoListParams) {
     return this.listarCatalogo<RegionCatalogoApi>('regiones', params);
-  }
-
-  listarCiudades(regionId?: number) {
-    return this.http.get<CiudadCatalogoApi[]>(`${this.apiUrl}/ciudades`, {
-      params: this.crearParams(regionId ? { region_id: regionId } : undefined),
-    });
   }
 
   listarComunas(params?: CatalogoListParams) {

@@ -265,6 +265,10 @@ export class SolicitudFormModal implements OnInit {
     return 'Pendiente';
   }
 
+  get mostrarAyudaEstadoPendiente() {
+    return this.estadoSolicitudTexto.toLowerCase() === 'pendiente';
+  }
+
   get pasosCompletados() {
     return this.pasosFormulario
       .filter((paso) => this.pasoCompletado(paso.clave))

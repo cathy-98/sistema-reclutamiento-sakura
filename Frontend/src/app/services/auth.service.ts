@@ -14,7 +14,26 @@ export interface LoginResponse {
   principal_type: 'usuario' | 'candidato';
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  nueva_contrasena: string;
+}
+
+export interface ChangePasswordRequest {
+  password_actual: string;
+  password_nueva: string;
+}
+
 export type RolUsuario = 'Administrador' | 'Reclutador' | 'Candidato' | 'Entrevistador';
+export type PermisoUsuario = string;
 
 interface TokenPayload {
   sub?: string;
@@ -35,12 +54,20 @@ interface UsuarioPerfilResponse {
     rol_id: number;
     rol_nombre: string;
   } | null;
+  permisos?: string[];
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  // M1 Autenticacion/Usuarios/RBAC - endpoints consumidos desde frontend:
+  // POST /auth/login: autentica usuario interno o candidato y entrega JWT + principal_type.
+  // GET /auth/me: recupera perfil actual; en usuarios internos tambien trae permisos del rol.
+  // POST /auth/change-password: cambio de contrasena autenticado.
+  // POST /auth/forgot-password: solicita recuperacion; respuesta generica anti-enumeracion.
+  // POST /auth/reset-password: restablece contrasena por token de recuperacion.
+  // GET /usuarios/{id}: fallback historico si /auth/me no estuviera disponible.
   private readonly loginTimeoutMs = 20000;
   private readonly perfilLoginTimeoutMs = 3000;
   private readonly authApiUrl = '/api/auth';
@@ -50,6 +77,7 @@ export class AuthService {
   private readonly nombreKey = 'sakura_nombre';
   private readonly rolKey = 'sakura_rol';
   private readonly principalTypeKey = 'sakura_principal_type';
+  private readonly permisosKey = 'sakura_permisos';
   private readonly rolesPorId: Record<number, RolUsuario> = {
     1: 'Administrador',
     2: 'Reclutador',
@@ -60,7 +88,8 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   login(credenciales: LoginRequest) {
-    // Integracion interna M3: POST /auth/login retorna principal_type para separar usuario/candidato.
+    // M1 Login: llama POST /auth/login y luego hidrata la sesion con /auth/me.
+    // El principal_type decide si la navegacion continua como usuario interno o candidato.
     return this.http.post<LoginResponse>(this.apiUrl, credenciales).pipe(
       timeout(this.loginTimeoutMs),
       tap((respuesta) => this.guardarSesion(respuesta)),
@@ -74,9 +103,29 @@ export class AuthService {
     );
   }
 
+  solicitarRecuperacionPassword(payload: ForgotPasswordRequest) {
+    // M1 Recuperacion: POST /auth/forgot-password.
+    // La UI permanece oculta hasta completar QA SMTP/correo, pero la integracion queda lista.
+    return this.http.post<ForgotPasswordResponse>(`${this.authApiUrl}/forgot-password`, payload);
+  }
+
+  restablecerPassword(payload: ResetPasswordRequest) {
+    // M1 Recuperacion: POST /auth/reset-password.
+    // Frontend debe tratar 410 como token expirado y 400 como token invalido/usado.
+    return this.http.post<void>(`${this.authApiUrl}/reset-password`, payload);
+  }
+
+  cambiarPassword(payload: ChangePasswordRequest) {
+    // M1 Cambio de contrasena: POST /auth/change-password con Bearer token.
+    // Backend valida password_actual y que password_nueva sea distinta.
+    return this.http.post<void>(`${this.authApiUrl}/change-password`, payload);
+  }
+
   guardarSesion(respuesta: LoginResponse) {
+    // Sesion M1: persiste JWT, tipo de identidad y limpia permisos hasta leer /auth/me.
     localStorage.setItem(this.tokenKey, respuesta.access_token);
     localStorage.setItem(this.principalTypeKey, respuesta.principal_type);
+    this.guardarPermisos([]);
 
     if (respuesta.principal_type === 'candidato') {
       localStorage.setItem(this.rolKey, 'Candidato');
@@ -84,6 +133,7 @@ export class AuthService {
   }
 
   cargarPerfilActual() {
+    // Perfil M1: centraliza la carga post-login segun principal_type.
     const principalType = this.obtenerPrincipalType();
 
     if (principalType === 'candidato') {
@@ -94,7 +144,7 @@ export class AuthService {
   }
 
   cargarPerfilUsuario() {
-    // Integracion interna M3: GET /auth/me devuelve el usuario interno actual desde el Bearer token.
+    // M1 Usuario interno: GET /auth/me devuelve usr_*, rol y permisos calculados por backend.
     // Fallback backend anterior: si /auth/me no existe, consulta /usuarios/{id} usando el payload viejo.
     return this.http.get<UsuarioPerfilResponse>(`${this.authApiUrl}/me`).pipe(
       tap((perfil) => this.guardarPerfil(perfil)),
@@ -114,7 +164,8 @@ export class AuthService {
   }
 
   cargarPerfilCandidato() {
-    // Integracion interna M3: GET /auth/me con principal_type=candidato devuelve datos del candidato autenticado.
+    // M1/M3 Candidato: GET /auth/me con principal_type=candidato devuelve datos de autoservicio.
+    // Candidato no usa permisos RBAC de usuario interno.
     return this.http.get<any>(`${this.authApiUrl}/me`).pipe(
       tap((perfil) => {
         const candidato = perfil?.candidato ?? perfil;
@@ -128,13 +179,15 @@ export class AuthService {
 
         localStorage.setItem(this.nombreKey, nombreCompleto || candidato?.cand_email || 'Candidato');
         localStorage.setItem(this.rolKey, 'Candidato');
+        this.guardarPermisos([]);
       }),
       catchError(() => of(null))
     );
   }
 
   guardarPerfil(perfil: UsuarioPerfilResponse) {
-    // Mapeo API -> sesión front: traduce usr_* a nombre/rol visible en la interfaz.
+    // M1 Perfil de usuario: traduce usr_* a nombre/rol visible y guarda permisos reales del backend.
+    // Estos permisos alimentan guard, menu y acciones sin reemplazar la validacion final del backend.
     const nombreCompleto = [
       perfil.usr_nombres,
       perfil.usr_apellido_paterno,
@@ -144,6 +197,7 @@ export class AuthService {
       .join(' ');
 
     localStorage.setItem(this.nombreKey, nombreCompleto || perfil.usr_email);
+    this.guardarPermisos(perfil.permisos ?? []);
 
     if (perfil.rol?.rol_nombre) {
       localStorage.setItem(this.rolKey, perfil.rol.rol_nombre);
@@ -199,6 +253,16 @@ export class AuthService {
     return localStorage.getItem(this.principalTypeKey) ?? this.obtenerPayload()?.principal_type ?? 'usuario';
   }
 
+  obtenerPermisos() {
+    // M1 RBAC: permisos almacenados desde /auth/me, por ejemplo USR_VIEW, SOL_CREATE, CAN_VIEW.
+    try {
+      const permisos = JSON.parse(localStorage.getItem(this.permisosKey) ?? '[]');
+      return Array.isArray(permisos) ? permisos.filter((permiso) => typeof permiso === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
   obtenerNombreVisible() {
     const nombreGuardado = localStorage.getItem(this.nombreKey);
 
@@ -223,11 +287,42 @@ export class AuthService {
     return rolesPermitidos.includes(rol as RolUsuario);
   }
 
+  tienePermiso(permisosPermitidos: PermisoUsuario[], matchAll = false) {
+    // M1 RBAC: helper para acciones/botones. matchAll=true exige todos los permisos declarados.
+    if (!permisosPermitidos.length) {
+      return true;
+    }
+
+    const permisosActuales = new Set(this.obtenerPermisos());
+    return matchAll
+      ? permisosPermitidos.every((permiso) => permisosActuales.has(permiso))
+      : permisosPermitidos.some((permiso) => permisosActuales.has(permiso));
+  }
+
+  puedeAcceder(rolesPermitidos?: RolUsuario[], permisosPermitidos?: PermisoUsuario[], matchAll = false) {
+    // M1 RBAC frontend: prioriza permisos reales cuando existen; mantiene roles como respaldo transitorio.
+    // El backend sigue siendo la autoridad final y puede devolver 403 aunque la UI habilite una accion.
+    const tieneRolesDeclarados = Boolean(rolesPermitidos?.length);
+    const tienePermisosDeclarados = Boolean(permisosPermitidos?.length);
+    const permisosActuales = this.obtenerPermisos();
+
+    if (tienePermisosDeclarados && permisosActuales.length) {
+      return this.tienePermiso(permisosPermitidos ?? [], matchAll);
+    }
+
+    if (tieneRolesDeclarados) {
+      return this.tieneRol(rolesPermitidos ?? []);
+    }
+
+    return true;
+  }
+
   eliminarToken() {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.nombreKey);
     localStorage.removeItem(this.rolKey);
     localStorage.removeItem(this.principalTypeKey);
+    localStorage.removeItem(this.permisosKey);
   }
 
   estaAutenticado() {
@@ -249,5 +344,9 @@ export class AuthService {
     }
 
     return Number.isNaN(idDesdeSub) ? null : idDesdeSub;
+  }
+
+  private guardarPermisos(permisos: string[]) {
+    localStorage.setItem(this.permisosKey, JSON.stringify([...new Set(permisos)]));
   }
 }
