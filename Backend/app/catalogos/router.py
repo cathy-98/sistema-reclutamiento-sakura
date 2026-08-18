@@ -297,11 +297,27 @@ nivel_educacional_crud = CatalogCRUD(
     required_fields=("nved_nombre",),
 )
 
+categoria_habilidad_crud = CatalogCRUD(
+    models.CategoriaHabilidad,
+    id_field="cthb_id",
+    search_fields=("cthb_nombre", "cthb_descripcion"),
+    required_fields=("cthb_nombre",),
+)
+idioma_crud = CatalogCRUD(
+    models.Idioma,
+    id_field="idio_id",
+    search_fields=("idio_nombre",),
+    required_fields=("idio_nombre",),
+)
 habilidad_crud = CatalogCRUD(
     models.Habilidad,
     id_field="hab_id",
     search_fields=("hab_nombre", "hab_descripcion"),
+    allowed_filter_fields=("hab_categoria_habilidad_id",),
     required_fields=("hab_nombre",),
+    foreign_key_validators={
+        "hab_categoria_habilidad_id": (models.CategoriaHabilidad, "cthb_id", "La categoría de habilidad"),
+    },
 )
 nivel_habilidad_crud = CatalogCRUD(
     models.NivelHabilidad,
@@ -428,10 +444,21 @@ CATALOGS = (
         schemas.NivelEducacionalUpdate,
     ),
 
-    # Puesto y experiencia
+    # Puesto, experiencia y nuevos catálogos transversales M6
+    CatalogRouteConfig(
+        "categorias-habilidad", "Catálogo - Categorías de Habilidad", "categoría de habilidad",
+        categoria_habilidad_crud,
+        schemas.CategoriaHabilidadRead, schemas.CategoriaHabilidadCreate,
+        schemas.CategoriaHabilidadUpdate,
+    ),
+    CatalogRouteConfig(
+        "idiomas", "Catálogo - Idiomas", "idioma", idioma_crud,
+        schemas.IdiomaRead, schemas.IdiomaCreate, schemas.IdiomaUpdate,
+    ),
     CatalogRouteConfig(
         "habilidades", "Catálogo - Habilidades", "habilidad", habilidad_crud,
         schemas.HabilidadRead, schemas.HabilidadCreate, schemas.HabilidadUpdate,
+        filter_field="hab_categoria_habilidad_id", filter_query_param="categoria_id",
     ),
     CatalogRouteConfig(
         "niveles-habilidad", "Catálogo - Niveles de Habilidad", "nivel de habilidad",
