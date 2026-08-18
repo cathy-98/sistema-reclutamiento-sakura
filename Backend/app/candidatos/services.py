@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from datetime import datetime
 from decimal import Decimal
@@ -18,15 +19,17 @@ from app.catalogos.models import (
     EstadoSolicitudCandidato,
     Habilidad,
     Institucion,
+    Idioma,
     MotivoRechazo,
     NivelEducacional,
     NivelHabilidad,
+    NivelIdioma,
 )
 from app.clientes.models import Empresa
 from app.solicitudes.models import Solicitud, SolicitudCandidato, SolicitudHabilidad
 from app.usuarios.models import EstadoUsuario, Usuario
 
-from . import models, schemas
+from . import cv_parser, models, schemas
 
 
 ACTIVE_STATUS_NAME = os.getenv("ACTIVE_USER_STATUS_NAME", "Activo")
@@ -66,6 +69,7 @@ def _candidate_stmt():
             models.ExperienciaLaboral.habilidades_asociadas
         ),
         selectinload(models.Candidato.cursos),
+        selectinload(models.Candidato.idiomas),
     )
  
          
@@ -184,6 +188,16 @@ def _validate_nested_refs(db: Session, payload: schemas.CandidatoCreate) -> None
     for course in payload.cursos:
         if course.curs_institucion_id and db.get(Institucion, course.curs_institucion_id) is None:
             raise ValidationError("Institución del curso no existe")
+    seen_idiomas: set[int] = set()
+    for item in payload.idiomas:
+        if item.cdio_idioma_id in seen_idiomas:
+            raise ValidationError("No se puede repetir un idioma para el candidato")
+        seen_idiomas.add(item.cdio_idioma_id)
+        if db.get(Idioma, item.cdio_idioma_id) is None:
+            raise ValidationError(f"Idioma {item.cdio_idioma_id} no existe")
+        nivel = db.get(NivelIdioma, item.cdio_nivel_idioma_id)
+        if nivel is None or not nivel.nvid_activo:
+            raise ValidationError(f"Nivel de idioma {item.cdio_nivel_idioma_id} no existe o está inactivo")
 
 
 def _temporary_password() -> str:
@@ -213,6 +227,9 @@ def _apply_nested_create(db: Session, candidate: models.Candidato, payload: sche
     for item in payload.cursos:
         candidate.cursos.append(models.Curso(**item.model_dump()))
 
+    for item in payload.idiomas:
+        candidate.idiomas.append(models.CandidatoIdioma(**item.model_dump()))
+
 
 def create_candidate(
     db: Session,
@@ -221,7 +238,7 @@ def create_candidate(
     email = str(payload.cand_email).strip().lower()
     _ensure_email_available(db, email)
     data = payload.model_dump(
-        exclude={"password_inicial", "direccion", "habilidades", "estudios", "experiencias", "cursos"}
+        exclude={"password_inicial", "direccion", "habilidades", "estudios", "experiencias", "cursos", "idiomas"}
     )
     data["cand_email"] = email
     _validate_candidate_refs(db, data)
@@ -333,6 +350,14 @@ def list_candidate_courses(db: Session, candidate_id: int) -> list[models.Curso]
     )
 
 
+def list_candidate_languages(db: Session, candidate_id: int) -> list[models.CandidatoIdioma]:
+    candidate = get_candidate(db, candidate_id)
+    return sorted(
+        candidate.idiomas,
+        key=lambda x: ((x.idioma.idio_nombre if x.idioma else "").casefold(), x.cdio_id),
+    )
+
+
 def list_candidate_addresses(db: Session, candidate_id: int) -> list[models.DireccionCandidato]:
     candidate = get_candidate(db, candidate_id)
     # El modelo físico permite una sola dirección por candidato (UNIQUE drcd_candidato_id).
@@ -372,6 +397,49 @@ def delete_candidate_address(db: Session, candidate_id: int) -> None:
 
 
 # --------------------------- recursos anidados ---------------------------
+def add_language(db: Session, candidate_id: int, payload: schemas.IdiomaCandidatoCreate):
+    get_candidate(db, candidate_id)
+    if db.get(Idioma, payload.cdio_idioma_id) is None:
+        raise ValidationError("Idioma no existe")
+    nivel = db.get(NivelIdioma, payload.cdio_nivel_idioma_id)
+    if nivel is None or not nivel.nvid_activo:
+        raise ValidationError("Nivel de idioma no existe o está inactivo")
+    exists = db.scalar(select(models.CandidatoIdioma.cdio_id).where(
+        models.CandidatoIdioma.cdio_candidato_id == candidate_id,
+        models.CandidatoIdioma.cdio_idioma_id == payload.cdio_idioma_id,
+    ))
+    if exists:
+        raise ConflictError("El idioma ya está registrado para el candidato")
+    obj = models.CandidatoIdioma(cdio_candidato_id=candidate_id, **payload.model_dump())
+    db.add(obj); _commit(db); db.refresh(obj)
+    return db.scalar(select(models.CandidatoIdioma).where(models.CandidatoIdioma.cdio_id == obj.cdio_id))
+
+
+def update_language(db: Session, candidate_id: int, item_id: int, payload: schemas.IdiomaCandidatoUpdate):
+    obj = db.scalar(select(models.CandidatoIdioma).where(
+        models.CandidatoIdioma.cdio_id == item_id,
+        models.CandidatoIdioma.cdio_candidato_id == candidate_id,
+    ))
+    if obj is None:
+        raise NotFoundError("Idioma del candidato no encontrado")
+    nivel = db.get(NivelIdioma, payload.cdio_nivel_idioma_id)
+    if nivel is None or not nivel.nvid_activo:
+        raise ValidationError("Nivel de idioma no existe o está inactivo")
+    obj.cdio_nivel_idioma_id = payload.cdio_nivel_idioma_id
+    _commit(db); db.refresh(obj)
+    return obj
+
+
+def delete_language(db: Session, candidate_id: int, item_id: int) -> None:
+    obj = db.scalar(select(models.CandidatoIdioma).where(
+        models.CandidatoIdioma.cdio_id == item_id,
+        models.CandidatoIdioma.cdio_candidato_id == candidate_id,
+    ))
+    if obj is None:
+        raise NotFoundError("Idioma del candidato no encontrado")
+    db.delete(obj); _commit(db)
+
+
 def add_skill(db: Session, candidate_id: int, payload: schemas.HabilidadCreate):
     get_candidate(db, candidate_id)
     if db.get(Habilidad, payload.cdhb_habilidad_id) is None:
@@ -601,18 +669,55 @@ def derive_nested_from_cv(db: Session, text: str) -> tuple[dict, list[str]]:
             "curs_anio_curso": int(year_match.group(1)) if year_match else None,
         })
 
+    # Idiomas: usa exclusivamente idiomas existentes en catálogo y requiere nivel detectable.
+    language_payload: list[dict] = []
+    seen_language_ids: set[int] = set()
+    level_by_code = {x.nvid_codigo.upper(): x for x in db.scalars(select(NivelIdioma).where(NivelIdioma.nvid_activo.is_(True))).all()}
+    language_lines = cv_parser.candidate_language_lines(text)
+    folded_language_lines = [cv_parser.fold_text(x) for x in language_lines]
+    for language in db.scalars(select(Idioma).order_by(Idioma.idio_id)).all():
+        aliases = cv_parser.language_aliases(language.idio_nombre)
+        detected_level_code = None
+        for idx, fline in enumerate(folded_language_lines):
+            if not any(re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", fline) for alias in aliases):
+                continue
+            # Prioriza la misma línea; si no hay nivel, permite la siguiente línea
+            # cuando parece ser un valor corto de sección.
+            detected_level_code = cv_parser.detect_language_level_code(language_lines[idx])
+            if detected_level_code is None and idx + 1 < len(language_lines) and len(language_lines[idx + 1]) <= 80:
+                detected_level_code = cv_parser.detect_language_level_code(language_lines[idx + 1])
+            if detected_level_code:
+                break
+        if detected_level_code is None:
+            continue
+        level = level_by_code.get(detected_level_code.upper())
+        if level is None:
+            warnings.append(
+                f"Se detectó {language.idio_nombre} con nivel {detected_level_code}, pero ese nivel no existe o está inactivo en el catálogo."
+            )
+            continue
+        if language.idio_id not in seen_language_ids:
+            language_payload.append({
+                "cdio_idioma_id": language.idio_id,
+                "cdio_nivel_idioma_id": level.nvid_id,
+            })
+            seen_language_ids.add(language.idio_id)
+
     if not skills_payload:
         warnings.append("No se mapearon habilidades contra el catálogo existente; revisar manualmente.")
     if not studies:
         warnings.append("No se mapearon estudios con suficiente certeza contra los catálogos existentes.")
     if not experiences:
         warnings.append("No se mapearon experiencias laborales: el esquema exige empresa y cargo existentes en catálogo.")
+    if any(x in folded_text for x in ("idioma", "languages", "language")) and not language_payload:
+        warnings.append("Se detectó una sección de idiomas, pero no fue posible mapear idioma y nivel contra los catálogos existentes.")
 
     return {
         "habilidades": skills_payload,
         "estudios": studies,
         "experiencias": experiences,
         "cursos": courses,
+        "idiomas": language_payload,
     }, warnings
 
 
@@ -647,6 +752,14 @@ def merge_imported_nested(db: Session, candidate: models.Candidato, nested: dict
         key = (item.get("curs_nombre_curso") or "").casefold()
         if key and key not in existing_courses:
             candidate.cursos.append(models.Curso(**item)); existing_courses.add(key)
+
+    # Los idiomas importados se agregan solo si no existen. Una reimportación
+    # nunca sobrescribe silenciosamente un nivel corregido manualmente.
+    existing_language_ids = {x.cdio_idioma_id for x in candidate.idiomas}
+    for item in nested.get("idiomas", []):
+        if item["cdio_idioma_id"] not in existing_language_ids:
+            candidate.idiomas.append(models.CandidatoIdioma(**item))
+            existing_language_ids.add(item["cdio_idioma_id"])
 
 # ----------------------------- postulaciones -----------------------------
 STATE_TRANSITIONS = {

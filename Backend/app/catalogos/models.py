@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -172,6 +172,30 @@ class Idioma(Base):
 
     idio_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     idio_nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+class NivelIdioma(Base):
+    __tablename__ = "tbl_nivel_idioma"
+    __table_args__ = (
+        UniqueConstraint("nvid_codigo", name="uq_tbl_nivel_idioma_codigo"),
+        UniqueConstraint("nvid_nombre", name="uq_tbl_nivel_idioma_nombre"),
+        CheckConstraint("TRIM(nvid_codigo) <> ''", name="chk_tbl_nivel_idioma_codigo"),
+        CheckConstraint("TRIM(nvid_nombre) <> ''", name="chk_tbl_nivel_idioma_nombre"),
+        CheckConstraint(
+            "nvid_grupo IN ('Basico', 'Intermedio', 'Avanzado', 'Nativo')",
+            name="chk_tbl_nivel_idioma_grupo",
+        ),
+        CheckConstraint("nvid_orden > 0", name="chk_tbl_nivel_idioma_orden"),
+    )
+
+    nvid_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nvid_codigo: Mapped[str] = mapped_column(String(20), nullable=False)
+    nvid_nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    nvid_grupo: Mapped[str] = mapped_column(String(30), nullable=False)
+    nvid_es_generico: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    nvid_orden: Mapped[int] = mapped_column(Integer, nullable=False)
+    nvid_descripcion: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    nvid_activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class Habilidad(Base):

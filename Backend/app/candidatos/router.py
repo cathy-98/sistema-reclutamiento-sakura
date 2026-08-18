@@ -159,6 +159,25 @@ def candidate_delete_my_course(item_id:int, candidate=Depends(get_current_candid
     except services.CandidateModuleError as exc: raise _http(exc) from exc
 
 
+@router.get("/candidatos/me/idiomas", response_model=list[schemas.IdiomaCandidatoResponse])
+def my_languages(db:Session=Depends(get_db), candidate=Depends(get_current_candidate)):
+    return services.list_candidate_languages(db, candidate.cand_id)
+
+@router.post("/candidatos/me/idiomas", response_model=schemas.IdiomaCandidatoResponse, status_code=201)
+def my_add_language(payload:schemas.IdiomaCandidatoCreate, db:Session=Depends(get_db), candidate=Depends(get_current_candidate)):
+    try:return services.add_language(db, candidate.cand_id, payload)
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
+
+@router.patch("/candidatos/me/idiomas/{item_id}", response_model=schemas.IdiomaCandidatoResponse)
+def my_patch_language(item_id:int, payload:schemas.IdiomaCandidatoUpdate, db:Session=Depends(get_db), candidate=Depends(get_current_candidate)):
+    try:return services.update_language(db, candidate.cand_id, item_id, payload)
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
+
+@router.delete("/candidatos/me/idiomas/{item_id}", status_code=204)
+def my_delete_language(item_id:int, db:Session=Depends(get_db), candidate=Depends(get_current_candidate)):
+    try:services.delete_language(db, candidate.cand_id, item_id); return None
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
+
 @router.get("/candidatos/me/direcciones", response_model=list[schemas.DireccionResponse])
 def candidate_my_addresses(candidate=Depends(get_current_candidate), db:Session=Depends(get_db)):
     return services.list_candidate_addresses(db, candidate.cand_id)
@@ -360,6 +379,26 @@ def get_candidate_addresses(
     except services.CandidateModuleError as exc:
         raise _http(exc) from exc
 
+
+@router.get("/candidatos/{candidate_id}/idiomas", response_model=list[schemas.IdiomaCandidatoResponse])
+def candidate_languages(candidate_id:int, db:Session=Depends(get_db), _:Usuario=Depends(require_permissions("CAN_VIEW"))):
+    try:return services.list_candidate_languages(db, candidate_id)
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
+
+@router.post("/candidatos/{candidate_id}/idiomas", response_model=schemas.IdiomaCandidatoResponse, status_code=201)
+def add_candidate_language(candidate_id:int, payload:schemas.IdiomaCandidatoCreate, db:Session=Depends(get_db), _:Usuario=Depends(require_permissions("CAN_UPDATE"))):
+    try:return services.add_language(db, candidate_id, payload)
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
+
+@router.patch("/candidatos/{candidate_id}/idiomas/{item_id}", response_model=schemas.IdiomaCandidatoResponse)
+def patch_candidate_language(candidate_id:int, item_id:int, payload:schemas.IdiomaCandidatoUpdate, db:Session=Depends(get_db), _:Usuario=Depends(require_permissions("CAN_UPDATE"))):
+    try:return services.update_language(db, candidate_id, item_id, payload)
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
+
+@router.delete("/candidatos/{candidate_id}/idiomas/{item_id}", status_code=204)
+def delete_candidate_language(candidate_id:int, item_id:int, db:Session=Depends(get_db), _:Usuario=Depends(require_permissions("CAN_UPDATE"))):
+    try:services.delete_language(db, candidate_id, item_id); return None
+    except services.CandidateModuleError as exc: raise _http(exc) from exc
 
 @router.post("/candidatos/{candidate_id}/habilidades",response_model=schemas.HabilidadResponse,status_code=201)
 def add_skill(candidate_id:int,payload:schemas.HabilidadCreate,db:Session=Depends(get_db),_:Usuario=Depends(require_permissions("CAN_UPDATE"))):
