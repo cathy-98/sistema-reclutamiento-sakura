@@ -28,6 +28,7 @@ from app.cuestionarios import models as cuestionario_models
 from app.database import Base, get_db
 from app.entrevistas import models as entrevista_models
 from app.informes import models as informe_models
+from app.catalogos import models as catalogo_models
 from app.informes import router as informes_router
 from app.informes import services as informe_services
 from app.solicitudes import models as solicitud_models
@@ -61,9 +62,51 @@ def _make_user(db, role, state, area, seq, email):
     u=user_models.Usuario(usr_rol_id=role.rol_id,usr_estado_usuario_id=state.esusr_id,usr_area_id=area.area_id,usr_nombres=f"QA{seq}",usr_apellido_paterno="M6",usr_rut_sin_dv=f"70000{seq}",usr_dv=str(seq%10),usr_email=email,usr_contrasena="hash")
     db.add(u); db.flush(); return u
 
+
+def _nivel_idioma_id(db, codigo: str) -> int:
+    """Obtiene/crea un nivel de idioma normalizado para fixtures SQLite."""
+    nivel = db.query(catalogo_models.NivelIdioma).filter(
+        catalogo_models.NivelIdioma.nvid_codigo == codigo
+    ).first()
+    if nivel is not None:
+        return nivel.nvid_id
+
+    seed_map = {
+        "BAS": ("Básico", "Basico", True, 10),
+        "A1": ("Básico A1", "Basico", False, 11),
+        "A2": ("Básico A2", "Basico", False, 12),
+        "INT": ("Intermedio", "Intermedio", True, 20),
+        "B1": ("Intermedio B1", "Intermedio", False, 21),
+        "B2": ("Intermedio B2", "Intermedio", False, 22),
+        "AVA": ("Avanzado", "Avanzado", True, 30),
+        "C1": ("Avanzado C1", "Avanzado", False, 31),
+        "C2": ("Avanzado C2", "Avanzado", False, 32),
+        "NAT": ("Nativo", "Nativo", False, 40),
+    }
+    nombre, grupo, generico, orden = seed_map[codigo]
+    nivel = catalogo_models.NivelIdioma(
+        nvid_codigo=codigo,
+        nvid_nombre=nombre,
+        nvid_grupo=grupo,
+        nvid_es_generico=generico,
+        nvid_orden=orden,
+        nvid_activo=True,
+    )
+    db.add(nivel)
+    db.flush()
+    return nivel.nvid_id
+
+
 def _seed():
     db=TestingSessionLocal()
     try:
+        # Migración 008: la suite aislada debe reproducir todos los seeds
+        # de tbl_nivel_idioma, no solo el nivel usado por el primer candidato.
+        # Esto permite validar también la compatibilidad temporal del endpoint
+        # M6 que todavía acepta nivel="Basico|Intermedio|Avanzado|Nativo".
+        for _codigo in ("BAS", "A1", "A2", "INT", "B1", "B2", "AVA", "C1", "C2", "NAT"):
+            _nivel_idioma_id(db, _codigo)
+
         activo=user_models.EstadoUsuario(esusr_nombre="Activo",esusr_descripcion="Activo")
         area=user_models.Area(area_nombre="QA M6",area_descripcion="QA")
         db.add_all([activo,area]); db.flush()
@@ -110,7 +153,7 @@ def _seed():
         db.add(candidato_models.EstudioCandidato(etcd_candidato_id=csel.cand_id,etcd_nivel_educacional_id=nivel_edu.nved_id,etcd_institucion_id=inst.inst_id,etcd_carrera_id=carrera.crra_id,etcd_fecha_inicio=date(2015,1,1),etcd_fecha_fin=date(2020,1,1)))
         db.add(candidato_models.ExperienciaLaboral(expl_candidato_id=csel.cand_id,expl_empresa_id=company.emp_id,expl_cargo_id=cargo.crgo_id,expl_descripcion_funciones="Desarrollo de APIs y arquitectura.",expl_fecha_inicio=date(2021,1,1),expl_fecha_fin=None))
         db.add(candidato_models.Curso(curs_candidato_id=csel.cand_id,curs_nombre_curso="AWS Cloud",curs_es_certificado=True,curs_anio_curso=2025))
-        db.add(informe_models.CandidatoIdioma(cdio_candidato_id=csel.cand_id,cdio_idioma_id=lang_es.idio_id,cdio_nivel="Nativo"))
+        db.add(informe_models.CandidatoIdioma(cdio_candidato_id=csel.cand_id,cdio_idioma_id=lang_es.idio_id,cdio_nivel_idioma_id=_nivel_idioma_id(db, "NAT")))
 
         def post(c,state,match=80,s=s1):
             p=solicitud_models.SolicitudCandidato(slcd_candidato_id=c.cand_id,slcd_solicitud_id=s.sol_id,slcd_estado_solicitud_candidato_id=post_states[state],slcd_fecha_postulacion=datetime.now(),slcd_puntaje_compatibilidad=match); db.add(p); db.flush(); return p

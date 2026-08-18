@@ -245,6 +245,41 @@ class IdiomaRead(BaseRead):
     idio_nombre: str
 
 
+class NivelIdiomaBase(BaseCreate):
+    nvid_codigo: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20)]
+    nvid_nombre: Text100
+    nvid_grupo: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
+    nvid_es_generico: bool = False
+    nvid_orden: int = Field(gt=0)
+    nvid_descripcion: Optional[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]] = None
+    nvid_activo: bool = True
+
+
+class NivelIdiomaCreate(NivelIdiomaBase):
+    pass
+
+
+class NivelIdiomaUpdate(BaseUpdate):
+    nvid_codigo: Optional[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20)]] = None
+    nvid_nombre: Optional[Text100] = None
+    nvid_grupo: Optional[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]] = None
+    nvid_es_generico: Optional[bool] = None
+    nvid_orden: Optional[int] = Field(default=None, gt=0)
+    nvid_descripcion: Optional[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]] = None
+    nvid_activo: Optional[bool] = None
+
+
+class NivelIdiomaRead(BaseRead):
+    nvid_id: int
+    nvid_codigo: str
+    nvid_nombre: str
+    nvid_grupo: str
+    nvid_es_generico: bool
+    nvid_orden: int
+    nvid_descripcion: Optional[str] = None
+    nvid_activo: bool
+
+
 class HabilidadBase(BaseCreate):
     hab_nombre: Text255
     hab_descripcion: Optional[Text300] = None
