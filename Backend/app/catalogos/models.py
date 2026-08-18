@@ -142,6 +142,38 @@ class NivelEducacional(Base):
 # PUESTO, EXPERIENCIA Y CONDICIONES DE TRABAJO
 # ==========================================================
 
+
+class CategoriaHabilidad(Base):
+    __tablename__ = "tbl_categoria_habilidad"
+    __table_args__ = (
+        UniqueConstraint("cthb_nombre", name="uq_tbl_categoria_habilidad_nombre"),
+        CheckConstraint("TRIM(cthb_nombre) <> ''", name="chk_tbl_categoria_habilidad_nombre_vacio"),
+        CheckConstraint(
+            "cthb_descripcion IS NULL OR TRIM(cthb_descripcion) <> ''",
+            name="chk_tbl_categoria_habilidad_descripcion_vacia",
+        ),
+    )
+
+    cthb_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    cthb_nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    cthb_descripcion: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+
+    habilidades: Mapped[list["Habilidad"]] = relationship(
+        "Habilidad", back_populates="categoria", passive_deletes=True
+    )
+
+
+class Idioma(Base):
+    __tablename__ = "tbl_idioma"
+    __table_args__ = (
+        UniqueConstraint("idio_nombre", name="uq_tbl_idioma_nombre"),
+        CheckConstraint("TRIM(idio_nombre) <> ''", name="chk_tbl_idioma_nombre_vacio"),
+    )
+
+    idio_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idio_nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
 class Habilidad(Base):
     __tablename__ = "tbl_habilidad"
     __table_args__ = (
@@ -152,6 +184,15 @@ class Habilidad(Base):
     hab_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     hab_nombre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     hab_descripcion: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    hab_categoria_habilidad_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("tbl_categoria_habilidad.cthb_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    categoria: Mapped[Optional["CategoriaHabilidad"]] = relationship(
+        "CategoriaHabilidad", back_populates="habilidades", lazy="joined"
+    )
 
 
 class NivelHabilidad(Base):
