@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict A1bhLN9hjS2xgWPGV48wTp3pDZ6NzgTKTQK8xz2kEOnl1yvAHDrhXEr6xMaspEp
+\restrict JMe6ATBAzKnxt38UpRrDoomPe33EFXfe8enlAWR3uOwrPnPKY8CvwxfWAuVPTga
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Debian 16.14-1.pgdg13+1)
@@ -18,6 +18,380 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS fk_tbl_usuario_rol;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS fk_tbl_usuario_estado_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS fk_tbl_usuario_estado;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_usuario_cita_entrevista_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_usuario_cita_entrevista_tipo;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_usuario_cita_entrevista_cita;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS fk_tbl_usuario_area;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_usuario_creador;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_usuario_asignado;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_tipo_contrato;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_prioridad;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_modalidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_habilidad_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_habilidad_nivel;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_habilidad_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_estado;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_cliente;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_cargo;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_motivo_rechazo;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_estado;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_rol_permiso DROP CONSTRAINT IF EXISTS fk_tbl_rol_permiso_rol;
+ALTER TABLE IF EXISTS ONLY public.tbl_rol_permiso DROP CONSTRAINT IF EXISTS fk_tbl_rol_permiso_permiso;
+ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_respuesta_pregunta_pregunta_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_respuesta_pregunta_opcion_respuesta;
+ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_respuesta_pregunta_candidato_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_region DROP CONSTRAINT IF EXISTS fk_tbl_region_pais;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_nivel_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_cuestionario_pregunta;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_cuestionario_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_password_reset_token DROP CONSTRAINT IF EXISTS fk_tbl_password_reset_token_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_opcion_respuesta DROP CONSTRAINT IF EXISTS fk_tbl_opcion_respuesta_pregunta;
+ALTER TABLE IF EXISTS ONLY public.tbl_institucion DROP CONSTRAINT IF EXISTS fk_tbl_institucion_tipo_institucion;
+ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_estado_anterior;
+ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_estado_actual;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_expl_habilidad_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_expl_habilidad_experiencia;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS fk_tbl_experiencia_laboral_empresa;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS fk_tbl_experiencia_laboral_cargo;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS fk_tbl_experiencia_laboral_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_tipo;
+ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_resultado;
+ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_cita;
+ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_nivel_educacional;
+ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_institucion;
+ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_carrera;
+ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS fk_tbl_direccion_candidato_comuna;
+ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS fk_tbl_direccion_candidato_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS fk_tbl_curso_institucion;
+ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS fk_tbl_curso_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_cuestionario_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_comuna DROP CONSTRAINT IF EXISTS fk_tbl_comuna_region;
+ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS fk_tbl_cliente_empresa;
+ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS fk_tbl_cliente_cargo_empresa;
+ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS fk_tbl_cliente_area_empresa;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_tipo_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_tipo_entrevista_tipo_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_tipo_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_tipo_entrevista_cita;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_usuario_creador;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_tipo;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_solicitud_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_estado;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_candidato_habilidad_nivel;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_candidato_habilidad_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_candidato_habilidad_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS fk_tbl_candidato_disponibilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_candidato_cuestionario_estado;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_candidato_cuestionario_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_candidato_cuestionario_candidato;
+DROP INDEX IF EXISTS public.uq_m5_evaluacion_cita_usuario_tipo;
+DROP INDEX IF EXISTS public.ix_tbl_solicitud_candidato_solicitud_estado;
+DROP INDEX IF EXISTS public.ix_tbl_candidato_email_lower;
+DROP INDEX IF EXISTS public.ix_password_reset_usuario;
+DROP INDEX IF EXISTS public.ix_password_reset_expiracion;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_rol;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_nombre_completo;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_estado;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_email;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_cita_entrevista_usuario;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_cita_entrevista_cita;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_area;
+DROP INDEX IF EXISTS public.idx_tbl_usuario_apellidos;
+DROP INDEX IF EXISTS public.idx_tbl_tipo_institucion_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_tipo_entrevista_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_tipo_contrato_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_usuario_creador;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_usuario_asignado;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_tipo_contrato;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_prioridad;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_modalidad;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_solicitud;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_nivel;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_habilidad;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_excluyente;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_fecha_inicio_busqueda;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_fecha_creacion;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_fecha_cierre_busqueda;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_estado;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_codigo;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_cliente;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_cargo;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_solicitud;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_puntaje;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_motivo_rechazo;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_fecha_postulacion;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_estado;
+DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_rol_permiso_rol;
+DROP INDEX IF EXISTS public.idx_tbl_rol_permiso_permiso;
+DROP INDEX IF EXISTS public.idx_tbl_rol_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_pregunta_cuestionario;
+DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_opcion_respuesta;
+DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_correcta;
+DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_candidato_cuestionario;
+DROP INDEX IF EXISTS public.idx_tbl_respuesta_asignacion;
+DROP INDEX IF EXISTS public.idx_tbl_region_pais;
+DROP INDEX IF EXISTS public.idx_tbl_region_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_prioridad_solicitud_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_pregunta_nivel_habilidad;
+DROP INDEX IF EXISTS public.idx_tbl_pregunta_habilidad;
+DROP INDEX IF EXISTS public.idx_tbl_pregunta_fecha_creacion;
+DROP INDEX IF EXISTS public.idx_tbl_pregunta_cuestionario_pregunta;
+DROP INDEX IF EXISTS public.idx_tbl_pregunta_cuestionario_cuestionario;
+DROP INDEX IF EXISTS public.idx_tbl_permiso_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_pais_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_opcion_respuesta_pregunta;
+DROP INDEX IF EXISTS public.idx_tbl_opcion_respuesta_correcta;
+DROP INDEX IF EXISTS public.idx_tbl_nombre_resultado_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_nivel_habilidad_puntaje;
+DROP INDEX IF EXISTS public.idx_tbl_nivel_habilidad_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_nivel_educacional_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_motivo_rechazo_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_modalidad_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_institucion_tipo;
+DROP INDEX IF EXISTS public.idx_tbl_institucion_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_usuario;
+DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_solicitud;
+DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_fecha_cambio;
+DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_estado_anterior;
+DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_estado_actual;
+DROP INDEX IF EXISTS public.idx_tbl_habilidad_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_expl_habilidad_habilidad;
+DROP INDEX IF EXISTS public.idx_tbl_expl_habilidad_experiencia;
+DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_fecha_inicio;
+DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_fecha_fin;
+DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_empresa;
+DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_cargo;
+DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_evaluacion_entrevista_resultado;
+DROP INDEX IF EXISTS public.idx_tbl_evaluacion_entrevista_cita;
+DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_nivel_educacional;
+DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_institucion;
+DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_fecha_inicio;
+DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_fecha_fin;
+DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_carrera;
+DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_estado_usuario_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_estado_solicitud_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_estado_solicitud_candidato_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_estado_entrevista_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_estado_cuestionario_candidato_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_empresa_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_empresa_identificacion;
+DROP INDEX IF EXISTS public.idx_tbl_disponibilidad_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_direccion_candidato_comuna;
+DROP INDEX IF EXISTS public.idx_tbl_direccion_candidato_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_direccion_candidato_calle;
+DROP INDEX IF EXISTS public.idx_tbl_curso_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_curso_institucion;
+DROP INDEX IF EXISTS public.idx_tbl_curso_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_curso_anio;
+DROP INDEX IF EXISTS public.idx_tbl_cuestionario_solicitud;
+DROP INDEX IF EXISTS public.idx_tbl_cuestionario_porcentaje_aprobacion;
+DROP INDEX IF EXISTS public.idx_tbl_cuestionario_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_comuna_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_comuna_ciudad;
+DROP INDEX IF EXISTS public.idx_tbl_cliente_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_cliente_empresa;
+DROP INDEX IF EXISTS public.idx_tbl_cliente_email;
+DROP INDEX IF EXISTS public.idx_tbl_cliente_cargo_empresa;
+DROP INDEX IF EXISTS public.idx_tbl_cliente_area_empresa;
+DROP INDEX IF EXISTS public.idx_tbl_cita_tipo_entrevista_tipo;
+DROP INDEX IF EXISTS public.idx_tbl_cita_tipo_entrevista_cita;
+DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_tipo;
+DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_solicitud_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_fecha_inicio;
+DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_fecha_fin;
+DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_fecha_creacion;
+DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_estado;
+DROP INDEX IF EXISTS public.idx_tbl_carrera_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_cargo_nombre;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_titulo;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_nivel;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_habilidad;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_anios;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_fecha_creacion;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_email;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_disponibilidad;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_fecha_asignacion;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_estado;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_cuestionario;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_candidato;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_aprobado;
+DROP INDEX IF EXISTS public.idx_tbl_candidato_apellidos;
+DROP INDEX IF EXISTS public.idx_tbl_area_nombre;
+DROP INDEX IF EXISTS public.idx_m5_usuario_cita_usuario;
+DROP INDEX IF EXISTS public.idx_m5_usuario_cita_tipo;
+DROP INDEX IF EXISTS public.idx_m5_eval_cita;
+DROP INDEX IF EXISTS public.idx_m5_cita_slcd;
+DROP INDEX IF EXISTS public.idx_m5_cita_fecha;
+DROP INDEX IF EXISTS public.idx_m5_cita_estado;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS uq_tbl_usuario_rut;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS uq_tbl_usuario_email;
+ALTER TABLE IF EXISTS ONLY public.tbl_tipo_institucion DROP CONSTRAINT IF EXISTS uq_tbl_tipo_institucion_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_tipo_entrevista DROP CONSTRAINT IF EXISTS uq_tbl_tipo_entrevista_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_tipo_contrato DROP CONSTRAINT IF EXISTS uq_tbl_tipo_contrato_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_codigo;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_candidato_solicitud_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_candidato_postulacion;
+ALTER TABLE IF EXISTS ONLY public.tbl_rol DROP CONSTRAINT IF EXISTS uq_tbl_rol_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS uq_tbl_respuesta_pregunta_candidato_pregunta;
+ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS uq_tbl_respuesta_asignacion_pregunta;
+ALTER TABLE IF EXISTS ONLY public.tbl_region DROP CONSTRAINT IF EXISTS uq_tbl_region_pais_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_prioridad_solicitud DROP CONSTRAINT IF EXISTS uq_tbl_prioridad_solicitud_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS uq_tbl_pregunta_texto_habilidad_nivel;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS uq_tbl_pregunta_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_permiso DROP CONSTRAINT IF EXISTS uq_tbl_permiso_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_password_reset_token DROP CONSTRAINT IF EXISTS uq_tbl_password_reset_token_hash;
+ALTER TABLE IF EXISTS ONLY public.tbl_pais DROP CONSTRAINT IF EXISTS uq_tbl_pais_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_opcion_respuesta DROP CONSTRAINT IF EXISTS uq_tbl_opcion_respuesta_pregunta_opcion;
+ALTER TABLE IF EXISTS ONLY public.tbl_nombre_resultado DROP CONSTRAINT IF EXISTS uq_tbl_nombre_resultado_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_nivel_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_nivel_habilidad_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_nivel_educacional DROP CONSTRAINT IF EXISTS uq_tbl_nivel_educacional_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_motivo_rechazo DROP CONSTRAINT IF EXISTS uq_tbl_motivo_rechazo_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_modalidad DROP CONSTRAINT IF EXISTS uq_tbl_modalidad_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_institucion DROP CONSTRAINT IF EXISTS uq_tbl_institucion_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_habilidad_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS uq_tbl_experiencia_laboral_registro;
+ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS uq_tbl_estudio_candidato_registro;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_usuario DROP CONSTRAINT IF EXISTS uq_tbl_estado_usuario_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud DROP CONSTRAINT IF EXISTS uq_tbl_estado_solicitud_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud_candidato DROP CONSTRAINT IF EXISTS uq_tbl_estado_solicitud_candidato_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_entrevista DROP CONSTRAINT IF EXISTS uq_tbl_estado_entrevista_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_cuestionario_candidato DROP CONSTRAINT IF EXISTS uq_tbl_estado_cuestionario_candidato_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_empresa DROP CONSTRAINT IF EXISTS uq_tbl_empresa_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_empresa DROP CONSTRAINT IF EXISTS uq_tbl_empresa_identificacion;
+ALTER TABLE IF EXISTS ONLY public.tbl_disponibilidad DROP CONSTRAINT IF EXISTS uq_tbl_disponibilidad_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS uq_tbl_direccion_candidato_direccion;
+ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS uq_tbl_curso_candidato_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_cuestionario DROP CONSTRAINT IF EXISTS uq_tbl_cuestionario_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_comuna DROP CONSTRAINT IF EXISTS uq_tbl_comuna_comuna_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS uq_tbl_cliente_email2;
+ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS uq_tbl_cliente_email;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS uq_tbl_cita_entrevista_agenda;
+ALTER TABLE IF EXISTS ONLY public.tbl_carrera DROP CONSTRAINT IF EXISTS uq_tbl_carrera_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_cargo DROP CONSTRAINT IF EXISTS uq_tbl_cargo_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS uq_tbl_candidato_rut;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_candidato_habilidad_candidato_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_candidato_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS uq_tbl_candidato_email;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS uq_tbl_candidato_cuestionario_candidato_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_area DROP CONSTRAINT IF EXISTS uq_tbl_area_nombre;
+ALTER TABLE IF EXISTS ONLY public.tbl_password_reset_token DROP CONSTRAINT IF EXISTS tbl_password_reset_token_pkey;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_usuario_cita_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS pk_tbl_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_tipo_institucion DROP CONSTRAINT IF EXISTS pk_tbl_tipo_institucion;
+ALTER TABLE IF EXISTS ONLY public.tbl_tipo_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_tipo_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_tipo_contrato DROP CONSTRAINT IF EXISTS pk_tbl_tipo_contrato;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_solicitud_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS pk_tbl_solicitud_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_rol_permiso DROP CONSTRAINT IF EXISTS pk_tbl_rol_permiso;
+ALTER TABLE IF EXISTS ONLY public.tbl_rol DROP CONSTRAINT IF EXISTS pk_tbl_rol;
+ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS pk_tbl_respuesta_pregunta;
+ALTER TABLE IF EXISTS ONLY public.tbl_region DROP CONSTRAINT IF EXISTS pk_tbl_region;
+ALTER TABLE IF EXISTS ONLY public.tbl_prioridad_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_prioridad_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS pk_tbl_pregunta_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS pk_tbl_pregunta;
+ALTER TABLE IF EXISTS ONLY public.tbl_permiso DROP CONSTRAINT IF EXISTS pk_tbl_permiso;
+ALTER TABLE IF EXISTS ONLY public.tbl_pais DROP CONSTRAINT IF EXISTS pk_tbl_pais;
+ALTER TABLE IF EXISTS ONLY public.tbl_opcion_respuesta DROP CONSTRAINT IF EXISTS pk_tbl_opcion_respuesta;
+ALTER TABLE IF EXISTS ONLY public.tbl_nombre_resultado DROP CONSTRAINT IF EXISTS pk_tbl_nombre_resultado;
+ALTER TABLE IF EXISTS ONLY public.tbl_nivel_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_nivel_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_nivel_educacional DROP CONSTRAINT IF EXISTS pk_tbl_nivel_educacional;
+ALTER TABLE IF EXISTS ONLY public.tbl_motivo_rechazo DROP CONSTRAINT IF EXISTS pk_tbl_motivo_rechazo;
+ALTER TABLE IF EXISTS ONLY public.tbl_modalidad DROP CONSTRAINT IF EXISTS pk_tbl_modalidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_institucion DROP CONSTRAINT IF EXISTS pk_tbl_institucion;
+ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_historial_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_experiencia_laboral_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS pk_tbl_experiencia_laboral;
+ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_evaluacion_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS pk_tbl_estudio_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_usuario DROP CONSTRAINT IF EXISTS pk_tbl_estado_usuario;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud_candidato DROP CONSTRAINT IF EXISTS pk_tbl_estado_solicitud_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_estado_solicitud;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_estado_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_estado_cuestionario_candidato DROP CONSTRAINT IF EXISTS pk_tbl_estado_cuestionario_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_empresa DROP CONSTRAINT IF EXISTS pk_tbl_empresa;
+ALTER TABLE IF EXISTS ONLY public.tbl_disponibilidad DROP CONSTRAINT IF EXISTS pk_tbl_disponibilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS pk_tbl_direccion_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS pk_tbl_curso;
+ALTER TABLE IF EXISTS ONLY public.tbl_cuestionario DROP CONSTRAINT IF EXISTS pk_tbl_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_comuna DROP CONSTRAINT IF EXISTS pk_tbl_comuna;
+ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS pk_tbl_cliente;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_tipo_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_cita_tipo_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_cita_entrevista;
+ALTER TABLE IF EXISTS ONLY public.tbl_carrera DROP CONSTRAINT IF EXISTS pk_tbl_carrera;
+ALTER TABLE IF EXISTS ONLY public.tbl_cargo DROP CONSTRAINT IF EXISTS pk_tbl_cargo;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_candidato_habilidad;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS pk_tbl_candidato_cuestionario;
+ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS pk_tbl_candidato;
+ALTER TABLE IF EXISTS ONLY public.tbl_area DROP CONSTRAINT IF EXISTS pk_tbl_area;
+DROP TABLE IF EXISTS public.tbl_usuario_cita_entrevista;
+DROP TABLE IF EXISTS public.tbl_usuario;
+DROP TABLE IF EXISTS public.tbl_tipo_institucion;
+DROP TABLE IF EXISTS public.tbl_tipo_entrevista;
+DROP TABLE IF EXISTS public.tbl_tipo_contrato;
+DROP TABLE IF EXISTS public.tbl_solicitud_habilidad;
+DROP TABLE IF EXISTS public.tbl_solicitud_candidato;
+DROP TABLE IF EXISTS public.tbl_solicitud;
+DROP TABLE IF EXISTS public.tbl_rol_permiso;
+DROP TABLE IF EXISTS public.tbl_rol;
+DROP TABLE IF EXISTS public.tbl_respuesta_pregunta;
+DROP TABLE IF EXISTS public.tbl_region;
+DROP TABLE IF EXISTS public.tbl_prioridad_solicitud;
+DROP TABLE IF EXISTS public.tbl_pregunta_cuestionario;
+DROP TABLE IF EXISTS public.tbl_pregunta;
+DROP TABLE IF EXISTS public.tbl_permiso;
+DROP TABLE IF EXISTS public.tbl_password_reset_token;
+DROP TABLE IF EXISTS public.tbl_pais;
+DROP TABLE IF EXISTS public.tbl_opcion_respuesta;
+DROP TABLE IF EXISTS public.tbl_nombre_resultado;
+DROP TABLE IF EXISTS public.tbl_nivel_habilidad;
+DROP TABLE IF EXISTS public.tbl_nivel_educacional;
+DROP TABLE IF EXISTS public.tbl_motivo_rechazo;
+DROP TABLE IF EXISTS public.tbl_modalidad;
+DROP TABLE IF EXISTS public.tbl_institucion;
+DROP TABLE IF EXISTS public.tbl_historial_solicitud;
+DROP TABLE IF EXISTS public.tbl_habilidad;
+DROP TABLE IF EXISTS public.tbl_experiencia_laboral_habilidad;
+DROP TABLE IF EXISTS public.tbl_experiencia_laboral;
+DROP TABLE IF EXISTS public.tbl_evaluacion_entrevista;
+DROP TABLE IF EXISTS public.tbl_estudio_candidato;
+DROP TABLE IF EXISTS public.tbl_estado_usuario;
+DROP TABLE IF EXISTS public.tbl_estado_solicitud_candidato;
+DROP TABLE IF EXISTS public.tbl_estado_solicitud;
+DROP TABLE IF EXISTS public.tbl_estado_entrevista;
+DROP TABLE IF EXISTS public.tbl_estado_cuestionario_candidato;
+DROP TABLE IF EXISTS public.tbl_empresa;
+DROP TABLE IF EXISTS public.tbl_disponibilidad;
+DROP TABLE IF EXISTS public.tbl_direccion_candidato;
+DROP TABLE IF EXISTS public.tbl_curso;
+DROP TABLE IF EXISTS public.tbl_cuestionario;
+DROP TABLE IF EXISTS public.tbl_comuna;
+DROP TABLE IF EXISTS public.tbl_cliente;
+DROP TABLE IF EXISTS public.tbl_cita_tipo_entrevista;
+DROP TABLE IF EXISTS public.tbl_cita_entrevista;
+DROP TABLE IF EXISTS public.tbl_carrera;
+DROP TABLE IF EXISTS public.tbl_cargo;
+DROP TABLE IF EXISTS public.tbl_candidato_habilidad;
+DROP TABLE IF EXISTS public.tbl_candidato_cuestionario;
+DROP TABLE IF EXISTS public.tbl_candidato;
+DROP TABLE IF EXISTS public.tbl_area;
+DROP EXTENSION IF EXISTS unaccent;
+DROP EXTENSION IF EXISTS pgcrypto;
+-- *not* dropping schema, since initdb creates it
 --
 -- Name: public; Type: SCHEMA; Schema: -; Owner: elitsoft_admin
 --
@@ -212,35 +586,6 @@ ALTER TABLE public.tbl_candidato_habilidad ALTER COLUMN cdhb_id ADD GENERATED AL
 
 
 --
--- Name: tbl_candidato_idioma; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_candidato_idioma (
-    cdio_id integer NOT NULL,
-    cdio_candidato_id integer NOT NULL,
-    cdio_idioma_id integer NOT NULL,
-    cdio_nivel character varying(30) NOT NULL,
-    CONSTRAINT chk_tbl_candidato_idioma_nivel CHECK (((cdio_nivel)::text = ANY (ARRAY[('Basico'::character varying)::text, ('Intermedio'::character varying)::text, ('Avanzado'::character varying)::text, ('Nativo'::character varying)::text])))
-);
-
-
-ALTER TABLE public.tbl_candidato_idioma OWNER TO elitsoft_admin;
-
---
--- Name: tbl_candidato_idioma_cdio_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_candidato_idioma ALTER COLUMN cdio_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_candidato_idioma_cdio_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
 -- Name: tbl_cargo; Type: TABLE; Schema: public; Owner: elitsoft_admin
 --
 
@@ -288,34 +633,6 @@ ALTER TABLE public.tbl_carrera OWNER TO elitsoft_admin;
 
 ALTER TABLE public.tbl_carrera ALTER COLUMN crra_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.tbl_carrera_crra_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
--- Name: tbl_categoria_habilidad; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_categoria_habilidad (
-    cthb_id integer NOT NULL,
-    cthb_nombre character varying(100) NOT NULL,
-    cthb_descripcion character varying(300),
-    CONSTRAINT chk_tbl_categoria_habilidad_nombre CHECK ((TRIM(BOTH FROM cthb_nombre) <> ''::text))
-);
-
-
-ALTER TABLE public.tbl_categoria_habilidad OWNER TO elitsoft_admin;
-
---
--- Name: tbl_categoria_habilidad_cthb_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_categoria_habilidad ALTER COLUMN cthb_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_categoria_habilidad_cthb_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -556,42 +873,6 @@ ALTER TABLE public.tbl_disponibilidad OWNER TO elitsoft_admin;
 
 ALTER TABLE public.tbl_disponibilidad ALTER COLUMN disp_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.tbl_disponibilidad_disp_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
--- Name: tbl_documento_reporte_candidato; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_documento_reporte_candidato (
-    drcp_id integer NOT NULL,
-    drcp_solicitud_candidato_id integer NOT NULL,
-    drcp_tipo_documento character varying(30) NOT NULL,
-    drcp_nombre_archivo character varying(255) NOT NULL,
-    drcp_ruta_archivo character varying(1000) NOT NULL,
-    drcp_fecha_generacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    drcp_usuario_generador_id integer NOT NULL,
-    drcp_hash_sha256 character varying(64) NOT NULL,
-    drcp_snapshot_json jsonb,
-    CONSTRAINT chk_tbl_documento_reporte_hash CHECK ((length((drcp_hash_sha256)::text) = 64)),
-    CONSTRAINT chk_tbl_documento_reporte_nombre CHECK ((TRIM(BOTH FROM drcp_nombre_archivo) <> ''::text)),
-    CONSTRAINT chk_tbl_documento_reporte_tipo CHECK (((drcp_tipo_documento)::text = ANY (ARRAY[('RESUMEN'::character varying)::text, ('CV_CORPORATIVO'::character varying)::text])))
-);
-
-
-ALTER TABLE public.tbl_documento_reporte_candidato OWNER TO elitsoft_admin;
-
---
--- Name: tbl_documento_reporte_candidato_drcp_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_documento_reporte_candidato ALTER COLUMN drcp_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_documento_reporte_candidato_drcp_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -888,7 +1169,6 @@ CREATE TABLE public.tbl_habilidad (
     hab_id integer NOT NULL,
     hab_nombre character varying(255),
     hab_descripcion character varying(300),
-    hab_categoria_habilidad_id integer,
     CONSTRAINT chk_tbl_habilidad_nombre_vacio CHECK ((TRIM(BOTH FROM hab_nombre) <> ''::text))
 );
 
@@ -934,33 +1214,6 @@ ALTER TABLE public.tbl_historial_solicitud OWNER TO elitsoft_admin;
 
 ALTER TABLE public.tbl_historial_solicitud ALTER COLUMN hsol_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.tbl_historial_solicitud_hsol_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
--- Name: tbl_idioma; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_idioma (
-    idio_id integer NOT NULL,
-    idio_nombre character varying(100) NOT NULL,
-    CONSTRAINT chk_tbl_idioma_nombre CHECK ((TRIM(BOTH FROM idio_nombre) <> ''::text))
-);
-
-
-ALTER TABLE public.tbl_idioma OWNER TO elitsoft_admin;
-
---
--- Name: tbl_idioma_idio_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_idioma ALTER COLUMN idio_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_idioma_idio_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1141,47 +1394,6 @@ ALTER TABLE public.tbl_nombre_resultado ALTER COLUMN nore_id ADD GENERATED ALWAY
 
 
 --
--- Name: tbl_notificacion_reclutamiento; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_notificacion_reclutamiento (
-    ntfr_id integer NOT NULL,
-    ntfr_solicitud_candidato_id integer NOT NULL,
-    ntfr_tipo character varying(30) NOT NULL,
-    ntfr_destinatario character varying(2000) NOT NULL,
-    ntfr_cc character varying(2000),
-    ntfr_asunto character varying(300) NOT NULL,
-    ntfr_cuerpo text NOT NULL,
-    ntfr_estado character varying(20) NOT NULL,
-    ntfr_usuario_id integer NOT NULL,
-    ntfr_fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    ntfr_fecha_envio timestamp without time zone,
-    ntfr_error text,
-    CONSTRAINT chk_tbl_notificacion_asunto CHECK ((TRIM(BOTH FROM ntfr_asunto) <> ''::text)),
-    CONSTRAINT chk_tbl_notificacion_cuerpo CHECK ((TRIM(BOTH FROM ntfr_cuerpo) <> ''::text)),
-    CONSTRAINT chk_tbl_notificacion_destinatario CHECK ((TRIM(BOTH FROM ntfr_destinatario) <> ''::text)),
-    CONSTRAINT chk_tbl_notificacion_estado CHECK (((ntfr_estado)::text = ANY (ARRAY[('BORRADOR'::character varying)::text, ('ENVIADO'::character varying)::text, ('ERROR'::character varying)::text]))),
-    CONSTRAINT chk_tbl_notificacion_tipo CHECK (((ntfr_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text])))
-);
-
-
-ALTER TABLE public.tbl_notificacion_reclutamiento OWNER TO elitsoft_admin;
-
---
--- Name: tbl_notificacion_reclutamiento_ntfr_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_notificacion_reclutamiento ALTER COLUMN ntfr_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_notificacion_reclutamiento_ntfr_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
 -- Name: tbl_opcion_respuesta; Type: TABLE; Schema: public; Owner: elitsoft_admin
 --
 
@@ -1289,42 +1501,6 @@ ALTER TABLE public.tbl_permiso OWNER TO elitsoft_admin;
 
 ALTER TABLE public.tbl_permiso ALTER COLUMN per_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.tbl_permiso_per_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
--- Name: tbl_plantilla_notificacion; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_plantilla_notificacion (
-    plnt_id integer NOT NULL,
-    plnt_tipo character varying(30) NOT NULL,
-    plnt_nombre character varying(100) NOT NULL,
-    plnt_asunto character varying(300) NOT NULL,
-    plnt_cuerpo text NOT NULL,
-    plnt_activa boolean DEFAULT true NOT NULL,
-    plnt_fecha_actualizacion timestamp without time zone,
-    plnt_usuario_actualizacion_id integer,
-    CONSTRAINT chk_tbl_plantilla_notificacion_asunto CHECK ((TRIM(BOTH FROM plnt_asunto) <> ''::text)),
-    CONSTRAINT chk_tbl_plantilla_notificacion_cuerpo CHECK ((TRIM(BOTH FROM plnt_cuerpo) <> ''::text)),
-    CONSTRAINT chk_tbl_plantilla_notificacion_nombre CHECK ((TRIM(BOTH FROM plnt_nombre) <> ''::text)),
-    CONSTRAINT chk_tbl_plantilla_notificacion_tipo CHECK (((plnt_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text])))
-);
-
-
-ALTER TABLE public.tbl_plantilla_notificacion OWNER TO elitsoft_admin;
-
---
--- Name: tbl_plantilla_notificacion_plnt_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_plantilla_notificacion ALTER COLUMN plnt_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_plantilla_notificacion_plnt_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1755,8 +1931,8 @@ ALTER TABLE public.tbl_usuario OWNER TO elitsoft_admin;
 CREATE TABLE public.tbl_usuario_cita_entrevista (
     usrce_cita_entrevista_id integer NOT NULL,
     usrce_usuario_id integer NOT NULL,
-    usrce_tipo_entrevista_id integer NOT NULL
-);
+    usrce_tipo_entrevista_id integer NOT NULL 
+);docke
 
 
 ALTER TABLE public.tbl_usuario_cita_entrevista OWNER TO elitsoft_admin;
@@ -1868,14 +2044,6 @@ COPY public.tbl_candidato_habilidad (cdhb_id, cdhb_candidato_id, cdhb_habilidad_
 
 
 --
--- Data for Name: tbl_candidato_idioma; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_candidato_idioma (cdio_id, cdio_candidato_id, cdio_idioma_id, cdio_nivel) FROM stdin;
-\.
-
-
---
 -- Data for Name: tbl_cargo; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
@@ -1956,21 +2124,6 @@ COPY public.tbl_carrera (crra_id, crra_nombre) FROM stdin;
 45	Marketing Digital
 46	Recursos Humanos
 47	Administracion Publica
-\.
-
-
---
--- Data for Name: tbl_categoria_habilidad; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_categoria_habilidad (cthb_id, cthb_nombre, cthb_descripcion) FROM stdin;
-1	Lenguajes	Lenguajes de programaci├│n
-2	Frameworks / Librer├¡as	Frameworks y librer├¡as de desarrollo
-3	Bases de Datos	Motores, tecnolog├¡as y herramientas de datos
-4	Cloud / DevOps	Cloud, contenedores, CI/CD y automatizaci├│n
-5	Herramientas	Herramientas t├®cnicas generales
-6	Metodolog├¡as	Metodolog├¡as, pr├ícticas y marcos de trabajo
-7	Otros	Conocimientos sin categor├¡a espec├¡fica
 \.
 
 
@@ -2455,14 +2608,6 @@ COPY public.tbl_disponibilidad (disp_id, disp_nombre) FROM stdin;
 
 
 --
--- Data for Name: tbl_documento_reporte_candidato; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_documento_reporte_candidato (drcp_id, drcp_solicitud_candidato_id, drcp_tipo_documento, drcp_nombre_archivo, drcp_ruta_archivo, drcp_fecha_generacion, drcp_usuario_generador_id, drcp_hash_sha256, drcp_snapshot_json) FROM stdin;
-\.
-
-
---
 -- Data for Name: tbl_empresa; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
@@ -2625,59 +2770,59 @@ COPY public.tbl_experiencia_laboral_habilidad (exph_experiencia_laboral_id, exph
 -- Data for Name: tbl_habilidad; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
-COPY public.tbl_habilidad (hab_id, hab_nombre, hab_descripcion, hab_categoria_habilidad_id) FROM stdin;
-27	Docker	Creacion de imagenes optimizadas y orquestacion de entornos con Docker Compose.	4
-28	Kubernetes	Orquestacion y administracion de contenedores.	4
-1	PostgreSQL	Modelamiento fisico de bases de datos, optimizacion de consultas, indices y triggers.	3
-2	MySQL	Administracion y desarrollo de bases de datos MySQL.	3
-3	SQL Server	Desarrollo y administracion de bases de datos Microsoft SQL Server.	3
-4	Oracle Database	Desarrollo y administracion de bases de datos Oracle.	3
-5	MongoDB	Base de datos NoSQL orientada a documentos.	3
-6	Redis	Base de datos en memoria para cache y alto rendimiento.	3
-7	Python	Desarrollo de aplicaciones y automatizaciones utilizando Python.	1
-8	Java	Desarrollo de aplicaciones empresariales utilizando Java.	1
-9	C#	Desarrollo de aplicaciones sobre la plataforma .NET.	1
-10	Node.js	Desarrollo de aplicaciones backend con JavaScript.	1
-11	PHP	Desarrollo de aplicaciones web con PHP.	1
-12	Go	Desarrollo de servicios de alto rendimiento con Go.	1
-19	HTML	Desarrollo de interfaces web mediante HTML5.	1
-20	CSS	Diseno de interfaces mediante hojas de estilo CSS3.	1
-21	JavaScript	Desarrollo de aplicaciones web con JavaScript.	1
-22	TypeScript	Desarrollo de aplicaciones tipadas sobre JavaScript.	1
-13	FastAPI	Desarrollo de APIs REST de alto rendimiento con Python.	2
-14	Django	Desarrollo de aplicaciones web utilizando Django.	2
-15	Flask	Desarrollo de APIs y aplicaciones ligeras con Flask.	2
-16	Spring Boot	Desarrollo de aplicaciones Java empresariales.	2
-17	ASP.NET Core	Desarrollo de aplicaciones web con .NET.	2
-18	Express.js	Desarrollo de APIs REST con Node.js.	2
-23	Angular	Desarrollo de aplicaciones SPA con Angular.	2
-24	React	Desarrollo de interfaces de usuario con React.	2
-25	Vue.js	Desarrollo de aplicaciones web con Vue.js.	2
-26	Bootstrap	Desarrollo de interfaces responsivas utilizando Bootstrap.	2
-29	Git	Control de versiones mediante Git.	4
-30	GitHub	Gestion de repositorios y colaboracion mediante GitHub.	4
-31	GitLab	Administracion de repositorios y pipelines CI/CD.	4
-32	Jenkins	Automatizacion de integracion y despliegue continuo.	4
-33	Amazon Web Services (AWS)	Desarrollo e implementacion de soluciones en AWS.	4
-34	Microsoft Azure	Desarrollo e implementacion de soluciones en Azure.	4
-35	Google Cloud Platform (GCP)	Desarrollo e implementacion de soluciones en Google Cloud.	4
-36	Selenium	Automatizacion de pruebas funcionales.	5
-37	Cypress	Automatizacion de pruebas end-to-end para aplicaciones web.	5
-38	Postman	Pruebas y documentacion de APIs REST.	5
-39	JMeter	Pruebas de carga y rendimiento.	5
-43	Jira	Gestion de proyectos y seguimiento de incidencias.	5
-44	Confluence	Documentacion colaborativa de proyectos.	5
-45	Linux	Administracion de sistemas operativos Linux.	5
-46	Windows Server	Administracion de servidores Windows.	5
-47	Power BI	Desarrollo de dashboards e indicadores de negocio.	5
-48	Excel Avanzado	Analisis y manipulacion avanzada de datos en Microsoft Excel.	5
-49	Ciberseguridad	Implementacion de controles y buenas practicas de seguridad informatica.	5
-50	OWASP	Aplicacion de buenas practicas de desarrollo seguro.	5
-51	OAuth 2.0	Implementacion de autenticacion y autorizacion segura.	5
-52	JWT	Implementacion de autenticacion mediante JSON Web Token.	5
-40	Scrum	Trabajo bajo metodologia agil Scrum.	6
-41	Kanban	Gestion visual del trabajo mediante Kanban.	6
-42	Agile	Aplicacion de metodologias agiles de desarrollo.	6
+COPY public.tbl_habilidad (hab_id, hab_nombre, hab_descripcion) FROM stdin;
+1	PostgreSQL	Modelamiento fisico de bases de datos, optimizacion de consultas, indices y triggers.
+2	MySQL	Administracion y desarrollo de bases de datos MySQL.
+3	SQL Server	Desarrollo y administracion de bases de datos Microsoft SQL Server.
+4	Oracle Database	Desarrollo y administracion de bases de datos Oracle.
+5	MongoDB	Base de datos NoSQL orientada a documentos.
+6	Redis	Base de datos en memoria para cache y alto rendimiento.
+7	Python	Desarrollo de aplicaciones y automatizaciones utilizando Python.
+8	Java	Desarrollo de aplicaciones empresariales utilizando Java.
+9	C#	Desarrollo de aplicaciones sobre la plataforma .NET.
+10	Node.js	Desarrollo de aplicaciones backend con JavaScript.
+11	PHP	Desarrollo de aplicaciones web con PHP.
+12	Go	Desarrollo de servicios de alto rendimiento con Go.
+13	FastAPI	Desarrollo de APIs REST de alto rendimiento con Python.
+14	Django	Desarrollo de aplicaciones web utilizando Django.
+15	Flask	Desarrollo de APIs y aplicaciones ligeras con Flask.
+16	Spring Boot	Desarrollo de aplicaciones Java empresariales.
+17	ASP.NET Core	Desarrollo de aplicaciones web con .NET.
+18	Express.js	Desarrollo de APIs REST con Node.js.
+19	HTML	Desarrollo de interfaces web mediante HTML5.
+20	CSS	Diseno de interfaces mediante hojas de estilo CSS3.
+21	JavaScript	Desarrollo de aplicaciones web con JavaScript.
+22	TypeScript	Desarrollo de aplicaciones tipadas sobre JavaScript.
+23	Angular	Desarrollo de aplicaciones SPA con Angular.
+24	React	Desarrollo de interfaces de usuario con React.
+25	Vue.js	Desarrollo de aplicaciones web con Vue.js.
+26	Bootstrap	Desarrollo de interfaces responsivas utilizando Bootstrap.
+27	Docker	Creacion de imagenes optimizadas y orquestacion de entornos con Docker Compose.
+28	Kubernetes	Orquestacion y administracion de contenedores.
+29	Git	Control de versiones mediante Git.
+30	GitHub	Gestion de repositorios y colaboracion mediante GitHub.
+31	GitLab	Administracion de repositorios y pipelines CI/CD.
+32	Jenkins	Automatizacion de integracion y despliegue continuo.
+33	Amazon Web Services (AWS)	Desarrollo e implementacion de soluciones en AWS.
+34	Microsoft Azure	Desarrollo e implementacion de soluciones en Azure.
+35	Google Cloud Platform (GCP)	Desarrollo e implementacion de soluciones en Google Cloud.
+36	Selenium	Automatizacion de pruebas funcionales.
+37	Cypress	Automatizacion de pruebas end-to-end para aplicaciones web.
+38	Postman	Pruebas y documentacion de APIs REST.
+39	JMeter	Pruebas de carga y rendimiento.
+40	Scrum	Trabajo bajo metodologia agil Scrum.
+41	Kanban	Gestion visual del trabajo mediante Kanban.
+42	Agile	Aplicacion de metodologias agiles de desarrollo.
+43	Jira	Gestion de proyectos y seguimiento de incidencias.
+44	Confluence	Documentacion colaborativa de proyectos.
+45	Linux	Administracion de sistemas operativos Linux.
+46	Windows Server	Administracion de servidores Windows.
+47	Power BI	Desarrollo de dashboards e indicadores de negocio.
+48	Excel Avanzado	Analisis y manipulacion avanzada de datos en Microsoft Excel.
+49	Ciberseguridad	Implementacion de controles y buenas practicas de seguridad informatica.
+50	OWASP	Aplicacion de buenas practicas de desarrollo seguro.
+51	OAuth 2.0	Implementacion de autenticacion y autorizacion segura.
+52	JWT	Implementacion de autenticacion mediante JSON Web Token.
 \.
 
 
@@ -2730,21 +2875,6 @@ COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_ant
 42	16	1	2	2026-08-14 17:17:34.7372	1	Cambio de estado: Pendiente -> En Curso
 43	16	2	3	2026-08-14 17:17:34.788027	1	Cambio de estado: En Curso -> En Entrevistas
 44	16	3	5	2026-08-14 17:17:35.158334	1	Cambio de estado: En Entrevistas -> Cerrado
-\.
-
-
---
--- Data for Name: tbl_idioma; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_idioma (idio_id, idio_nombre) FROM stdin;
-1	Espa├▒ol
-2	Ingl├®s
-3	Portugu├®s
-4	Franc├®s
-5	Alem├ín
-6	Italiano
-7	Otro
 \.
 
 
@@ -2866,14 +2996,6 @@ COPY public.tbl_nombre_resultado (nore_id, nore_nombre) FROM stdin;
 
 
 --
--- Data for Name: tbl_notificacion_reclutamiento; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_notificacion_reclutamiento (ntfr_id, ntfr_solicitud_candidato_id, ntfr_tipo, ntfr_destinatario, ntfr_cc, ntfr_asunto, ntfr_cuerpo, ntfr_estado, ntfr_usuario_id, ntfr_fecha_creacion, ntfr_fecha_envio, ntfr_error) FROM stdin;
-\.
-
-
---
 -- Data for Name: tbl_opcion_respuesta; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
@@ -2953,17 +3075,6 @@ COPY public.tbl_permiso (per_id, per_nombre, per_descripcion) FROM stdin;
 18	INT_EVALUATE	Registrar evaluacion de entrevista
 19	CAT_ADMIN	Administrar catalogos maestros
 20	REP_VIEW	Consultar reportes y metricas
-\.
-
-
---
--- Data for Name: tbl_plantilla_notificacion; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_plantilla_notificacion (plnt_id, plnt_tipo, plnt_nombre, plnt_asunto, plnt_cuerpo, plnt_activa, plnt_fecha_actualizacion, plnt_usuario_actualizacion_id) FROM stdin;
-1	RECHAZO	Cierre de proceso - rechazo	Cierre proceso de selecci├│n - {cargo}	Estimado/a {nombre},\n\nAgradecemos sinceramente tu participaci├│n en el proceso de selecci├│n para el cargo {cargo}, asociado a la solicitud {codigo_solicitud}.\n\nEn esta oportunidad el proceso ha finalizado y no continuaremos con tu postulaci├│n. Valoramos el tiempo y disposici├│n demostrados durante las distintas etapas.\n\nEsperamos poder considerarte en futuras oportunidades que se ajusten a tu perfil.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
-2	AGRADECIMIENTO	Agradecimiento de participaci├│n	Gracias por participar - {cargo}	Estimado/a {nombre},\n\nAgradecemos tu participaci├│n en el proceso {codigo_solicitud} para el cargo {cargo}.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
-3	DIRECTIVOS	Presentaci├│n de candidatos aprobados	Candidatos aprobados - {cargo} - {codigo_solicitud}	Estimados/as,\n\nAdjuntamos los CVs corporativos de los candidatos aprobados para el proceso {codigo_solicitud}, cargo {cargo}, para su revisi├│n y decisi├│n final.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 \.
 
 
@@ -3268,7 +3379,6 @@ COPY public.tbl_usuario (usr_id, usr_rol_id, usr_estado_usuario_id, usr_area_id,
 13	2	1	1	Recruiter	QA	M5	60000002	2	960000002	qa.rec.m5@sakura.cl	$2a$12$sCFeep7hnPTx.Ld1rIQa3OXfaOJdeZDaKzF2peHqsh.PX63lnShf2
 14	4	1	1	Interviewer1	QA	M5	60000003	3	960000003	qa.int1.m5@sakura.cl	$2a$12$VH.SGNjaTIAvdIsQAeosY.UF4t2jxjDWGYgLxWC6WZwcsvTHkSMcS
 15	4	1	1	Interviewer2	QA	M5	60000004	4	960000004	qa.int2.m5@sakura.cl	$2a$12$BOgNHqjQGgfqedNGAt0Vve7NIH1U0Vfw7D4iDpS.SqCqLwmL.aAES
-16	1	1	2	Reclutamiento	Elitsoft	Prueba	12345678	9	123456789	reclutamiento@gmail.com	$2b$12$VvkQ/neQUuzS1AV7WGMtaeZoK8IfwDgMwBd54T0j6kDykvgsSxgMC
 \.
 
 
@@ -3339,13 +3449,6 @@ SELECT pg_catalog.setval('public.tbl_candidato_habilidad_cdhb_id_seq', 23, true)
 
 
 --
--- Name: tbl_candidato_idioma_cdio_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_candidato_idioma_cdio_id_seq', 1, false);
-
-
---
 -- Name: tbl_cargo_crgo_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
@@ -3357,13 +3460,6 @@ SELECT pg_catalog.setval('public.tbl_cargo_crgo_id_seq', 23, true);
 --
 
 SELECT pg_catalog.setval('public.tbl_carrera_crra_id_seq', 49, true);
-
-
---
--- Name: tbl_categoria_habilidad_cthb_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_categoria_habilidad_cthb_id_seq', 14, true);
 
 
 --
@@ -3413,13 +3509,6 @@ SELECT pg_catalog.setval('public.tbl_direccion_candidato_drcd_id_seq', 1, true);
 --
 
 SELECT pg_catalog.setval('public.tbl_disponibilidad_disp_id_seq', 7, true);
-
-
---
--- Name: tbl_documento_reporte_candidato_drcp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_documento_reporte_candidato_drcp_id_seq', 1, false);
 
 
 --
@@ -3500,13 +3589,6 @@ SELECT pg_catalog.setval('public.tbl_historial_solicitud_hsol_id_seq', 44, true)
 
 
 --
--- Name: tbl_idioma_idio_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_idioma_idio_id_seq', 7, true);
-
-
---
 -- Name: tbl_institucion_inst_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
@@ -3549,13 +3631,6 @@ SELECT pg_catalog.setval('public.tbl_nombre_resultado_nore_id_seq', 7, true);
 
 
 --
--- Name: tbl_notificacion_reclutamiento_ntfr_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_notificacion_reclutamiento_ntfr_id_seq', 1, false);
-
-
---
 -- Name: tbl_opcion_respuesta_opcr_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
@@ -3581,13 +3656,6 @@ SELECT pg_catalog.setval('public.tbl_password_reset_token_prst_id_seq', 1, false
 --
 
 SELECT pg_catalog.setval('public.tbl_permiso_per_id_seq', 22, true);
-
-
---
--- Name: tbl_plantilla_notificacion_plnt_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_plantilla_notificacion_plnt_id_seq', 3, true);
 
 
 --
@@ -3678,7 +3746,7 @@ SELECT pg_catalog.setval('public.tbl_tipo_institucion_tint_id_seq', 11, true);
 -- Name: tbl_usuario_usr_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_usuario_usr_id_seq', 16, true);
+SELECT pg_catalog.setval('public.tbl_usuario_usr_id_seq', 15, true);
 
 
 --
@@ -4082,59 +4150,11 @@ ALTER TABLE ONLY public.tbl_usuario_cita_entrevista
 
 
 --
--- Name: tbl_candidato_idioma tbl_candidato_idioma_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_candidato_idioma
-    ADD CONSTRAINT tbl_candidato_idioma_pkey PRIMARY KEY (cdio_id);
-
-
---
--- Name: tbl_categoria_habilidad tbl_categoria_habilidad_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_categoria_habilidad
-    ADD CONSTRAINT tbl_categoria_habilidad_pkey PRIMARY KEY (cthb_id);
-
-
---
--- Name: tbl_documento_reporte_candidato tbl_documento_reporte_candidato_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_documento_reporte_candidato
-    ADD CONSTRAINT tbl_documento_reporte_candidato_pkey PRIMARY KEY (drcp_id);
-
-
---
--- Name: tbl_idioma tbl_idioma_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_idioma
-    ADD CONSTRAINT tbl_idioma_pkey PRIMARY KEY (idio_id);
-
-
---
--- Name: tbl_notificacion_reclutamiento tbl_notificacion_reclutamiento_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_notificacion_reclutamiento
-    ADD CONSTRAINT tbl_notificacion_reclutamiento_pkey PRIMARY KEY (ntfr_id);
-
-
---
 -- Name: tbl_password_reset_token tbl_password_reset_token_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
 --
 
 ALTER TABLE ONLY public.tbl_password_reset_token
     ADD CONSTRAINT tbl_password_reset_token_pkey PRIMARY KEY (prst_id);
-
-
---
--- Name: tbl_plantilla_notificacion tbl_plantilla_notificacion_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_plantilla_notificacion
-    ADD CONSTRAINT tbl_plantilla_notificacion_pkey PRIMARY KEY (plnt_id);
 
 
 --
@@ -4178,14 +4198,6 @@ ALTER TABLE ONLY public.tbl_candidato_habilidad
 
 
 --
--- Name: tbl_candidato_idioma uq_tbl_candidato_idioma; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_candidato_idioma
-    ADD CONSTRAINT uq_tbl_candidato_idioma UNIQUE (cdio_candidato_id, cdio_idioma_id);
-
-
---
 -- Name: tbl_candidato uq_tbl_candidato_rut; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
 --
 
@@ -4207,14 +4219,6 @@ ALTER TABLE ONLY public.tbl_cargo
 
 ALTER TABLE ONLY public.tbl_carrera
     ADD CONSTRAINT uq_tbl_carrera_nombre UNIQUE (crra_nombre);
-
-
---
--- Name: tbl_categoria_habilidad uq_tbl_categoria_habilidad_nombre; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_categoria_habilidad
-    ADD CONSTRAINT uq_tbl_categoria_habilidad_nombre UNIQUE (cthb_nombre);
 
 
 --
@@ -4362,14 +4366,6 @@ ALTER TABLE ONLY public.tbl_habilidad
 
 
 --
--- Name: tbl_idioma uq_tbl_idioma_nombre; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_idioma
-    ADD CONSTRAINT uq_tbl_idioma_nombre UNIQUE (idio_nombre);
-
-
---
 -- Name: tbl_institucion uq_tbl_institucion_nombre; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
 --
 
@@ -4447,14 +4443,6 @@ ALTER TABLE ONLY public.tbl_password_reset_token
 
 ALTER TABLE ONLY public.tbl_permiso
     ADD CONSTRAINT uq_tbl_permiso_nombre UNIQUE (per_nombre);
-
-
---
--- Name: tbl_plantilla_notificacion uq_tbl_plantilla_notificacion_tipo; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_plantilla_notificacion
-    ADD CONSTRAINT uq_tbl_plantilla_notificacion_tipo UNIQUE (plnt_tipo);
 
 
 --
@@ -5573,55 +5561,6 @@ CREATE INDEX ix_tbl_candidato_email_lower ON public.tbl_candidato USING btree (l
 
 
 --
--- Name: ix_tbl_candidato_idioma_candidato; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_candidato_idioma_candidato ON public.tbl_candidato_idioma USING btree (cdio_candidato_id);
-
-
---
--- Name: ix_tbl_documento_reporte_fecha; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_documento_reporte_fecha ON public.tbl_documento_reporte_candidato USING btree (drcp_fecha_generacion DESC);
-
-
---
--- Name: ix_tbl_documento_reporte_postulacion; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_documento_reporte_postulacion ON public.tbl_documento_reporte_candidato USING btree (drcp_solicitud_candidato_id);
-
-
---
--- Name: ix_tbl_habilidad_categoria; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_habilidad_categoria ON public.tbl_habilidad USING btree (hab_categoria_habilidad_id);
-
-
---
--- Name: ix_tbl_notificacion_estado; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_notificacion_estado ON public.tbl_notificacion_reclutamiento USING btree (ntfr_estado);
-
-
---
--- Name: ix_tbl_notificacion_fecha; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_notificacion_fecha ON public.tbl_notificacion_reclutamiento USING btree (ntfr_fecha_creacion DESC);
-
-
---
--- Name: ix_tbl_notificacion_postulacion; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_notificacion_postulacion ON public.tbl_notificacion_reclutamiento USING btree (ntfr_solicitud_candidato_id);
-
-
---
 -- Name: ix_tbl_solicitud_candidato_solicitud_estado; Type: INDEX; Schema: public; Owner: elitsoft_admin
 --
 
@@ -5913,14 +5852,6 @@ ALTER TABLE ONLY public.tbl_experiencia_laboral_habilidad
 
 ALTER TABLE ONLY public.tbl_experiencia_laboral_habilidad
     ADD CONSTRAINT fk_tbl_expl_habilidad_habilidad FOREIGN KEY (exph_habilidad_id) REFERENCES public.tbl_habilidad(hab_id);
-
-
---
--- Name: tbl_habilidad fk_tbl_habilidad_categoria_habilidad; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_habilidad
-    ADD CONSTRAINT fk_tbl_habilidad_categoria_habilidad FOREIGN KEY (hab_categoria_habilidad_id) REFERENCES public.tbl_categoria_habilidad(cthb_id);
 
 
 --
@@ -6236,62 +6167,6 @@ ALTER TABLE ONLY public.tbl_usuario
 
 
 --
--- Name: tbl_candidato_idioma tbl_candidato_idioma_cdio_candidato_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_candidato_idioma
-    ADD CONSTRAINT tbl_candidato_idioma_cdio_candidato_id_fkey FOREIGN KEY (cdio_candidato_id) REFERENCES public.tbl_candidato(cand_id);
-
-
---
--- Name: tbl_candidato_idioma tbl_candidato_idioma_cdio_idioma_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_candidato_idioma
-    ADD CONSTRAINT tbl_candidato_idioma_cdio_idioma_id_fkey FOREIGN KEY (cdio_idioma_id) REFERENCES public.tbl_idioma(idio_id);
-
-
---
--- Name: tbl_documento_reporte_candidato tbl_documento_reporte_candidat_drcp_solicitud_candidato_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_documento_reporte_candidato
-    ADD CONSTRAINT tbl_documento_reporte_candidat_drcp_solicitud_candidato_id_fkey FOREIGN KEY (drcp_solicitud_candidato_id) REFERENCES public.tbl_solicitud_candidato(slcd_id);
-
-
---
--- Name: tbl_documento_reporte_candidato tbl_documento_reporte_candidato_drcp_usuario_generador_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_documento_reporte_candidato
-    ADD CONSTRAINT tbl_documento_reporte_candidato_drcp_usuario_generador_id_fkey FOREIGN KEY (drcp_usuario_generador_id) REFERENCES public.tbl_usuario(usr_id);
-
-
---
--- Name: tbl_notificacion_reclutamiento tbl_notificacion_reclutamiento_ntfr_solicitud_candidato_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_notificacion_reclutamiento
-    ADD CONSTRAINT tbl_notificacion_reclutamiento_ntfr_solicitud_candidato_id_fkey FOREIGN KEY (ntfr_solicitud_candidato_id) REFERENCES public.tbl_solicitud_candidato(slcd_id);
-
-
---
--- Name: tbl_notificacion_reclutamiento tbl_notificacion_reclutamiento_ntfr_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_notificacion_reclutamiento
-    ADD CONSTRAINT tbl_notificacion_reclutamiento_ntfr_usuario_id_fkey FOREIGN KEY (ntfr_usuario_id) REFERENCES public.tbl_usuario(usr_id);
-
-
---
--- Name: tbl_plantilla_notificacion tbl_plantilla_notificacion_plnt_usuario_actualizacion_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_plantilla_notificacion
-    ADD CONSTRAINT tbl_plantilla_notificacion_plnt_usuario_actualizacion_id_fkey FOREIGN KEY (plnt_usuario_actualizacion_id) REFERENCES public.tbl_usuario(usr_id);
-
-
---
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: elitsoft_admin
 --
 
@@ -6302,5 +6177,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict A1bhLN9hjS2xgWPGV48wTp3pDZ6NzgTKTQK8xz2kEOnl1yvAHDrhXEr6xMaspEp
+\unrestrict JMe6ATBAzKnxt38UpRrDoomPe33EFXfe8enlAWR3uOwrPnPKY8CvwxfWAuVPTga
 
