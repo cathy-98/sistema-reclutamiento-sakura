@@ -58,8 +58,78 @@ def test_categoria_inexistente_422(client,seed): assert client.patch(f"/informes
 def test_listar_idiomas(client,seed): assert len(client.get('/informes/catalogos/idiomas',headers=H(seed['reporter'])).json())>=2
 def test_get_idiomas_candidato(client,seed):
     r=client.get(f"/informes/candidatos-perfil/{seed['csel']}/idiomas",headers=H(seed['canview'])); assert r.status_code==200 and r.json()[0]['nivel']=='Nativo'
-def test_reemplazar_idiomas(client,seed):
-    p={'idiomas':[{'idioma_id':seed['lang_en'],'nivel':'Avanzado'}]}; r=client.put(f"/informes/candidatos-perfil/{seed['csel']}/idiomas",json=p,headers=H(seed['canupdate'])); assert r.status_code==200 and r.json()==[{'idioma_id':seed['lang_en'],'idioma':'Inglés','nivel':'Avanzado'}]
+def test_reemplazar_idiomas(client, seed):
+    payload = {
+        "idiomas": [
+            {
+                "idioma_id": seed["lang_en"],
+                "nivel": "Avanzado",
+            }
+        ]
+    }
+
+    response = client.put(
+        f"/informes/candidatos-perfil/{seed['csel']}/idiomas",
+        json=payload,
+        headers=H(seed["canupdate"]),
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+
+    idioma = data[0]
+
+    assert idioma["idioma_id"] == seed["lang_en"]
+    assert idioma["idioma"] == "Inglés"
+    assert idioma["nivel"] == "Avanzado"
+
+    # Migración 008: nivel normalizado
+    assert idioma["nivel_codigo"] == "AVA"
+    assert idioma["nivel_grupo"] == "Avanzado"
+    assert isinstance(idioma["nivel_idioma_id"], int)
+    assert idioma["nivel_idioma_id"] > 0
+def test_reemplazar_idiomas_con_nivel_normalizado(client, seed):
+    # Buscar nivel C1
+    niveles = client.get(
+        "/catalogos/niveles-idioma",
+        headers=H(seed["canupdate"]),
+    )
+
+    assert niveles.status_code == 200
+
+    c1 = next(
+        item
+        for item in niveles.json()
+        if item["nvid_codigo"] == "C1"
+    )
+
+    payload = {
+        "idiomas": [
+            {
+                "idioma_id": seed["lang_en"],
+                "nivel_idioma_id": c1["nvid_id"],
+            }
+        ]
+    }
+
+    response = client.put(
+        f"/informes/candidatos-perfil/{seed['csel']}/idiomas",
+        json=payload,
+        headers=H(seed["canupdate"]),
+    )
+
+    assert response.status_code == 200
+
+    idioma = response.json()[0]
+
+    assert idioma["idioma_id"] == seed["lang_en"]
+    assert idioma["nivel_idioma_id"] == c1["nvid_id"]
+    assert idioma["nivel_codigo"] == "C1"
+    assert idioma["nivel"] == "Avanzado C1"
+    assert idioma["nivel_grupo"] == "Avanzado"
 def test_reemplazar_idiomas_vacio(client,seed): assert client.put(f"/informes/candidatos-perfil/{seed['csel']}/idiomas",json={'idiomas':[]},headers=H(seed['canupdate'])).status_code==200
 def test_idioma_duplicado_422(client,seed):
     p={'idiomas':[{'idioma_id':seed['lang_en'],'nivel':'Avanzado'},{'idioma_id':seed['lang_en'],'nivel':'Nativo'}]}; assert client.put(f"/informes/candidatos-perfil/{seed['csel']}/idiomas",json=p,headers=H(seed['canupdate'])).status_code==422

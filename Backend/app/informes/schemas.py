@@ -69,12 +69,24 @@ class CandidateListResponse(StrictModel):
 class IdiomaItem(StrictModel):
     idioma_id: int
     idioma: str
+    nivel_idioma_id: int
+    nivel_codigo: str
     nivel: str
+    nivel_grupo: str
 
 
 class IdiomaUpsert(StrictModel):
     idioma_id: int = Field(gt=0)
-    nivel: Literal["Basico", "Intermedio", "Avanzado", "Nativo"]
+    nivel_idioma_id: int | None = Field(default=None, gt=0)
+    # Compatibilidad temporal con clientes M6 anteriores. Si se envía `nivel`,
+    # el backend lo resuelve a BAS/INT/AVA/NAT; no se persiste texto libre.
+    nivel: Literal["Basico", "Intermedio", "Avanzado", "Nativo"] | None = None
+
+    @model_validator(mode="after")
+    def validate_level(self):
+        if self.nivel_idioma_id is None and self.nivel is None:
+            raise ValueError("Debe informar nivel_idioma_id")
+        return self
 
 
 class IdiomasReplaceRequest(StrictModel):
