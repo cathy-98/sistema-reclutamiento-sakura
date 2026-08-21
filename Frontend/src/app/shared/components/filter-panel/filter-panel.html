@@ -1,28 +1,119 @@
-<section class="filter-panel" [attr.aria-labelledby]="titleId">
-  <!-- Panel reutilizable de búsqueda y filtros del módulo. -->
+<section
+  class="filter-panel"
+  [attr.aria-labelledby]="titleId"
+>
+  <!--
+    Componente compartido de búsqueda y filtros.
+
+    La búsqueda rápida permanece siempre visible.
+    Los filtros específicos pueden ser colapsables
+    según configuración del módulo consumidor.
+  -->
+
   <header class="filter-header">
-    <div>
-      <h3 [id]="titleId">{{ title }}</h3>
-      <p *ngIf="description">{{ description }}</p>
+
+    <div class="filter-heading">
+      <h3 [id]="titleId">
+        {{ title }}
+      </h3>
+
+      <p *ngIf="description">
+        {{ description }}
+      </p>
     </div>
 
-    <label class="quick-search" *ngIf="showQuickSearch">
-      {{ quickSearchLabel }}
-      <input
-        [ngModel]="quickSearch"
-        type="search"
-        [placeholder]="quickSearchPlaceholder"
-        (ngModelChange)="updateQuickSearch($event)"
-      />
-    </label>
+
+    <!--
+      UX/UI
+
+      La búsqueda rápida se considera la interacción principal.
+      Se mantiene fuera del panel avanzado para que continúe
+      disponible aunque los filtros estén colapsados.
+    -->
+    <div
+      class="filter-search-area"
+      *ngIf="showQuickSearch"
+    >
+      <label class="quick-search">
+        {{ quickSearchLabel }}
+
+        <input
+          [ngModel]="quickSearch"
+          type="search"
+          [placeholder]="quickSearchPlaceholder"
+          (ngModelChange)="updateQuickSearch($event)"
+        />
+      </label>
+
+
+      <!--
+        El botón aparece únicamente en módulos que habiliten
+        explícitamente filtros colapsables.
+      -->
+      <button
+        *ngIf="collapsible"
+        type="button"
+        class="filters-toggle"
+        [class.is-open]="filtersExpanded"
+        [attr.aria-expanded]="filtersExpanded"
+        [attr.aria-controls]="filtersId"
+        (click)="toggleFilters()"
+      >
+        <span aria-hidden="true">
+          ☰
+        </span>
+
+        {{ filtersButtonLabel }}
+
+        <span
+          class="filters-toggle__chevron"
+          aria-hidden="true"
+        >
+          {{ filtersExpanded ? '▲' : '▼' }}
+        </span>
+      </button>
+    </div>
+
   </header>
 
-  <form class="panel-content" (ngSubmit)="search.emit()">
-    <ng-content></ng-content>
-  </form>
 
-  <footer class="filter-actions">
-    <app-button variant="ghost" (pressed)="clear.emit()">Limpiar filtros</app-button>
-    <app-button (pressed)="search.emit()">Buscar</app-button>
-  </footer>
+  <!--
+    Filtros avanzados
+
+    El contenido proyectado mediante ng-content corresponde
+    a los filtros específicos de cada módulo.
+  -->
+  <div
+    [id]="filtersId"
+    class="advanced-filters"
+    *ngIf="showFilters"
+  >
+
+    <form
+      class="panel-content"
+      (ngSubmit)="search.emit()"
+    >
+      <ng-content></ng-content>
+    </form>
+
+
+    <footer class="filter-actions">
+
+      <app-button
+        variant="ghost"
+        (pressed)="clear.emit()"
+      >
+        Limpiar filtros
+      </app-button>
+
+      <app-button
+        (pressed)="search.emit()"
+      >
+        Buscar
+      </app-button>
+
+    </footer>
+
+  </div>
+
 </section>

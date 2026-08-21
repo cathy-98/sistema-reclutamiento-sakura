@@ -5,7 +5,7 @@
   >
     <div pageHeaderActions>
       <app-button type="button" (pressed)="generarInforme()">
-        Generar informe
+        Enviar resumen al administrador
       </app-button>
     </div>
   </app-page-header>
@@ -14,14 +14,14 @@
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar informes de candidatos."
-    quickSearchPlaceholder="Ej. SOL-021, Macarena Lopez o Frontend"
+    quickSearchPlaceholder="Ej. SOL-000021, Macarena Lopez o Frontend"
     [(quickSearch)]="busquedaRapida"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. SOL-021" />
+      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. SOL-000021" />
     </label>
 
     <label>
@@ -79,7 +79,7 @@
       (pressed)="enviarCorreoMasivo()"
     >
       <span aria-hidden="true">✉</span>
-      Correo masivo
+      Enviar resumen al administrador
     </app-button>
   </app-action-bar>
 
@@ -102,4 +102,131 @@
     (actionClick)="manejarAccionTabla($event)"
     (clear)="limpiarFiltros()"
   ></app-data-table>
+
+  <app-modal
+    *ngIf="mostrarResumenAdministrador"
+    titulo="Resumen de candidatos seleccionados"
+    [subtitulo]="(solicitudResumen?.cargo || 'Cargo sin definir') + ' · ' + (solicitudResumen?.idSolicitud || 'SOL-000000')"
+    ancho="xl"
+    (cerrar)="cerrarResumenAdministrador()"
+  >
+    <span modal-header-extra class="request-pill">
+      ID solicitud: {{ solicitudResumen?.idSolicitud || 'SOL-000000' }}
+    </span>
+
+    <div class="summary-modal">
+      <section class="summary-section" aria-labelledby="solicitud-title">
+        <div class="section-marker">1</div>
+        <h3 id="solicitud-title">Información de la solicitud</h3>
+
+        <div class="request-info">
+          <article>
+            <span class="info-icon" aria-hidden="true">▣</span>
+            <div>
+              <span>Cargo</span>
+              <strong>{{ solicitudResumen?.cargo || 'Sin cargo' }}</strong>
+            </div>
+          </article>
+
+          <article>
+            <span class="info-icon" aria-hidden="true">○</span>
+            <div>
+              <span>Solicitante</span>
+              <strong>Catherine Rebolledo</strong>
+            </div>
+          </article>
+
+          <article>
+            <span class="info-icon" aria-hidden="true">▤</span>
+            <div>
+              <span>Empresa</span>
+              <strong>{{ solicitudResumen?.empresa || 'Sin empresa' }}</strong>
+            </div>
+          </article>
+
+          <article>
+            <span class="info-icon" aria-hidden="true">◇</span>
+            <div>
+              <span>Nivel requerido</span>
+              <strong>{{ solicitudResumen?.nivel || 'Sin nivel' }}</strong>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="summary-section" aria-labelledby="seleccionados-title">
+        <div class="section-row">
+          <div class="section-title">
+            <div class="section-marker">2</div>
+            <h3 id="seleccionados-title">Personas seleccionadas</h3>
+            <span class="count-pill">{{ candidatosSeleccionadosResumen.length }} candidatos</span>
+          </div>
+
+          <label class="select-all">
+            <input type="checkbox" [(ngModel)]="todosLosCvsSeleccionados" />
+            Seleccionar todos los CV
+          </label>
+        </div>
+
+        <div class="selected-table" role="table" aria-label="Candidatos seleccionados para enviar al administrador">
+          <div class="selected-header" role="row">
+            <span role="columnheader">Candidato</span>
+            <span role="columnheader">Nivel</span>
+            <span role="columnheader">Experiencia</span>
+            <span role="columnheader">Resultado entrevista</span>
+            <span role="columnheader">Match</span>
+            <span role="columnheader">Adjuntar CV</span>
+          </div>
+
+          <div class="selected-row" role="row" *ngFor="let candidato of candidatosSeleccionadosResumen">
+            <div class="candidate-cell" role="cell">
+              <span class="candidate-avatar">{{ iniciales(candidato.nombre) }}</span>
+              <div>
+                <strong>{{ candidato.nombre }}</strong>
+                <span>{{ candidato.correo }}</span>
+              </div>
+            </div>
+
+            <div role="cell">
+              <span class="level-pill">{{ candidato.nivel }}</span>
+            </div>
+
+            <span role="cell">{{ candidato.experiencia }}</span>
+
+            <div class="result-cell" role="cell">
+              <strong [ngClass]="resultadoClase(candidato)">{{ candidato.resultadoEntrevista }}</strong>
+              <span>{{ candidato.detalleResultado }}</span>
+            </div>
+
+            <strong class="match-cell" role="cell">{{ candidato.match }}%</strong>
+
+            <label class="attach-cell" role="cell">
+              <input type="checkbox" [(ngModel)]="candidato.adjuntarCv" />
+              Adjuntar CV
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <footer modal-footer class="summary-footer">
+        <div class="summary-count">
+          <span aria-hidden="true">▤</span>
+          <strong>{{ candidatosSeleccionadosResumen.length }} candidatos seleccionados</strong>
+          <span>•</span>
+          <strong>{{ totalCvsAdjuntos }} CV se adjuntarán en el envío</strong>
+        </div>
+
+        <div class="summary-actions">
+          <app-button type="button" variant="secondary" (pressed)="descargarInformeResumen()">
+            <span aria-hidden="true">↓</span>
+            Descargar informe
+          </app-button>
+
+          <app-button type="button" (pressed)="enviarResumenAdministrador()">
+            Enviar resumen al administrador
+          </app-button>
+        </div>
+      </footer>
+    </div>
+  </app-modal>
 </app-page-layout>

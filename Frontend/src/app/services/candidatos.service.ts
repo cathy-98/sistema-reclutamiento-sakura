@@ -21,7 +21,7 @@ export interface CandidatoApi {
   cand_disponibilidad_id?: number | null;
   cand_resumen_profesional?: string | null;
   cand_fecha_creacion?: string | null;
-  cand_url_1?: string | null;
+  cand_url_1?: string | string[] | null;
   cand_titulo?: string | null;
   cand_estado_usuario_id?: number | null;
   cand_rut_sin_dv?: number | null;
@@ -81,9 +81,16 @@ export interface ExperienciaCandidatoApi {
   cdex_descripcion?: string | null;
   empresa?: { emp_nombre?: string | null } | null;
   cargo?: { crgo_nombre?: string | null } | null;
+  habilidades_ids?: number[];
 }
 
 export interface CursoCandidatoApi {
+  curs_id?: number;
+  curs_candidato_id?: number;
+  curs_nombre_curso?: string | null;
+  curs_institucion_id?: number | null;
+  curs_es_certificado?: boolean | null;
+  curs_anio_curso?: number | null;
   cdcu_id?: number;
   cdcu_nombre?: string | null;
   cdcu_institucion?: string | null;
@@ -103,6 +110,21 @@ export interface PostulacionCandidatoApi {
   slcd_motivo_rechazo_id?: number | null;
 }
 
+export interface IdiomaCandidatoApi {
+  cdio_id: number;
+  cdio_candidato_id: number;
+  cdio_idioma_id: number;
+  cdio_nivel_idioma_id: number;
+  idioma?: { idio_id: number; idio_nombre: string | null } | null;
+  nivel_idioma?: {
+    nvid_id: number;
+    nvid_codigo: string | null;
+    nvid_nombre: string | null;
+    nvid_grupo: string | null;
+    nvid_es_generico: boolean;
+  } | null;
+}
+
 export interface CandidatoPerfilCompletoApi extends CandidatoApi {
   direccion?: DireccionCandidatoApi | null;
   habilidades?: HabilidadCandidatoApi[];
@@ -110,6 +132,56 @@ export interface CandidatoPerfilCompletoApi extends CandidatoApi {
   experiencias?: ExperienciaCandidatoApi[];
   cursos?: CursoCandidatoApi[];
   solicitudes?: PostulacionCandidatoApi[];
+}
+
+export interface ImportCvResponse {
+  candidato: CandidatoPerfilCompletoApi;
+  creado: boolean;
+  actualizado: boolean;
+  password_temporal?: string | null;
+  cv_ruta_guardada?: string | null;
+  advertencias?: string[];
+  warnings?: string[];
+}
+
+export interface DireccionCandidatoPayload {
+  drcd_comuna_id?: number | null;
+  drcd_calle?: string | null;
+  drcd_numero?: number | string | null;
+  drcd_dpto_oficina?: string | null;
+}
+
+export interface EstudioCandidatoPayload {
+  etcd_nivel_educacional_id?: number | null;
+  etcd_institucion_id?: number | null;
+  etcd_carrera_id?: number | null;
+  etcd_fecha_inicio?: string | null;
+  etcd_fecha_fin?: string | null;
+}
+
+export interface ExperienciaCandidatoPayload {
+  expl_empresa_id?: number | null;
+  expl_cargo_id?: number | null;
+  expl_descripcion_funciones?: string | null;
+  expl_fecha_inicio?: string | null;
+  expl_fecha_fin?: string | null;
+  habilidades_ids?: number[];
+}
+
+export interface CursoCandidatoPayload {
+  curs_nombre_curso?: string | null;
+  curs_institucion_id?: number | null;
+  curs_es_certificado?: boolean | null;
+  curs_anio_curso?: number | null;
+}
+
+export interface IdiomaCandidatoPayload {
+  cdio_idioma_id: number;
+  cdio_nivel_idioma_id: number;
+}
+
+export interface IdiomaCandidatoUpdatePayload {
+  cdio_nivel_idioma_id: number;
 }
 
 // Modelo de pantalla actual: se mantiene separado para no mezclar UI con nombres de BD.
@@ -178,6 +250,10 @@ export class CandidatosService {
     return this.http.get<CandidatoPerfilCompletoApi>(`${this.apiUrl}/me/perfil-completo`);
   }
 
+  actualizarMiPerfil(payload: Partial<CandidatoApi>) {
+    return this.http.patch<CandidatoPerfilCompletoApi>(`${this.apiUrl}/me`, payload);
+  }
+
   listarSolicitudes(id: string) {
     // Integracion interna M3: GET /candidatos/{id}/solicitudes para postulaciones administrativas.
     return this.http.get<PostulacionCandidatoApi[]>(`${this.apiUrl}/${id}/solicitudes`);
@@ -188,25 +264,40 @@ export class CandidatosService {
     return this.http.get<PostulacionCandidatoApi[]>(`${this.apiUrl}/me/solicitudes`);
   }
 
+  listarIdiomas(id: string) {
+    // Integracion M3: GET /candidatos/{id}/idiomas para datos adicionales del perfil.
+    return this.http.get<IdiomaCandidatoApi[]>(`${this.apiUrl}/${id}/idiomas`);
+  }
+
+  listarMisIdiomas() {
+    // Integracion M3 autoservicio: GET /candidatos/me/idiomas.
+    return this.http.get<IdiomaCandidatoApi[]>(`${this.apiUrl}/me/idiomas`);
+  }
+
   crear(payload: Partial<CandidatoApi>) {
     // Integración pendiente: adaptar payload a nombres cand_* antes de conectar el endpoint real.
     return this.http.post<CandidatoPerfil>(this.apiUrl, payload);
   }
 
   actualizar(id: string, payload: Partial<CandidatoApi>) {
-    // Integración pendiente: PUT debe enviar campos cand_* cuando exista el backend.
-    return this.http.put<CandidatoPerfil>(`${this.apiUrl}/${id}`, payload);
+    return this.http.patch<CandidatoPerfilCompletoApi>(`${this.apiUrl}/${id}`, payload);
   }
 
   desactivar(id: string) {
-    return this.http.patch<CandidatoPerfil>(`${this.apiUrl}/${id}/desactivar`, {});
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   subirCv(archivo: File) {
     const formData = new FormData();
-    formData.append('archivo', archivo);
+    formData.append('file', archivo);
     // Integracion interna M3: POST /candidatos/importar-cv importa/actualiza candidato desde un CV.
-    return this.http.post<CandidatoPerfilCompletoApi>(`${this.apiUrl}/importar-cv`, formData);
+    return this.http.post<ImportCvResponse>(`${this.apiUrl}/importar-cv`, formData);
+  }
+
+  subirCvs(archivos: File[]) {
+    const formData = new FormData();
+    archivos.forEach((archivo) => formData.append('files', archivo));
+    return this.http.post<ImportCvResponse[]>(`${this.apiUrl}/importar-cvs`, formData);
   }
 
   vincularVacante(candidatoId: string, payload: CandidatoVacantePayload) {
@@ -218,7 +309,175 @@ export class CandidatosService {
     return this.http.post(`${this.apiUrl}/${candidatoId}/habilidades`, payload);
   }
 
+  listarHabilidades(candidatoId: string | number) {
+    return this.http.get<HabilidadCandidatoApi[]>(`${this.apiUrl}/${candidatoId}/habilidades`);
+  }
+
+  actualizarHabilidad(candidatoId: string | number, habilidadId: string | number, payload: Partial<CandidatoHabilidadPayload>) {
+    return this.http.patch<HabilidadCandidatoApi>(`${this.apiUrl}/${candidatoId}/habilidades/${habilidadId}`, payload);
+  }
+
   eliminarHabilidad(candidatoId: string, habilidadId: number) {
     return this.http.delete(`${this.apiUrl}/${candidatoId}/habilidades/${habilidadId}`);
+  }
+
+  listarEstudios(candidatoId: string | number) {
+    return this.http.get<EstudioCandidatoApi[]>(`${this.apiUrl}/${candidatoId}/estudios`);
+  }
+
+  agregarEstudio(candidatoId: string | number, payload: EstudioCandidatoPayload) {
+    return this.http.post<EstudioCandidatoApi>(`${this.apiUrl}/${candidatoId}/estudios`, payload);
+  }
+
+  actualizarEstudio(candidatoId: string | number, estudioId: string | number, payload: EstudioCandidatoPayload) {
+    return this.http.patch<EstudioCandidatoApi>(`${this.apiUrl}/${candidatoId}/estudios/${estudioId}`, payload);
+  }
+
+  eliminarEstudio(candidatoId: string | number, estudioId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/${candidatoId}/estudios/${estudioId}`);
+  }
+
+  listarExperiencias(candidatoId: string | number) {
+    return this.http.get<ExperienciaCandidatoApi[]>(`${this.apiUrl}/${candidatoId}/experiencias`);
+  }
+
+  agregarExperiencia(candidatoId: string | number, payload: ExperienciaCandidatoPayload) {
+    return this.http.post<ExperienciaCandidatoApi>(`${this.apiUrl}/${candidatoId}/experiencias`, payload);
+  }
+
+  actualizarExperiencia(candidatoId: string | number, experienciaId: string | number, payload: ExperienciaCandidatoPayload) {
+    return this.http.patch<ExperienciaCandidatoApi>(`${this.apiUrl}/${candidatoId}/experiencias/${experienciaId}`, payload);
+  }
+
+  eliminarExperiencia(candidatoId: string | number, experienciaId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/${candidatoId}/experiencias/${experienciaId}`);
+  }
+
+  listarCursos(candidatoId: string | number) {
+    return this.http.get<CursoCandidatoApi[]>(`${this.apiUrl}/${candidatoId}/cursos`);
+  }
+
+  agregarCurso(candidatoId: string | number, payload: CursoCandidatoPayload) {
+    return this.http.post<CursoCandidatoApi>(`${this.apiUrl}/${candidatoId}/cursos`, payload);
+  }
+
+  actualizarCurso(candidatoId: string | number, cursoId: string | number, payload: CursoCandidatoPayload) {
+    return this.http.patch<CursoCandidatoApi>(`${this.apiUrl}/${candidatoId}/cursos/${cursoId}`, payload);
+  }
+
+  eliminarCurso(candidatoId: string | number, cursoId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/${candidatoId}/cursos/${cursoId}`);
+  }
+
+  listarDirecciones(candidatoId: string | number) {
+    return this.http.get<DireccionCandidatoApi[]>(`${this.apiUrl}/${candidatoId}/direcciones`);
+  }
+
+  actualizarDireccionPropia(payload: DireccionCandidatoPayload) {
+    return this.http.put<DireccionCandidatoApi>(`${this.apiUrl}/me/direccion`, payload);
+  }
+
+  eliminarDireccionPropia() {
+    return this.http.delete<void>(`${this.apiUrl}/me/direccion`);
+  }
+
+  agregarIdioma(candidatoId: string | number, payload: IdiomaCandidatoPayload) {
+    return this.http.post<IdiomaCandidatoApi>(`${this.apiUrl}/${candidatoId}/idiomas`, payload);
+  }
+
+  actualizarIdioma(candidatoId: string | number, idiomaCandidatoId: string | number, payload: IdiomaCandidatoUpdatePayload) {
+    return this.http.patch<IdiomaCandidatoApi>(`${this.apiUrl}/${candidatoId}/idiomas/${idiomaCandidatoId}`, payload);
+  }
+
+  eliminarIdioma(candidatoId: string | number, idiomaCandidatoId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/${candidatoId}/idiomas/${idiomaCandidatoId}`);
+  }
+
+  agregarMiHabilidad(payload: CandidatoHabilidadPayload) {
+    return this.http.post<HabilidadCandidatoApi>(`${this.apiUrl}/me/habilidades`, payload);
+  }
+
+  actualizarMiHabilidad(habilidadId: string | number, payload: Partial<CandidatoHabilidadPayload>) {
+    return this.http.patch<HabilidadCandidatoApi>(`${this.apiUrl}/me/habilidades/${habilidadId}`, payload);
+  }
+
+  eliminarMiHabilidad(habilidadId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/me/habilidades/${habilidadId}`);
+  }
+
+  agregarMiEstudio(payload: EstudioCandidatoPayload) {
+    return this.http.post<EstudioCandidatoApi>(`${this.apiUrl}/me/estudios`, payload);
+  }
+
+  actualizarMiEstudio(estudioId: string | number, payload: EstudioCandidatoPayload) {
+    return this.http.patch<EstudioCandidatoApi>(`${this.apiUrl}/me/estudios/${estudioId}`, payload);
+  }
+
+  eliminarMiEstudio(estudioId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/me/estudios/${estudioId}`);
+  }
+
+  agregarMiExperiencia(payload: ExperienciaCandidatoPayload) {
+    return this.http.post<ExperienciaCandidatoApi>(`${this.apiUrl}/me/experiencias`, payload);
+  }
+
+  actualizarMiExperiencia(experienciaId: string | number, payload: ExperienciaCandidatoPayload) {
+    return this.http.patch<ExperienciaCandidatoApi>(`${this.apiUrl}/me/experiencias/${experienciaId}`, payload);
+  }
+
+  eliminarMiExperiencia(experienciaId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/me/experiencias/${experienciaId}`);
+  }
+
+  agregarMiCurso(payload: CursoCandidatoPayload) {
+    return this.http.post<CursoCandidatoApi>(`${this.apiUrl}/me/cursos`, payload);
+  }
+
+  actualizarMiCurso(cursoId: string | number, payload: CursoCandidatoPayload) {
+    return this.http.patch<CursoCandidatoApi>(`${this.apiUrl}/me/cursos/${cursoId}`, payload);
+  }
+
+  eliminarMiCurso(cursoId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/me/cursos/${cursoId}`);
+  }
+
+  agregarMiIdioma(payload: IdiomaCandidatoPayload) {
+    return this.http.post<IdiomaCandidatoApi>(`${this.apiUrl}/me/idiomas`, payload);
+  }
+
+  actualizarMiIdioma(idiomaCandidatoId: string | number, payload: IdiomaCandidatoUpdatePayload) {
+    return this.http.patch<IdiomaCandidatoApi>(`${this.apiUrl}/me/idiomas/${idiomaCandidatoId}`, payload);
+  }
+
+  eliminarMiIdioma(idiomaCandidatoId: string | number) {
+    return this.http.delete<void>(`${this.apiUrl}/me/idiomas/${idiomaCandidatoId}`);
+  }
+
+  actualizarPostulacion(
+    postulacionId: string | number,
+    payload: {
+      slcd_pretension_renta?: number | null;
+      slcd_puntaje_compatibilidad?: number | null;
+      slcd_observaciones?: string | null;
+    },
+  ) {
+    return this.http.patch<PostulacionCandidatoApi>(
+      `/api/postulaciones/${postulacionId}`,
+      payload,
+    );
+  }
+
+  cambiarEstadoPostulacion(
+    postulacionId: string | number,
+    payload: {
+      estado_id: number;
+      motivo_rechazo_id?: number | null;
+      observaciones?: string | null;
+    },
+  ) {
+    return this.http.patch<PostulacionCandidatoApi>(
+      `/api/postulaciones/${postulacionId}/estado`,
+      payload,
+    );
   }
 }

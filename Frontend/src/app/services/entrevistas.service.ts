@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, delay, of, throwError } from 'rxjs';
 
 export type EstadoEntrevista = string;
@@ -28,6 +29,54 @@ export interface CitaEntrevistaPayload {
   ctev_enlace_reunion?: string | null;
   ctev_comentarios_convocatoria?: string | null;
   ctev_titulo_evento: string;
+}
+
+export interface EntrevistaApi {
+  entrevista_id: number;
+  solicitud_candidato_id: number;
+  solicitud_id: number;
+  solicitud_codigo?: string | null;
+  candidato_id?: number;
+  candidato_nombre?: string;
+  candidato_email?: string;
+  estado_id?: number;
+  estado_nombre?: string;
+  estado?: string;
+  fecha_hora_inicio: string;
+  fecha_hora_fin: string;
+  fecha_creacion?: string;
+  fecha_actualizacion?: string | null;
+  titulo_evento: string;
+  enlace_reunion?: string | null;
+  comentarios_convocatoria?: string | null;
+  motivo_estado?: string | null;
+  usuario_creador_id?: number | null;
+  tipos?: {
+    tipo_entrevista_id: number;
+    nombre: string;
+    descripcion?: string | null;
+    entrevistadores?: {
+      usuario_id: number;
+      nombres: string;
+      apellido_paterno: string;
+      email: string;
+    }[];
+  }[];
+  evaluaciones?: EvaluacionEntrevistaApi[];
+}
+
+export interface EvaluacionEntrevistaApi {
+  evaluacion_id: number;
+  entrevista_id: number;
+  tipo_entrevista_id?: number | null;
+  tipo_entrevista_nombre?: string | null;
+  usuario_id?: number | null;
+  usuario_nombre?: string | null;
+  resultado_id: number;
+  resultado_nombre: string;
+  observacion?: string | null;
+  fecha_creacion?: string | null;
+  fecha_actualizacion?: string | null;
 }
 
 // Modelo de pantalla: nombres legibles para tablas, filtros y formularios.
@@ -63,8 +112,9 @@ export interface EntrevistaPayload {
 
 @Injectable({ providedIn: 'root' })
 export class EntrevistasService {
-  // Temporal/mock: este módulo aún no tiene endpoint registrado en backend.
-  // Cuando exista la API, reemplazar BehaviorSubject por HttpClient y mapear campos backend/BD a EntrevistaResumen.
+  private readonly apiUrl = '/api';
+
+  // Temporal/mock para pantallas que aún no migran al contrato M5.
   private readonly entrevistas = new BehaviorSubject<EntrevistaResumen[]>([
     {
       id: 'ENT-001',
@@ -147,9 +197,23 @@ export class EntrevistasService {
     },
   ]);
 
+  constructor(private http: HttpClient) {}
+
   listar() {
     // Integración pendiente: aquí debería consumirse el endpoint real de entrevistas.
     return this.entrevistas.asObservable().pipe(delay(150));
+  }
+
+  listarPorCandidato(candidatoId: string) {
+    return this.http.get<EntrevistaApi[]>(
+      `${this.apiUrl}/candidatos/${candidatoId}/entrevistas`,
+    );
+  }
+
+  listarMisEntrevistas() {
+    return this.http.get<EntrevistaApi[]>(
+      `${this.apiUrl}/candidatos/me/entrevistas`,
+    );
   }
 
   crear(payload: EntrevistaPayload) {
@@ -174,6 +238,48 @@ export class EntrevistasService {
 
     this.entrevistas.next([...nuevasEntrevistas, ...this.entrevistas.value]);
     return of(nuevasEntrevistas).pipe(delay(150));
+  }
+
+  actualizarEntrevista(
+    entrevistaId: string | number,
+    payload: {
+      titulo_evento?: string;
+      enlace_reunion?: string | null;
+      comentarios_convocatoria?: string | null;
+    },
+  ) {
+    return this.http.patch<EntrevistaApi>(
+      `${this.apiUrl}/entrevistas/${entrevistaId}`,
+      payload,
+    );
+  }
+
+  crearEvaluacion(
+    entrevistaId: string | number,
+    tipoId: string | number,
+    payload: {
+      nombre_resultado_id: number;
+      observacion?: string | null;
+    },
+  ) {
+    return this.http.post<EvaluacionEntrevistaApi>(
+      `${this.apiUrl}/entrevistas/${entrevistaId}/tipos/${tipoId}/evaluar`,
+      payload,
+    );
+  }
+
+  actualizarEvaluacion(
+    entrevistaId: string | number,
+    tipoId: string | number,
+    payload: {
+      nombre_resultado_id?: number;
+      observacion?: string | null;
+    },
+  ) {
+    return this.http.patch<EvaluacionEntrevistaApi>(
+      `${this.apiUrl}/entrevistas/${entrevistaId}/tipos/${tipoId}/evaluacion`,
+      payload,
+    );
   }
 
   reprogramar(id: string, fecha: string, horaInicio: string, horaFin: string, observacion: string) {

@@ -1,17 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from '../../../shared/components/button/button';
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { Modal } from '../../../shared/components/modal/modal';
 
 export interface CuestionarioEnvioPayload {
-  solicitudId: string;
+  solicitudId: number;
   mensaje: string;
-  destinatarios: Array<{
-    nombre: string;
-    correo: string;
-  }>;
+  candidatoIds: number[];
+  fechaVencimiento: string;
 }
 
 @Component({
@@ -26,32 +24,17 @@ export class CuestionarioEnvioModal {
   @Input() cantidadPreguntas = 0;
   @Input() duracion = '';
   @Input() resumen = '';
+  @Input() enviando = false;
 
   @Output() cerrar = new EventEmitter<void>();
   @Output() enviar = new EventEmitter<CuestionarioEnvioPayload>();
 
   readonly formulario = this.fb.group({
-    solicitudId: ['', Validators.required],
+    solicitudId: [null as number | null, [Validators.required, Validators.min(1)]],
+    candidatoIds: ['', Validators.required],
+    fechaVencimiento: ['', Validators.required],
     mensaje: [''],
-    destinatarios: this.fb.array([this.crearDestinatario()]),
   });
-
-  get destinatarios() {
-    return this.formulario.get('destinatarios') as FormArray;
-  }
-
-  agregarDestinatario() {
-    this.destinatarios.push(this.crearDestinatario());
-  }
-
-  eliminarDestinatario(indice: number) {
-    if (this.destinatarios.length === 1) {
-      this.destinatarios.at(0).reset();
-      return;
-    }
-
-    this.destinatarios.removeAt(indice);
-  }
 
   confirmarEnvio() {
     if (this.formulario.invalid) {
@@ -60,20 +43,30 @@ export class CuestionarioEnvioModal {
     }
 
     const valor = this.formulario.getRawValue();
+    const candidatoIds = this.obtenerIdsCandidatos(valor.candidatoIds ?? '');
+
+    if (candidatoIds.length === 0) {
+      this.formulario.get('candidatoIds')?.setErrors({ required: true });
+      return;
+    }
+
     this.enviar.emit({
-      solicitudId: valor.solicitudId ?? '',
+      solicitudId: Number(valor.solicitudId),
       mensaje: valor.mensaje ?? '',
-      destinatarios: valor.destinatarios.map((destinatario) => ({
-        nombre: destinatario.nombre ?? '',
-        correo: destinatario.correo ?? '',
-      })),
+      candidatoIds,
+      fechaVencimiento: this.normalizarFechaVencimiento(valor.fechaVencimiento ?? ''),
     });
   }
 
-  private crearDestinatario() {
-    return this.fb.group({
-      nombre: ['', Validators.required],
-      correo: ['', [Validators.required, Validators.email]],
-    });
+  private obtenerIdsCandidatos(valor: string) {
+    return valor
+      .split(/[\s,;]+/)
+      .map((item) => Number(item.trim()))
+      .filter((item, index, ids) => Number.isInteger(item) && item > 0 && ids.indexOf(item) === index);
+  }
+
+  private normalizarFechaVencimiento(valor: string) {
+    const fecha = new Date(valor);
+    return Number.isNaN(fecha.getTime()) ? valor : fecha.toISOString();
   }
 }

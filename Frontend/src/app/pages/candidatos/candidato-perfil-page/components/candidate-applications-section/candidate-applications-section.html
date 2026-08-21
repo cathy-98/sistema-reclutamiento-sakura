@@ -1,21 +1,32 @@
 <section class="content-panel application-panel" aria-labelledby="application-history-title">
   <!-- Resumen e historial de postulaciones del candidato. -->
-  <h2 id="application-history-title" class="application-title">Historial de postulación</h2>
+  <h2 id="application-history-title" class="application-title">Historial de postulaciones</h2>
 
   <div class="application-overview">
-    <article class="next-interview">
-      <span>Próxima entrevista</span>
-      <strong>{{ candidato.cargo }} Developer</strong>
-      <p>{{ postulacionSeleccionada[1] }}</p>
-      <dl>
-        <div><dt>Fecha</dt><dd>Oct 24, 2024</dd></div>
-        <div><dt>Hora</dt><dd>10:30 AM</dd></div>
+    <article
+      class="next-interview"
+      [class.is-empty]="!proximaEntrevista"
+    >
+      <span>{{ proximaEntrevista ? 'Próxima entrevista' : 'Sin próxima entrevista' }}</span>
+      <ng-container *ngIf="proximaEntrevista; else sinProximaEntrevista">
+        <strong>{{ proximaEntrevista.titulo }}</strong>
+        <p>{{ proximaEntrevista.clienteEmpresa }} · {{ proximaEntrevista.solicitud }}</p>
+      </ng-container>
+
+      <ng-template #sinProximaEntrevista>
+        <strong>Sin entrevista programada</strong>
+        <p>No hay entrevistas futuras para este candidato.</p>
+      </ng-template>
+
+      <dl *ngIf="proximaEntrevista">
+        <div><dt>Fecha de entrevista</dt><dd>{{ proximaEntrevista.fecha }}</dd></div>
+        <div><dt>Hora</dt><dd>{{ proximaEntrevista.hora }}</dd></div>
       </dl>
     </article>
 
     <section class="application-metrics" aria-label="Métricas de postulación">
-      <article><strong>02</strong><span>En proceso</span></article>
-      <article><strong>14</strong><span>Postulaciones</span></article>
+      <article><strong>{{ formatoContador(totalPostulacionesActivas) }}</strong><span>Postulaciones activas</span></article>
+      <article><strong>{{ formatoContador(totalPostulaciones) }}</strong><span>Postulaciones</span></article>
     </section>
   </div>
 
@@ -42,7 +53,7 @@
             <th scope="col">Cliente / empresa</th>
             <th scope="col">Puesto</th>
             <th scope="col">Fecha postulación</th>
-            <th scope="col">Estado</th>
+            <th scope="col">Estado del candidato</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +74,19 @@
             <td>{{ postulacion[1] }}</td>
             <td>{{ postulacion[2] }}</td>
             <td>{{ postulacion[3] }}</td>
-            <td><span class="status-pill" [class.closed]="postulacion[4] === 'Cerrado'">{{ postulacion[4] }}</span></td>
+            <td>
+              <span
+                class="status-pill"
+                [ngClass]="estadoPostulacionClase(postulacion[4])"
+              >
+                {{ postulacion[4] }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="postulacionesFiltradas.length === 0">
+            <td colspan="5">
+              Sin postulaciones registradas.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -72,29 +95,52 @@
     <aside class="selected-process-summary">
       <span>Proceso seleccionado</span>
       <strong>{{ postulacionSeleccionada[0] }} · {{ postulacionSeleccionada[2] }}</strong>
-      <p>{{ postulacionSeleccionada[1] }} · {{ postulacionSeleccionada[4] }}</p>
+      <p>{{ postulacionSeleccionada[1] }} · Estado del candidato: {{ postulacionSeleccionada[4] }}</p>
     </aside>
   </div>
 </section>
 
 <section class="content-panel process-panel" aria-labelledby="selection-process-title">
   <!-- Detalle de etapas asociadas a la postulación seleccionada. -->
-  <h2 id="selection-process-title">Proceso de selección: {{ postulacionSeleccionada[0] }}</h2>
+  <header class="process-header">
+    <h2 id="selection-process-title">Proceso de selección: {{ postulacionSeleccionada[0] }}</h2>
+    <app-button
+      *ngIf="proceso.length > 0"
+      type="button"
+      variant="secondary"
+      (pressed)="agregarObservacionEntrevista()"
+    >
+      Agregar observación
+    </app-button>
+  </header>
   <div class="selection-list">
+    <p class="empty-process" *ngIf="proceso.length === 0">
+      No hay entrevistas agendadas para esta postulación.
+    </p>
+
     <article *ngFor="let etapa of proceso">
       <header>
         <strong>{{ etapa.etapa }}</strong>
-        <span class="state-chip" [class.pending]="etapa.estado === 'Pendiente'">{{ etapa.estado }}</span>
+        <span class="state-chip" [ngClass]="estadoEntrevistaClase(etapa.estado)">{{ etapa.estado }}</span>
       </header>
 
       <dl>
-        <div><dt>Fecha</dt><dd>{{ etapa.fecha }}</dd></div>
+        <div><dt>Fecha de entrevista</dt><dd>{{ etapa.fecha }}</dd></div>
         <div><dt>Entrevistador</dt><dd>{{ etapa.entrevistador }}</dd></div>
-        <div><dt>Resultado</dt><dd class="result">{{ etapa.resultado }}</dd></div>
+        <div><dt>Tipo entrevista</dt><dd class="result">{{ etapa.tipoEntrevista }}</dd></div>
       </dl>
 
       <dl class="observation-definition">
-        <dt>Observaciones</dt>
+        <dt>
+          Observaciones
+          <button
+            class="inline-action"
+            type="button"
+            (click)="editInterviewObservation.emit(etapa)"
+          >
+            {{ etapa.observacionEntrevista ? 'Editar' : 'Agregar' }}
+          </button>
+        </dt>
         <dd>{{ etapa.observaciones }}</dd>
       </dl>
     </article>

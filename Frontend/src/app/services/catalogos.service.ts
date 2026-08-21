@@ -22,6 +22,7 @@ export type CatalogoPath =
   | 'instituciones'
   | 'carreras'
   | 'niveles-educacionales'
+  | 'categorias-habilidad'
   | 'habilidades'
   | 'niveles-habilidad'
   | 'cargos'
@@ -104,10 +105,18 @@ export interface ModalidadCatalogoApi {
   mdld_descripcion?: string | null;
 }
 
+export interface CategoriaHabilidadCatalogoApi {
+  cthb_id: number;
+  cthb_nombre: string | null;
+  cthb_descripcion?: string | null;
+}
+
 export interface HabilidadCatalogoApi {
   hab_id: number;
   hab_nombre: string | null;
   hab_descripcion?: string | null;
+  hab_categoria_habilidad_id?: number | null;
+  categoria?: CategoriaHabilidadCatalogoApi | null;
 }
 
 export interface HabilidadCreatePayload {
@@ -348,6 +357,10 @@ export class CatalogosService {
 
   listarHabilidades() {
     return this.http.get<HabilidadCatalogoApi[]>(`${this.apiUrl}/habilidades`);
+  }
+
+  listarCategoriasHabilidad() {
+    return this.http.get<CategoriaHabilidadCatalogoApi[]>(`${this.apiUrl}/categorias-habilidad`);
   }
 
   crearHabilidad(payload: HabilidadCreatePayload) {

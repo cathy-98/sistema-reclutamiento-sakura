@@ -17,8 +17,16 @@ export interface CandidatoPerfil {
   estadoUsuario: string;
   resumenProfesional: string;
   urlPerfil: string;
+  enlaces: EnlacePerfil[];
+  idiomas: string[];
   comuna: string;
   direccion: string;
+}
+
+export interface EnlacePerfil {
+  tipo: string;
+  url: string;
+  texto: string;
 }
 
 export interface ExperienciaPerfil {
@@ -37,12 +45,37 @@ export interface EstudioPerfil {
 
 export type PostulacionPerfil = [string, string, string, string, string];
 
+export interface EntrevistaPerfilResumen {
+  titulo: string;
+  solicitud: string;
+  clienteEmpresa: string;
+  fecha: string;
+  hora: string;
+  estado: string;
+}
+
 export interface EtapaSeleccion {
+  id?: string;
+  solicitud?: string;
   etapa: string;
   estado: string;
   fecha: string;
   entrevistador: string;
-  resultado: string;
+  tipoEntrevista: string;
+  tipos: {
+    id: number;
+    nombre: string;
+    entrevistadoresIds: number[];
+  }[];
+  evaluaciones: {
+    id: number;
+    tipoId?: number | null;
+    usuarioId?: number | null;
+    resultadoId: number;
+    resultado: string;
+    observacion?: string | null;
+  }[];
+  observacionEntrevista: string;
   observaciones: string;
 }
 

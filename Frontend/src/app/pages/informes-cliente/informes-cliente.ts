@@ -11,6 +11,7 @@ import {
   DataTableColumn,
 } from '../../shared/components/data-table/data-table';
 import { FilterPanel } from '../../shared/components/filter-panel/filter-panel';
+import { Modal } from '../../shared/components/modal/modal';
 import { PageLayout } from '../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { TabItem, Tabs } from '../../shared/components/tabs/tabs';
@@ -26,9 +27,15 @@ interface InformeCandidato {
   correo: string;
   telefono: string;
   cargo: string;
+  empresa: string;
+  nivel: string;
+  experiencia: string;
+  resultadoEntrevista: string;
+  detalleResultado: string;
   estado: string;
   disponibilidad: string;
   aprobado: boolean;
+  adjuntarCv: boolean;
 }
 
 interface FiltrosInformes {
@@ -48,6 +55,7 @@ interface FiltrosInformes {
     Button,
     DataTable,
     FilterPanel,
+    Modal,
     PageHeader,
     PageLayout,
     Tabs,
@@ -63,6 +71,7 @@ export class InformesCliente {
   alerta: AlertaUi | null = null;
   filtros: FiltrosInformes = this.filtrosIniciales();
   busquedaRapida = '';
+  mostrarResumenAdministrador = false;
 
   readonly tabsInformes: TabItem[] = [
     { id: 'aprobados', label: 'Aprobados' },
@@ -148,99 +157,147 @@ export class InformesCliente {
   readonly informes: InformeCandidato[] = [
     {
       id: 'inf-001',
-      idSolicitud: 'SOL-021',
+      idSolicitud: 'SOL-000021',
       match: 90,
       nombre: 'Macarena Lopez',
       correo: 'macarena.lopez@mail.com',
       telefono: '+56 9 5634 8547',
       cargo: 'Frontend',
+      empresa: 'Sakura Tech',
+      nivel: 'Senior',
+      experiencia: '5 anos',
+      resultadoEntrevista: 'Recomendado',
+      detalleResultado: 'Buen desempeno tecnico y experiencia acorde al cargo.',
       estado: 'Seleccionado',
       disponibilidad: 'Inmediata',
       aprobado: true,
+      adjuntarCv: true,
     },
     {
       id: 'inf-002',
-      idSolicitud: 'SOL-021',
+      idSolicitud: 'SOL-000021',
       match: 80,
       nombre: 'Valentina Rojas',
       correo: 'valentina.rojas@mail.com',
       telefono: '+56 9 6721 1184',
       cargo: 'Frontend',
+      empresa: 'Sakura Tech',
+      nivel: 'Senior',
+      experiencia: '8 anos',
+      resultadoEntrevista: 'Recomendado',
+      detalleResultado: 'Excelente dominio tecnico y liderazgo en proyectos.',
       estado: 'En entrevista',
       disponibilidad: '2 semanas',
       aprobado: true,
+      adjuntarCv: true,
     },
     {
       id: 'inf-003',
-      idSolicitud: 'SOL-019',
+      idSolicitud: 'SOL-000019',
       match: 78,
       nombre: 'Diego Martinez',
       correo: 'diego.martinez@mail.com',
       telefono: '+56 9 7765 4402',
       cargo: 'Backend',
+      empresa: 'Elitsoft',
+      nivel: 'Semi Senior',
+      experiencia: '4 anos',
+      resultadoEntrevista: 'Con observaciones',
+      detalleResultado: 'Evaluar mas a fondo experiencia en proyectos similares.',
       estado: 'Seleccionado',
       disponibilidad: 'Inmediata',
       aprobado: true,
+      adjuntarCv: false,
     },
     {
       id: 'inf-004',
-      idSolicitud: 'SOL-018',
+      idSolicitud: 'SOL-000018',
       match: 72,
       nombre: 'Camila Fuentes',
       correo: 'camila.fuentes@mail.com',
       telefono: '+56 9 3324 9811',
       cargo: 'UX Research',
+      empresa: 'Norte Digital',
+      nivel: 'Junior',
+      experiencia: '2 anos',
+      resultadoEntrevista: 'Recomendado',
+      detalleResultado: 'Perfil consistente con foco en investigacion y orden metodologico.',
       estado: 'Contratado',
       disponibilidad: '1 mes',
       aprobado: true,
+      adjuntarCv: true,
     },
     {
       id: 'inf-005',
-      idSolicitud: 'SOL-017',
+      idSolicitud: 'SOL-000017',
       match: 76,
       nombre: 'Sebastian Araya',
       correo: 'sebastian.araya@mail.com',
       telefono: '+56 9 4218 7256',
       cargo: 'QA Automation',
+      empresa: 'Andes Labs',
+      nivel: 'Semi Senior',
+      experiencia: '3 anos',
+      resultadoEntrevista: 'Con observaciones',
+      detalleResultado: 'Profundizar cobertura de pruebas automatizadas y reportabilidad.',
       estado: 'En revision',
       disponibilidad: '2 semanas',
       aprobado: true,
+      adjuntarCv: false,
     },
     {
       id: 'inf-006',
-      idSolicitud: 'SOL-016',
+      idSolicitud: 'SOL-000016',
       match: 82,
       nombre: 'Antonia Morales',
       correo: 'antonia.morales@mail.com',
       telefono: '+56 9 5874 1120',
       cargo: 'Frontend',
+      empresa: 'Sakura Tech',
+      nivel: 'Senior',
+      experiencia: '6 anos',
+      resultadoEntrevista: 'Recomendado',
+      detalleResultado: 'Solida experiencia en interfaces y comunicacion tecnica clara.',
       estado: 'Seleccionado',
       disponibilidad: 'Inmediata',
       aprobado: true,
+      adjuntarCv: true,
     },
     {
       id: 'inf-007',
-      idSolicitud: 'SOL-019',
+      idSolicitud: 'SOL-000019',
       match: 58,
       nombre: 'Tomas Herrera',
       correo: 'tomas.herrera@mail.com',
       telefono: '+56 9 4187 2201',
       cargo: 'Backend',
+      empresa: 'Elitsoft',
+      nivel: 'Junior',
+      experiencia: '1 ano',
+      resultadoEntrevista: 'No recomendado',
+      detalleResultado: 'Brechas tecnicas relevantes para los requisitos del cargo.',
       estado: 'Descartado',
       disponibilidad: '1 mes',
       aprobado: false,
+      adjuntarCv: false,
     },
     {
       id: 'inf-008',
-      idSolicitud: 'SOL-018',
+      idSolicitud: 'SOL-000018',
       match: 46,
       nombre: 'Camila Soto',
       correo: 'camila.soto@mail.com',
       telefono: '+56 9 3351 7820',
       cargo: 'UX Research',
+      empresa: 'Norte Digital',
+      nivel: 'Junior',
+      experiencia: '1 ano',
+      resultadoEntrevista: 'No recomendado',
+      detalleResultado: 'Experiencia insuficiente para la complejidad esperada.',
       estado: 'Descartado',
       disponibilidad: '2 semanas',
       aprobado: false,
+      adjuntarCv: false,
     },
   ];
 
@@ -283,6 +340,34 @@ export class InformesCliente {
       : 'Selecciona informes para habilitar acciones masivas.';
   }
 
+  get candidatosSeleccionadosResumen() {
+    const base =
+      this.seleccionados.size > 0
+        ? this.informes.filter((informe) => this.seleccionados.has(informe.id))
+        : this.informes.filter((informe) => informe.aprobado && informe.idSolicitud === 'SOL-000021').slice(0, 3);
+
+    return base.filter((informe) => informe.aprobado);
+  }
+
+  get solicitudResumen() {
+    return this.candidatosSeleccionadosResumen[0] ?? this.informes.find((informe) => informe.aprobado);
+  }
+
+  get totalCvsAdjuntos() {
+    return this.candidatosSeleccionadosResumen.filter((informe) => informe.adjuntarCv).length;
+  }
+
+  get todosLosCvsSeleccionados() {
+    const candidatos = this.candidatosSeleccionadosResumen;
+    return candidatos.length > 0 && candidatos.every((informe) => informe.adjuntarCv);
+  }
+
+  set todosLosCvsSeleccionados(seleccionado: boolean) {
+    this.candidatosSeleccionadosResumen.forEach((informe) => {
+      informe.adjuntarCv = seleccionado;
+    });
+  }
+
   cambiarVista(vista: string) {
     this.vistaActiva = vista as VistaInforme;
     this.paginaActual = 1;
@@ -309,7 +394,7 @@ export class InformesCliente {
   }
 
   generarInforme() {
-    this.mostrarConfirmacionAccion('Generación de informe preparada.');
+    this.abrirResumenAdministrador();
   }
 
   descargarCvsMasivo() {
@@ -317,17 +402,48 @@ export class InformesCliente {
   }
 
   enviarCorreoMasivo() {
-    this.mostrarConfirmacionAccion('Correo masivo preparado para los informes seleccionados.');
+    this.abrirResumenAdministrador();
+  }
+
+  abrirResumenAdministrador() {
+    this.mostrarResumenAdministrador = true;
+  }
+
+  cerrarResumenAdministrador() {
+    this.mostrarResumenAdministrador = false;
+  }
+
+  enviarResumenAdministrador() {
+    this.mostrarResumenAdministrador = false;
+    this.mostrarConfirmacionAccion(
+      `Resumen ${this.solicitudResumen?.idSolicitud ?? 'SOL-000000'} preparado para enviar al administrador.`,
+    );
+  }
+
+  descargarInformeResumen() {
+    this.mostrarConfirmacionAccion(
+      `Informe ${this.solicitudResumen?.idSolicitud ?? 'SOL-000000'} preparado para descarga.`,
+    );
   }
 
   manejarAccionTabla(evento: DataTableActionEvent<InformeCandidato>) {
     const acciones: Record<string, string> = {
       'descargar-cv': `CV de ${evento.row.nombre} preparado para descarga.`,
       'descargar-informe': `Informe de ${evento.row.nombre} preparado para descarga.`,
-      'enviar-correo': `Correo preparado para ${evento.row.correo}.`,
+      'enviar-correo': '',
     };
 
+    if (evento.action === 'enviar-correo') {
+      this.seleccionados = new Set([evento.row.id]);
+      this.abrirResumenAdministrador();
+      return;
+    }
+
     this.mostrarConfirmacionAccion(acciones[evento.action] || 'Acción preparada.');
+  }
+
+  resultadoClase(informe: InformeCandidato) {
+    return informe.resultadoEntrevista.toLowerCase().includes('observaciones') ? 'is-warning' : 'is-success';
   }
 
   cerrarAlerta() {

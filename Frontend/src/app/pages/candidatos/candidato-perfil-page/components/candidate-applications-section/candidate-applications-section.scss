@@ -11,6 +11,19 @@ h2 {
   line-height: 1.2;
 }
 
+.process-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.process-header h2 {
+  margin: 0;
+}
+
 .application-title {
   margin-bottom: 22px;
   padding-bottom: 12px;
@@ -35,6 +48,23 @@ h2 {
   border-radius: 8px;
   background: linear-gradient(135deg, #c8621d, #984e21);
   color: var(--color-white);
+}
+
+.next-interview.is-empty {
+  border: 1px dashed var(--color-border-strong);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+.next-interview.is-empty span {
+  background: var(--color-white);
+  color: var(--color-muted);
+}
+
+.next-interview.is-empty dt,
+.next-interview.is-empty dd,
+.next-interview.is-empty p {
+  color: var(--color-text-soft);
 }
 
 .next-interview span {
@@ -166,9 +196,19 @@ tbody tr:hover,
   font-weight: 800;
 }
 
-.status-pill.closed {
+.status-pill.is-danger {
   background: var(--color-danger-bg);
   color: var(--color-danger);
+}
+
+.status-pill.is-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.status-pill.is-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .selected-process-summary {
@@ -216,6 +256,31 @@ tbody tr:hover,
   gap: 6px;
 }
 
+.observation-definition dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inline-action {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--color-sakura-border);
+  border-radius: 6px;
+  background: var(--color-white);
+  color: var(--color-sakura);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.inline-action:hover {
+  background: var(--color-sakura-soft);
+}
+
 .observation-definition dd {
   font-weight: 400;
 }
@@ -233,8 +298,12 @@ dd {
   font-weight: 700;
 }
 
-.selection-list .result {
+.selection-list .result.is-success {
   color: var(--color-success);
+}
+
+.selection-list .result.is-danger {
+  color: var(--color-danger);
 }
 
 .state-chip {
@@ -249,9 +318,33 @@ dd {
   font-weight: 800;
 }
 
-.state-chip.pending {
+.state-chip.is-warning {
   background: var(--color-warning-bg);
   color: var(--color-warning-dark);
+}
+
+.state-chip.is-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.state-chip.is-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.state-chip.is-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.empty-process {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 8px;
+  color: var(--color-muted);
+  font-weight: 700;
 }
 
 @media (max-width: 1050px) {
@@ -264,7 +357,12 @@ dd {
 
 @media (max-width: 760px) {
   .application-search,
-  .selection-list header {
+  .selection-list header,
+  .process-header {
     grid-template-columns: 1fr;
+  }
+
+  .process-header {
+    align-items: stretch;
   }
 }

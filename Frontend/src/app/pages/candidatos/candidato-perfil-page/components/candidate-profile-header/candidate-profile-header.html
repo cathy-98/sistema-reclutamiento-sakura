@@ -25,35 +25,64 @@
             <span class="menu-icon" aria-hidden="true">↓</span>
             Descargar CV
           </button>
-          <button type="button" (click)="selectAddObservation()">
-            <span class="menu-icon" aria-hidden="true">＋</span>
-            Agregar observación
-          </button>
         </div>
       </div>
     </div>
     <p>Cargo postulado: <strong>{{ candidato.cargo }}</strong></p>
     <p class="professional-summary">{{ candidato.resumenProfesional }}</p>
     <app-candidate-contact-line [candidato]="candidato"></app-candidate-contact-line>
+
+    <div class="candidate-primary-actions" aria-label="Acciones principales del candidato">
+      <app-button variant="secondary" (pressed)="sendTest.emit()">Enviar test</app-button>
+      <app-button (pressed)="scheduleInterview.emit()">Agendar entrevista</app-button>
+    </div>
   </div>
 
   <div class="candidate-controls">
-    <span class="request-badge">Solicitud {{ candidato.idSolicitud }}</span>
-    <label>
-      Estado postulación
-      <select [(ngModel)]="candidato.estado">
-        <option>En revision</option>
-        <option>En entrevista</option>
-        <option>Inhabilitado</option>
-        <option>Seleccionado</option>
-        <option>Descartado</option>
-        <option>Contratado</option>
+    <label class="request-selector" *ngIf="postulaciones.length > 1; else singleRequest">
+      Ver información de
+      <select
+        [ngModel]="postulacionSeleccionadaId"
+        (ngModelChange)="seleccionarPostulacion($event)"
+      >
+        <option
+          *ngFor="let postulacion of postulaciones"
+          [ngValue]="postulacion[0]"
+        >
+          {{ postulacion[0] }} · {{ postulacion[2] }}
+        </option>
       </select>
     </label>
-    <app-button variant="secondary" [fullWidth]="true" (pressed)="sendTest.emit()">Enviar test</app-button>
-    <app-button [fullWidth]="true" (pressed)="scheduleInterview.emit()">Agendar entrevista</app-button>
+
+    <ng-template #singleRequest>
+      <span class="request-badge">Solicitud {{ candidato.idSolicitud || 'Sin solicitud' }}</span>
+    </ng-template>
+
+    <label>
+      Estado postulación
+      <select
+        [(ngModel)]="candidato.estado"
+        [disabled]="!canSavePostulationState"
+      >
+        <option *ngFor="let estado of estadosPostulacionDisponibles">{{ estado }}</option>
+      </select>
+    </label>
+    <app-button
+      type="button"
+      size="sm"
+      variant="secondary"
+      [disabled]="!canSavePostulationState"
+      (pressed)="savePostulationState.emit()"
+    >
+      Guardar estado
+    </app-button>
   </div>
 </div>
 
-<app-candidate-editable-metrics [candidato]="candidato" [matchClass]="matchClass"></app-candidate-editable-metrics>
+<app-candidate-editable-metrics
+  [candidato]="candidato"
+  [matchClass]="matchClass"
+  (rentaSave)="saveRent.emit($event)"
+  (disponibilidadSave)="saveAvailability.emit($event)"
+></app-candidate-editable-metrics>
 <app-candidate-details-disclosure [candidato]="candidato"></app-candidate-details-disclosure>

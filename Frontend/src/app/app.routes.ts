@@ -70,13 +70,13 @@ export const routes: Routes = [
         path: 'cuestionarios/test',
         loadComponent: () =>
           import('./pages/cuestionarios/cuestionarios-admin/cuestionarios-admin').then((m) => m.CuestionariosAdmin),
-        data: { roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE'], vista: 'armar' }
+        data: { roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE', 'CUEST_ASSIGN'], vista: 'armar' }
       },
       {
         path: 'cuestionarios/banco',
         loadComponent: () =>
           import('./pages/cuestionarios/cuestionarios-admin/cuestionarios-admin').then((m) => m.CuestionariosAdmin),
-        data: { roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_VIEW'], vista: 'crear' }
+        data: { roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE'], vista: 'crear' }
       },
       {
         path: 'informes-cliente',

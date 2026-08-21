@@ -121,6 +121,15 @@ tbody tr:hover .sticky-right {
   background: var(--color-table-row-highlight);
 }
 
+tbody tr.is-clickable {
+  cursor: pointer;
+}
+
+tbody tr.is-clickable:focus-visible {
+  outline: 2px solid var(--color-sakura);
+  outline-offset: -2px;
+}
+
 .select-col,
 .select-column {
   width: 52px;
@@ -154,6 +163,10 @@ tbody tr:hover .sticky-right {
   vertical-align: middle;
 }
 
+td.actions-column.has-open-menu {
+  z-index: 25;
+}
+
 td.wrap-cell {
   white-space: normal;
 }
@@ -164,6 +177,19 @@ td.wrap-cell .stack-cell span {
   overflow: hidden;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+td.is-empty-request > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-table);
+  border-radius: 6px;
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 th.sticky-left,
@@ -240,9 +266,12 @@ td.wrap-cell .person-cell strong {
   line-height: 1.35;
 }
 
+/*
+ * Acciones de fila
+ */
 .row-actions {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -252,6 +281,9 @@ td.wrap-cell .person-cell strong {
   gap: 6px;
 }
 
+/*
+ * Contenedor del botón ⋮ y su menú.
+ */
 .row-menu {
   position: relative;
 }
@@ -261,11 +293,15 @@ td.wrap-cell .person-cell strong {
   width: 38px;
   height: 38px;
   place-items: center;
+
   border: 1px solid transparent;
   border-radius: 6px;
+
   background: var(--color-white);
   color: var(--color-text);
+
   cursor: pointer;
+
   font: inherit;
   font-size: 22px;
   font-weight: 800;
@@ -277,32 +313,52 @@ td.wrap-cell .person-cell strong {
   color: var(--color-sakura);
 }
 
+/*
+ * UX/UI DataTable
+ *
+ * El menú se abre debajo del botón ⋮ y se alinea
+ * con su borde derecho.
+ *
+ * Así no pisa el botón "Ver" y mantiene una
+ * relación clara con el trigger.
+ */
 .row-menu-list {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  z-index: 12;
+
+  z-index: 40;
+
   display: grid;
-  min-width: 180px;
+  min-width: 230px;
   padding: 8px;
+
   border: 1px solid var(--color-border);
   border-radius: 8px;
+
   background: var(--color-white);
   box-shadow: var(--shadow-modal);
 }
 
 .row-menu-list button {
-  min-height: 38px;
-  padding: 0 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+
   border: 0;
   border-radius: 6px;
+
   background: transparent;
   color: var(--color-text);
+
   cursor: pointer;
+
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   text-align: left;
+
+  white-space: nowrap;
 }
 
 .row-menu-list button:hover:not(:disabled) {
@@ -318,5 +374,9 @@ td.wrap-cell .person-cell strong {
 @media (max-width: 640px) {
   .data-table-panel {
     border-radius: 10px;
+  }
+
+  .row-menu-list {
+    min-width: 190px;
   }
 }

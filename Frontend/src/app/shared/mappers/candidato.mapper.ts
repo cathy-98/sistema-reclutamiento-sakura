@@ -114,12 +114,12 @@ function normalizarNumero(valor?: number | string | null) {
   return Number.isNaN(numero) ? undefined : numero;
 }
 
-export function extraerLinkedinUrl(valor?: string | null) {
+export function extraerLinkedinUrl(valor?: string | string[] | null) {
   if (!valor) {
     return undefined;
   }
 
-  const urls = valor
+  const urls = (Array.isArray(valor) ? valor.join(';') : valor)
     .split(/[\s,;|]+/)
     .map((item) => item.trim().replace(/[).,\];]+$/g, ''))
     .filter(Boolean);

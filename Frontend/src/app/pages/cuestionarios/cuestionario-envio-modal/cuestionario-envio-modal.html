@@ -1,5 +1,5 @@
 <app-modal
-  titulo="Enviar test"
+  titulo="Enviar cuestionario"
   [subtitulo]="cantidadPreguntas + ' preguntas seleccionadas - ' + duracion"
   ancho="md"
   (cerrar)="cerrar.emit()"
@@ -8,32 +8,30 @@
     <p class="test-summary">{{ resumen }}</p>
 
     <app-form-field label="ID solicitud" [required]="true">
-      <input type="text" formControlName="solicitudId" placeholder="SOL-001" />
+      <input type="number" min="1" formControlName="solicitudId" placeholder="14" />
     </app-form-field>
 
-    <fieldset formArrayName="destinatarios">
-      <legend>Destinatarios</legend>
+    <app-form-field label="IDs de candidatos" [required]="true">
+      <textarea formControlName="candidatoIds" placeholder="15, 18, 21"></textarea>
+    </app-form-field>
 
-      <div class="recipient-row" *ngFor="let destinatario of destinatarios.controls; let i = index" [formGroupName]="i">
-        <app-form-field label="Nombre" [required]="true">
-          <input type="text" formControlName="nombre" placeholder="Nombre candidato" />
-        </app-form-field>
-        <app-form-field label="Correo" [required]="true">
-          <input type="email" formControlName="correo" placeholder="correo@empresa.cl" />
-        </app-form-field>
-        <app-button variant="secondary" size="sm" type="button" (pressed)="eliminarDestinatario(i)">Quitar</app-button>
-      </div>
-    </fieldset>
-
-    <app-button variant="secondary" type="button" (pressed)="agregarDestinatario()">Agregar destinatario</app-button>
+    <app-form-field label="Fecha de vencimiento" [required]="true">
+      <input type="datetime-local" formControlName="fechaVencimiento" />
+    </app-form-field>
 
     <app-form-field label="Mensaje opcional">
-      <textarea formControlName="mensaje" placeholder="Mensaje para acompanar el test"></textarea>
+      <textarea formControlName="mensaje" placeholder="Mensaje para acompanar el cuestionario"></textarea>
     </app-form-field>
+
+    <p class="test-summary">
+      El cuestionario queda asociado a esta solicitud. Para otra solicitud se debe crear un nuevo cuestionario usando preguntas del banco.
+    </p>
 
     <footer class="modal-actions">
       <app-button variant="secondary" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
-      <app-button type="submit">Enviar test</app-button>
+      <app-button type="submit" [disabled]="enviando">
+        {{ enviando ? 'Enviando...' : 'Enviar cuestionario' }}
+      </app-button>
     </footer>
   </form>
 </app-modal>

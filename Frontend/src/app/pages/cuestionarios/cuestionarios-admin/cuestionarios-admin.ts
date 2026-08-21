@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { forkJoin, take } from 'rxjs';
+import { finalize, forkJoin, take } from 'rxjs';
 import {
   CuestionariosService,
   NivelCuestionario,
@@ -14,10 +14,12 @@ import { Card } from '../../../shared/components/card/card';
 import { DataTable, DataTableColumn } from '../../../shared/components/data-table/data-table';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { FormField } from '../../../shared/components/form-field/form-field';
+import { Modal } from '../../../shared/components/modal/modal';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { TabItem, Tabs } from '../../../shared/components/tabs/tabs';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
+import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { CuestionarioEnvioModal, CuestionarioEnvioPayload } from '../cuestionario-envio-modal/cuestionario-envio-modal';
 
 interface TecnologiaResumen {
@@ -27,6 +29,14 @@ interface TecnologiaResumen {
   semiSenior: number;
   senior: number;
   cantidad: number;
+  niveles: Array<{
+    id: number;
+    nombre: string;
+    cantidad: number;
+    duracion: string;
+    porcentaje: number;
+  }>;
+  profundidad: string;
 }
 
 interface EnvioCuestionarioHistorial {
@@ -50,6 +60,7 @@ interface EnvioCuestionarioHistorial {
     DataTable,
     Card,
     FormField,
+    Modal,
     Button,
     AlertRegion,
     Tabs,
@@ -75,12 +86,15 @@ export class CuestionariosAdmin implements OnInit {
   alertaEnvio: AlertaUi | null = null;
   vistaActiva: 'armar' | 'crear' = 'armar';
   nivelBancoActivo = 'todos';
+  categoriaBancoActiva = 'todas';
   tabsBanco: TabItem[] = [];
   historialEnvios: EnvioCuestionarioHistorial[] = [];
   resumenSeleccionPorTecnologia: Array<{ nombre: string; cantidad: number; duracion: string }> = [];
   paginaActual = 1;
   registrosPorPagina = 10;
   cargando = false;
+  enviando = false;
+  private tecnologiaSeleccionadaManualmente = false;
 
   readonly opcionesRespuestaCorrecta = [0, 1, 2].map((indice) => ({
     indice,
@@ -122,7 +136,7 @@ export class CuestionariosAdmin implements OnInit {
   readonly columnasTecnologias: DataTableColumn<TecnologiaResumen>[] = [
     {
       key: 'tecnologia',
-      label: 'Tecnologia',
+      label: 'Habilidad',
       width: 220,
       wrap: true,
       value: (row) => row.tecnologia.nombre,
@@ -137,7 +151,7 @@ export class CuestionariosAdmin implements OnInit {
   readonly columnasTecnologiasPorNivel: DataTableColumn<TecnologiaResumen>[] = [
     {
       key: 'tecnologia',
-      label: 'Tecnologia',
+      label: 'Habilidad',
       width: 280,
       wrap: true,
       value: (row) => row.tecnologia.nombre,
@@ -152,6 +166,7 @@ export class CuestionariosAdmin implements OnInit {
 
   ngOnInit() {
     this.vistaActiva = this.route.snapshot.data['vista'] === 'crear' ? 'crear' : 'armar';
+    this.reiniciarEstadoEntrada();
     this.cargarCatalogosCuestionarios();
     this.cargarPreguntas();
     this.sincronizarDuracionConNivel();
@@ -167,7 +182,7 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get tituloPagina() {
-    return this.vistaActiva === 'crear' ? 'Banco de preguntas' : 'Armar y enviar test';
+    return this.vistaActiva === 'crear' ? 'Banco de preguntas' : 'Armar y enviar cuestionario';
   }
 
   get subtituloPagina() {
@@ -187,7 +202,7 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get tituloVistaActiva() {
-    return this.vistaActiva === 'crear' ? 'Crear pregunta' : 'Armar y enviar test';
+    return this.vistaActiva === 'crear' ? 'Crear pregunta' : 'Armar y enviar cuestionario';
   }
 
   get columnasBanco() {
@@ -195,7 +210,7 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get tituloBanco() {
-    return this.nivelBancoActivo === 'todos' ? 'Listado de tecnologias' : `Preguntas ${this.nombreNivelBancoActivo}`;
+    return this.nivelBancoActivo === 'todos' ? 'Listado de habilidades' : `Preguntas ${this.nombreNivelBancoActivo}`;
   }
 
   get nombreNivelBancoActivo() {
@@ -203,7 +218,42 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get subtituloBanco() {
-    return `${this.tecnologiasFiltradas.length} tecnologias encontradas.`;
+    return `${this.tecnologiasFiltradas.length} habilidades encontradas.`;
+  }
+
+  get categoriasTecnologia() {
+    const categorias = new Map<string, { id: string; nombre: string }>();
+
+    this.tecnologias.forEach((tecnologia) => {
+      const id = tecnologia.categoriaId != null
+        ? String(tecnologia.categoriaId)
+        : 'sin-categoria';
+      categorias.set(id, {
+        id,
+        nombre: tecnologia.categoriaNombre,
+      });
+    });
+
+    return Array.from(categorias.values()).sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, 'es-CL', { sensitivity: 'base' }),
+    );
+  }
+
+  get categoriasFiltroBanco() {
+    return [
+      { id: 'todas', nombre: 'Todas' },
+      ...this.categoriasTecnologia,
+    ];
+  }
+
+  get tecnologiasFormularioPorCategoria() {
+    return this.agruparTecnologiasPorCategoria(
+      this.tecnologias.map((tecnologia) => this.resumenPorTecnologia(tecnologia)),
+    );
+  }
+
+  get tecnologiasFiltradasPorCategoria() {
+    return this.agruparTecnologiasPorCategoria(this.tecnologiasFiltradas);
   }
 
   get preguntasSeleccionadasDetalle() {
@@ -230,14 +280,60 @@ export class CuestionariosAdmin implements OnInit {
     const busquedaNormalizada = this.normalizar(this.busquedaTecnologia);
 
     return this.resumenTecnologias.filter((row) => {
-      const texto = `${row.tecnologia.nombre} ${row.basico} ${row.junior} ${row.semiSenior} ${row.senior} ${row.cantidad}`;
-      return !busquedaNormalizada || this.normalizar(texto).includes(busquedaNormalizada);
+      const categoriaId =
+        row.tecnologia.categoriaId != null
+          ? String(row.tecnologia.categoriaId)
+          : 'sin-categoria';
+      const coincideCategoria =
+        this.categoriaBancoActiva === 'todas' ||
+        this.categoriaBancoActiva === categoriaId;
+      const texto = `${row.tecnologia.categoriaNombre} ${row.tecnologia.nombre} ${row.basico} ${row.junior} ${row.semiSenior} ${row.senior} ${row.cantidad}`;
+      const coincideBusqueda =
+        !busquedaNormalizada ||
+        this.normalizar(texto).includes(busquedaNormalizada);
+
+      return coincideCategoria && coincideBusqueda;
     });
   }
 
   get preguntasPaginadas() {
     const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
     return this.preguntasFiltradas.slice(inicio, inicio + this.registrosPorPagina);
+  }
+
+  get preguntasBancoDetalle() {
+    const tecnologiaId = this.tecnologiaDetalle?.id;
+    const nivelId = this.nivelBancoActivo === 'todos' ? null : Number(this.nivelBancoActivo);
+
+    if (!tecnologiaId) {
+      return [];
+    }
+
+    return this.preguntas.filter((pregunta) =>
+      pregunta.tecnologiaId === tecnologiaId &&
+      (!nivelId || pregunta.nivelId === nivelId),
+    );
+  }
+
+  get preguntasBancoDetallePaginadas() {
+    const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
+    return this.preguntasBancoDetalle.slice(inicio, inicio + this.registrosPorPagina);
+  }
+
+  get tituloDetalleBanco() {
+    const tecnologia = this.tecnologiaDetalle?.nombre ?? 'Habilidad';
+
+    return this.nivelBancoActivo === 'todos'
+      ? `Preguntas creadas: ${tecnologia}`
+      : `Preguntas ${this.nombreNivelBancoActivo}: ${tecnologia}`;
+  }
+
+  get subtituloDetalleBanco() {
+    return `${this.preguntasBancoDetalle.length} preguntas encontradas.`;
+  }
+
+  get anchoDetalleBanco(): 'md' | 'lg' | 'xl' {
+    return this.preguntasBancoDetalle.length === 0 ? 'md' : 'xl';
   }
 
   get totalPreguntasDetalle() {
@@ -254,10 +350,27 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get resumenNivelesDetalle() {
-    return this.niveles.map((nivel) => ({
-      nombre: nivel.nombre,
-      cantidad: this.preguntasFiltradas.filter((pregunta) => pregunta.nivelId === nivel.id).length,
-    }));
+    return this.resumenTecnologiaDetalle?.niveles ?? [];
+  }
+
+  get resumenTecnologiaDetalle() {
+    if (!this.tecnologiaDetalle) {
+      return null;
+    }
+
+    return this.resumenTecnologias.find(
+      (item) => item.tecnologia.id === this.tecnologiaDetalle?.id,
+    ) ?? null;
+  }
+
+  get profundidadTecnologiaDetalle() {
+    const resumen = this.resumenTecnologiaDetalle;
+
+    if (!resumen || resumen.cantidad === 0) {
+      return 'Sin preguntas creadas para esta habilidad.';
+    }
+
+    return resumen.profundidad;
   }
 
   get preguntasParaEnviar() {
@@ -299,12 +412,12 @@ export class CuestionariosAdmin implements OnInit {
 
   get resumenTestSeleccionado() {
     if (this.preguntasParaEnviar.length === 0) {
-      return 'Selecciona preguntas desde una o varias tecnologias para armar el test.';
+      return 'Selecciona preguntas desde una o varias habilidades para armar el cuestionario.';
     }
 
     const tecnologias = new Set(this.preguntasParaEnviar.map((pregunta) => this.obtenerNombreTecnologia(pregunta.tecnologiaId)));
     const niveles = new Set(this.preguntasParaEnviar.map((pregunta) => this.obtenerNombreNivel(pregunta.nivelId)));
-    return `${tecnologias.size} tecnologia(s): ${Array.from(tecnologias).join(', ')}. ${niveles.size} nivel(es): ${Array.from(niveles).join(', ')}.`;
+    return `${tecnologias.size} habilidad(es): ${Array.from(tecnologias).join(', ')}. ${niveles.size} nivel(es): ${Array.from(niveles).join(', ')}.`;
   }
 
   cargarPreguntas() {
@@ -380,6 +493,17 @@ export class CuestionariosAdmin implements OnInit {
         this.formulario.markAsPristine();
         this.formulario.markAsUntouched();
         this.cargarPreguntas();
+        this.alertaEnvio = {
+          tipo: 'success',
+          variante: 'soft',
+          mensaje: 'Pregunta creada en el banco técnico.',
+        };
+      }, (error) => {
+        this.alertaEnvio = {
+          tipo: 'danger',
+          variante: 'soft',
+          mensaje: obtenerMensajeError(error, 'No se pudo crear la pregunta. Revisa los datos e intenta nuevamente.'),
+        };
       });
   }
 
@@ -398,14 +522,27 @@ export class CuestionariosAdmin implements OnInit {
 
   limpiarBusquedaTecnologia() {
     this.busquedaTecnologia = '';
+    this.categoriaBancoActiva = 'todas';
+    this.seleccionarTecnologiaInicial();
   }
 
   cambiarNivelBanco(nivel: string) {
     this.nivelBancoActivo = nivel;
+    this.paginaActual = 1;
+  }
+
+  cambiarCategoriaBanco() {
+    this.paginaActual = 1;
+    this.tecnologiaDetalle = null;
   }
 
   cambiarPagina(pagina: number) {
     const totalPaginas = Math.max(1, Math.ceil(this.preguntasFiltradas.length / this.registrosPorPagina));
+    this.paginaActual = Math.min(Math.max(pagina, 1), totalPaginas);
+  }
+
+  cambiarPaginaDetalleBanco(pagina: number) {
+    const totalPaginas = Math.max(1, Math.ceil(this.preguntasBancoDetalle.length / this.registrosPorPagina));
     this.paginaActual = Math.min(Math.max(pagina, 1), totalPaginas);
   }
 
@@ -432,17 +569,7 @@ export class CuestionariosAdmin implements OnInit {
       return row.cantidad;
     }
 
-    const nivel = this.obtenerNombreNivel(Number(this.nivelBancoActivo)).toLowerCase();
-    if (nivel === 'basico') {
-      return row.basico;
-    }
-    if (nivel === 'junior') {
-      return row.junior;
-    }
-    if (nivel === 'semi senior') {
-      return row.semiSenior;
-    }
-    return row.senior;
+    return row.niveles.find((nivel) => nivel.id === Number(this.nivelBancoActivo))?.cantidad ?? 0;
   }
 
   obtenerNombreNivel(nivelId: number) {
@@ -458,13 +585,27 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   verDetalleTecnologia(tecnologia: TecnologiaCuestionario) {
+    this.tecnologiaSeleccionadaManualmente = true;
     this.tecnologiaDetalle = tecnologia;
     this.formulario.patchValue({ tecnologiaId: tecnologia.id });
     this.limpiarBusquedaPreguntas();
     this.alertaEnvio = null;
   }
 
+  verPreguntasBanco(row: TecnologiaResumen) {
+    this.tecnologiaDetalle = row.tecnologia;
+    this.formulario.patchValue({ tecnologiaId: row.tecnologia.id });
+    this.busquedaPreguntas = '';
+    this.paginaActual = 1;
+  }
+
+  cerrarDetalleBanco() {
+    this.tecnologiaDetalle = null;
+    this.paginaActual = 1;
+  }
+
   volverListadoTecnologias() {
+    this.tecnologiaSeleccionadaManualmente = false;
     this.tecnologiaDetalle = null;
     this.limpiarBusquedaPreguntas();
     this.alertaEnvio = null;
@@ -499,24 +640,51 @@ export class CuestionariosAdmin implements OnInit {
       return;
     }
 
-    this.historialEnvios = [
-      {
-        id: `ENV-${String(this.historialEnvios.length + 1).padStart(3, '0')}`,
+    this.enviando = true;
+    this.cuestionariosService
+      .crearYAsignarCuestionario({
         solicitudId: payload.solicitudId,
-        destinatarios: payload.destinatarios.length,
-        preguntas: this.cantidadPreguntasParaEnviar,
-        duracion: this.duracionParaEnviar,
-        resumen: this.resumenTestSeleccionado,
-        fecha: new Intl.DateTimeFormat('es-CL').format(new Date()),
-      },
-      ...this.historialEnvios,
-    ];
-    this.alertaEnvio = {
-      tipo: 'success',
-      variante: 'soft',
-      mensaje: `Test ${payload.solicitudId} enviado a ${payload.destinatarios.length} destinatario(s) con ${this.cantidadPreguntasParaEnviar} pregunta(s).`,
-    };
-    this.cerrarModalEnvio();
+        preguntaIds: this.preguntasParaEnviar.map((pregunta) => Number(pregunta.id)),
+        candidatoIds: payload.candidatoIds,
+        fechaVencimiento: payload.fechaVencimiento,
+        descripcion: payload.mensaje || null,
+      })
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.enviando = false;
+        }),
+      )
+      .subscribe({
+        next: (resultado) => {
+          this.historialEnvios = [
+            {
+              id: `CUEST-${resultado.cuestionario_id}`,
+              solicitudId: String(resultado.solicitud_id),
+              destinatarios: resultado.total_asignados,
+              preguntas: this.cantidadPreguntasParaEnviar,
+              duracion: this.duracionParaEnviar,
+              resumen: this.resumenTestSeleccionado,
+              fecha: new Intl.DateTimeFormat('es-CL').format(new Date()),
+            },
+            ...this.historialEnvios,
+          ];
+          this.alertaEnvio = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: `Cuestionario enviado a ${resultado.total_asignados} candidato(s). ${resultado.total_omitidos_ya_asignados} ya estaban asignado(s).`,
+          };
+          this.deseleccionarPreguntas();
+          this.cerrarModalEnvio();
+        },
+        error: (error) => {
+          this.alertaEnvio = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo enviar el cuestionario. Revisa la solicitud, candidatos y vencimiento.'),
+          };
+        },
+      });
   }
 
   private sincronizarDuracionConNivel() {
@@ -543,14 +711,39 @@ export class CuestionariosAdmin implements OnInit {
     const semiSeniorId = obtenerNivelId('Semi Senior');
     const seniorId = obtenerNivelId('Senior');
 
-    this.resumenTecnologias = this.tecnologias.map((tecnologia) => ({
-      tecnologia,
-      basico: this.contarPreguntas(tecnologia.id, basicoId),
-      junior: this.contarPreguntas(tecnologia.id, juniorId),
-      semiSenior: this.contarPreguntas(tecnologia.id, semiSeniorId),
-      senior: this.contarPreguntas(tecnologia.id, seniorId),
-      cantidad: this.preguntas.filter((pregunta) => pregunta.tecnologiaId === tecnologia.id).length,
-    }));
+    this.resumenTecnologias = this.tecnologias.map((tecnologia) => {
+      const preguntasTecnologia = this.preguntas.filter((pregunta) => pregunta.tecnologiaId === tecnologia.id);
+      const cantidad = preguntasTecnologia.length;
+      const niveles = this.niveles.map((nivel) => {
+        const preguntasNivel = preguntasTecnologia.filter((pregunta) => pregunta.nivelId === nivel.id);
+        const totalSegundos = preguntasNivel.reduce(
+          (total, pregunta) => total + pregunta.duracionMinutos * 60 + pregunta.duracionSegundos,
+          0,
+        );
+
+        return {
+          id: nivel.id,
+          nombre: nivel.nombre,
+          cantidad: preguntasNivel.length,
+          duracion: this.formatearSegundos(totalSegundos),
+          porcentaje: cantidad > 0 ? Math.round((preguntasNivel.length / cantidad) * 100) : 0,
+        };
+      });
+      const nivelesConPreguntas = niveles.filter((nivel) => nivel.cantidad > 0);
+
+      return {
+        tecnologia,
+        basico: this.contarPreguntas(tecnologia.id, basicoId),
+        junior: this.contarPreguntas(tecnologia.id, juniorId),
+        semiSenior: this.contarPreguntas(tecnologia.id, semiSeniorId),
+        senior: this.contarPreguntas(tecnologia.id, seniorId),
+        cantidad,
+        niveles,
+        profundidad: nivelesConPreguntas.length
+          ? nivelesConPreguntas.map((nivel) => `${nivel.nombre}: ${nivel.cantidad}`).join(' / ')
+          : 'Sin preguntas',
+      };
+    });
   }
 
   private actualizarResumenSeleccion() {
@@ -571,12 +764,22 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   private seleccionarTecnologiaInicial() {
-    if (this.tecnologiaDetalle || this.tecnologias.length === 0) {
+    if (this.vistaActiva === 'crear' || this.tecnologiaSeleccionadaManualmente || this.tecnologias.length === 0) {
       return;
     }
 
     const tecnologiaConPreguntas = this.resumenTecnologias.find((item) => item.cantidad > 0);
-    this.tecnologiaDetalle = tecnologiaConPreguntas?.tecnologia ?? this.tecnologias[0];
+    const tecnologiaActual = this.tecnologiaDetalle
+      ? this.resumenTecnologias.find((item) => item.tecnologia.id === this.tecnologiaDetalle?.id)
+      : null;
+    const debeReemplazarSeleccion =
+      !tecnologiaActual ||
+      (tecnologiaActual.cantidad === 0 && Boolean(tecnologiaConPreguntas));
+
+    if (debeReemplazarSeleccion) {
+      this.tecnologiaDetalle = tecnologiaConPreguntas?.tecnologia ?? this.tecnologias[0];
+      this.formulario.patchValue({ tecnologiaId: this.tecnologiaDetalle.id });
+    }
   }
 
   private contarPreguntas(tecnologiaId: number, nivelId?: number) {
@@ -604,5 +807,61 @@ export class CuestionariosAdmin implements OnInit {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private reiniciarEstadoEntrada() {
+    this.busquedaTecnologia = '';
+    this.busquedaPreguntas = '';
+    this.nivelBancoActivo = 'todos';
+    this.categoriaBancoActiva = 'todas';
+    this.paginaActual = 1;
+    this.tecnologiaDetalle = null;
+    this.tecnologiaSeleccionadaManualmente = false;
+
+    if (this.vistaActiva === 'armar') {
+      this.preguntasSeleccionadas = new Set();
+      this.actualizarResumenSeleccion();
+    }
+  }
+
+  private agruparTecnologiasPorCategoria(rows: TecnologiaResumen[]) {
+    const grupos = new Map<string, { nombre: string; items: TecnologiaResumen[] }>();
+
+    rows.forEach((row) => {
+      const key = row.tecnologia.categoriaId != null
+        ? String(row.tecnologia.categoriaId)
+        : 'sin-categoria';
+      const grupo = grupos.get(key) ?? {
+        nombre: row.tecnologia.categoriaNombre,
+        items: [],
+      };
+
+      grupo.items.push(row);
+      grupos.set(key, grupo);
+    });
+
+    return Array.from(grupos.values())
+      .map((grupo) => ({
+        ...grupo,
+        items: grupo.items.sort((a, b) =>
+          a.tecnologia.nombre.localeCompare(b.tecnologia.nombre, 'es-CL', { sensitivity: 'base' }),
+        ),
+      }))
+      .sort((a, b) =>
+        a.nombre.localeCompare(b.nombre, 'es-CL', { sensitivity: 'base' }),
+      );
+  }
+
+  private resumenPorTecnologia(tecnologia: TecnologiaCuestionario): TecnologiaResumen {
+    return this.resumenTecnologias.find((row) => row.tecnologia.id === tecnologia.id) ?? {
+      tecnologia,
+      basico: 0,
+      junior: 0,
+      semiSenior: 0,
+      senior: 0,
+      cantidad: 0,
+      niveles: [],
+      profundidad: 'Sin preguntas',
+    };
   }
 }
