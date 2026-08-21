@@ -7,17 +7,80 @@
   <form class="send-form" [formGroup]="formulario" (ngSubmit)="confirmarEnvio()">
     <p class="test-summary">{{ resumen }}</p>
 
-    <app-form-field label="ID solicitud" [required]="true">
-      <input type="number" min="1" formControlName="solicitudId" placeholder="14" />
+    <app-form-field label="Solicitud" [required]="true">
+      <select formControlName="solicitudId" (change)="cambiarSolicitud()" [disabled]="cargandoOpciones || enviando">
+        <option [ngValue]="null">Selecciona una solicitud</option>
+        <option *ngFor="let solicitud of solicitudes" [ngValue]="solicitud.id">
+          {{ solicitud.codigo }} - {{ solicitud.cargo }} - {{ solicitud.cliente }}
+        </option>
+      </select>
     </app-form-field>
 
-    <app-form-field label="IDs de candidatos" [required]="true">
-      <textarea formControlName="candidatoIds" placeholder="15, 18, 21"></textarea>
-    </app-form-field>
+    <section class="request-summary" *ngIf="solicitudSeleccionada">
+      <span>{{ solicitudSeleccionada.estado }}</span>
+      <strong>{{ solicitudSeleccionada.cargo }}</strong>
+      <small>{{ solicitudSeleccionada.cliente }}</small>
+      <small class="field-error" *ngIf="motivoBloqueoSolicitud">
+        {{ motivoBloqueoSolicitud }}
+      </small>
+    </section>
 
-    <app-form-field label="Fecha de vencimiento" [required]="true">
-      <input type="datetime-local" formControlName="fechaVencimiento" />
-    </app-form-field>
+    <section
+      class="candidate-picker"
+      aria-label="Candidatos asociados a la solicitud"
+      [class.is-disabled]="!solicitudPermiteAsignacion"
+    >
+      <header>
+        <div>
+          <strong>Candidatos asociados</strong>
+          <span>{{ candidatosSolicitud.length }} disponible(s)</span>
+        </div>
+        <div class="candidate-actions" *ngIf="candidatosSolicitud.length > 0">
+          <button type="button" (click)="seleccionarTodosCandidatos()" [disabled]="enviando || !solicitudPermiteAsignacion">Todos</button>
+          <button type="button" (click)="limpiarCandidatos()" [disabled]="enviando || !solicitudPermiteAsignacion">Limpiar</button>
+        </div>
+      </header>
+
+      <div class="picker-state" *ngIf="cargandoOpciones">
+        Cargando solicitudes y candidatos...
+      </div>
+
+      <div class="picker-state" *ngIf="!cargandoOpciones && !formulario.value.solicitudId">
+        Elige una solicitud para ver sus candidatos.
+      </div>
+
+      <div class="picker-state" *ngIf="!cargandoOpciones && formulario.value.solicitudId && candidatosSolicitud.length === 0">
+        No hay candidatos asociados a esta solicitud.
+      </div>
+
+      <label class="candidate-option" *ngFor="let candidato of candidatosSolicitud">
+        <input
+          type="checkbox"
+          [checked]="candidatoMarcado(candidato.id)"
+          [disabled]="enviando || !solicitudPermiteAsignacion"
+          (change)="alternarCandidato(candidato.id, $any($event.target).checked)"
+        />
+        <span>
+          <strong>{{ candidato.nombre }}</strong>
+          <small>{{ candidato.correo }} - {{ candidato.estado }}</small>
+        </span>
+      </label>
+
+      <p class="field-error" *ngIf="errorCandidatos">{{ errorCandidatos }}</p>
+    </section>
+
+    <div class="expiration-grid">
+      <app-form-field label="Fecha" [required]="true">
+        <app-date-picker
+          [min]="fechaHoyInput"
+          formControlName="fechaVencimiento"
+        ></app-date-picker>
+      </app-form-field>
+
+      <app-form-field label="Hora" [required]="true">
+        <input type="time" formControlName="horaVencimiento" />
+      </app-form-field>
+    </div>
 
     <app-form-field label="Mensaje opcional">
       <textarea formControlName="mensaje" placeholder="Mensaje para acompanar el cuestionario"></textarea>
@@ -26,12 +89,16 @@
     <p class="test-summary">
       El cuestionario queda asociado a esta solicitud. Para otra solicitud se debe crear un nuevo cuestionario usando preguntas del banco.
     </p>
-
-    <footer class="modal-actions">
-      <app-button variant="secondary" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
-      <app-button type="submit" [disabled]="enviando">
-        {{ enviando ? 'Enviando...' : 'Enviar cuestionario' }}
-      </app-button>
-    </footer>
   </form>
+
+  <app-form-actions modal-footer>
+    <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
+    <app-button
+      type="button"
+      [disabled]="enviando || cargandoOpciones || !solicitudPermiteAsignacion"
+      (pressed)="confirmarEnvio()"
+    >
+      {{ enviando ? 'Enviando...' : 'Enviar cuestionario' }}
+    </app-button>
+  </app-form-actions>
 </app-modal>

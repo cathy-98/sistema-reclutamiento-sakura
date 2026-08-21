@@ -67,7 +67,6 @@ export class SolicitudesList implements OnInit {
   paginaActual = 1;
   registrosPorPagina = 5;
   filtros: FiltrosSolicitudes = this.filtrosIniciales();
-  private cargaTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
     {
@@ -258,14 +257,6 @@ export class SolicitudesList implements OnInit {
       this.alerta = null;
     }
     this.cdr.detectChanges();
-    this.limpiarTimeoutCarga();
-
-    this.cargaTimeoutId = window.setTimeout(() => {
-      this.cargando = false;
-      this.solicitudes = [];
-      this.errorCarga = 'El listado superó 4 segundos de espera. Reintenta la carga.';
-      this.cdr.detectChanges();
-    }, SOLICITUDES_LOAD_TIMEOUT_MS);
 
     this.solicitudesService
       .listar()
@@ -273,22 +264,19 @@ export class SolicitudesList implements OnInit {
         timeout(SOLICITUDES_LOAD_TIMEOUT_MS),
         take(1),
         finalize(() => {
-          this.limpiarTimeoutCarga();
+          this.cargando = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe({
         next: (solicitudes) => {
-          this.cargando = false;
           this.solicitudes = solicitudes;
           this.paginaActual = 1;
           this.errorCarga = '';
-          this.cdr.detectChanges();
         },
         error: (error) => {
-          this.cargando = false;
           this.solicitudes = [];
           this.errorCarga = obtenerMensajeError(error, 'El listado superó 4 segundos de espera. Reintenta la carga.');
-          this.cdr.detectChanges();
         },
       });
   }
@@ -530,13 +518,5 @@ export class SolicitudesList implements OnInit {
     return solicitud.seleccion.split(' - ');
   }
 
-  private limpiarTimeoutCarga() {
-    if (!this.cargaTimeoutId) {
-      return;
-    }
-
-    window.clearTimeout(this.cargaTimeoutId);
-    this.cargaTimeoutId = null;
-  }
 }
 

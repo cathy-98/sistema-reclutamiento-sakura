@@ -105,6 +105,8 @@ export class DataTable<T> {
     25,
   ];
 
+  @Input() hidePagination = false;
+
   @Input() selectable = true;
 
   @Input() selectedIds =
@@ -207,6 +209,14 @@ export class DataTable<T> {
   }
 
   get sortedRows() {
+    return this.sortedAllRows;
+  }
+
+  get visibleRowCount() {
+    return this.sortedRows.length;
+  }
+
+  get sortedAllRows() {
     if (!this.sortKey) {
       return this.rows;
     }

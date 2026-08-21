@@ -247,8 +247,15 @@ tbody tr:hover,
 }
 
 .selection-list dl {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(240px, 0.9fr);
   margin: 0;
+}
+
+.selection-list .result-summary {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
 }
 
 .selection-list .observation-definition {

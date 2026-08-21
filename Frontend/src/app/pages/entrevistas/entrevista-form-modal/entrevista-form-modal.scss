@@ -78,6 +78,89 @@
   background: var(--color-white);
 }
 
+.candidate-picker {
+  display: grid;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.candidate-picker.is-disabled {
+  background: var(--color-input-bg);
+}
+
+.candidate-picker header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.candidate-picker header div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.candidate-picker header strong,
+.candidate-option strong {
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.candidate-picker header span,
+.candidate-option small,
+.picker-state {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.candidate-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.candidate-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+  color: var(--color-sakura);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.candidate-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.candidate-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-soft);
+}
+
+.candidate-option input {
+  margin-top: 2px;
+}
+
+.candidate-option span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .selected-candidates li span {
   color: var(--color-text);
   font-weight: 800;
@@ -138,6 +221,12 @@
   color: var(--color-danger);
   font-size: 11px;
   font-weight: 700;
+}
+
+.footer-error {
+  align-self: center;
+  margin-right: auto;
+  padding-right: 12px;
 }
 
 .type-options {

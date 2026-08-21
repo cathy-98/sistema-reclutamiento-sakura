@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChange
 import { ReactiveFormsModule, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Button } from '../../../shared/components/button/button';
 import { DataTable, DataTableColumn } from '../../../shared/components/data-table/data-table';
+import { DatePicker } from '../../../shared/components/date-picker/date-picker';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { FormSection } from '../../../shared/components/form-section/form-section';
@@ -10,8 +11,19 @@ import { IconButton } from '../../../shared/components/icon-button/icon-button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { Stepper } from '../../../shared/components/stepper/stepper';
 import { EntrevistaPayload, TipoEntrevista } from '../../../services/entrevistas.service';
-import { CatalogosService, UsuarioCatalogoApi } from '../../../services/catalogos.service';
-import { catchError, forkJoin, of, take, timeout } from 'rxjs';
+import {
+  CatalogosService,
+  TipoEntrevistaCatalogoApi,
+  UsuarioCatalogoApi,
+} from '../../../services/catalogos.service';
+import {
+  CandidatoApi,
+  CandidatosService,
+  PostulacionCandidatoApi,
+} from '../../../services/candidatos.service';
+import { SolicitudesService } from '../../../services/solicitudes.service';
+import { SolicitudResumen } from '../../../shared/models/solicitud.model';
+import { catchError, finalize, forkJoin, of, take, timeout } from 'rxjs';
 
 interface IntegranteEntrevista {
   id: string;
@@ -22,6 +34,7 @@ interface IntegranteEntrevista {
 
 export interface EntrevistaCandidatoSeleccionado {
   id?: string;
+  solicitudCandidatoId?: number;
   idSolicitud: string;
   nombre: string;
   cargo: string;
@@ -29,7 +42,7 @@ export interface EntrevistaCandidatoSeleccionado {
 
 @Component({
   selector: 'app-entrevista-form-modal',
-  imports: [CommonModule, ReactiveFormsModule, Button, DataTable, FormActions, FormField, FormSection, IconButton, Modal, Stepper],
+  imports: [CommonModule, ReactiveFormsModule, Button, DataTable, DatePicker, FormActions, FormField, FormSection, IconButton, Modal, Stepper],
   templateUrl: './entrevista-form-modal.html',
   styleUrl: './entrevista-form-modal.scss',
 })
@@ -41,22 +54,31 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
   @Output() candidatosChange = new EventEmitter<EntrevistaCandidatoSeleccionado[]>();
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
 
-  tipos: TipoEntrevista[] = ['RRHH', 'Tecnica', 'Cliente', 'Psicolaboral', 'Gerencial', 'Ingles'];
+  tipos: TipoEntrevista[] = [];
+  tiposCatalogo: TipoEntrevistaCatalogoApi[] = [];
+  solicitudes: SolicitudResumen[] = [];
+  candidatosDisponibles: CandidatoApi[] = [];
+  postulacionesSolicitud: PostulacionCandidatoApi[] = [];
+  postulacionesPorCandidato = new Map<number, PostulacionCandidatoApi[]>();
+  cargandoDatos = false;
+  cargandoCandidatosSolicitud = false;
+  errorEnvio = '';
   readonly duraciones = ['30 min', '45 min', '60 min', '90 min'];
-  integrantesSeleccionados = new Set(['macarena-lopez', 'felipe-valdes']);
+  integrantesSeleccionados = new Set<string>();
+  postulacionesSeleccionadas = new Set<number>();
   tabFormulario = 'datos';
 
   pasosFormulario = [
     { clave: 'datos', numero: 1, titulo: 'Datos' },
     { clave: 'agenda', numero: 2, titulo: 'Agenda' },
-    { clave: 'integrantes', numero: 3, titulo: 'Integrantes' },
+    { clave: 'integrantes', numero: 3, titulo: 'Responsables' },
     { clave: 'detalle', numero: 4, titulo: 'Detalle' },
   ];
 
   camposPorPaso: Record<string, string[]> = {
     datos: ['idSolicitud', 'candidato', 'cargo'],
     agenda: ['tipo', 'fecha', 'horaInicio', 'horaFin'],
-    integrantes: ['entrevistador'],
+    integrantes: [],
     detalle: ['asunto'],
   };
 
@@ -71,12 +93,7 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     },
   ];
 
-  integrantes: IntegranteEntrevista[] = [
-    { id: 'macarena-lopez', nombre: 'Macarena Lopez', rol: 'Candidata', fechaAgendamiento: 'Sin fecha' },
-    { id: 'valentina-rojas', nombre: 'Valentina Rojas', rol: 'Candidata', fechaAgendamiento: 'Sin fecha' },
-    { id: 'felipe-valdes', nombre: 'Felipe Valdes', rol: 'Reclutador', fechaAgendamiento: 'Sin fecha' },
-    { id: 'cathy', nombre: 'Cathy', rol: 'Area tecnica', fechaAgendamiento: 'Sin fecha' },
-  ];
+  integrantes: IntegranteEntrevista[] = [];
 
   formulario = new UntypedFormGroup({
     idSolicitud: new UntypedFormControl(null, Validators.required),
@@ -88,15 +105,27 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     horaInicio: new UntypedFormControl('', Validators.required),
     horaFin: new UntypedFormControl('', Validators.required),
     duracion: new UntypedFormControl('45 min', Validators.required),
-    entrevistador: new UntypedFormControl('', Validators.required),
+    entrevistador: new UntypedFormControl(''),
     linkReunion: new UntypedFormControl(''),
     observacion: new UntypedFormControl(''),
   });
 
-  constructor(private catalogosService: CatalogosService) {}
+  constructor(
+    private catalogosService: CatalogosService,
+    private candidatosService: CandidatosService,
+    private solicitudesService: SolicitudesService,
+  ) {}
 
   ngOnInit() {
     this.cargarCatalogosEntrevista();
+    this.cargarDatosSeleccion();
+    this.formulario.get('idSolicitud')?.valueChanges.subscribe(() => this.alCambiarSolicitud());
+    this.formulario.get('candidato')?.valueChanges.subscribe((candidatoId) => {
+      const id = Number(candidatoId);
+      if (Number.isFinite(id) && id > 0) {
+        this.cargarPostulacionesCandidato(id);
+      }
+    });
     this.aplicarDatosIniciales();
   }
 
@@ -138,12 +167,33 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   enviar() {
     this.formulario.markAllAsTouched();
+    this.errorEnvio = '';
 
-    if (this.formulario.invalid || !this.horarioValido()) {
+    const payload = this.crearPayload();
+
+    if (this.formulario.invalid || !this.horarioValido() || !payload) {
+      this.errorEnvio = this.mensajePayloadIncompleto();
       return;
     }
 
-    this.guardar.emit(this.formulario.getRawValue() as EntrevistaPayload);
+    this.guardar.emit(payload);
+  }
+
+  get fechaHoyInput() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  get solicitudSeleccionadaCodigo() {
+    const valor = this.control('idSolicitud')?.value;
+    const solicitudId = this.resolverSolicitudId(valor);
+
+    if (solicitudId) {
+      return this.solicitudes.find((solicitud) => Number(solicitud.id) === solicitudId)?.codigo ?? String(valor);
+    }
+
+    return typeof valor === 'string' && valor.trim()
+      ? valor
+      : 'Sin solicitud seleccionada';
   }
 
   control(nombre: string) {
@@ -209,6 +259,10 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
       return controlesValidos && this.horarioValido();
     }
 
+    if (clave === 'integrantes') {
+      return this.integrantesSeleccionadosInternos().length > 0;
+    }
+
     return controlesValidos;
   }
 
@@ -228,38 +282,34 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
     })
       .pipe(take(1))
       .subscribe(({ tipos, usuarios }) => {
-        const tiposCatalogo = tipos.map((tipo) => tipo.tpet_nombre).filter((nombre): nombre is string => Boolean(nombre));
+        const tiposValidos = tipos.filter((tipo) => this.tipoEntrevistaValido(tipo.tpet_nombre));
+        const tiposCatalogo = tiposValidos.map((tipo) => tipo.tpet_nombre).filter((nombre): nombre is string => Boolean(nombre));
 
-        if (tiposCatalogo.length > 0) {
-          this.tipos = tiposCatalogo;
-        }
+        this.tipos = tiposCatalogo;
+        this.tiposCatalogo = tiposValidos;
 
         if (usuarios.length > 0) {
           this.integrantes = usuarios.map((usuario) => this.mapearUsuarioAIntegrante(usuario));
-          this.integrantesSeleccionados = new Set(this.integrantes.slice(0, 2).map((integrante) => integrante.id));
+          this.integrantesSeleccionados = new Set();
         }
       });
   }
 
-  agregarIntegrante() {
-    const entrevistador = String(this.formulario.get('entrevistador')?.value ?? '').trim();
+  cargarDatosSeleccion() {
+    this.cargandoDatos = true;
 
-    if (!entrevistador || this.integrantes.some((integrante) => integrante.nombre === entrevistador)) {
-      return;
-    }
-
-    const id = entrevistador.toLowerCase().replace(/\s+/g, '-');
-
-    this.integrantes = [
-      ...this.integrantes,
-      {
-        id,
-        nombre: entrevistador,
-        rol: 'Entrevistador',
-        fechaAgendamiento: String(this.formulario.get('fecha')?.value || 'Sin fecha'),
-      },
-    ];
-    this.integrantesSeleccionados = new Set([...this.integrantesSeleccionados, id]);
+    forkJoin({
+      solicitudes: this.solicitudesService.listar().pipe(timeout(5000), catchError(() => of([]))),
+      candidatos: this.candidatosService.listar().pipe(timeout(5000), catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe(({ solicitudes, candidatos }) => {
+        this.solicitudes = solicitudes;
+        this.candidatosDisponibles = candidatos;
+        this.cargandoDatos = false;
+        this.aplicarDatosIniciales();
+        this.cargarPostulacionesPreseleccionadas();
+      });
   }
 
   obtenerIdIntegrante(integrante: IntegranteEntrevista) {
@@ -282,6 +332,88 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   actualizarSeleccionIntegrantes(ids: Set<string>) {
     this.integrantesSeleccionados = ids;
+  }
+
+  private tipoEntrevistaValido(nombre?: string | null) {
+    const normalizado = this.crearId(nombre ?? '');
+    return Boolean(normalizado) && normalizado !== 'ingles';
+  }
+
+  nombreCandidato(candidato: CandidatoApi) {
+    return [candidato.cand_nombres, candidato.cand_apellido_paterno, candidato.cand_apellido_materno]
+      .filter(Boolean)
+      .join(' ') || candidato.cand_email || `Candidato ${candidato.cand_id}`;
+  }
+
+  candidatosSolicitudDisponibles() {
+    const solicitudId = this.resolverSolicitudId(this.formulario.get('idSolicitud')?.value);
+
+    if (!solicitudId) {
+      return [];
+    }
+
+    return this.postulacionesSolicitud
+      .map((postulacion) => this.candidatoDesdePostulacion(postulacion))
+      .filter((candidato): candidato is CandidatoApi => Boolean(candidato));
+  }
+
+  postulacionMarcada(postulacionId: number) {
+    return this.postulacionesSeleccionadas.has(postulacionId);
+  }
+
+  alternarPostulacion(postulacion: PostulacionCandidatoApi, seleccionado: boolean) {
+    const postulaciones = new Set(this.postulacionesSeleccionadas);
+
+    if (seleccionado) {
+      postulaciones.add(postulacion.slcd_id);
+    } else {
+      postulaciones.delete(postulacion.slcd_id);
+    }
+
+    this.postulacionesSeleccionadas = postulaciones;
+    this.sincronizarControlCandidato();
+  }
+
+  seleccionarTodasPostulaciones() {
+    this.postulacionesSeleccionadas = new Set(this.postulacionesSolicitud.map((postulacion) => postulacion.slcd_id));
+    this.sincronizarControlCandidato();
+  }
+
+  limpiarPostulaciones() {
+    this.postulacionesSeleccionadas = new Set();
+    this.sincronizarControlCandidato();
+  }
+
+  nombrePostulacion(postulacion: PostulacionCandidatoApi) {
+    const candidato = this.candidatoDesdePostulacion(postulacion);
+    return candidato ? this.nombreCandidato(candidato) : `Candidato ${postulacion.slcd_candidato_id ?? ''}`.trim();
+  }
+
+  detallePostulacion(postulacion: PostulacionCandidatoApi) {
+    const candidato = this.candidatoDesdePostulacion(postulacion);
+    return [
+      candidato?.cand_email,
+      `Postulación ${postulacion.slcd_id}`,
+    ].filter(Boolean).join(' - ');
+  }
+
+  alCambiarSolicitud() {
+    if (this.tieneCandidatosPreseleccionados) {
+      return;
+    }
+
+    const solicitudId = this.resolverSolicitudId(this.formulario.get('idSolicitud')?.value);
+
+    this.formulario.patchValue({ candidato: null, cargo: '' }, { emitEvent: false });
+    this.postulacionesSolicitud = [];
+    this.postulacionesSeleccionadas = new Set();
+    this.actualizarCargoDesdeSolicitud();
+
+    if (!solicitudId || this.tieneCandidatosPreseleccionados) {
+      return;
+    }
+
+    this.cargarCandidatosSolicitud(solicitudId);
   }
 
   eliminarCandidatoAgenda(candidato: EntrevistaCandidatoSeleccionado) {
@@ -316,27 +448,15 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
       cargo: this.esAgendaMasiva ? 'Múltiples cargos' : primerCandidato.cargo,
       asunto:
         this.formulario.get('asunto')?.value ||
-        (this.esAgendaMasiva ? 'Agendamiento de entrevistas' : `Entrevista ${primerCandidato.cargo}`),
+        (this.esAgendaMasiva ? 'Agendamiento de entrevistas' : `Entrevista ${primerCandidato.idSolicitud}`),
     });
 
     this.sincronizarIntegrantesPreseleccionados();
+    this.cargarPostulacionesPreseleccionadas();
   }
 
   private sincronizarIntegrantesPreseleccionados() {
-    const candidatosIntegrantes = this.candidatos.map((candidato) => ({
-      id: this.crearId(candidato.nombre),
-      nombre: candidato.nombre,
-      rol: 'Candidato',
-      fechaAgendamiento: String(this.formulario.get('fecha')?.value || 'Sin fecha'),
-    }));
-
-    const equipoInterno = this.integrantes.filter((integrante) => integrante.rol !== 'Candidata' && integrante.rol !== 'Candidato');
-
-    this.integrantes = [...candidatosIntegrantes, ...equipoInterno];
-    this.integrantesSeleccionados = new Set([
-      ...candidatosIntegrantes.map((integrante) => integrante.id),
-      ...equipoInterno.filter((integrante) => integrante.rol !== 'Area tecnica').map((integrante) => integrante.id),
-    ]);
+    this.integrantesSeleccionados = new Set(Array.from(this.integrantesSeleccionados));
   }
 
   private crearId(valor: string) {
@@ -350,5 +470,234 @@ export class EntrevistaFormModal implements OnChanges, OnInit {
 
   private obtenerIdCandidatoAgenda(candidato: EntrevistaCandidatoSeleccionado) {
     return candidato.id || this.crearId(`${candidato.idSolicitud}-${candidato.nombre}`);
+  }
+
+  private crearPayload(): EntrevistaPayload | null {
+    const raw = this.formulario.getRawValue() as EntrevistaPayload;
+    const tipoEntrevistaId = this.resolverTipoEntrevistaId(raw.tipo);
+    const entrevistadorIds = this.integrantesSeleccionadosInternos();
+    const postulacionesSeleccionadas = this.postulacionesSeleccionadasIds();
+
+    const solicitudesCandidatosIds = this.esAgendaMasiva
+      ? this.candidatos.map((candidato) => this.resolverSolicitudCandidatoId(candidato)).filter((id): id is number => Boolean(id))
+      : postulacionesSeleccionadas.length > 1
+        ? postulacionesSeleccionadas
+        : [];
+
+    const solicitudCandidatoId = this.esAgendaMasiva
+      ? solicitudesCandidatosIds[0]
+      : postulacionesSeleccionadas[0] ?? this.resolverSolicitudCandidatoId(this.candidatos[0]);
+
+    if (!tipoEntrevistaId || entrevistadorIds.length === 0 || !solicitudCandidatoId) {
+      return null;
+    }
+
+    if (this.esAgendaMasiva && solicitudesCandidatosIds.length !== this.candidatos.length) {
+      return null;
+    }
+
+    return {
+      ...raw,
+      solicitudCandidatoId,
+      solicitudesCandidatosIds,
+      tipoEntrevistaId,
+      entrevistadorIds,
+    };
+  }
+
+  private resolverTipoEntrevistaId(nombre: string) {
+    return this.tiposCatalogo.find((tipo) => tipo.tpet_nombre === nombre)?.tpet_id ?? null;
+  }
+
+  integrantesSeleccionadosInternos() {
+    return Array.from(this.integrantesSeleccionados)
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+  }
+
+  private resolverSolicitudCandidatoId(candidatoAgenda?: EntrevistaCandidatoSeleccionado) {
+    if (candidatoAgenda?.solicitudCandidatoId) {
+      return candidatoAgenda.solicitudCandidatoId;
+    }
+
+    const candidatoId = Number(candidatoAgenda?.id ?? this.formulario.get('candidato')?.value);
+    const solicitudId = this.resolverSolicitudId(candidatoAgenda?.idSolicitud ?? this.formulario.get('idSolicitud')?.value);
+
+    if (!candidatoId || !solicitudId) {
+      return null;
+    }
+
+    return this.postulacionesPorCandidato
+      .get(candidatoId)
+      ?.find((postulacion) => postulacion.slcd_solicitud_id === solicitudId)
+      ?.slcd_id ?? null;
+  }
+
+  private resolverSolicitudId(valor: unknown) {
+    const numero = Number(valor);
+    if (Number.isFinite(numero) && numero > 0) {
+      return numero;
+    }
+
+    return Number(this.solicitudes.find((solicitud) => solicitud.codigo === valor)?.id) || null;
+  }
+
+  private cargarPostulacionesPreseleccionadas() {
+    const ids = this.candidatos
+      .map((candidato) => Number(candidato.id))
+      .filter((id) => Number.isFinite(id) && id > 0 && !this.postulacionesPorCandidato.has(id));
+
+    ids.forEach((id) => this.cargarPostulacionesCandidato(id));
+  }
+
+  private cargarPostulacionesCandidato(candidatoId: number) {
+    if (this.postulacionesPorCandidato.has(candidatoId)) {
+      this.actualizarCargoDesdeSolicitud();
+      return;
+    }
+
+    this.candidatosService.listarSolicitudes(String(candidatoId))
+      .pipe(take(1), catchError(() => of([])))
+      .subscribe((postulaciones) => {
+        this.postulacionesPorCandidato.set(candidatoId, postulaciones);
+        this.actualizarCargoDesdeSolicitud();
+      });
+  }
+
+  private cargarCandidatosSolicitud(solicitudId: number) {
+    this.cargandoCandidatosSolicitud = true;
+
+    this.candidatosService.listarPorSolicitud(solicitudId)
+      .pipe(take(1), catchError(() => of([])))
+      .subscribe((postulaciones) => {
+        this.postulacionesSolicitud = postulaciones;
+        this.postulacionesSeleccionadas = new Set();
+        this.sincronizarControlCandidato();
+        postulaciones.forEach((postulacion) => {
+          if (!postulacion.slcd_candidato_id) {
+            return;
+          }
+
+          const actuales = this.postulacionesPorCandidato.get(postulacion.slcd_candidato_id) ?? [];
+          this.postulacionesPorCandidato.set(
+            postulacion.slcd_candidato_id,
+            [...actuales.filter((item) => item.slcd_id !== postulacion.slcd_id), postulacion],
+          );
+        });
+        this.cargarCandidatosFaltantes(postulaciones);
+      });
+  }
+
+  private cargarCandidatosFaltantes(postulaciones: PostulacionCandidatoApi[]) {
+    const idsActuales = new Set(this.candidatosDisponibles.map((candidato) => candidato.cand_id));
+    const idsFaltantes = Array.from(
+      new Set(
+        postulaciones
+          .map((postulacion) => postulacion.slcd_candidato_id)
+          .filter((id): id is number => Boolean(id) && !idsActuales.has(id)),
+      ),
+    );
+
+    if (idsFaltantes.length === 0) {
+      this.cargandoCandidatosSolicitud = false;
+      return;
+    }
+
+    forkJoin(
+      idsFaltantes.map((id) =>
+        this.candidatosService.obtenerPorId(String(id)).pipe(
+          take(1),
+          catchError(() => of(null)),
+        ),
+      ),
+    )
+      .pipe(
+        finalize(() => {
+          this.cargandoCandidatosSolicitud = false;
+        }),
+      )
+      .subscribe((candidatos) => {
+        const nuevos = candidatos.filter((candidato): candidato is CandidatoApi => Boolean(candidato));
+        const porId = new Map(this.candidatosDisponibles.map((candidato) => [candidato.cand_id, candidato]));
+
+        nuevos.forEach((candidato) => porId.set(candidato.cand_id, candidato));
+        this.candidatosDisponibles = Array.from(porId.values());
+      });
+  }
+
+  private candidatoDesdePostulacion(postulacion: PostulacionCandidatoApi) {
+    const candidato = this.candidatosDisponibles.find((item) => item.cand_id === postulacion.slcd_candidato_id);
+
+    if (candidato) {
+      return candidato;
+    }
+
+    const anidado = (postulacion as PostulacionCandidatoApi & { candidato?: CandidatoApi | null }).candidato;
+    if (anidado?.cand_id) {
+      return anidado;
+    }
+
+    return postulacion.slcd_candidato_id
+      ? {
+          cand_id: postulacion.slcd_candidato_id,
+          cand_email: null,
+          cand_nombres: `Candidato ${postulacion.slcd_candidato_id}`,
+          cand_apellido_paterno: null,
+        }
+      : null;
+  }
+
+  private postulacionesSeleccionadasIds() {
+    return Array.from(this.postulacionesSeleccionadas)
+      .filter((id) => Number.isFinite(id) && id > 0);
+  }
+
+  private sincronizarControlCandidato() {
+    const primeraPostulacionId = this.postulacionesSeleccionadasIds()[0];
+    const primeraPostulacion = this.postulacionesSolicitud.find((postulacion) => postulacion.slcd_id === primeraPostulacionId);
+
+    this.formulario.patchValue(
+      { candidato: primeraPostulacion?.slcd_candidato_id ?? null },
+      { emitEvent: false },
+    );
+
+    if (primeraPostulacion?.slcd_candidato_id) {
+      this.cargarPostulacionesCandidato(primeraPostulacion.slcd_candidato_id);
+    }
+  }
+
+  private actualizarCargoDesdeSolicitud() {
+    if (this.tieneCandidatosPreseleccionados) {
+      return;
+    }
+
+    const solicitudId = this.resolverSolicitudId(this.formulario.get('idSolicitud')?.value);
+    const solicitud = this.solicitudes.find((item) => Number(item.id) === solicitudId);
+
+    if (solicitud) {
+      this.formulario.patchValue(
+        {
+          cargo: solicitud.cargo,
+          asunto: this.formulario.get('asunto')?.value || `Entrevista ${solicitud.codigo}`,
+        },
+        { emitEvent: false },
+      );
+    }
+  }
+
+  private mensajePayloadIncompleto() {
+    if (!this.resolverTipoEntrevistaId(String(this.formulario.get('tipo')?.value || ''))) {
+      return 'Selecciona un tipo de entrevista válido.';
+    }
+
+    if (this.integrantesSeleccionadosInternos().length === 0) {
+      return 'Selecciona al menos un responsable interno para la entrevista.';
+    }
+
+    if (!this.postulacionesSeleccionadasIds()[0] && !this.resolverSolicitudCandidatoId(this.candidatos[0])) {
+      return 'Selecciona una solicitud y un candidato asociado a esa solicitud.';
+    }
+
+    return 'Completa los campos obligatorios antes de enviar.';
   }
 }

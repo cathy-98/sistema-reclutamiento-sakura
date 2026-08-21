@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, forkJoin, Observable, of, take, timeout } from 'rxjs';
+import { catchError, finalize, forkJoin, Observable, of, take, timeout } from 'rxjs';
 import { CandidatoProfileTab, CandidatoProfileTabs } from '../candidato-profile-tabs/candidato-profile-tabs';
 import { Button } from '../../../shared/components/button/button';
 import { Modal } from '../../../shared/components/modal/modal';
@@ -212,71 +212,23 @@ export class CandidatoPerfilPage implements OnInit {
     return tabs;
   }
 
-  experiencias: ExperienciaPerfil[] = [
-    {
-      empresa: 'TechSolutions S.A.',
-      cargo: 'Desarrollador Full Stack Senior',
-      fecha: 'Mar 2021 - Presente',
-      descripcion:
-        'Liderazgo técnico en el desarrollo de plataformas SaaS. Diseño de arquitectura en la nube usando AWS. Migración de monolito a microservicios.',
-      tags: ['React', 'Node.js', 'AWS', 'PostgreSQL'],
-    },
-    {
-      empresa: 'Cornershop',
-      cargo: 'Desarrollador Full Stack',
-      fecha: 'Jun 2020 - Dic 2021',
-      descripcion: 'Desarrollo de APIs REST y funcionalidades frontend para aplicaciones internas.',
-      tags: ['React', 'Node.js', 'Redux'],
-    },
-    {
-      empresa: 'Bci',
-      cargo: 'Desarrollador de Software',
-      fecha: 'Ene 2019 - May 2020',
-      descripcion: 'Construcción de módulos para banca digital e integraciones con servicios internos.',
-      tags: ['JavaScript', 'Git', 'Jenkins'],
-    },
-  ];
+  experiencias: ExperienciaPerfil[] = [];
 
-  estudios: EstudioPerfil[] = [
-    {
-      titulo: 'Ingeniería Civil Informática',
-      institucion: 'Universidad de Chile',
-      fecha: '2016 - 2020',
-    },
-    {
-      titulo: 'Técnico en Programación',
-      institucion: 'Instituto Profesional AIEP',
-      fecha: '2014 - 2016',
-    },
-  ];
+  estudios: EstudioPerfil[] = [];
 
   postulaciones: PostulacionPerfil[] = [];
 
-  habilidadesComparadas: HabilidadComparada[] = [
-    ['Html', 'Junior', '4', 'Html', 'Junior', '4', '95%', 'success'],
-    ['Python', 'Junior', '5', 'Python', 'Junior', '5', '95%', 'success'],
-    ['Css', 'Junior', '8', 'Css', 'Junior', '8', '95%', 'success'],
-    ['Java', 'Junior', '10', 'Java', 'Junior', '8', '66%', 'warning'],
-    ['Angular', 'Junior', '4', 'Angular', 'Junior', '2', '20%', 'danger'],
-  ];
+  habilidadesComparadas: HabilidadComparada[] = [];
 
-  readonly fortalezasMatch = ['Excelente arquitectura en React y manejo de estados complejos.'];
-  readonly areasMejoraMatch = ['Requiere nivelar conocimientos en el entorno backend con Node.js.'];
+  readonly fortalezasMatch: string[] = [];
+  readonly areasMejoraMatch: string[] = [];
 
   evaluacionesTecnicas: EvaluacionTecnicaPerfil[] = [];
 
   // Función futura oculta: lista de documentos visible solo si mostrarModuloDocumentos=true.
-  readonly documentos: DocumentoPerfil[] = [
-    ['CV_Juan_Perez_Gonzalez.pdf', 'Currículum', '24 oct 2024', '10:30'],
-    ['Carta_de_presentacion.docx', 'Carta de presentación', '24 oct 2024', '10:36'],
-    ['Certificado_Titulo_Ingenieria.pdf', 'Certificado', '24 oct 2024', '11:05'],
-  ];
+  readonly documentos: DocumentoPerfil[] = [];
 
-  readonly historialObservaciones: ObservacionPerfil[] = [
-    ['18 may 2025', '10:42', 'María Fernanda López', 'Buen perfil comunicacional y expectativas alineadas con la vacante.'],
-    ['16 may 2025', '16:15', 'Diego Salazar', 'Avanza con buen desempeño técnico; revisar profundidad en backend.'],
-    ['24 oct 2024', '09:08', 'Sistema', 'Postulación recibida desde el portal de empleo.'],
-  ];
+  readonly historialObservaciones: ObservacionPerfil[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -294,25 +246,25 @@ export class CandidatoPerfilPage implements OnInit {
 
     this.candidato = {
       idSolicitud: params.get('idSolicitud') || '',
-      match: Number(params.get('match') || 78),
-      nombre: params.get('nombre') || 'Juan Perez Gonzalez',
-      correo: params.get('correo') || 'juan.perez@gmail.com',
-      telefono: params.get('telefono') || '+56 9 1234 5678',
-      cargo: params.get('cargo') || 'Senior React Developer',
-      estado: params.get('estado') || 'En revision',
-      disponibilidad: params.get('disponibilidad') || 'Inmediata',
-      renta: Number(params.get('renta') || 2800000),
-      rut: params.get('rut') || '18.123.456-7',
-      fechaNacimiento: '12 may 1994',
-      fechaRegistro: '24 oct 2024',
-      tituloProfesional: 'Ingeniera Civil Informática',
-      estadoUsuario: params.get('estadoUsuario') || 'Activo',
-      resumenProfesional: 'Desarrolladora frontend con experiencia en React, TypeScript y plataformas SaaS.',
+      match: Number(params.get('match') || 0),
+      nombre: params.get('nombre') || 'Candidato sin nombre',
+      correo: params.get('correo') || 'Sin correo',
+      telefono: params.get('telefono') || 'Sin teléfono',
+      cargo: params.get('cargo') || 'Sin cargo',
+      estado: params.get('estado') || 'Sin estado',
+      disponibilidad: params.get('disponibilidad') || 'Sin disponibilidad',
+      renta: Number(params.get('renta') || 0),
+      rut: params.get('rut') || 'Sin RUT',
+      fechaNacimiento: 'Sin fecha',
+      fechaRegistro: 'Sin fecha',
+      tituloProfesional: 'Sin título registrado',
+      estadoUsuario: params.get('estadoUsuario') || 'Sin estado',
+      resumenProfesional: 'Sin resumen profesional registrado.',
       urlPerfil: extraerLinkedinUrl(params.get('urlPerfil')) ?? '',
       enlaces: this.extraerEnlacesPerfil(params.get('urlPerfil')),
       idiomas: [],
-      comuna: 'Providencia',
-      direccion: 'Av. Providencia 1234, Depto 502',
+      comuna: 'Sin comuna',
+      direccion: 'Sin dirección',
     };
 
     if (tabInicial && this.tabs.some((tab) => tab.id === tabInicial)) {
@@ -420,6 +372,20 @@ export class CandidatoPerfilPage implements OnInit {
   get ultimoEstadoEvaluacionTecnica() {
     return this.evaluacionesTecnicasSeleccionadas[0]?.[1] ??
       'Sin evaluaciones';
+  }
+
+  get resultadosEntrevistasSeleccionadas() {
+    return this.procesoSeleccionado.flatMap((etapa) =>
+      etapa.evaluaciones.map((evaluacion) => ({
+        entrevista: etapa.etapa,
+        solicitud: etapa.solicitud || this.postulacionSeleccionadaId,
+        fecha: etapa.fecha,
+        tipo: evaluacion.tipoNombre || etapa.tipos.find((tipo) => tipo.id === evaluacion.tipoId)?.nombre || etapa.tipoEntrevista || 'Sin tipo',
+        entrevistador: evaluacion.usuarioNombre || etapa.entrevistador || 'Sin entrevistador',
+        resultado: evaluacion.resultado || 'Sin resultado',
+        observacion: evaluacion.observacion?.trim() || 'Sin observación',
+      })),
+    );
   }
 
   seleccionarPostulacion(id: string) {
@@ -856,6 +822,10 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   private cargarPerfilM3() {
+    // El perfil parte con datos base de ruta/query params y luego se hidrata con backend.
+    // No bloqueamos el encabezado por catálogos secundarios para evitar skeleton eterno.
+    this.perfilCargado = true;
+
     const candidatoId = this.route.snapshot.paramMap.get('id');
     const perfil$ = this.esAutoservicio
       ? this.candidatosService.obtenerMiPerfilCompleto()
@@ -881,34 +851,34 @@ export class CandidatoPerfilPage implements OnInit {
     // Integracion interna M3:
     // - Admin: GET /candidatos/{id}/perfil-completo + GET /candidatos/{id}/solicitudes.
     // - Portal: GET /candidatos/me/perfil-completo + GET /candidatos/me/solicitudes.
-    // Si falla, se conservan datos de respaldo para evitar pantalla en blanco.
+    // Si una llamada falla, el bloque asociado se muestra vacío y el resto del perfil sigue disponible.
     forkJoin({
       perfil: perfil$.pipe(timeout(6000), catchError((error) => {
-        console.warn('Perfil M3 no disponible; se conserva respaldo local.', error);
+        console.info('Perfil M3 no disponible.', error);
         return of(null);
       })),
       solicitudes: solicitudes$.pipe(timeout(6000), catchError((error) => {
-        console.warn('Solicitudes del candidato no disponibles; se conserva respaldo local.', error);
+        console.info('Solicitudes del candidato no disponibles.', error);
         return of([] as PostulacionCandidatoApi[]);
       })),
       solicitudesCatalogo: this.solicitudesService.listar().pipe(timeout(8000), catchError((error) => {
-        console.warn('Catalogo de solicitudes no disponible para perfil candidato.', error);
+        console.info('Catalogo de solicitudes no disponible para perfil candidato.', error);
         return of([] as SolicitudResumen[]);
       })),
       cuestionariosCatalogo: this.cuestionariosService.listarCuestionarios().pipe(timeout(8000), catchError((error) => {
-        console.warn('Cuestionarios no disponibles para evaluaciones tecnicas.', error);
+        console.info('Cuestionarios no disponibles para evaluaciones tecnicas.', error);
         return of([] as CuestionarioApi[]);
       })),
       estadosSolicitudCandidato: this.catalogosService.listarEstadosSolicitudCandidatoSeguro(),
       motivosRechazo: this.catalogosService.listarMotivosRechazoSeguro(),
       resultadosEvaluacion: this.catalogosService.listarNombresResultado().pipe(timeout(4000), catchError((error) => {
-        console.warn('Resultados de entrevista no disponibles para evaluaciones.', error);
+        console.info('Resultados de entrevista no disponibles para evaluaciones.', error);
         return of([] as NombreResultadoCatalogoApi[]);
       })),
       disponibilidades: this.catalogosService.listarDisponibilidadesSeguro(),
       cargos: this.catalogosService.listarCatalogoSeguro<CargoCatalogoApi>('cargos'),
       empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError((error) => {
-        console.warn('Empresas no disponibles para experiencias del candidato.', error);
+        console.info('Empresas no disponibles para experiencias del candidato.', error);
         return of([] as EmpresaApi[]);
       })),
       habilidadesCatalogo: this.catalogosService.listarHabilidadesSeguro(),
@@ -918,21 +888,27 @@ export class CandidatoPerfilPage implements OnInit {
       nivelesEducacionales: this.catalogosService.listarNivelesEducacionalesSeguro(),
       comunas: this.catalogosService.listarComunasSeguro(),
       entrevistas: entrevistas$.pipe(timeout(6000), catchError((error) => {
-        console.warn('Entrevistas del candidato no disponibles; se muestra resumen sin próxima entrevista.', error);
+        console.info('Entrevistas del candidato no disponibles; se muestra resumen sin próxima entrevista.', error);
         return of([] as EntrevistaApi[]);
       })),
       evaluacionesTecnicas: evaluacionesTecnicas$.pipe(timeout(8000), catchError((error) => {
-        console.warn('Evaluaciones tecnicas del candidato no disponibles.', error);
+        console.info('Evaluaciones tecnicas del candidato no disponibles.', error);
         return of([] as Array<AsignacionCuestionarioApi | AsignacionCuestionarioCandidatoApi>);
       })),
       idiomas: idiomas$.pipe(timeout(6000), catchError((error) => {
-        console.warn('Idiomas del candidato no disponibles; se muestra sin idiomas informados.', error);
+        console.info('Idiomas del candidato no disponibles; se muestra sin idiomas informados.', error);
         return of([] as IdiomaCandidatoApi[]);
       })),
     })
-      .pipe(take(1))
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.perfilCargado = true;
+        }),
+      )
       .subscribe({
         next: ({ perfil, solicitudes, solicitudesCatalogo, cuestionariosCatalogo, estadosSolicitudCandidato, motivosRechazo, resultadosEvaluacion, disponibilidades, cargos, empresas, habilidadesCatalogo, nivelesHabilidad, instituciones, carreras, nivelesEducacionales, comunas, entrevistas, evaluacionesTecnicas, idiomas }) => {
+        this.perfilCargado = true;
         this.solicitudesCatalogoPerfil =
           solicitudesCatalogo;
         this.estadosPostulacionPerfil =
@@ -1000,7 +976,6 @@ export class CandidatoPerfilPage implements OnInit {
           cuestionariosCatalogo,
           solicitudesCatalogo,
         );
-          this.perfilCargado = true;
         },
         error: (error) => {
           console.warn('No fue posible cargar el perfil completo.', error);
@@ -1544,7 +1519,9 @@ export class CandidatoPerfilPage implements OnInit {
           entrevista.evaluaciones?.map((evaluacion) => ({
             id: evaluacion.evaluacion_id,
             tipoId: evaluacion.tipo_entrevista_id,
+            tipoNombre: evaluacion.tipo_entrevista_nombre,
             usuarioId: evaluacion.usuario_id,
+            usuarioNombre: evaluacion.usuario_nombre,
             resultadoId: evaluacion.resultado_id,
             resultado: evaluacion.resultado_nombre,
             observacion: evaluacion.observacion,
@@ -1553,6 +1530,8 @@ export class CandidatoPerfilPage implements OnInit {
           this.observacionEvaluacionUsuarioActual(entrevista) ?? '',
         observaciones:
           this.formatearObservacionesEntrevista(entrevista),
+        resultadoEntrevista:
+          this.formatearResultadoEntrevista(entrevista),
       }));
   }
 
@@ -1742,19 +1721,35 @@ export class CandidatoPerfilPage implements OnInit {
   private formatearObservacionesEntrevista(
     entrevista: EntrevistaApi,
   ) {
-    const observaciones = [
-      entrevista.comentarios_convocatoria,
-      ...(entrevista.evaluaciones
-        ?.map((evaluacion) => evaluacion.observacion)
-        .filter(Boolean) ?? []),
-    ]
+    const observaciones = (entrevista.evaluaciones
+      ?.map((evaluacion) => evaluacion.observacion)
+      .filter(Boolean) ?? [])
       .filter((valor): valor is string =>
         Boolean(valor?.trim()),
       );
 
     return observaciones.length > 0
       ? observaciones.join(' ')
-      : 'Sin observaciones registradas.';
+      : 'Sin observaciones de evaluación registradas.';
+  }
+
+  private formatearResultadoEntrevista(
+    entrevista: EntrevistaApi,
+  ) {
+    const evaluaciones = entrevista.evaluaciones ?? [];
+
+    if (evaluaciones.length === 0) {
+      return 'Sin resultado registrado';
+    }
+
+    return evaluaciones
+      .map((evaluacion) => {
+        const tipo = evaluacion.tipo_entrevista_nombre?.trim() ||
+          entrevista.tipos?.find((item) => item.tipo_entrevista_id === evaluacion.tipo_entrevista_id)?.nombre ||
+          'Sin tipo';
+        return `${tipo}: ${evaluacion.resultado_nombre}`;
+      })
+      .join(' | ');
   }
 
   private observacionEvaluacionUsuarioActual(

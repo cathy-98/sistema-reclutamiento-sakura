@@ -11,6 +11,114 @@ p {
   line-height: 1.45;
 }
 
+.state-summary {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.state-summary h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summary-grid span {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+}
+
+.summary-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.summary-grid small {
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summary-grid strong {
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.detail-view {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-view h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+details {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+summary {
+  min-height: 44px;
+  padding: 12px 14px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0 14px 14px;
+}
+
+.detail-grid div {
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-grid .wide {
+  grid-column: 1 / -1;
+}
+
+dt {
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .date-grid,
 label {
   display: grid;
@@ -24,6 +132,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   min-height: 44px;
@@ -43,6 +152,18 @@ textarea {
   resize: vertical;
 }
 
+label span {
+  color: var(--color-text-soft);
+  font-weight: 600;
+}
+
 small {
   color: var(--color-danger);
+}
+
+@media (max-width: 640px) {
+  .summary-grid,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
 }

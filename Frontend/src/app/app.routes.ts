@@ -79,6 +79,12 @@ export const routes: Routes = [
         data: { roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE'], vista: 'crear' }
       },
       {
+        path: 'cuestionarios/asignaciones',
+        loadComponent: () =>
+          import('./pages/cuestionarios/cuestionarios-admin/cuestionarios-admin').then((m) => m.CuestionariosAdmin),
+        data: { roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_VIEW'], vista: 'asignaciones' }
+      },
+      {
         path: 'informes-cliente',
         loadComponent: () =>
           import('./pages/informes-cliente/informes-cliente').then((m) => m.InformesCliente),

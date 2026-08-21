@@ -70,13 +70,16 @@ export interface EtapaSeleccion {
   evaluaciones: {
     id: number;
     tipoId?: number | null;
+    tipoNombre?: string | null;
     usuarioId?: number | null;
+    usuarioNombre?: string | null;
     resultadoId: number;
     resultado: string;
     observacion?: string | null;
   }[];
   observacionEntrevista: string;
   observaciones: string;
+  resultadoEntrevista: string;
 }
 
 export type HabilidadComparada = [string, string, string, string, string, string, string, string];

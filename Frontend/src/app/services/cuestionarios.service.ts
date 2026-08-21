@@ -339,7 +339,7 @@ export class CuestionariosService {
 
   asignarCuestionarioMasivo(cuestionarioId: number, payload: AsignacionMasivaCreatePayload) {
     return this.http.post<AsignacionMasivaApi>(
-      `${this.apiUrl}/cuestionarios/${cuestionarioId}/asignar-masivo`,
+      `${this.apiUrl}/cuestionarios/${cuestionarioId}/asignar`,
       payload,
     );
   }

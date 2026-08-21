@@ -4,7 +4,7 @@
     subtitle="Gestión de entrevistas"
   >
     <div pageHeaderActions>
-      <app-button type="button" (pressed)="mostrarFormulario = true">
+      <app-button type="button" (pressed)="abrirFormularioIndividual()">
         <span aria-hidden="true">+</span>
         Crear nueva entrevista
       </app-button>
@@ -15,8 +15,10 @@
 
   <app-filter-panel
     description="Usa uno o más campos para encontrar entrevistas."
-    quickSearchPlaceholder="Ej. SOL-021, Macarena Lopez o Tecnica"
+    quickSearchPlaceholder="Buscar por solicitud, candidato o tipo"
     [(quickSearch)]="filtros.busquedaRapida"
+    [collapsible]="true"
+    [filtersExpanded]="false"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
@@ -27,7 +29,7 @@
 
     <label>
       Fecha agendada
-      <input [(ngModel)]="filtros.fecha" type="date" />
+      <app-date-picker [(ngModel)]="filtros.fecha"></app-date-picker>
     </label>
 
     <label>
@@ -51,7 +53,8 @@
     [message]="mensajeAccionesMasivas"
     *ngIf="!cargando && !errorCarga && entrevistasFiltradas.length > 0"
   >
-    <button type="button" [disabled]="seleccionados.size === 0">Enviar recordatorio</button>
+    <button type="button" [disabled]="seleccionados.size === 0" (click)="abrirModalCorreo()">Correos masivos</button>
+    <button type="button" [disabled]="seleccionados.size === 0 || !seleccionMismaSolicitud" (click)="abrirAgendaMasivaSeleccion()">Agendar masivo</button>
   </app-action-bar>
 
   <app-data-table
@@ -66,6 +69,7 @@
     loadingMessage="Cargando entrevistas..."
     [rowId]="obtenerIdEntrevista"
     [actions]="acciones"
+    [compactActions]="true"
     [selectedIds]="seleccionados"
     emptyTitle="No hay entrevistas para mostrar"
     emptyMessage="Ajusta los filtros o crea una nueva entrevista."
@@ -79,9 +83,57 @@
 
   <app-entrevista-form-modal
     *ngIf="mostrarFormulario"
-    (cerrar)="mostrarFormulario = false"
+    [candidatos]="candidatosAgendaMasiva"
+    (cerrar)="cerrarFormularioAgenda()"
     (guardar)="guardarEntrevista($event)"
   ></app-entrevista-form-modal>
+
+  <app-modal
+    *ngIf="mostrarModalCorreo"
+    titulo="Correos masivos"
+    [subtitulo]="seleccionados.size + ' entrevista(s) seleccionada(s)'"
+    ancho="md"
+    (cerrar)="cerrarModalCorreo()"
+  >
+    <section class="mail-modal">
+      <p class="mail-note">
+        Prepara el mensaje con plantilla. El envío queda bloqueado hasta que exista endpoint de correos masivos.
+      </p>
+
+      <label>
+        Plantilla
+        <select [(ngModel)]="plantillaCorreo" (ngModelChange)="aplicarPlantillaCorreo()">
+          <option value="recordatorio">Recordatorio de entrevista</option>
+          <option value="reagendar">Reagendar entrevista</option>
+          <option value="personalizada">Personalizada</option>
+        </select>
+      </label>
+
+      <label>
+        Destinatarios
+        <textarea [ngModel]="correosPreview" readonly></textarea>
+      </label>
+
+      <label>
+        Asunto
+        <input type="text" [(ngModel)]="asuntoCorreo" />
+      </label>
+
+      <label>
+        Mensaje
+        <textarea [(ngModel)]="cuerpoCorreo"></textarea>
+      </label>
+
+      <p class="mail-note">
+        Variables disponibles: {{ '{' }}{{ '{' }}Nombre{{ '}' }}{{ '}' }}, {{ '{' }}{{ '{' }}Solicitud{{ '}' }}{{ '}' }}, {{ '{' }}{{ '{' }}Cargo{{ '}' }}{{ '}' }}.
+      </p>
+    </section>
+
+    <div class="mail-actions" modal-footer>
+      <app-button variant="ghost" type="button" (pressed)="cerrarModalCorreo()">Cancelar</app-button>
+      <app-button type="button" [disabled]="true">Enviar correos</app-button>
+    </div>
+  </app-modal>
 
   <app-entrevista-estado-modal
     *ngIf="entrevistaSeleccionada"

@@ -29,6 +29,8 @@ export class DatePicker implements ControlValueAccessor {
   value = '';
   disabled = false;
   abierto = false;
+  abrirHaciaArriba = false;
+  alinearDerecha = false;
   mesVisible = this.inicioMes(new Date());
 
   readonly diasSemana = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
@@ -114,6 +116,7 @@ export class DatePicker implements ControlValueAccessor {
     this.abierto = !this.abierto;
     if (this.abierto) {
       this.mesVisible = this.inicioMes(this.value ? this.fechaDesdeIso(this.value) : new Date());
+      this.actualizarPosicionMenu();
     }
     this.onTouched();
   }
@@ -154,6 +157,17 @@ export class DatePicker implements ControlValueAccessor {
     this.abierto = false;
     this.onChange(this.value);
     this.onTouched();
+  }
+
+  private actualizarPosicionMenu() {
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    const anchoMenu = 292;
+    const altoMenu = 360;
+    const espacioInferior = window.innerHeight - rect.bottom;
+    const espacioSuperior = rect.top;
+
+    this.abrirHaciaArriba = espacioInferior < altoMenu && espacioSuperior > espacioInferior;
+    this.alinearDerecha = rect.left + anchoMenu > window.innerWidth - 24;
   }
 
   private inicioMes(fecha: Date) {

@@ -68,7 +68,8 @@ export class AppShell {
       permissions: ['CUEST_VIEW'],
       children: [
         { label: 'Banco de preguntas', route: '/cuestionarios/banco', roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_VIEW'] },
-        { label: 'Armar y enviar test', route: '/cuestionarios/test', roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE'] },
+        { label: 'Armar y enviar cuestionario', route: '/cuestionarios/test', roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_CREATE'] },
+        { label: 'Asignaciones', route: '/cuestionarios/asignaciones', roles: ['Administrador', 'Reclutador'], permissions: ['CUEST_VIEW'] },
       ],
     },
     {

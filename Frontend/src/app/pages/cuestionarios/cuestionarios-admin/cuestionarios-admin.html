@@ -13,23 +13,29 @@
         </header>
 
         <div class="form-grid">
-          <app-form-field class="span-2" label="Pregunta" [required]="true">
-            <input type="text" formControlName="texto" placeholder="Por que el cielo es azul?" />
+          <app-form-field label="Categoria">
+            <select
+              [(ngModel)]="categoriaPreguntaActiva"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="cambiarCategoriaPregunta()"
+            >
+              <option
+                *ngFor="let categoria of categoriasFiltroBanco"
+                [ngValue]="categoria.id"
+              >
+                {{ categoria.nombre }}
+              </option>
+            </select>
           </app-form-field>
 
           <app-form-field label="Habilidad" [required]="true">
             <select formControlName="tecnologiaId" (change)="buscar()">
-              <optgroup
-                *ngFor="let grupo of tecnologiasFormularioPorCategoria"
-                [label]="grupo.nombre"
+              <option
+                *ngFor="let tecnologia of tecnologiasFormularioFiltradas"
+                [ngValue]="tecnologia.id"
               >
-                <option
-                  *ngFor="let item of grupo.items"
-                  [ngValue]="item.tecnologia.id"
-                >
-                  {{ item.tecnologia.nombre }}
-                </option>
-              </optgroup>
+                {{ tecnologia.nombre }} - {{ tecnologia.categoriaNombre }}
+              </option>
             </select>
           </app-form-field>
 
@@ -37,6 +43,10 @@
             <select formControlName="nivelId">
               <option *ngFor="let nivel of niveles" [ngValue]="nivel.id">{{ nivel.nombre }}</option>
             </select>
+          </app-form-field>
+
+          <app-form-field class="question-field" label="Pregunta" [required]="true">
+            <input type="text" formControlName="texto" placeholder="Por que el cielo es azul?" />
           </app-form-field>
         </div>
 
@@ -80,32 +90,34 @@
         <p>Resumen de preguntas disponibles por categoría, habilidad y nivel.</p>
       </div>
 
-      <app-form-field label="Categoría">
-        <select
-          [(ngModel)]="categoriaBancoActiva"
-          [ngModelOptions]="{ standalone: true }"
-          (change)="cambiarCategoriaBanco()"
-        >
-          <option
-            *ngFor="let categoria of categoriasFiltroBanco"
-            [ngValue]="categoria.id"
+      <div class="bank-controls">
+        <app-form-field class="bank-category" label="Categoría">
+          <select
+            [(ngModel)]="categoriaBancoActiva"
+            [ngModelOptions]="{ standalone: true }"
+            (change)="cambiarCategoriaBanco()"
           >
-            {{ categoria.nombre }}
-          </option>
-        </select>
-      </app-form-field>
+            <option
+              *ngFor="let categoria of categoriasFiltroBanco"
+              [ngValue]="categoria.id"
+            >
+              {{ categoria.nombre }}
+            </option>
+          </select>
+        </app-form-field>
 
-      <app-form-field label="Buscar habilidad">
-        <span class="search-control">
+        <app-form-field class="bank-search" label="Buscar habilidad">
           <input
             type="search"
             [(ngModel)]="busquedaTecnologia"
             [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="buscar()"
             placeholder="JAVA, Python, Angular"
           />
-          <app-button type="button" (pressed)="limpiarBusquedaTecnologia()">Limpiar</app-button>
-        </span>
-      </app-form-field>
+        </app-form-field>
+
+        <app-button type="button" variant="secondary" (pressed)="limpiarBusquedaTecnologia()">Limpiar</app-button>
+      </div>
     </header>
 
     <app-tabs
@@ -119,9 +131,9 @@
       [title]="tituloBanco"
       [subtitle]="subtituloBanco"
       [columns]="columnasBanco"
-      [rows]="tecnologiasFiltradas"
+      [rows]="tecnologiasBancoPaginadas"
       [total]="tecnologiasFiltradas.length"
-      [page]="1"
+      [page]="paginaBanco"
       [pageSize]="10"
       [pageSizeOptions]="[10]"
       [loading]="false"
@@ -131,6 +143,7 @@
       emptyTitle="No hay habilidades"
       emptyMessage="Limpia la busqueda o crea preguntas para una habilidad."
       (rowClick)="verPreguntasBanco($event)"
+      (pageChange)="cambiarPaginaBanco($event)"
       (clear)="limpiarBusquedaTecnologia()"
     ></app-data-table>
 
@@ -196,19 +209,24 @@
     <aside class="technology-panel" aria-labelledby="tecnologias-title">
       <header class="section-header">
         <h2 id="tecnologias-title">Habilidades</h2>
-        <p>{{ tecnologiasFiltradas.length }} disponibles</p>
+        <p>{{ tecnologiasFiltradasArmar.length }} disponibles</p>
       </header>
 
       <app-form-field label="Buscar habilidad">
         <input
           type="search"
-          [(ngModel)]="busquedaTecnologia"
+          [(ngModel)]="busquedaTecnologiaArmar"
           [ngModelOptions]="{ standalone: true }"
           placeholder="JAVA, Python, Angular"
         />
       </app-form-field>
 
-      <nav class="technology-list" aria-label="Seleccionar habilidad">
+      <div class="empty-state is-compact" *ngIf="cargando && tecnologiasFiltradasArmar.length === 0">
+        <h3>Cargando habilidades</h3>
+        <p>Estamos preparando el banco para armar el cuestionario.</p>
+      </div>
+
+      <nav class="technology-list" aria-label="Seleccionar habilidad" *ngIf="!cargando || tecnologiasFiltradasArmar.length > 0">
         <section
           class="technology-category"
           *ngFor="let grupo of tecnologiasFiltradasPorCategoria"
@@ -239,7 +257,7 @@
         </section>
       </nav>
 
-      <div class="empty-state is-compact" *ngIf="tecnologiasFiltradas.length === 0">
+      <div class="empty-state is-compact" *ngIf="!cargando && tecnologiasFiltradasArmar.length === 0">
         <h3>No hay resultados</h3>
         <p>Ajusta la busqueda para volver al listado completo.</p>
         <app-button variant="secondary" size="sm" type="button" (pressed)="limpiarBusquedaTecnologia()">Limpiar</app-button>
@@ -307,7 +325,7 @@
             [title]="''"
             [subtitle]="''"
             [hideHeader]="true"
-            [columns]="columnasPreguntas"
+            [columns]="columnasPreguntasArmar"
             [rows]="preguntasPaginadas"
             [total]="preguntasFiltradas.length"
             [page]="paginaActual"
@@ -335,7 +353,39 @@
       </ng-template>
     </section>
   </section>
+
   </ng-container>
+
+  <section
+    class="assignments-panel"
+    *ngIf="vistaActiva === 'asignaciones'"
+    aria-labelledby="asignaciones-title"
+  >
+    <app-data-table
+      id="asignaciones-title"
+      title="Asignaciones de cuestionarios"
+      subtitle="Seguimiento de envios, estados y resultados de M4."
+      [columns]="columnasAsignaciones"
+      [rows]="asignacionesPaginadas"
+      [total]="asignaciones.length"
+      [page]="paginaAsignaciones"
+      [pageSize]="registrosPorPaginaAsignaciones"
+      [pageSizeOptions]="[10, 25, 50]"
+      [loading]="cargandoAsignaciones"
+      [errorMessage]="errorAsignaciones"
+      [selectable]="false"
+      [rowId]="obtenerIdAsignacion"
+      [actions]="accionesAsignaciones"
+      [compactActions]="true"
+      emptyTitle="No hay asignaciones"
+      emptyMessage="Cuando envies un cuestionario, sus asignaciones apareceran aqui."
+      (actionClick)="manejarAccionAsignacion($event)"
+      (pageChange)="cambiarPaginaAsignaciones($event)"
+      (pageSizeChange)="cambiarRegistrosPorPaginaAsignaciones($event)"
+      (retry)="cargarAsignaciones()"
+      (clear)="cargarAsignaciones()"
+    ></app-data-table>
+  </section>
 </app-page-layout>
 
 <app-cuestionario-envio-modal
@@ -344,6 +394,9 @@
   [duracion]="duracionParaEnviar"
   [resumen]="resumenTestSeleccionado"
   [enviando]="enviando"
+  [cargandoOpciones]="cargandoOpcionesEnvio"
+  [solicitudes]="solicitudesEnvio"
+  [candidatos]="candidatosEnvio"
   (cerrar)="cerrarModalEnvio()"
   (enviar)="enviarCuestionario($event)"
 ></app-cuestionario-envio-modal>
@@ -389,4 +442,37 @@
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"
   ></app-data-table>
   </ng-template>
+</app-modal>
+
+<app-modal
+  *ngIf="asignacionReintento"
+  titulo="Habilitar reintento"
+  [subtitulo]="asignacionReintento.cuestionario_nombre || 'Asignación de cuestionario'"
+  ancho="md"
+  (cerrar)="cerrarModalReintento()"
+>
+  <section class="retry-modal">
+    <p>
+      El backend limpiará las respuestas del intento con error técnico y devolverá la asignación a estado Asignado.
+    </p>
+
+    <app-form-field label="Nueva fecha de vencimiento" [required]="true">
+      <app-date-picker
+        [min]="fechaHoyInput"
+        [(ngModel)]="reintentoFecha"
+      ></app-date-picker>
+    </app-form-field>
+
+    <app-form-field label="Hora de vencimiento" [required]="true">
+      <input
+        type="time"
+        [(ngModel)]="reintentoHora"
+      />
+    </app-form-field>
+  </section>
+
+  <div class="modal-actions" modal-footer>
+    <app-button variant="ghost" type="button" (pressed)="cerrarModalReintento()">Cancelar</app-button>
+    <app-button type="button" [disabled]="guardandoReintento" (pressed)="confirmarReintento()">Habilitar reintento</app-button>
+  </div>
 </app-modal>

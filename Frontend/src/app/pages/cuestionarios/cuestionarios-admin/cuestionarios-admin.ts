@@ -1,17 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { finalize, forkJoin, take } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, Subscription, take, timeout } from 'rxjs';
+import { CandidatosService, CandidatoApi, PostulacionCandidatoApi } from '../../../services/candidatos.service';
 import {
+  AsignacionCuestionarioApi,
   CuestionariosService,
   NivelCuestionario,
   PreguntaCuestionario,
   TecnologiaCuestionario,
 } from '../../../services/cuestionarios.service';
+import { SolicitudesService } from '../../../services/solicitudes.service';
 import { Button } from '../../../shared/components/button/button';
 import { Card } from '../../../shared/components/card/card';
-import { DataTable, DataTableColumn } from '../../../shared/components/data-table/data-table';
+import { DataTable, DataTableAction, DataTableActionEvent, DataTableColumn } from '../../../shared/components/data-table/data-table';
+import { DatePicker } from '../../../shared/components/date-picker/date-picker';
 import { AlertRegion } from '../../../shared/components/alert-region/alert-region';
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { Modal } from '../../../shared/components/modal/modal';
@@ -20,7 +24,12 @@ import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { TabItem, Tabs } from '../../../shared/components/tabs/tabs';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
-import { CuestionarioEnvioModal, CuestionarioEnvioPayload } from '../cuestionario-envio-modal/cuestionario-envio-modal';
+import {
+  CandidatoCuestionarioOption,
+  CuestionarioEnvioModal,
+  CuestionarioEnvioPayload,
+  SolicitudCuestionarioOption,
+} from '../cuestionario-envio-modal/cuestionario-envio-modal';
 
 interface TecnologiaResumen {
   tecnologia: TecnologiaCuestionario;
@@ -58,6 +67,7 @@ interface EnvioCuestionarioHistorial {
     PageLayout,
     PageHeader,
     DataTable,
+    DatePicker,
     Card,
     FormField,
     Modal,
@@ -69,10 +79,13 @@ interface EnvioCuestionarioHistorial {
   templateUrl: './cuestionarios-admin.html',
   styleUrl: './cuestionarios-admin.scss',
 })
-export class CuestionariosAdmin implements OnInit {
+export class CuestionariosAdmin implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly cuestionariosService = inject(CuestionariosService);
+  private readonly solicitudesService = inject(SolicitudesService);
+  private readonly candidatosService = inject(CandidatosService);
   private readonly route = inject(ActivatedRoute);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   tecnologias: TecnologiaCuestionario[] = [];
   niveles: NivelCuestionario[] = [];
@@ -80,21 +93,37 @@ export class CuestionariosAdmin implements OnInit {
   resumenTecnologias: TecnologiaResumen[] = [];
   tecnologiaDetalle: TecnologiaCuestionario | null = null;
   busquedaTecnologia = '';
+  busquedaTecnologiaArmar = '';
   busquedaPreguntas = '';
   preguntasSeleccionadas = new Set<string>();
   mostrarModalEnvio = false;
   alertaEnvio: AlertaUi | null = null;
-  vistaActiva: 'armar' | 'crear' = 'armar';
+  vistaActiva: 'armar' | 'crear' | 'asignaciones' = 'armar';
   nivelBancoActivo = 'todos';
   categoriaBancoActiva = 'todas';
+  categoriaPreguntaActiva = 'todas';
   tabsBanco: TabItem[] = [];
   historialEnvios: EnvioCuestionarioHistorial[] = [];
+  solicitudesEnvio: SolicitudCuestionarioOption[] = [];
+  candidatosEnvio: CandidatoCuestionarioOption[] = [];
+  asignaciones: AsignacionCuestionarioApi[] = [];
   resumenSeleccionPorTecnologia: Array<{ nombre: string; cantidad: number; duracion: string }> = [];
+  asignacionReintento: AsignacionCuestionarioApi | null = null;
+  reintentoFecha = '';
+  reintentoHora = '18:00';
+  guardandoReintento = false;
   paginaActual = 1;
+  paginaBanco = 1;
+  paginaAsignaciones = 1;
   registrosPorPagina = 10;
+  registrosPorPaginaAsignaciones = 10;
   cargando = false;
   enviando = false;
+  cargandoOpcionesEnvio = false;
+  cargandoAsignaciones = false;
+  errorAsignaciones = '';
   private tecnologiaSeleccionadaManualmente = false;
+  private readonly subscriptions = new Subscription();
 
   readonly opcionesRespuestaCorrecta = [0, 1, 2].map((indice) => ({
     indice,
@@ -148,6 +177,23 @@ export class CuestionariosAdmin implements OnInit {
     { key: 'cantidad', label: 'Total', width: 140 },
   ];
 
+  readonly columnasPreguntasArmar: DataTableColumn<PreguntaCuestionario>[] = [
+    { key: 'id', label: 'ID', width: 72, sticky: 'left' },
+    {
+      key: 'nivel',
+      label: 'Nivel',
+      width: 112,
+      value: (pregunta) => this.obtenerNombreNivel(pregunta.nivelId),
+    },
+    { key: 'texto', label: 'Pregunta', width: 430, wrap: true },
+    {
+      key: 'duracion',
+      label: 'Duracion',
+      width: 92,
+      value: (pregunta) => this.formatearDuracion(pregunta.duracionMinutos, pregunta.duracionSegundos),
+    },
+  ];
+
   readonly columnasTecnologiasPorNivel: DataTableColumn<TecnologiaResumen>[] = [
     {
       key: 'tecnologia',
@@ -164,12 +210,88 @@ export class CuestionariosAdmin implements OnInit {
     },
   ];
 
+  readonly columnasAsignaciones: DataTableColumn<AsignacionCuestionarioApi>[] = [
+    { key: 'cdcu_id', label: 'ID', width: 90 },
+    {
+      key: 'cuestionario',
+      label: 'Cuestionario',
+      width: 240,
+      wrap: true,
+      value: (row) => row.cuestionario_nombre ?? `Cuestionario ${row.cdcu_cuestionario_id}`,
+    },
+    {
+      key: 'candidato',
+      label: 'Candidato',
+      width: 220,
+      wrap: true,
+      value: (row) => row.candidato_email ?? `Candidato ${row.cdcu_candidato_id}`,
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      width: 145,
+      type: 'badge',
+      value: (row) => row.estado_nombre,
+      className: (row) => this.claseEstadoAsignacion(row.estado_nombre),
+    },
+    {
+      key: 'resultado',
+      label: 'Resultado',
+      width: 145,
+      value: (row) => this.resultadoAsignacion(row),
+    },
+    {
+      key: 'vencimiento',
+      label: 'Vencimiento',
+      width: 145,
+      value: (row) => this.formatearFecha(row.cdcu_fecha_vencimiento),
+    },
+    {
+      key: 'preguntas',
+      label: 'Preguntas',
+      width: 110,
+      value: (row) => row.cantidad_preguntas,
+    },
+  ];
+
+  readonly accionesAsignaciones: DataTableAction<AsignacionCuestionarioApi>[] = [
+    {
+      id: 'cancelar',
+      label: 'Cancelar asignacion',
+      icon: 'cancel',
+      visible: (row) => !this.esAsignacionCancelada(row),
+      disabled: (row) => !this.puedeCancelarAsignacion(row),
+    },
+    {
+      id: 'editar',
+      label: 'Editar asignacion',
+      icon: 'edit',
+      visible: (row) => !this.esAsignacionCancelada(row),
+      disabled: (row) => !this.puedeEditarAsignacion(row),
+    },
+  ];
+
   ngOnInit() {
-    this.vistaActiva = this.route.snapshot.data['vista'] === 'crear' ? 'crear' : 'armar';
-    this.reiniciarEstadoEntrada();
-    this.cargarCatalogosCuestionarios();
-    this.cargarPreguntas();
     this.sincronizarDuracionConNivel();
+    this.subscriptions.add(
+      this.route.data.subscribe((data) => {
+        this.vistaActiva = data['vista'] === 'crear'
+          ? 'crear'
+          : data['vista'] === 'asignaciones'
+            ? 'asignaciones'
+            : 'armar';
+        this.reiniciarEstadoEntrada();
+        if (this.vistaActiva === 'asignaciones') {
+          this.cargarAsignaciones();
+        } else {
+          this.cargarDatosCuestionarios();
+        }
+      }),
+    );
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
   }
 
   get respuestas() {
@@ -182,7 +304,15 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get tituloPagina() {
-    return this.vistaActiva === 'crear' ? 'Banco de preguntas' : 'Armar y enviar cuestionario';
+    if (this.vistaActiva === 'crear') {
+      return 'Banco de preguntas';
+    }
+
+    if (this.vistaActiva === 'asignaciones') {
+      return 'Asignaciones de cuestionarios';
+    }
+
+    return 'Armar y enviar cuestionario';
   }
 
   get subtituloPagina() {
@@ -202,7 +332,15 @@ export class CuestionariosAdmin implements OnInit {
   }
 
   get tituloVistaActiva() {
-    return this.vistaActiva === 'crear' ? 'Crear pregunta' : 'Armar y enviar cuestionario';
+    if (this.vistaActiva === 'crear') {
+      return 'Crear pregunta';
+    }
+
+    if (this.vistaActiva === 'asignaciones') {
+      return 'Asignaciones de cuestionarios';
+    }
+
+    return 'Armar y enviar cuestionario';
   }
 
   get columnasBanco() {
@@ -252,8 +390,35 @@ export class CuestionariosAdmin implements OnInit {
     );
   }
 
+  get tecnologiasFormularioFiltradas() {
+    const tecnologias = this.tecnologias.filter((tecnologia) => {
+      const categoriaId = tecnologia.categoriaId != null
+        ? String(tecnologia.categoriaId)
+        : 'sin-categoria';
+
+      return this.categoriaPreguntaActiva === 'todas' || this.categoriaPreguntaActiva === categoriaId;
+    });
+
+    return tecnologias.length ? tecnologias : this.tecnologias;
+  }
+
+  get tecnologiasFormularioFiltradasPorCategoria() {
+    return this.agruparTecnologiasPorCategoria(
+      this.tecnologiasFormularioFiltradas.map((tecnologia) => this.resumenPorTecnologia(tecnologia)),
+    );
+  }
+
   get tecnologiasFiltradasPorCategoria() {
-    return this.agruparTecnologiasPorCategoria(this.tecnologiasFiltradas);
+    return this.agruparTecnologiasPorCategoria(this.tecnologiasFiltradasArmar);
+  }
+
+  get tecnologiasFiltradasArmar() {
+    const busquedaNormalizada = this.normalizar(this.busquedaTecnologiaArmar);
+
+    return this.resumenTecnologias.filter((row) => {
+      const texto = `${row.tecnologia.categoriaNombre} ${row.tecnologia.nombre} ${row.basico} ${row.junior} ${row.semiSenior} ${row.senior} ${row.cantidad}`;
+      return !busquedaNormalizada || this.normalizar(texto).includes(busquedaNormalizada);
+    });
   }
 
   get preguntasSeleccionadasDetalle() {
@@ -296,6 +461,11 @@ export class CuestionariosAdmin implements OnInit {
     });
   }
 
+  get tecnologiasBancoPaginadas() {
+    const inicio = (this.paginaBanco - 1) * 10;
+    return this.tecnologiasFiltradas.slice(inicio, inicio + 10);
+  }
+
   get preguntasPaginadas() {
     const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
     return this.preguntasFiltradas.slice(inicio, inicio + this.registrosPorPagina);
@@ -318,6 +488,11 @@ export class CuestionariosAdmin implements OnInit {
   get preguntasBancoDetallePaginadas() {
     const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
     return this.preguntasBancoDetalle.slice(inicio, inicio + this.registrosPorPagina);
+  }
+
+  get asignacionesPaginadas() {
+    const inicio = (this.paginaAsignaciones - 1) * this.registrosPorPaginaAsignaciones;
+    return this.asignaciones.slice(inicio, inicio + this.registrosPorPaginaAsignaciones);
   }
 
   get tituloDetalleBanco() {
@@ -420,8 +595,144 @@ export class CuestionariosAdmin implements OnInit {
     return `${tecnologias.size} habilidad(es): ${Array.from(tecnologias).join(', ')}. ${niveles.size} nivel(es): ${Array.from(niveles).join(', ')}.`;
   }
 
+  get fechaHoyInput() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  cargarDatosCuestionarios() {
+    if (this.vistaActiva === 'armar') {
+      this.prepararEntradaArmar();
+    }
+
+    this.cargando = true;
+    this.refrescarVista();
+    forkJoin({
+      tecnologias: this.cuestionariosService.listarTecnologias(),
+      niveles: this.cuestionariosService.listarNiveles(),
+      preguntas: this.cuestionariosService.listar(),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: ({ tecnologias, niveles, preguntas }) => {
+          this.tecnologias = tecnologias;
+          this.niveles = niveles;
+          this.preguntas = preguntas;
+          this.tabsBanco = [{ id: 'todos', label: 'Todos' }, ...this.niveles.map((nivel) => ({ id: String(nivel.id), label: nivel.nombre }))];
+          this.formulario.patchValue({
+            tecnologiaId: this.tecnologias[0]?.id ?? 1,
+            nivelId: this.niveles[0]?.id ?? 1,
+            duracionMinutos: this.niveles[0]?.duracionMinutos ?? 45,
+          });
+          this.actualizarResumen();
+          this.seleccionarTecnologiaInicial();
+          this.actualizarResumenSeleccion();
+          this.cargando = false;
+          this.refrescarVista();
+        },
+        error: () => {
+          this.tecnologias = [];
+          this.niveles = [];
+          this.preguntas = [];
+          this.tabsBanco = [{ id: 'todos', label: 'Todos' }];
+          this.actualizarResumen();
+          this.seleccionarTecnologiaInicial();
+          this.cargando = false;
+          this.refrescarVista();
+        },
+      });
+  }
+
+  cargarOpcionesEnvio() {
+    this.cargandoOpcionesEnvio = true;
+
+    forkJoin({
+      solicitudes: this.solicitudesService.listar().pipe(timeout(5000), catchError(() => of([]))),
+      candidatos: this.candidatosService.listar().pipe(timeout(5000), catchError(() => of([]))),
+    })
+      .pipe(
+        take(1),
+        map(({ solicitudes, candidatos }) => ({
+          solicitudes: solicitudes.map((solicitud) => ({
+            id: Number(solicitud.id),
+            codigo: solicitud.codigo,
+            cargo: solicitud.cargo || solicitud.nombre || 'Solicitud sin cargo',
+            cliente: solicitud.cliente || solicitud.empresaCliente || 'Cliente sin nombre',
+            estado: solicitud.estado || 'Sin estado',
+          })),
+          candidatos,
+        })),
+      )
+      .subscribe({
+        next: ({ solicitudes, candidatos }) => {
+          this.solicitudesEnvio = solicitudes;
+
+          if (candidatos.length === 0) {
+            this.candidatosEnvio = [];
+            this.cargandoOpcionesEnvio = false;
+            return;
+          }
+
+          forkJoin(
+            candidatos.map((candidato) =>
+              this.candidatosService.listarSolicitudes(String(candidato.cand_id)).pipe(
+                timeout(4000),
+                catchError(() => of([] as PostulacionCandidatoApi[])),
+                map((postulaciones) => this.mapearCandidatoEnvio(candidato, postulaciones)),
+              ),
+            ),
+          )
+            .pipe(take(1))
+            .subscribe({
+              next: (candidatosPorSolicitud) => {
+                this.candidatosEnvio = candidatosPorSolicitud.flat();
+                this.cargandoOpcionesEnvio = false;
+              },
+              error: () => {
+                this.candidatosEnvio = [];
+                this.cargandoOpcionesEnvio = false;
+              },
+            });
+        },
+        error: () => {
+          this.solicitudesEnvio = [];
+          this.candidatosEnvio = [];
+          this.cargandoOpcionesEnvio = false;
+        },
+      });
+  }
+
+  cargarAsignaciones() {
+    this.cargandoAsignaciones = true;
+    this.errorAsignaciones = '';
+    this.refrescarVista();
+
+    this.cuestionariosService
+      .listarAsignaciones()
+      .pipe(
+        timeout(8000),
+        take(1),
+        finalize(() => {
+          this.cargandoAsignaciones = false;
+          this.refrescarVista();
+        }),
+      )
+      .subscribe({
+        next: (asignaciones) => {
+          this.asignaciones = asignaciones;
+          this.paginaAsignaciones = 1;
+          this.refrescarVista();
+        },
+        error: (error) => {
+          this.asignaciones = [];
+          this.errorAsignaciones = obtenerMensajeError(error, 'No se pudieron cargar las asignaciones de cuestionarios.');
+          this.refrescarVista();
+        },
+      });
+  }
+
   cargarPreguntas() {
     this.cargando = true;
+    this.refrescarVista();
     this.cuestionariosService
       .listar()
       .pipe(take(1))
@@ -432,11 +743,13 @@ export class CuestionariosAdmin implements OnInit {
           this.seleccionarTecnologiaInicial();
           this.actualizarResumenSeleccion();
           this.cargando = false;
+          this.refrescarVista();
         },
         error: () => {
           this.actualizarResumen();
           this.seleccionarTecnologiaInicial();
           this.cargando = false;
+          this.refrescarVista();
         },
       });
   }
@@ -507,7 +820,7 @@ export class CuestionariosAdmin implements OnInit {
       });
   }
 
-  cambiarVista(vista: 'armar' | 'crear') {
+  cambiarVista(vista: 'armar' | 'crear' | 'asignaciones') {
     this.vistaActiva = vista;
   }
 
@@ -522,18 +835,47 @@ export class CuestionariosAdmin implements OnInit {
 
   limpiarBusquedaTecnologia() {
     this.busquedaTecnologia = '';
+    this.busquedaTecnologiaArmar = '';
     this.categoriaBancoActiva = 'todas';
     this.seleccionarTecnologiaInicial();
   }
 
+  cambiarCategoriaPregunta() {
+    const tecnologiaActualId = Number(this.formulario.value.tecnologiaId);
+    const tecnologiaActualVisible = this.tecnologiasFormularioFiltradas.some(
+      (tecnologia) => tecnologia.id === tecnologiaActualId,
+    );
+
+    if (!tecnologiaActualVisible) {
+      this.formulario.patchValue({
+        tecnologiaId: this.tecnologiasFormularioFiltradas[0]?.id ?? this.tecnologias[0]?.id ?? 1,
+      });
+    }
+  }
+
   cambiarNivelBanco(nivel: string) {
     this.nivelBancoActivo = nivel;
-    this.paginaActual = 1;
+    this.paginaBanco = 1;
   }
 
   cambiarCategoriaBanco() {
-    this.paginaActual = 1;
+    this.paginaBanco = 1;
     this.tecnologiaDetalle = null;
+  }
+
+  cambiarPaginaBanco(pagina: number) {
+    const totalPaginas = Math.max(1, Math.ceil(this.tecnologiasFiltradas.length / 10));
+    this.paginaBanco = Math.min(Math.max(pagina, 1), totalPaginas);
+  }
+
+  cambiarPaginaAsignaciones(pagina: number) {
+    const totalPaginas = Math.max(1, Math.ceil(this.asignaciones.length / this.registrosPorPaginaAsignaciones));
+    this.paginaAsignaciones = Math.min(Math.max(pagina, 1), totalPaginas);
+  }
+
+  cambiarRegistrosPorPaginaAsignaciones(registros: number) {
+    this.registrosPorPaginaAsignaciones = registros;
+    this.paginaAsignaciones = 1;
   }
 
   cambiarPagina(pagina: number) {
@@ -617,6 +959,7 @@ export class CuestionariosAdmin implements OnInit {
     }
 
     this.mostrarModalEnvio = true;
+    this.cargarOpcionesEnvio();
   }
 
   cerrarModalEnvio() {
@@ -676,6 +1019,7 @@ export class CuestionariosAdmin implements OnInit {
           };
           this.deseleccionarPreguntas();
           this.cerrarModalEnvio();
+          this.cargarAsignaciones();
         },
         error: (error) => {
           this.alertaEnvio = {
@@ -687,16 +1031,251 @@ export class CuestionariosAdmin implements OnInit {
       });
   }
 
+  manejarAccionAsignacion(evento: DataTableActionEvent<AsignacionCuestionarioApi>) {
+    if (evento.action === 'cancelar') {
+      this.cancelarAsignacion(evento.row);
+      return;
+    }
+
+    if (evento.action === 'editar') {
+      this.editarAsignacion(evento.row);
+    }
+  }
+
+  editarAsignacion(asignacion: AsignacionCuestionarioApi) {
+    if (this.esErrorTecnico(asignacion)) {
+      this.habilitarReintento(asignacion);
+      return;
+    }
+
+    if (this.puedeMarcarErrorTecnico(asignacion)) {
+      this.marcarErrorTecnico(asignacion);
+    }
+  }
+
+  cancelarAsignacion(asignacion: AsignacionCuestionarioApi) {
+    this.cuestionariosService
+      .cancelarAsignacion(asignacion.cdcu_id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.alertaEnvio = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: 'Asignacion cancelada correctamente.',
+          };
+          this.cargarAsignaciones();
+        },
+        error: (error) => {
+          this.alertaEnvio = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo cancelar la asignacion.'),
+          };
+        },
+      });
+  }
+
+  marcarErrorTecnico(asignacion: AsignacionCuestionarioApi) {
+    this.cuestionariosService
+      .marcarErrorTecnico(asignacion.cdcu_id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.alertaEnvio = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: 'Asignacion marcada con error tecnico.',
+          };
+          this.cargarAsignaciones();
+        },
+        error: (error) => {
+          this.alertaEnvio = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo marcar el error tecnico.'),
+          };
+        },
+      });
+  }
+
+  habilitarReintento(asignacion: AsignacionCuestionarioApi) {
+    this.asignacionReintento = asignacion;
+    this.reintentoFecha = '';
+    this.reintentoHora = '18:00';
+  }
+
+  cerrarModalReintento() {
+    this.asignacionReintento = null;
+    this.reintentoFecha = '';
+    this.reintentoHora = '18:00';
+  }
+
+  confirmarReintento() {
+    if (!this.asignacionReintento || !this.reintentoFecha || !this.reintentoHora) {
+      this.alertaEnvio = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Selecciona nueva fecha y hora de vencimiento para habilitar el reintento.',
+      };
+      return;
+    }
+
+    const fechaVencimiento = `${this.reintentoFecha}T${this.reintentoHora}:00`;
+    this.guardandoReintento = true;
+
+    this.cuestionariosService
+      .habilitarReintento(this.asignacionReintento.cdcu_id, fechaVencimiento)
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.guardandoReintento = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.alertaEnvio = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: 'Reintento habilitado correctamente.',
+          };
+          this.cerrarModalReintento();
+          this.cargarAsignaciones();
+        },
+        error: (error) => {
+          this.alertaEnvio = {
+            tipo: 'danger',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se pudo habilitar el reintento.'),
+          };
+        },
+      });
+  }
+
+  obtenerIdAsignacion(asignacion: AsignacionCuestionarioApi) {
+    return String(asignacion.cdcu_id);
+  }
+
+  resultadoAsignacion(asignacion: AsignacionCuestionarioApi) {
+    if (asignacion.cdcu_aprobado == null) {
+      return asignacion.cdcu_porcentaje_obtenido == null ? 'Pendiente' : `${asignacion.cdcu_porcentaje_obtenido}%`;
+    }
+
+    return asignacion.cdcu_aprobado
+      ? `Aprobado ${asignacion.cdcu_porcentaje_obtenido ?? ''}%`.trim()
+      : `Reprobado ${asignacion.cdcu_porcentaje_obtenido ?? ''}%`.trim();
+  }
+
+  claseEstadoAsignacion(estado: string) {
+    const estadoNormalizado = this.normalizar(estado);
+
+    if (estadoNormalizado.includes('finalizado')) {
+      return 'status-success';
+    }
+
+    if (estadoNormalizado.includes('error')) {
+      return 'status-warning';
+    }
+
+    if (estadoNormalizado.includes('cancelado') || estadoNormalizado.includes('vencido')) {
+      return 'status-danger';
+    }
+
+    return 'status-info';
+  }
+
+  puedeCancelarAsignacion(asignacion: AsignacionCuestionarioApi) {
+    const estado = this.normalizar(asignacion.estado_nombre);
+    return estado.includes('asignado') || estado.includes('progreso');
+  }
+
+  puedeMarcarErrorTecnico(asignacion: AsignacionCuestionarioApi) {
+    const estado = this.normalizar(asignacion.estado_nombre);
+    return estado.includes('asignado') || estado.includes('progreso');
+  }
+
+  puedeEditarAsignacion(asignacion: AsignacionCuestionarioApi) {
+    return this.puedeMarcarErrorTecnico(asignacion) || this.esErrorTecnico(asignacion);
+  }
+
+  esAsignacionCancelada(asignacion: AsignacionCuestionarioApi) {
+    return this.normalizar(asignacion.estado_nombre).includes('cancelado');
+  }
+
+  esErrorTecnico(asignacion: AsignacionCuestionarioApi) {
+    return this.normalizar(asignacion.estado_nombre).includes('error');
+  }
+
+  formatearFecha(valor?: string | null) {
+    if (!valor) {
+      return 'Sin fecha';
+    }
+
+    const fecha = new Date(valor);
+
+    if (Number.isNaN(fecha.getTime())) {
+      return valor;
+    }
+
+    return new Intl.DateTimeFormat('es-CL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(fecha);
+  }
+
+  private mapearCandidatoEnvio(candidato: CandidatoApi, postulaciones: PostulacionCandidatoApi[]) {
+    const nombre = [
+      candidato.cand_nombres,
+      candidato.cand_apellido_paterno,
+      candidato.cand_apellido_materno,
+    ]
+      .filter(Boolean)
+      .join(' ') || candidato.cand_email || `Candidato ${candidato.cand_id}`;
+
+    const email = candidato.cand_email ?? 'Sin correo';
+
+    return postulaciones.map((postulacion) => ({
+      id: candidato.cand_id,
+      nombre,
+      correo: email,
+      solicitudId: postulacion.slcd_solicitud_id,
+      estado: this.estadoPostulacion(postulacion.slcd_estado_solicitud_candidato_id),
+    }));
+  }
+
+  private estadoPostulacion(estadoId?: number | null) {
+    const estados = new Map([
+      [1, 'En revision'],
+      [2, 'En entrevista'],
+      [3, 'Inhabilitado'],
+      [4, 'Seleccionado'],
+      [5, 'Descartado'],
+      [6, 'Contratado'],
+    ]);
+
+    return estadoId ? estados.get(estadoId) ?? `Estado ${estadoId}` : 'Sin estado';
+  }
+
   private sincronizarDuracionConNivel() {
-    this.formulario.get('nivelId')?.valueChanges.subscribe((nivelId) => {
-      const nivel = this.niveles.find((item) => item.id === Number(nivelId));
-      if (nivel) {
-        this.formulario.patchValue(
-          { duracionMinutos: nivel.duracionMinutos, duracionSegundos: 0 },
-          { emitEvent: false },
-        );
-      }
-    });
+    const nivelControl = this.formulario.get('nivelId');
+    if (!nivelControl) {
+      return;
+    }
+
+    this.subscriptions.add(
+      nivelControl.valueChanges.subscribe((nivelId) => {
+        const nivel = this.niveles.find((item) => item.id === Number(nivelId));
+        if (nivel) {
+          this.formulario.patchValue(
+            { duracionMinutos: nivel.duracionMinutos, duracionSegundos: 0 },
+            { emitEvent: false },
+          );
+        }
+      }),
+    );
   }
 
   private obtenerDuracionNivelActual() {
@@ -811,10 +1390,14 @@ export class CuestionariosAdmin implements OnInit {
 
   private reiniciarEstadoEntrada() {
     this.busquedaTecnologia = '';
+    this.busquedaTecnologiaArmar = '';
     this.busquedaPreguntas = '';
     this.nivelBancoActivo = 'todos';
     this.categoriaBancoActiva = 'todas';
+    this.categoriaPreguntaActiva = 'todas';
     this.paginaActual = 1;
+    this.paginaBanco = 1;
+    this.paginaAsignaciones = 1;
     this.tecnologiaDetalle = null;
     this.tecnologiaSeleccionadaManualmente = false;
 
@@ -822,6 +1405,21 @@ export class CuestionariosAdmin implements OnInit {
       this.preguntasSeleccionadas = new Set();
       this.actualizarResumenSeleccion();
     }
+  }
+
+  private prepararEntradaArmar() {
+    this.busquedaTecnologia = '';
+    this.busquedaTecnologiaArmar = '';
+    this.busquedaPreguntas = '';
+    this.categoriaBancoActiva = 'todas';
+    this.paginaActual = 1;
+    this.paginaBanco = 1;
+    this.paginaAsignaciones = 1;
+    this.tecnologiaSeleccionadaManualmente = false;
+  }
+
+  private refrescarVista() {
+    this.cdr.detectChanges();
   }
 
   private agruparTecnologiasPorCategoria(rows: TecnologiaResumen[]) {

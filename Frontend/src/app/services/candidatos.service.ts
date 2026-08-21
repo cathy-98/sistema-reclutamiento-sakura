@@ -259,6 +259,11 @@ export class CandidatosService {
     return this.http.get<PostulacionCandidatoApi[]>(`${this.apiUrl}/${id}/solicitudes`);
   }
 
+  listarPorSolicitud(solicitudId: string | number) {
+    // Integracion M3/M5: una solicitud puede tener muchos candidatos postulados.
+    return this.http.get<PostulacionCandidatoApi[]>(`/api/solicitudes/${solicitudId}/candidatos`);
+  }
+
   listarMisSolicitudes() {
     // Integracion interna M3 autoservicio: GET /candidatos/me/solicitudes sin exponer cand_id.
     return this.http.get<PostulacionCandidatoApi[]>(`${this.apiUrl}/me/solicitudes`);
@@ -275,7 +280,6 @@ export class CandidatosService {
   }
 
   crear(payload: Partial<CandidatoApi>) {
-    // Integración pendiente: adaptar payload a nombres cand_* antes de conectar el endpoint real.
     return this.http.post<CandidatoPerfil>(this.apiUrl, payload);
   }
 

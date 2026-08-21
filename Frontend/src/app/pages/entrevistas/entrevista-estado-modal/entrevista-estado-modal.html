@@ -1,13 +1,111 @@
-<app-modal [titulo]="titulo" [subtitulo]="entrevista?.idSolicitud || ''" ancho="sm" (cerrar)="cerrar.emit()">
+<app-modal [titulo]="titulo" [subtitulo]="entrevista?.idSolicitud || ''" ancho="md" (cerrar)="cerrar.emit()">
   <form class="state-form" [formGroup]="formulario">
-    <p *ngIf="entrevista">
-      {{ entrevista.asunto }} · {{ entrevista.candidato }} · {{ entrevista.cargo }}
-    </p>
+    <section class="state-summary" *ngIf="entrevista && !esLectura">
+      <h3>{{ entrevista.asunto }}</h3>
+      <div class="summary-grid">
+        <span>
+          <small>Candidato</small>
+          <strong>{{ entrevista.candidato }}</strong>
+        </span>
+        <span>
+          <small>Cargo</small>
+          <strong>{{ entrevista.cargo }}</strong>
+        </span>
+        <span>
+          <small>Tipo / área</small>
+          <strong>{{ entrevista.tipo }}</strong>
+        </span>
+        <span class="wide">
+          <small>Entrevistador</small>
+          <strong>{{ entrevista.entrevistador }}</strong>
+        </span>
+      </div>
+    </section>
 
-    <div class="date-grid" *ngIf="modo === 'reprogramar'">
+    <section class="detail-view" *ngIf="entrevista && esLectura">
+      <h3>{{ entrevista.asunto }}</h3>
+
+      <details open>
+        <summary>Datos principales</summary>
+        <dl class="detail-grid">
+          <div>
+            <dt>Solicitud</dt>
+            <dd>{{ entrevista.idSolicitud }}</dd>
+          </div>
+          <div>
+            <dt>Candidato</dt>
+            <dd>{{ entrevista.candidato }}</dd>
+          </div>
+          <div>
+            <dt>Cargo</dt>
+            <dd>{{ entrevista.cargo }}</dd>
+          </div>
+          <div>
+            <dt>Tipo / área</dt>
+            <dd>{{ entrevista.tipo }}</dd>
+          </div>
+        </dl>
+      </details>
+
+      <details open>
+        <summary>Agenda y responsables</summary>
+        <dl class="detail-grid">
+          <div>
+            <dt>Fecha</dt>
+            <dd>{{ entrevista.fecha }}</dd>
+          </div>
+          <div>
+            <dt>Hora</dt>
+            <dd>{{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</dd>
+          </div>
+          <div class="wide">
+            <dt>Entrevistador</dt>
+            <dd>{{ entrevista.entrevistador }}</dd>
+          </div>
+          <div class="wide">
+            <dt>Link reunión</dt>
+            <dd>{{ entrevista.linkReunion || 'Sin link registrado' }}</dd>
+          </div>
+        </dl>
+      </details>
+
+      <details open>
+        <summary>Estado y resultado</summary>
+        <dl class="detail-grid">
+          <div>
+            <dt>Estado actual</dt>
+            <dd>{{ entrevista.estado }}</dd>
+          </div>
+          <div>
+            <dt>Resultado por área</dt>
+            <dd>{{ entrevista.resultadoEntrevista }}</dd>
+          </div>
+          <div class="wide">
+            <dt>Observación / convocatoria</dt>
+            <dd>{{ entrevista.observacion || 'Sin observación registrada' }}</dd>
+          </div>
+        </dl>
+      </details>
+    </section>
+
+    <label *ngIf="mostrarSelectorEstado">
+      Estado de entrevista
+      <select formControlName="estado" (change)="actualizarValidadores()">
+        <option value="">Selecciona estado</option>
+        <option *ngFor="let estado of estadosEditables" [ngValue]="estado">
+          {{ estado }}
+        </option>
+      </select>
+      <small *ngIf="formulario.get('estado')?.touched && formulario.get('estado')?.invalid">Campo obligatorio.</small>
+    </label>
+
+    <div class="date-grid" *ngIf="mostrarFecha">
       <label>
         Nueva fecha
-        <input type="date" formControlName="fecha" />
+        <app-date-picker
+          [min]="fechaHoyInput"
+          formControlName="fecha"
+        ></app-date-picker>
       </label>
       <label>
         Hora inicio
@@ -20,15 +118,15 @@
       </label>
     </div>
 
-    <label>
-      Motivo
-      <textarea formControlName="motivo" placeholder="Indica el motivo para registrar el cambio"></textarea>
+    <label *ngIf="mostrarSelectorEstado || requiereMotivo">
+      Comentario del cambio <span *ngIf="!requiereMotivo">(opcional)</span>
+      <textarea formControlName="motivo" placeholder="Indica el motivo o comentario para registrar el cambio"></textarea>
       <small *ngIf="formulario.get('motivo')?.touched && formulario.get('motivo')?.invalid">Campo obligatorio.</small>
     </label>
   </form>
 
   <app-form-actions modal-footer>
     <app-button formActionsStart variant="ghost" (pressed)="cerrar.emit()">Volver</app-button>
-    <app-button [variant]="modo === 'cancelar' ? 'danger' : 'primary'" (pressed)="enviar()">{{ accion }}</app-button>
+    <app-button *ngIf="!esLectura" [variant]="varianteAccion" (pressed)="enviar()">{{ accion }}</app-button>
   </app-form-actions>
 </app-modal>

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize, take } from 'rxjs';
 import {
   EntrevistaResumen,
   EntrevistasService,
@@ -43,7 +44,7 @@ export class EntrevistasAgenda implements OnInit {
   busqueda = '';
   diasCalendario: DiaAgenda[] = [];
 
-  readonly diasSemana = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  readonly diasSemana = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
   readonly tabs: TabItem[] = [
     { id: 'hoy', label: 'Hoy' },
     { id: 'proximas', label: 'Próximas' },
@@ -52,7 +53,10 @@ export class EntrevistasAgenda implements OnInit {
     { id: 'canceladas', label: 'Canceladas' },
   ];
 
-  constructor(private entrevistasService: EntrevistasService) {}
+  constructor(
+    private entrevistasService: EntrevistasService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
     this.actualizarCalendario();
@@ -111,18 +115,25 @@ export class EntrevistasAgenda implements OnInit {
   cargarEntrevistas() {
     this.cargando = true;
     this.errorCarga = '';
+    this.cdr.detectChanges();
 
-    this.entrevistasService.listar().subscribe({
+    this.entrevistasService.listar()
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargando = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe({
       next: (entrevistas) => {
         this.entrevistas = entrevistas;
         this.seleccionarFechaInicial();
         this.actualizarCalendario();
-        this.cargando = false;
       },
       error: (error) => {
         this.entrevistas = [];
         this.errorCarga = obtenerMensajeError(error, 'No se pudieron cargar las entrevistas.');
-        this.cargando = false;
       },
     });
   }

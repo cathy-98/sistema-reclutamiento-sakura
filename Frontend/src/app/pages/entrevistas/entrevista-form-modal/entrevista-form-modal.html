@@ -6,14 +6,14 @@
         {{
           esAgendaMasiva
             ? 'Agenda masiva: ' + candidatos.length + ' candidatos'
-            : 'Cargo/ Nombre vacante: ' + (control('cargo')?.value || 'Desarrollador')
+            : 'Solicitud seleccionada'
         }}
       </strong>
       <span>
         {{
           esAgendaMasiva
             ? 'Una entrevista por candidato'
-            : 'ID solicitud: ' + (control('idSolicitud')?.value || 'SOL-021')
+            : 'ID solicitud: ' + solicitudSeleccionadaCodigo
         }}
       </span>
     </div>
@@ -82,7 +82,7 @@
       *ngIf="tabFormulario === 'datos'"
       step="1"
       title="Datos de la solicitud"
-      description="Selecciona la solicitud, candidato y cargo asociado."
+      description="Selecciona la solicitud y los candidatos asociados."
     >
       <div class="form-grid">
         <app-form-field
@@ -96,11 +96,15 @@
             formControlName="idSolicitud"
             readonly
           />
-          <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="idSolicitud">
-            <option [ngValue]="null">Selecciona solicitud</option>
-            <option>SOL-021</option>
-            <option>SOL-022</option>
-            <option>SOL-023</option>
+          <select
+            *ngIf="!tieneCandidatosPreseleccionados"
+            formControlName="idSolicitud"
+            [disabled]="cargandoDatos"
+          >
+            <option [ngValue]="null">{{ cargandoDatos ? 'Cargando solicitudes...' : 'Selecciona solicitud' }}</option>
+            <option *ngFor="let solicitud of solicitudes" [ngValue]="solicitud.id">
+              {{ solicitud.codigo }} · {{ solicitud.cargo }}
+            </option>
           </select>
         </app-form-field>
 
@@ -115,12 +119,47 @@
             formControlName="candidato"
             readonly
           />
-          <select *ngIf="!tieneCandidatosPreseleccionados" formControlName="candidato">
-            <option [ngValue]="null">Selecciona candidato</option>
-            <option>Macarena Lopez</option>
-            <option>Valentina Rojas</option>
-            <option>Juan Perez Gonzalez</option>
-          </select>
+          <section
+            *ngIf="!tieneCandidatosPreseleccionados"
+            class="candidate-picker"
+            [class.is-disabled]="cargandoDatos || cargandoCandidatosSolicitud || !control('idSolicitud')?.value"
+          >
+            <header>
+              <div>
+                <strong>Candidatos asociados</strong>
+                <span>{{ postulacionesSolicitud.length }} disponible(s)</span>
+              </div>
+              <div class="candidate-actions" *ngIf="postulacionesSolicitud.length > 0">
+                <button type="button" (click)="seleccionarTodasPostulaciones()" [disabled]="cargandoCandidatosSolicitud">Todos</button>
+                <button type="button" (click)="limpiarPostulaciones()" [disabled]="cargandoCandidatosSolicitud">Limpiar</button>
+              </div>
+            </header>
+
+            <div class="picker-state" *ngIf="cargandoCandidatosSolicitud">
+              Cargando candidatos...
+            </div>
+
+            <div class="picker-state" *ngIf="!cargandoCandidatosSolicitud && !control('idSolicitud')?.value">
+              Elige una solicitud para ver sus candidatos.
+            </div>
+
+            <div class="picker-state" *ngIf="!cargandoCandidatosSolicitud && control('idSolicitud')?.value && postulacionesSolicitud.length === 0">
+              No hay candidatos asociados a esta solicitud.
+            </div>
+
+            <label class="candidate-option" *ngFor="let postulacion of postulacionesSolicitud">
+              <input
+                type="checkbox"
+                [checked]="postulacionMarcada(postulacion.slcd_id)"
+                [disabled]="cargandoCandidatosSolicitud"
+                (change)="alternarPostulacion(postulacion, $any($event.target).checked)"
+              />
+              <span>
+                <strong>{{ nombrePostulacion(postulacion) }}</strong>
+                <small>{{ detallePostulacion(postulacion) }}</small>
+              </span>
+            </label>
+          </section>
         </app-form-field>
 
         <app-form-field
@@ -156,6 +195,7 @@
           {{ tipo }}
         </label>
       </fieldset>
+      <small class="form-error" *ngIf="tipos.length === 0">No hay tipos de entrevista disponibles desde catálogo.</small>
       <small class="form-error" *ngIf="control('tipo')?.touched && control('tipo')?.invalid">Campo obligatorio.</small>
 
       <div class="form-grid">
@@ -164,7 +204,10 @@
           [required]="true"
           [error]="control('fecha')?.touched && control('fecha')?.invalid ? 'Campo obligatorio.' : ''"
         >
-          <input type="date" formControlName="fecha" />
+          <app-date-picker
+            [min]="fechaHoyInput"
+            formControlName="fecha"
+          ></app-date-picker>
         </app-form-field>
 
         <app-form-field
@@ -204,23 +247,12 @@
     <app-form-section
       *ngIf="tabFormulario === 'integrantes'"
       step="3"
-      title="Integrantes y roles"
-      description="Agrega participantes y confirma quiénes quedan seleccionados."
+      title="Responsables internos"
+      description="Selecciona quién realizará esta entrevista."
     >
-      <div class="add-integrant">
-        <app-form-field
-          label="Integrante"
-          [required]="true"
-          [error]="control('entrevistador')?.touched && control('entrevistador')?.invalid ? 'Campo obligatorio.' : ''"
-        >
-          <input type="text" formControlName="entrevistador" placeholder="Nombre responsable" />
-        </app-form-field>
-        <app-button type="button" (pressed)="agregarIntegrante()">Añadir</app-button>
-      </div>
-
       <app-data-table
-        title="Integrantes"
-        subtitle="Selecciona los participantes de la entrevista."
+        title="Responsables"
+        subtitle="Selecciona al menos un usuario interno."
         [columns]="columnasIntegrantes"
         [rows]="integrantes"
         [total]="integrantes.length"
@@ -231,13 +263,16 @@
         [selectedIds]="integrantesSeleccionados"
         (selectedIdsChange)="actualizarSeleccionIntegrantes($event)"
       ></app-data-table>
+      <small class="form-error" *ngIf="integrantesSeleccionadosInternos().length === 0">
+        Debes seleccionar al menos un responsable interno.
+      </small>
     </app-form-section>
 
     <app-form-section
       *ngIf="tabFormulario === 'detalle'"
       step="4"
       title="Detalle del evento"
-      description="Completa el asunto y las notas que se enviarán en la cita."
+      description="Completa el título y las notas internas de la cita."
     >
       <div class="form-grid">
         <app-form-field
@@ -257,6 +292,7 @@
   </form>
 
   <app-form-actions modal-footer>
+    <span class="form-error footer-error" *ngIf="errorEnvio">{{ errorEnvio }}</span>
     <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
     <app-button variant="ghost" type="button" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">Volver</app-button>
     <app-button type="button" *ngIf="!esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>

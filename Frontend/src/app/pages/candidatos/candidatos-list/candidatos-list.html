@@ -72,7 +72,7 @@
   -->
   <app-filter-panel
     description="Busca rápidamente o combina filtros para encontrar candidatos dentro de sus procesos de selección."
-    quickSearchPlaceholder="Buscar por nombre, correo, SOL-000021 o cargo"
+    quickSearchPlaceholder="Buscar por nombre, correo, solicitud o cargo"
 
   [(quickSearch)]="busquedaRapida"
 
@@ -95,7 +95,7 @@
       <input
         [(ngModel)]="filtros.idSolicitud"
         type="text"
-        placeholder="Ej. SOL-000021"
+        placeholder="Ej. SOL-000001"
       />
     </label>
 
@@ -239,7 +239,7 @@
       <input
         [(ngModel)]="filtros.nombre"
         type="text"
-        placeholder="Ej. Macarena Lopez"
+        placeholder="Nombre del candidato"
       />
     </label>
 
@@ -335,9 +335,9 @@
 
     Visualización definida en candidatos-list.ts:
 
-    SOL-000021
-    SOL-000021 · SOL-000034
-    SOL-000021 · SOL-000034 · +2
+    SOL-XXXXXX
+    SOL-XXXXXX · SOL-YYYYYY
+    SOL-XXXXXX · SOL-YYYYYY · +2
 
     Match, cargo, estado, renta y fecha muestran actualmente
     la postulación más reciente como resumen de la fila.

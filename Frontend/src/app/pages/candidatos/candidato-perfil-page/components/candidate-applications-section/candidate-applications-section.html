@@ -127,7 +127,12 @@
       <dl>
         <div><dt>Fecha de entrevista</dt><dd>{{ etapa.fecha }}</dd></div>
         <div><dt>Entrevistador</dt><dd>{{ etapa.entrevistador }}</dd></div>
-        <div><dt>Tipo entrevista</dt><dd class="result">{{ etapa.tipoEntrevista }}</dd></div>
+        <div class="result-summary">
+          <dt>Resultado entrevista</dt>
+          <dd class="result" [ngClass]="resultadoEntrevistaClase(etapa.resultadoEntrevista)">
+            {{ etapa.resultadoEntrevista }}
+          </dd>
+        </div>
       </dl>
 
       <dl class="observation-definition">

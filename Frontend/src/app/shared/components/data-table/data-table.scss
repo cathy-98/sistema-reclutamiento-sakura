@@ -1,7 +1,7 @@
 .data-table-panel {
   width: min(100%, 1280px);
   margin: 0 auto 22px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: var(--color-card-bg);
@@ -29,6 +29,7 @@
   position: relative;
   width: 100%;
   overflow-x: auto;
+  overflow-y: visible;
   padding-top: 12px;
 }
 

@@ -304,11 +304,11 @@
   </div>
 
   <app-pagination
-    *ngIf="!loading && !errorMessage && total > 0"
+    *ngIf="!hidePagination && !loading && !errorMessage && total > 0"
     [page]="page"
     [pageSize]="pageSize"
     [total]="total"
-    [visibleCount]="rows.length"
+    [visibleCount]="visibleRowCount"
     [pageSizeOptions]="pageSizeOptions"
     (pageChange)="changePage($event)"
     (pageSizeChange)="changePageSize($event)"

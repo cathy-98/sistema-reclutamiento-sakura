@@ -97,6 +97,33 @@ export class CandidateApplicationsSection {
     return 'is-warning';
   }
 
+  resultadoEntrevistaClase(resultado: string) {
+    const normalizado = this.normalizarEstado(resultado);
+
+    if (
+      normalizado.includes('no-aprobado') ||
+      normalizado.includes('rechazado')
+    ) {
+      return 'is-danger';
+    }
+
+    if (
+      normalizado.includes('aprobado') ||
+      normalizado.includes('seleccionado')
+    ) {
+      return 'is-success';
+    }
+
+    if (
+      normalizado.includes('observaciones') ||
+      normalizado.includes('segunda')
+    ) {
+      return 'is-warning';
+    }
+
+    return '';
+  }
+
   agregarObservacionEntrevista() {
     const etapa =
       this.proceso.find(
@@ -109,6 +136,7 @@ export class CandidateApplicationsSection {
         ...etapa,
         observacionEntrevista: '',
         observaciones: '',
+        resultadoEntrevista: etapa.resultadoEntrevista,
       });
     }
   }

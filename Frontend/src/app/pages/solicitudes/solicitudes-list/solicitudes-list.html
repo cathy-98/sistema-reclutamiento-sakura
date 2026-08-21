@@ -15,6 +15,8 @@
     description="Usa uno o más campos para encontrar solicitudes."
     quickSearchPlaceholder="Ej. SOL-000001, Banco BICE o Frontend"
     [(quickSearch)]="filtros.busquedaRapida"
+    [collapsible]="true"
+    [filtersExpanded]="false"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >

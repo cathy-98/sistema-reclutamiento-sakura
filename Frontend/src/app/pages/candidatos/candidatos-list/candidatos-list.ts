@@ -352,204 +352,6 @@ export class CandidatosList implements OnInit {
     },
   ];
 
-  /**
-   * Datos de respaldo para mantener la pantalla operativa
-   * cuando el backend local no esté disponible.
-   *
-   * Integración M3:
-   * incluso los datos mock respetan ahora la relación
-   * Candidato -> múltiples Postulaciones.
-   */
-  private readonly candidatosRespaldo: Candidato[] = [
-    {
-      idCandidato: '1',
-
-      postulaciones: [
-        {
-          idPostulacion: 1,
-          idSolicitud: 21,
-          codigoSolicitud: 'SOL-000021',
-          cargo: 'Frontend',
-          match: 90,
-          renta: 800000,
-          fechaPostulacion: '18/05/2025',
-          fechaPostulacionRaw: '2025-05-18',
-          estado: 'En revision',
-        },
-        {
-          idPostulacion: 2,
-          idSolicitud: 34,
-          codigoSolicitud: 'SOL-000034',
-          cargo: 'Frontend Senior',
-          match: 84,
-          renta: 950000,
-          fechaPostulacion: '10/05/2025',
-          fechaPostulacionRaw: '2025-05-10',
-          estado: 'En entrevista',
-        },
-        {
-          idPostulacion: 3,
-          idSolicitud: 40,
-          codigoSolicitud: 'SOL-000040',
-          cargo: 'Angular Developer',
-          match: 78,
-          renta: 900000,
-          fechaPostulacion: '03/05/2025',
-          fechaPostulacionRaw: '2025-05-03',
-          estado: 'En revision',
-        },
-      ],
-
-      match: 90,
-      nombre: 'Macarena Lopez',
-      correo: 'macarena.lopez@mail.com',
-      telefono: '+56 9 5634 8547',
-      cargo: 'Frontend',
-      fechaPostulacion: '18/05/2025',
-      estado: 'En revision',
-      estadoUsuario: 'Activo',
-      disponibilidad: 'Inmediata',
-      renta: 800000,
-      nivel: 'Junior',
-      experiencia: 4,
-    },
-
-    {
-      idCandidato: '2',
-
-      postulaciones: [
-        {
-          idPostulacion: 4,
-          idSolicitud: 21,
-          codigoSolicitud: 'SOL-000021',
-          cargo: 'Frontend',
-          match: 80,
-          renta: 950000,
-          fechaPostulacion: '18/05/2025',
-          fechaPostulacionRaw: '2025-05-18',
-          estado: 'En entrevista',
-        },
-      ],
-
-      match: 80,
-      nombre: 'Valentina Rojas',
-      correo: 'valentina.rojas@mail.com',
-      telefono: '+56 9 6721 1184',
-      cargo: 'Frontend',
-      fechaPostulacion: '18/05/2025',
-      estado: 'En entrevista',
-      estadoUsuario: 'Activo',
-      disponibilidad: '2 semanas',
-      renta: 950000,
-      nivel: 'Senior',
-      experiencia: 5,
-    },
-
-    {
-      idCandidato: '3',
-
-      postulaciones: [
-        {
-          idPostulacion: 5,
-          idSolicitud: 19,
-          codigoSolicitud: 'SOL-000019',
-          cargo: 'Backend',
-          match: 68,
-          renta: 1200000,
-          fechaPostulacion: '17/05/2025',
-          fechaPostulacionRaw: '2025-05-17',
-          estado: 'En entrevista',
-        },
-        {
-          idPostulacion: 6,
-          idSolicitud: 25,
-          codigoSolicitud: 'SOL-000025',
-          cargo: 'Backend Senior',
-          match: 70,
-          renta: 1300000,
-          fechaPostulacion: '11/05/2025',
-          fechaPostulacionRaw: '2025-05-11',
-          estado: 'En revision',
-        },
-      ],
-
-      match: 68,
-      nombre: 'Diego Martinez',
-      correo: 'diego.martinez@mail.com',
-      telefono: '+56 9 7765 4402',
-      cargo: 'Backend',
-      fechaPostulacion: '17/05/2025',
-      estado: 'En entrevista',
-      estadoUsuario: 'Activo',
-      disponibilidad: 'Inmediata',
-      renta: 1200000,
-      nivel: 'Senior',
-      experiencia: 6,
-    },
-
-    {
-      idCandidato: '4',
-
-      postulaciones: [
-        {
-          idPostulacion: 7,
-          idSolicitud: 18,
-          codigoSolicitud: 'SOL-000018',
-          cargo: 'UX Research',
-          match: 55,
-          renta: 900000,
-          fechaPostulacion: '16/05/2025',
-          fechaPostulacionRaw: '2025-05-16',
-          estado: 'En revision',
-        },
-      ],
-
-      match: 55,
-      nombre: 'Camila Fuentes',
-      correo: 'camila.fuentes@mail.com',
-      telefono: '+56 9 3324 9811',
-      cargo: 'UX Research',
-      fechaPostulacion: '16/05/2025',
-      estado: 'En revision',
-      estadoUsuario: 'Activo',
-      disponibilidad: '1 mes',
-      renta: 900000,
-      nivel: 'Semi senior',
-      experiencia: 3,
-    },
-
-    {
-      idCandidato: '5',
-
-      postulaciones: [
-        {
-          idPostulacion: 8,
-          idSolicitud: 17,
-          codigoSolicitud: 'SOL-000017',
-          cargo: 'QA Automation',
-          match: 42,
-          renta: 1100000,
-          fechaPostulacion: '15/05/2025',
-          fechaPostulacionRaw: '2025-05-15',
-          estado: 'Descartado',
-        },
-      ],
-
-      match: 42,
-      nombre: 'Sebastian Araya',
-      correo: 'sebastian.araya@mail.com',
-      telefono: '+56 9 4218 7256',
-      cargo: 'QA Automation',
-      fechaPostulacion: '15/05/2025',
-      estado: 'Descartado',
-      estadoUsuario: 'Activo',
-      disponibilidad: '2 semanas',
-      renta: 1100000,
-      nivel: 'Junior',
-      experiencia: 2,
-    },
-  ];
-
   constructor(
     private currencyCl: CurrencyClPipe,
     private router: Router,
@@ -831,10 +633,10 @@ export class CandidatosList implements OnInit {
 
           if (candidatos.length === 0) {
             this.errorCarga =
-              'No se pudo cargar candidatos reales. Se muestran datos de respaldo.';
+              'No se encontraron candidatos registrados en el backend.';
 
             this.candidatos =
-              this.candidatosRespaldo;
+              [];
 
             this.cdr.detectChanges();
 
@@ -871,10 +673,10 @@ export class CandidatosList implements OnInit {
           );
 
           this.errorCarga =
-            'No se pudo cargar candidatos reales. Se muestran datos de respaldo.';
+            'No se pudieron cargar candidatos desde el backend.';
 
           this.candidatos =
-            this.candidatosRespaldo;
+            [];
 
           this.cdr.detectChanges();
         },
@@ -1396,8 +1198,22 @@ export class CandidatosList implements OnInit {
       return;
     }
 
+    const solicitudComun =
+      this.obtenerSolicitudComunAgenda(candidatos);
+
+    if (!solicitudComun) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje:
+          'Para agendar entrevistas masivas, selecciona candidatos asociados a una misma solicitud.',
+      };
+      return;
+    }
+
     this.abrirAgendaEntrevista(
       candidatos,
+      solicitudComun,
     );
   }
 
@@ -1430,17 +1246,21 @@ export class CandidatosList implements OnInit {
    */
   abrirAgendaEntrevista(
     candidatos: Candidato[],
+    solicitudComun?: PostulacionTabla,
   ) {
     this.candidatosAgenda =
       candidatos.map((candidato) => {
         const postulacion =
-          this.obtenerPostulacionPrincipal(
-            candidato,
-          );
+          solicitudComun
+            ? candidato.postulaciones.find((item) => item.idSolicitud === solicitudComun.idSolicitud)
+            : this.obtenerPostulacionPrincipal(candidato);
 
         return {
           id:
             this.obtenerIdCandidato(candidato),
+
+          solicitudCandidatoId:
+            postulacion?.idPostulacion,
 
           idSolicitud:
             postulacion?.codigoSolicitud ?? '',
@@ -1525,6 +1345,9 @@ export class CandidatosList implements OnInit {
         (candidato) => ({
           ...payload,
 
+          solicitudCandidatoId:
+            candidato.solicitudCandidatoId,
+
           idSolicitud:
             candidato.idSolicitud,
 
@@ -1573,6 +1396,20 @@ export class CandidatosList implements OnInit {
     files: File[],
   ) {
     this.archivosCv = files;
+  }
+
+  private obtenerSolicitudComunAgenda(candidatos: Candidato[]) {
+    const [primero] = candidatos;
+
+    if (!primero) {
+      return null;
+    }
+
+    return primero.postulaciones.find((postulacion) =>
+      candidatos.every((candidato) =>
+        candidato.postulaciones.some((item) => item.idSolicitud === postulacion.idSolicitud),
+      ),
+    ) ?? null;
   }
 
   procesarArchivosCv() {
@@ -1695,9 +1532,9 @@ export class CandidatosList implements OnInit {
    *
    * Ejemplos:
    *
-   * SOL-000021
-   * SOL-000021 · SOL-000034
-   * SOL-000021 · SOL-000034 · +2
+   * SOL-XXXXXX
+   * SOL-XXXXXX · SOL-YYYYYY
+   * SOL-XXXXXX · SOL-YYYYYY · +2
    *
    * La información completa de las postulaciones se conserva
    * y se mostrará en el detalle/perfil del candidato.

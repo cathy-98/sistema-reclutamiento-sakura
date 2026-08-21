@@ -1,6 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize, take } from 'rxjs';
+import {
+  CandidatoInformeApi,
+  InformesService,
+} from '../../services/informes.service';
 import { AlertRegion } from '../../shared/components/alert-region/alert-region';
 import { ActionBar } from '../../shared/components/action-bar/action-bar';
 import { Button } from '../../shared/components/button/button';
@@ -16,11 +21,13 @@ import { PageLayout } from '../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { TabItem, Tabs } from '../../shared/components/tabs/tabs';
 import { AlertaUi } from '../../shared/models/alerta-ui.model';
+import { obtenerMensajeError } from '../../shared/utils/api-error';
 
 type VistaInforme = 'aprobados' | 'no-aprobados';
 
 interface InformeCandidato {
   id: string;
+  solicitudCandidatoId: number;
   idSolicitud: string;
   match: number;
   nombre: string;
@@ -35,7 +42,7 @@ interface InformeCandidato {
   estado: string;
   disponibilidad: string;
   aprobado: boolean;
-  adjuntarCv: boolean;
+  puedeEnviarDirectivos: boolean;
 }
 
 interface FiltrosInformes {
@@ -63,7 +70,7 @@ interface FiltrosInformes {
   templateUrl: './informes-cliente.html',
   styleUrl: './informes-cliente.scss',
 })
-export class InformesCliente {
+export class InformesCliente implements OnInit {
   paginaActual = 1;
   registrosPorPagina = 5;
   seleccionados = new Set<string>();
@@ -72,6 +79,14 @@ export class InformesCliente {
   filtros: FiltrosInformes = this.filtrosIniciales();
   busquedaRapida = '';
   mostrarResumenAdministrador = false;
+  cargando = false;
+  errorCarga = '';
+  informes: InformeCandidato[] = [];
+  destinatariosResumen = '';
+  ccResumen = '';
+  asuntoResumen = '';
+  cuerpoResumen = '';
+  enviandoDirectivos = false;
 
   readonly tabsInformes: TabItem[] = [
     { id: 'aprobados', label: 'Aprobados' },
@@ -148,158 +163,30 @@ export class InformesCliente {
       id: 'enviar-correo',
       label: 'Enviar correo',
       icon: 'mail',
+      visible: (informe) => informe.puedeEnviarDirectivos,
     },
   ];
 
-  readonly estados = ['Todos', 'En revision', 'En entrevista', 'Seleccionado', 'Descartado', 'Contratado'];
-  readonly disponibilidades = ['Inmediata', '2 semanas', '1 mes'];
+  constructor(private informesService: InformesService) {}
 
-  readonly informes: InformeCandidato[] = [
-    {
-      id: 'inf-001',
-      idSolicitud: 'SOL-000021',
-      match: 90,
-      nombre: 'Macarena Lopez',
-      correo: 'macarena.lopez@mail.com',
-      telefono: '+56 9 5634 8547',
-      cargo: 'Frontend',
-      empresa: 'Sakura Tech',
-      nivel: 'Senior',
-      experiencia: '5 anos',
-      resultadoEntrevista: 'Recomendado',
-      detalleResultado: 'Buen desempeno tecnico y experiencia acorde al cargo.',
-      estado: 'Seleccionado',
-      disponibilidad: 'Inmediata',
-      aprobado: true,
-      adjuntarCv: true,
-    },
-    {
-      id: 'inf-002',
-      idSolicitud: 'SOL-000021',
-      match: 80,
-      nombre: 'Valentina Rojas',
-      correo: 'valentina.rojas@mail.com',
-      telefono: '+56 9 6721 1184',
-      cargo: 'Frontend',
-      empresa: 'Sakura Tech',
-      nivel: 'Senior',
-      experiencia: '8 anos',
-      resultadoEntrevista: 'Recomendado',
-      detalleResultado: 'Excelente dominio tecnico y liderazgo en proyectos.',
-      estado: 'En entrevista',
-      disponibilidad: '2 semanas',
-      aprobado: true,
-      adjuntarCv: true,
-    },
-    {
-      id: 'inf-003',
-      idSolicitud: 'SOL-000019',
-      match: 78,
-      nombre: 'Diego Martinez',
-      correo: 'diego.martinez@mail.com',
-      telefono: '+56 9 7765 4402',
-      cargo: 'Backend',
-      empresa: 'Elitsoft',
-      nivel: 'Semi Senior',
-      experiencia: '4 anos',
-      resultadoEntrevista: 'Con observaciones',
-      detalleResultado: 'Evaluar mas a fondo experiencia en proyectos similares.',
-      estado: 'Seleccionado',
-      disponibilidad: 'Inmediata',
-      aprobado: true,
-      adjuntarCv: false,
-    },
-    {
-      id: 'inf-004',
-      idSolicitud: 'SOL-000018',
-      match: 72,
-      nombre: 'Camila Fuentes',
-      correo: 'camila.fuentes@mail.com',
-      telefono: '+56 9 3324 9811',
-      cargo: 'UX Research',
-      empresa: 'Norte Digital',
-      nivel: 'Junior',
-      experiencia: '2 anos',
-      resultadoEntrevista: 'Recomendado',
-      detalleResultado: 'Perfil consistente con foco en investigacion y orden metodologico.',
-      estado: 'Contratado',
-      disponibilidad: '1 mes',
-      aprobado: true,
-      adjuntarCv: true,
-    },
-    {
-      id: 'inf-005',
-      idSolicitud: 'SOL-000017',
-      match: 76,
-      nombre: 'Sebastian Araya',
-      correo: 'sebastian.araya@mail.com',
-      telefono: '+56 9 4218 7256',
-      cargo: 'QA Automation',
-      empresa: 'Andes Labs',
-      nivel: 'Semi Senior',
-      experiencia: '3 anos',
-      resultadoEntrevista: 'Con observaciones',
-      detalleResultado: 'Profundizar cobertura de pruebas automatizadas y reportabilidad.',
-      estado: 'En revision',
-      disponibilidad: '2 semanas',
-      aprobado: true,
-      adjuntarCv: false,
-    },
-    {
-      id: 'inf-006',
-      idSolicitud: 'SOL-000016',
-      match: 82,
-      nombre: 'Antonia Morales',
-      correo: 'antonia.morales@mail.com',
-      telefono: '+56 9 5874 1120',
-      cargo: 'Frontend',
-      empresa: 'Sakura Tech',
-      nivel: 'Senior',
-      experiencia: '6 anos',
-      resultadoEntrevista: 'Recomendado',
-      detalleResultado: 'Solida experiencia en interfaces y comunicacion tecnica clara.',
-      estado: 'Seleccionado',
-      disponibilidad: 'Inmediata',
-      aprobado: true,
-      adjuntarCv: true,
-    },
-    {
-      id: 'inf-007',
-      idSolicitud: 'SOL-000019',
-      match: 58,
-      nombre: 'Tomas Herrera',
-      correo: 'tomas.herrera@mail.com',
-      telefono: '+56 9 4187 2201',
-      cargo: 'Backend',
-      empresa: 'Elitsoft',
-      nivel: 'Junior',
-      experiencia: '1 ano',
-      resultadoEntrevista: 'No recomendado',
-      detalleResultado: 'Brechas tecnicas relevantes para los requisitos del cargo.',
-      estado: 'Descartado',
-      disponibilidad: '1 mes',
-      aprobado: false,
-      adjuntarCv: false,
-    },
-    {
-      id: 'inf-008',
-      idSolicitud: 'SOL-000018',
-      match: 46,
-      nombre: 'Camila Soto',
-      correo: 'camila.soto@mail.com',
-      telefono: '+56 9 3351 7820',
-      cargo: 'UX Research',
-      empresa: 'Norte Digital',
-      nivel: 'Junior',
-      experiencia: '1 ano',
-      resultadoEntrevista: 'No recomendado',
-      detalleResultado: 'Experiencia insuficiente para la complejidad esperada.',
-      estado: 'Descartado',
-      disponibilidad: '2 semanas',
-      aprobado: false,
-      adjuntarCv: false,
-    },
-  ];
+  ngOnInit() {
+    this.cargarInformes();
+  }
+
+  get estados() {
+    return [
+      'Todos',
+      ...Array.from(new Set(this.informes.map((informe) => informe.estado).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, 'es-CL', { sensitivity: 'base' }),
+      ),
+    ];
+  }
+
+  get disponibilidades() {
+    return Array.from(new Set(this.informes.map((informe) => informe.disponibilidad).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'es-CL', { sensitivity: 'base' }),
+    );
+  }
 
   get informesFiltrados() {
     const filtrosNormalizados = {
@@ -341,12 +228,11 @@ export class InformesCliente {
   }
 
   get candidatosSeleccionadosResumen() {
-    const base =
-      this.seleccionados.size > 0
-        ? this.informes.filter((informe) => this.seleccionados.has(informe.id))
-        : this.informes.filter((informe) => informe.aprobado && informe.idSolicitud === 'SOL-000021').slice(0, 3);
+    const base = this.seleccionados.size > 0
+      ? this.informes.filter((informe) => this.seleccionados.has(informe.id))
+      : this.informesFiltrados;
 
-    return base.filter((informe) => informe.aprobado);
+    return base.filter((informe) => informe.aprobado && informe.puedeEnviarDirectivos);
   }
 
   get solicitudResumen() {
@@ -354,18 +240,7 @@ export class InformesCliente {
   }
 
   get totalCvsAdjuntos() {
-    return this.candidatosSeleccionadosResumen.filter((informe) => informe.adjuntarCv).length;
-  }
-
-  get todosLosCvsSeleccionados() {
-    const candidatos = this.candidatosSeleccionadosResumen;
-    return candidatos.length > 0 && candidatos.every((informe) => informe.adjuntarCv);
-  }
-
-  set todosLosCvsSeleccionados(seleccionado: boolean) {
-    this.candidatosSeleccionadosResumen.forEach((informe) => {
-      informe.adjuntarCv = seleccionado;
-    });
+    return this.candidatosSeleccionadosResumen.length;
   }
 
   cambiarVista(vista: string) {
@@ -398,7 +273,23 @@ export class InformesCliente {
   }
 
   descargarCvsMasivo() {
-    this.mostrarConfirmacionAccion('Descarga masiva de CVs preparada.');
+    const ids = this.idsSeleccionados();
+
+    if (ids.length === 0) {
+      return;
+    }
+
+    this.informesService.descargarCvCorporativoMasivo(ids)
+      .pipe(take(1))
+      .subscribe({
+        next: (respuesta) => {
+          this.informesService.descargarBlob(respuesta, 'CV_CORPORATIVO_MASIVO.zip');
+          this.mostrarConfirmacionAccion('CVs corporativos descargados correctamente.');
+        },
+        error: (error) => {
+          this.mostrarErrorAccion(error, 'No se pudieron descargar los CVs corporativos.');
+        },
+      });
   }
 
   enviarCorreoMasivo() {
@@ -406,6 +297,16 @@ export class InformesCliente {
   }
 
   abrirResumenAdministrador() {
+    if (this.candidatosSeleccionadosResumen.length === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Selecciona candidatos aprobados y habilitados para envío a directivos.',
+      };
+      return;
+    }
+
+    this.asuntoResumen = this.asuntoResumen || `Resumen candidatos ${this.solicitudResumen?.idSolicitud ?? ''}`.trim();
     this.mostrarResumenAdministrador = true;
   }
 
@@ -414,32 +315,78 @@ export class InformesCliente {
   }
 
   enviarResumenAdministrador() {
-    this.mostrarResumenAdministrador = false;
-    this.mostrarConfirmacionAccion(
-      `Resumen ${this.solicitudResumen?.idSolicitud ?? 'SOL-000000'} preparado para enviar al administrador.`,
-    );
+    const destinatarios = this.parsearCorreos(this.destinatariosResumen);
+
+    if (destinatarios.length === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Ingresa al menos un destinatario para enviar el resumen.',
+      };
+      return;
+    }
+
+    this.enviandoDirectivos = true;
+    this.informesService.enviarDirectivos({
+      solicitudCandidatoIds: this.candidatosSeleccionadosResumen.map((informe) => informe.solicitudCandidatoId),
+      destinatarios,
+      cc: this.parsearCorreos(this.ccResumen),
+      asunto: this.asuntoResumen || null,
+      cuerpo: this.cuerpoResumen || null,
+    })
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.enviandoDirectivos = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.mostrarResumenAdministrador = false;
+          this.mostrarConfirmacionAccion(`Resumen ${this.solicitudResumen?.idSolicitud ?? ''} enviado a directivos.`.trim());
+        },
+        error: (error) => {
+          this.mostrarErrorAccion(error, 'No se pudo enviar el resumen a directivos.');
+        },
+      });
   }
 
   descargarInformeResumen() {
-    this.mostrarConfirmacionAccion(
-      `Informe ${this.solicitudResumen?.idSolicitud ?? 'SOL-000000'} preparado para descarga.`,
-    );
+    const ids = this.candidatosSeleccionadosResumen.map((informe) => informe.solicitudCandidatoId);
+
+    if (ids.length === 0) {
+      return;
+    }
+
+    this.informesService.descargarResumenMasivo(ids)
+      .pipe(take(1))
+      .subscribe({
+        next: (respuesta) => {
+          this.informesService.descargarBlob(respuesta, 'RESUMEN_MASIVO.zip');
+          this.mostrarConfirmacionAccion('Informe resumen descargado correctamente.');
+        },
+        error: (error) => {
+          this.mostrarErrorAccion(error, 'No se pudo descargar el informe resumen.');
+        },
+      });
   }
 
   manejarAccionTabla(evento: DataTableActionEvent<InformeCandidato>) {
-    const acciones: Record<string, string> = {
-      'descargar-cv': `CV de ${evento.row.nombre} preparado para descarga.`,
-      'descargar-informe': `Informe de ${evento.row.nombre} preparado para descarga.`,
-      'enviar-correo': '',
-    };
+    if (evento.action === 'descargar-cv') {
+      this.descargarDocumentoIndividual(evento.row, 'cv');
+      return;
+    }
+
+    if (evento.action === 'descargar-informe') {
+      this.descargarDocumentoIndividual(evento.row, 'resumen');
+      return;
+    }
 
     if (evento.action === 'enviar-correo') {
       this.seleccionados = new Set([evento.row.id]);
       this.abrirResumenAdministrador();
       return;
     }
-
-    this.mostrarConfirmacionAccion(acciones[evento.action] || 'Acción preparada.');
   }
 
   resultadoClase(informe: InformeCandidato) {
@@ -484,6 +431,127 @@ export class InformesCliente {
       tipo: 'success',
       variante: 'soft',
       mensaje,
+    };
+  }
+
+  cargarInformes() {
+    this.cargando = true;
+    this.errorCarga = '';
+
+    this.informesService.listarCandidatos({ limit: 200 })
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargando = false;
+        }),
+      )
+      .subscribe({
+        next: (respuesta) => {
+          this.informes = respuesta.items.map((item) => this.mapearInforme(item));
+          this.seleccionados = new Set();
+        },
+        error: (error) => {
+          this.informes = [];
+          this.errorCarga = obtenerMensajeError(error, 'No se pudieron cargar los informes desde M6.');
+        },
+      });
+  }
+
+  private mapearInforme(item: CandidatoInformeApi): InformeCandidato {
+    const resultadoEntrevista = this.resumenEntrevista(item);
+
+    return {
+      id: String(item.solicitud_candidato_id),
+      solicitudCandidatoId: item.solicitud_candidato_id,
+      idSolicitud: item.solicitud_codigo ?? `Solicitud ${item.solicitud_id}`,
+      match: Math.round(Number(item.match ?? 0)),
+      nombre: item.candidato_nombre || item.candidato_email,
+      correo: item.candidato_email,
+      telefono: item.candidato_telefono || 'Sin telefono',
+      cargo: item.cargo || item.solicitud_titulo || 'Sin cargo',
+      empresa: 'No informado',
+      nivel: item.tecnologias.slice(0, 3).join(', ') || 'Sin tecnologias',
+      experiencia: this.resumenTecnico(item),
+      resultadoEntrevista,
+      detalleResultado: item.motivo_clasificacion.join(' ') || this.resumenObservaciones(item),
+      estado: item.estado_postulacion || 'Sin estado',
+      disponibilidad: item.disponibilidad || 'Sin disponibilidad',
+      aprobado: item.clasificacion === 'APROBADO',
+      puedeEnviarDirectivos: item.puede_enviar_directivos,
+    };
+  }
+
+  private resumenEntrevista(item: CandidatoInformeApi) {
+    if (item.entrevistas.length === 0) {
+      return item.clasificacion === 'APROBADO' ? 'Aprobado' : item.clasificacion === 'NO_APROBADO' ? 'No aprobado' : 'Pendiente';
+    }
+
+    return item.entrevistas
+      .map((entrevista) => `${entrevista.tipo || 'Entrevista'}: ${entrevista.resultado}`)
+      .join(' | ');
+  }
+
+  private resumenTecnico(item: CandidatoInformeApi) {
+    if (item.tecnicas.length === 0) {
+      return 'Sin evaluación técnica';
+    }
+
+    return item.tecnicas
+      .map((tecnica) => `${tecnica.cuestionario}: ${tecnica.porcentaje ?? 0}%`)
+      .join(' | ');
+  }
+
+  private resumenObservaciones(item: CandidatoInformeApi) {
+    return item.entrevistas
+      .map((entrevista) => entrevista.observacion)
+      .filter(Boolean)
+      .join(' ') || 'Sin observaciones registradas';
+  }
+
+  private descargarDocumentoIndividual(informe: InformeCandidato, tipo: 'cv' | 'resumen') {
+    const generar$ = tipo === 'cv'
+      ? this.informesService.generarCvCorporativo(informe.solicitudCandidatoId)
+      : this.informesService.generarResumen(informe.solicitudCandidatoId);
+
+    generar$
+      .pipe(take(1))
+      .subscribe({
+        next: (documento) => {
+          this.informesService.descargarDocumento(documento.documento_id)
+            .pipe(take(1))
+            .subscribe({
+              next: (respuesta) => {
+                this.informesService.descargarBlob(respuesta, documento.nombre_archivo);
+              },
+              error: (error) => {
+                this.mostrarErrorAccion(error, 'El documento fue generado, pero no se pudo descargar.');
+              },
+            });
+        },
+        error: (error) => {
+          this.mostrarErrorAccion(error, tipo === 'cv' ? 'No se pudo generar el CV corporativo.' : 'No se pudo generar el informe.');
+        },
+      });
+  }
+
+  private idsSeleccionados() {
+    return this.informes
+      .filter((informe) => this.seleccionados.has(informe.id))
+      .map((informe) => informe.solicitudCandidatoId);
+  }
+
+  private parsearCorreos(valor: string) {
+    return valor
+      .split(/[,\n;]/)
+      .map((correo) => correo.trim())
+      .filter(Boolean);
+  }
+
+  private mostrarErrorAccion(error: unknown, fallback: string) {
+    this.alerta = {
+      tipo: 'danger',
+      variante: 'soft',
+      mensaje: obtenerMensajeError(error, fallback),
     };
   }
 
