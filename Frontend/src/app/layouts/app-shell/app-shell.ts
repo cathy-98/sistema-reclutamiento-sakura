@@ -7,6 +7,7 @@ import { AuthService, PermisoUsuario, RolUsuario } from '../../services/auth.ser
 interface MenuItem {
   label: string;
   route?: string;
+  queryParams?: Record<string, string>;
   icon: string;
   roles?: RolUsuario[];
   permissions?: PermisoUsuario[];
@@ -16,6 +17,7 @@ interface MenuItem {
 interface SubMenuItem {
   label: string;
   route?: string;
+  queryParams?: Record<string, string>;
   roles?: RolUsuario[];
   permissions?: PermisoUsuario[];
 }
@@ -82,11 +84,14 @@ export class AppShell {
       ],
     },
     {
-      label: 'Candidatos',
+      label: 'Gestión de candidatos',
       icon: 'users',
-      route: '/candidatos',
       roles: ['Administrador', 'Reclutador'],
       permissions: ['CAN_VIEW'],
+      children: [
+        { label: 'Listado de candidatos', route: '/candidatos', queryParams: { vista: 'listado' }, roles: ['Administrador', 'Reclutador'], permissions: ['CAN_VIEW'] },
+        { label: 'Carga de candidatos', route: '/candidatos', queryParams: { vista: 'carga' }, roles: ['Administrador', 'Reclutador'], permissions: ['CAN_VIEW'] },
+      ],
     },
     {
       label: 'Gestion de entrevistas',
@@ -122,7 +127,7 @@ export class AppShell {
   }
 
   trackSubMenuItem(_index: number, item: SubMenuItem) {
-    return item.route ?? item.label;
+    return `${item.route ?? item.label}:${JSON.stringify(item.queryParams ?? {})}`;
   }
 
   alternarMenu() {
@@ -164,6 +169,28 @@ export class AppShell {
       fragment: 'ignored',
       matrixParams: 'ignored',
     })) ?? false;
+  }
+
+  estaSubMenuItemActivo(item: SubMenuItem) {
+    if (!item.route) {
+      return false;
+    }
+
+    const queryParams = item.queryParams ?? {};
+
+    // Distingue las vistas Listado/Carga aunque ambas reutilicen /candidatos.
+    if (!this.router.isActive(item.route, {
+      paths: 'exact',
+      queryParams: Object.keys(queryParams).length > 0 ? 'subset' : 'ignored',
+      fragment: 'ignored',
+      matrixParams: 'ignored',
+    })) {
+      return false;
+    }
+
+    const actuales = this.router.routerState.snapshot.root.queryParams;
+
+    return Object.entries(queryParams).every(([key, value]) => actuales[key] === value);
   }
 
   cerrarSesion() {

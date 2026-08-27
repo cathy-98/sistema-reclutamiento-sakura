@@ -1,52 +1,52 @@
-<app-modal [titulo]="titulo" [subtitulo]="entrevista?.idSolicitud || ''" ancho="md" (cerrar)="cerrar.emit()">
+<app-modal [titulo]="titulo" [subtitulo]="entrevista?.idSolicitud || ''" ancho="lg" (cerrar)="cerrar.emit()">
   <form class="state-form" [formGroup]="formulario">
-    <section class="state-summary" *ngIf="entrevista && !esLectura">
+    <section class="state-summary" *ngIf="entrevista">
       <h3>{{ entrevista.asunto }}</h3>
+
       <div class="summary-grid">
         <span>
           <small>Candidato</small>
           <strong>{{ entrevista.candidato }}</strong>
         </span>
         <span>
+          <small>Solicitud</small>
+          <strong>{{ entrevista.idSolicitud }}</strong>
+        </span>
+        <span>
           <small>Cargo</small>
           <strong>{{ entrevista.cargo }}</strong>
         </span>
         <span>
-          <small>Tipo / área</small>
-          <strong>{{ entrevista.tipo }}</strong>
+          <small>Fecha / hora actual</small>
+          <strong>{{ entrevista.fecha }} · {{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</strong>
         </span>
         <span class="wide">
-          <small>Entrevistador</small>
-          <strong>{{ entrevista.entrevistador }}</strong>
+          <small>Tipos asociados</small>
+          <strong>{{ entrevista.tipo }}</strong>
         </span>
       </div>
     </section>
 
+    <section class="status-panel" *ngIf="!esLectura">
+      <div>
+        <span>Estado de la entrevista</span>
+        <strong [class]="'state-badge ' + estadoActualNormalizado">{{ estadoActual }}</strong>
+      </div>
+
+      <section class="available-actions" *ngIf="mostrarSelectorEstado">
+        <label class="action-select">
+          Acción
+          <select formControlName="estado" (change)="seleccionarAccion($any($event.target).value)">
+            <option value="">Selecciona qué hacer</option>
+            <option *ngFor="let accionDisponible of accionesDisponibles" [value]="accionDisponible.valor">
+              {{ accionDisponible.etiqueta }}
+            </option>
+          </select>
+        </label>
+      </section>
+    </section>
+
     <section class="detail-view" *ngIf="entrevista && esLectura">
-      <h3>{{ entrevista.asunto }}</h3>
-
-      <details open>
-        <summary>Datos principales</summary>
-        <dl class="detail-grid">
-          <div>
-            <dt>Solicitud</dt>
-            <dd>{{ entrevista.idSolicitud }}</dd>
-          </div>
-          <div>
-            <dt>Candidato</dt>
-            <dd>{{ entrevista.candidato }}</dd>
-          </div>
-          <div>
-            <dt>Cargo</dt>
-            <dd>{{ entrevista.cargo }}</dd>
-          </div>
-          <div>
-            <dt>Tipo / área</dt>
-            <dd>{{ entrevista.tipo }}</dd>
-          </div>
-        </dl>
-      </details>
-
       <details open>
         <summary>Agenda y responsables</summary>
         <dl class="detail-grid">
@@ -73,7 +73,7 @@
         <summary>Estado y resultado</summary>
         <dl class="detail-grid">
           <div>
-            <dt>Estado actual</dt>
+            <dt>Estado entrevista</dt>
             <dd>{{ entrevista.estado }}</dd>
           </div>
           <div>
@@ -88,15 +88,18 @@
       </details>
     </section>
 
-    <label *ngIf="mostrarSelectorEstado">
-      Estado de entrevista
-      <select formControlName="estado" (change)="actualizarValidadores()">
-        <option value="">Selecciona estado</option>
-        <option *ngFor="let estado of estadosEditables" [ngValue]="estado">
-          {{ estado }}
-        </option>
-      </select>
-      <small *ngIf="formulario.get('estado')?.touched && formulario.get('estado')?.invalid">Campo obligatorio.</small>
+    <p class="state-note" *ngIf="modo === 'gestionar' && !mostrarSelectorEstado && !mostrarResultadosPorArea">
+      Esta entrevista no tiene cambios de estado disponibles desde la interfaz.
+    </p>
+
+    <label *ngIf="accionSeleccionada === 'cancelar' || accionSeleccionada === 'no-asistio'">
+      {{
+        accionSeleccionada === 'cancelar'
+          ? 'Motivo de cancelación'
+          : 'Motivo de no asistencia'
+      }}
+      <textarea formControlName="motivo" placeholder="Escribe el motivo"></textarea>
+      <small *ngIf="formulario.get('motivo')?.touched && formulario.get('motivo')?.invalid">Campo obligatorio.</small>
     </label>
 
     <div class="date-grid" *ngIf="mostrarFecha">
@@ -106,6 +109,7 @@
           [min]="fechaHoyInput"
           formControlName="fecha"
         ></app-date-picker>
+        <small *ngIf="!fechaValida()">La fecha y hora de inicio deben ser futuras.</small>
       </label>
       <label>
         Hora inicio
@@ -118,15 +122,76 @@
       </label>
     </div>
 
-    <label *ngIf="mostrarSelectorEstado || requiereMotivo">
-      Comentario del cambio <span *ngIf="!requiereMotivo">(opcional)</span>
-      <textarea formControlName="motivo" placeholder="Indica el motivo o comentario para registrar el cambio"></textarea>
+    <label *ngIf="mostrarFecha">
+      Motivo de reprogramación
+      <textarea formControlName="motivo" placeholder="Escribe el motivo para guardar la reprogramación"></textarea>
       <small *ngIf="formulario.get('motivo')?.touched && formulario.get('motivo')?.invalid">Campo obligatorio.</small>
     </label>
+
+    <section class="results-section" *ngIf="mostrarResultadosPorArea">
+      <header>
+        <div>
+          <h4>Feedback posterior a la entrevista</h4>
+          <p>Registra resultado y observación por cada tipo asignado. Esto no cambia el estado general de la entrevista.</p>
+        </div>
+      </header>
+
+      <article class="result-card" *ngFor="let tipo of tiposEvaluables">
+        <h5>{{ tipo.nombre }}</h5>
+        <p>
+          Entrevistador:
+          {{ tipo.entrevistadores?.[0]?.nombres || 'Asignado' }}
+          {{ tipo.entrevistadores?.[0]?.apellido_paterno || '' }}
+        </p>
+
+        <label>
+          Resultado *
+          <select [(ngModel)]="evaluacionTipo(tipo.tipo_entrevista_id).resultadoId" [ngModelOptions]="{ standalone: true }">
+            <option [ngValue]="null">Selecciona resultado</option>
+            <option *ngFor="let resultado of resultados" [ngValue]="resultado.nore_id">
+              {{ resultado.nore_nombre }}
+            </option>
+          </select>
+          <small *ngIf="resultadoTipoInvalido(tipo.tipo_entrevista_id)">Campo obligatorio.</small>
+        </label>
+
+        <label>
+          Observación
+          <textarea
+            [(ngModel)]="evaluacionTipo(tipo.tipo_entrevista_id).observacion"
+            [ngModelOptions]="{ standalone: true }"
+            maxlength="300"
+            placeholder="Observación para {{ tipo.nombre }}"
+          ></textarea>
+        </label>
+      </article>
+
+      <p class="state-error" *ngIf="errorEvaluaciones">
+        {{ errorEvaluaciones }}
+      </p>
+      <p class="state-error" *ngIf="errorLocalEvaluaciones">
+        {{ errorLocalEvaluaciones }}
+      </p>
+    </section>
+
+    <p class="state-note" *ngIf="entrevistaRealizadaSinEvaluacionDisponible">
+      La entrevista ya está Realizada. El feedback se registra por tipo, pero solo aparece para usuarios asignados a ese tipo y autorizados por backend.
+    </p>
+
+    <p class="state-error" *ngIf="error">
+      {{ error }}
+    </p>
   </form>
 
   <app-form-actions modal-footer>
-    <app-button formActionsStart variant="ghost" (pressed)="cerrar.emit()">Volver</app-button>
-    <app-button *ngIf="!esLectura" [variant]="varianteAccion" (pressed)="enviar()">{{ accion }}</app-button>
+    <app-button formActionsStart variant="ghost" [disabled]="guardando || guardandoEvaluaciones" (pressed)="cerrar.emit()">Cancelar</app-button>
+    <app-button
+      *ngIf="!esLectura && (accionSeleccionada || mostrarFecha || requiereMotivo || mostrarResultadosPorArea)"
+      [variant]="varianteAccion"
+      [disabled]="guardando || guardandoEvaluaciones || (mostrarSelectorEstado && !accionSeleccionada)"
+      (pressed)="enviar()"
+    >
+      {{ guardando || guardandoEvaluaciones ? 'Guardando...' : accion }}
+    </app-button>
   </app-form-actions>
 </app-modal>

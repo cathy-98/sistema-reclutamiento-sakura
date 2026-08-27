@@ -108,6 +108,7 @@
       *ngIf="proceso.length > 0"
       type="button"
       variant="secondary"
+      [disabled]="!tieneEntrevistasEvaluables"
       (pressed)="agregarObservacionEntrevista()"
     >
       Agregar observación
@@ -139,6 +140,7 @@
         <dt>
           Observaciones
           <button
+            *ngIf="puedeEvaluarEntrevista(etapa)"
             class="inline-action"
             type="button"
             (click)="editInterviewObservation.emit(etapa)"

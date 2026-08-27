@@ -491,8 +491,8 @@
     </div>
 
     <app-form-actions modal-footer>
-      <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">
-        {{ modo === 'ver' ? 'Listado de candidatos' : 'Cancelar' }}
+      <app-button formActionsStart variant="ghost" type="button" (pressed)="manejarAccionPrincipal()">
+        {{ modo === 'ver' ? 'Gestionar candidatos' : 'Cancelar' }}
       </app-button>
 
       <app-button variant="ghost" type="button" *ngIf="modo !== 'ver' && !cargandoDetalle" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">

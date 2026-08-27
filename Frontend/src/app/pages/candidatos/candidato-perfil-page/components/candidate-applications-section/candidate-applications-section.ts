@@ -51,6 +51,12 @@ export class CandidateApplicationsSection {
     ).length;
   }
 
+  get tieneEntrevistasEvaluables() {
+    return this.proceso.some((etapa) =>
+      this.puedeEvaluarEntrevista(etapa),
+    );
+  }
+
   formatoContador(valor: number) {
     return String(valor).padStart(2, '0');
   }
@@ -127,9 +133,13 @@ export class CandidateApplicationsSection {
   agregarObservacionEntrevista() {
     const etapa =
       this.proceso.find(
-        (item) => !item.observacionEntrevista?.trim(),
+        (item) =>
+          this.puedeEvaluarEntrevista(item) &&
+          !item.observacionEntrevista?.trim(),
       ) ??
-      this.proceso[0];
+      this.proceso.find((item) =>
+        this.puedeEvaluarEntrevista(item),
+      );
 
     if (etapa) {
       this.editInterviewObservation.emit({
@@ -139,6 +149,11 @@ export class CandidateApplicationsSection {
         resultadoEntrevista: etapa.resultadoEntrevista,
       });
     }
+  }
+
+  puedeEvaluarEntrevista(etapa: EtapaSeleccion) {
+    // Decisión UX/UI M5: se habilita evaluación solo cuando la cita ya fue marcada Realizada.
+    return this.normalizarEstado(etapa.estado) === 'realizada';
   }
 
   private esEstadoPostulacionTerminal(estado: string) {

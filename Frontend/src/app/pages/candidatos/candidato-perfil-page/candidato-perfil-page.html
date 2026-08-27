@@ -369,6 +369,10 @@
         Esta entrevista no tiene tipos asociados para evaluar.
       </p>
 
+      <p class="observation-modal-note is-error" *ngIf="evaluacionEntrevistaError">
+        {{ evaluacionEntrevistaError }}
+      </p>
+
       <label>
         Observación
         <textarea
@@ -380,8 +384,10 @@
     </div>
 
     <div class="observation-modal-footer" modal-footer>
-      <app-button variant="secondary" (pressed)="cerrarModalObservacionEntrevista()">Cancelar</app-button>
-      <app-button (pressed)="guardarObservacionEntrevista()">Guardar observación</app-button>
+      <app-button variant="secondary" [disabled]="guardandoEvaluacionEntrevista" (pressed)="cerrarModalObservacionEntrevista()">Cancelar</app-button>
+      <app-button [disabled]="guardandoEvaluacionEntrevista" (pressed)="guardarObservacionEntrevista()">
+        {{ guardandoEvaluacionEntrevista ? 'Guardando...' : 'Guardar observación' }}
+      </app-button>
     </div>
   </app-modal>
 

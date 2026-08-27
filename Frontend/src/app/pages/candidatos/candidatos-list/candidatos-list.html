@@ -11,15 +11,60 @@
     renta y fecha pertenecen a la postulación.
   -->
   <app-page-header
-    title="Listado de candidatos"
-    subtitle="Gestión de candidatos y postulaciones"
+    *ngIf="!enContextoSolicitud"
+    [title]="tituloPagina"
+    [subtitle]="subtituloPagina"
   >
     <div pageHeaderActions>
-      <app-button type="button">
+      <app-button
+        type="button"
+        variant="ghost"
+        *ngIf="enContextoSolicitud"
+        (pressed)="volverASolicitud()"
+      >
+        Volver a solicitud
+      </app-button>
+
+      <app-button type="button" *ngIf="!enContextoSolicitud && vistaGeneral === 'listado'">
         Realizar match
       </app-button>
     </div>
   </app-page-header>
+
+  <section class="request-context" *ngIf="solicitudContexto">
+    <div class="request-context__main">
+      <div>
+        <span>Gestionar candidatos</span>
+        <h1>Candidatos para {{ solicitudContexto.codigo || solicitudContexto.id }}</h1>
+        <strong>{{ solicitudContexto.cargo || 'Sin cargo informado' }}</strong>
+      </div>
+
+      <app-button
+        type="button"
+        variant="ghost"
+        size="sm"
+        (pressed)="volverASolicitud()"
+      >
+        Volver a solicitud
+      </app-button>
+    </div>
+
+    <div class="request-context__meta" *ngIf="metadataSolicitudContexto.length > 0">
+      <span *ngFor="let item of metadataSolicitudContexto">{{ item }}</span>
+    </div>
+
+    <div class="request-context__skills" *ngIf="habilidadesSolicitudContexto.length > 0">
+      <strong>Habilidades requeridas</strong>
+      <div>
+        <span *ngFor="let habilidad of habilidadesSolicitudContexto">{{ habilidad.nombre }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="match-context-message" *ngIf="mostrarMensajeSinMatchContexto">
+    <strong>Aún no hay resultados de match para esta solicitud.</strong>
+    <span>Los candidatos asociados todavía no tienen evaluación de compatibilidad registrada.</span>
+  </section>
 
 
   <app-alert-region
@@ -37,15 +82,52 @@
     Backend soporta importación mediante multipart/form-data.
   -->
   <app-file-dropzone
+    *ngIf="mostrarCargaCandidatos"
     title="Carga CVs de candidatos"
     description="Arrastra uno o más CVs para dejarlos listos antes de procesarlos."
     buttonText="Seleccionar CVs"
     [allowedExtensions]="['pdf', 'docx', 'txt']"
     [maxFileSizeMb]="10"
     (filesChange)="actualizarArchivosCv($event)"
-  ></app-file-dropzone>
+  >
+    <div class="associated-request-field">
+      <label for="solicitud-asociada-cv">Solicitud asociada</label>
 
-  <div class="cv-upload-actions" *ngIf="archivosCv.length > 0">
+      <div class="associated-request-field__control">
+        <input
+          id="solicitud-asociada-cv"
+          type="text"
+          list="solicitudes-carga-cv"
+          placeholder="Ej. SOL-000017"
+          [(ngModel)]="codigoSolicitudCarga"
+          (ngModelChange)="validarSolicitudCargaPorCodigo()"
+          (blur)="validarSolicitudCargaPorCodigo()"
+        />
+
+        <button
+          type="button"
+          *ngIf="solicitudCargaSeleccionada"
+          (click)="limpiarSolicitudCarga()"
+        >
+          Cambiar
+        </button>
+      </div>
+
+      <datalist id="solicitudes-carga-cv">
+        <option *ngFor="let solicitud of solicitudesCargaDisponibles" [value]="solicitud.codigo"></option>
+      </datalist>
+
+      <span class="associated-request-field__success" *ngIf="solicitudCargaSeleccionada">
+        ✓ {{ solicitudCargaSeleccionada.codigo }} · {{ solicitudCargaSeleccionada.cargo }}
+      </span>
+
+      <span class="associated-request-field__error" *ngIf="mostrarSolicitudCargaNoEncontrada">
+        No se encontró una solicitud con ese número.
+      </span>
+    </div>
+  </app-file-dropzone>
+
+  <div class="cv-upload-actions" *ngIf="mostrarCargaCandidatos && archivosCv.length > 0">
     <span>{{ archivosCv.length }} archivo(s) listo(s) para procesar.</span>
     <app-button
       type="button"
@@ -71,8 +153,12 @@
     de reclutamiento más precisas.
   -->
   <app-filter-panel
-    description="Busca rápidamente o combina filtros para encontrar candidatos dentro de sus procesos de selección."
-    quickSearchPlaceholder="Buscar por nombre, correo, solicitud o cargo"
+    *ngIf="mostrarListadoCandidatos"
+    [class.is-request-context]="enContextoSolicitud"
+    [title]="enContextoSolicitud ? 'Filtrar candidatos' : 'Buscar y filtrar'"
+    [description]="descripcionFiltros"
+    [quickSearchPlaceholder]="placeholderBusquedaRapida"
+    [filtersButtonLabel]="enContextoSolicitud ? 'Filtros' : 'Filtros'"
 
   [(quickSearch)]="busquedaRapida"
 
@@ -89,7 +175,7 @@
       Busca cualquiera de las solicitudes asociadas al candidato.
       No corresponde a cand_id.
     -->
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Código de solicitud
 
       <input
@@ -116,7 +202,7 @@
     </label>
 
 
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Cargo postulado
 
       <input
@@ -133,7 +219,7 @@
       El filtro funciona como match mínimo.
       Ejemplo: ingresar 75 muestra candidatos con match >= 75%.
     -->
-    <label>
+    <label *ngIf="mostrarFiltroMatch">
       Match mínimo (%)
 
       <input
@@ -183,7 +269,7 @@
       La lógica actual del listado utiliza:
       candidato.renta <= filtros.renta.
     -->
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Renta máxima
 
       <input
@@ -233,7 +319,7 @@
       Se conservan para búsquedas específicas aunque
       nombre y correo también participan de la búsqueda rápida.
     -->
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Nombre completo
 
       <input
@@ -244,7 +330,7 @@
     </label>
 
 
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Correo electrónico
 
       <input
@@ -255,7 +341,7 @@
     </label>
 
 
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Número de teléfono
 
       <input
@@ -279,6 +365,7 @@
   -->
   <app-action-bar
     *ngIf="
+      mostrarListadoCandidatos &&
       !cargando &&
       !errorCarga &&
       candidatosFiltrados.length > 0
@@ -288,6 +375,7 @@
   >
 
     <button
+      *ngIf="!enContextoSolicitud"
       type="button"
       [disabled]="seleccionados.size === 0"
     >
@@ -346,8 +434,9 @@
     desde el perfil del candidato.
   -->
   <app-data-table
-    title="Listado de candidatos"
-    [columns]="columnas"
+    *ngIf="mostrarListadoCandidatos"
+    [title]="tituloTabla"
+    [columns]="columnasTabla"
     [rows]="candidatosPaginados"
     [total]="candidatosFiltrados.length"
     [page]="paginaActual"
@@ -359,8 +448,8 @@
     [actions]="acciones"
     [compactActions]="true"
     [selectedIds]="seleccionados"
-    emptyTitle="No hay candidatos para mostrar"
-    emptyMessage="Ajusta los filtros o limpia la búsqueda para volver al listado completo."
+    [emptyTitle]="tituloVacio"
+    [emptyMessage]="mensajeVacio"
     (selectedIdsChange)="seleccionados = $event"
     (pageChange)="cambiarPagina($event)"
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"

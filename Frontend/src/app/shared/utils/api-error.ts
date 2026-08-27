@@ -336,6 +336,10 @@ const REGLAS_MENSAJES: Array<(mensaje: string, status: number) => string | null>
     return match ? `No puedes cambiar el estado de "${match[1]}" a "${match[2]}". Revisa el flujo antes de continuar.` : null;
   },
   (mensaje) => {
+    const match = mensaje.match(/^Solo se permiten entrevistas y evaluaciones cuando la postulación está en estado 'En entrevista'\. Estado actual de la postulación: '(.+?)'$/i);
+    return match ? `Esta entrevista no se puede gestionar porque la postulación está en estado "${match[1]}".` : null;
+  },
+  (mensaje) => {
     const match = mensaje.match(/^Debe informar una observación para pasar a (.+)$/i);
     return match ? `Agrega una observación para cambiar la solicitud a "${match[1]}".` : null;
   },

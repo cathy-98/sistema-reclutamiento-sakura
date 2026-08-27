@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   AbstractControl,
   ReactiveFormsModule,
@@ -41,6 +42,7 @@ import {
   SolicitudResumen,
   SolicitudUpdatePayload,
 } from '../../../shared/models/solicitud.model';
+import { presentarEstadoSolicitud } from '../../../shared/mappers/solicitud.mapper';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
 
 interface HabilidadSolicitud {
@@ -176,6 +178,7 @@ export class SolicitudFormModal implements OnInit {
     private catalogosService: CatalogosService,
     private clientesService: ClientesService,
     private authService: AuthService,
+    private router: Router,
     private cdr: ChangeDetectorRef,
     private elementRef: ElementRef<HTMLElement>,
   ) {}
@@ -259,7 +262,9 @@ export class SolicitudFormModal implements OnInit {
     const estadoId = this.numeroONull(this.formularioSolicitud.get('id_estado_solicitud')?.value);
 
     if (estadoId != null) {
-      return this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? this.solicitudResumenInicial?.estado ?? 'Pendiente';
+      return presentarEstadoSolicitud(
+        this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? this.solicitudResumenInicial?.estado ?? 'Pendiente',
+      );
     }
 
     return 'Pendiente';
@@ -902,6 +907,41 @@ export class SolicitudFormModal implements OnInit {
     this.alerta = null;
   }
 
+  manejarAccionPrincipal() {
+    if (this.modo === 'ver') {
+      this.navegarAGestionCandidatos();
+      return;
+    }
+
+    this.cerrar.emit();
+  }
+
+  private navegarAGestionCandidatos() {
+    const solicitudId = this.idSolicitud ?? this.solicitudResumenInicial?.id ?? '';
+    const solicitudCodigo = this.codigoSolicitud || this.codigoSolicitudInicial || this.solicitudResumenInicial?.codigo || solicitudId;
+    const solicitudCargo = this.detalleCargo;
+    const solicitudEstado = this.estadoSolicitudTexto;
+
+    // Transporta el contexto sin crear una pantalla nueva de candidatos.
+    this.router.navigate(['/candidatos'], {
+      queryParams: {
+        solicitudId,
+        solicitudCodigo,
+        solicitudCargo,
+        solicitudEstado,
+        origen: 'solicitud',
+      },
+      state: {
+        solicitudContexto: {
+          id: solicitudId,
+          codigo: solicitudCodigo,
+          cargo: solicitudCargo,
+          estado: solicitudEstado,
+        },
+      },
+    });
+  }
+
   detalleTexto(control: string, fallback = 'Sin información') {
     const valor = String(this.formularioSolicitud.get(control)?.value ?? '').trim();
     return valor || fallback;
@@ -1078,7 +1118,7 @@ export class SolicitudFormModal implements OnInit {
     // Integración catálogo de estados de solicitud -> selector "Estado".
     this.estadosSolicitudCatalogo = catalogos.estados.map((estado) => ({
       id: estado.essl_id,
-      nombre: estado.essl_nombre ?? 'Sin estado',
+      nombre: presentarEstadoSolicitud(estado.essl_nombre ?? 'Sin estado'),
     }));
     // Integración catálogo de modalidades -> selector "Modalidad".
     this.modalidadesCatalogo = catalogos.modalidades.map((modalidad) => ({

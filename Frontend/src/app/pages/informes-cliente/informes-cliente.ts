@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import {
   CandidatoInformeApi,
+  ClasificacionInforme,
   InformesService,
 } from '../../services/informes.service';
 import { AlertRegion } from '../../shared/components/alert-region/alert-region';
@@ -23,7 +24,7 @@ import { TabItem, Tabs } from '../../shared/components/tabs/tabs';
 import { AlertaUi } from '../../shared/models/alerta-ui.model';
 import { obtenerMensajeError } from '../../shared/utils/api-error';
 
-type VistaInforme = 'aprobados' | 'no-aprobados';
+type VistaInforme = 'aprobados' | 'pendientes' | 'no-aprobados';
 
 interface InformeCandidato {
   id: string;
@@ -39,8 +40,10 @@ interface InformeCandidato {
   experiencia: string;
   resultadoEntrevista: string;
   detalleResultado: string;
+  motivoM6: string;
   estado: string;
   disponibilidad: string;
+  clasificacion: ClasificacionInforme;
   aprobado: boolean;
   puedeEnviarDirectivos: boolean;
 }
@@ -90,6 +93,7 @@ export class InformesCliente implements OnInit {
 
   readonly tabsInformes: TabItem[] = [
     { id: 'aprobados', label: 'Aprobados' },
+    { id: 'pendientes', label: 'Pendientes' },
     { id: 'no-aprobados', label: 'No aprobados' },
   ];
 
@@ -102,8 +106,8 @@ export class InformesCliente implements OnInit {
     },
     {
       key: 'match',
-      label: 'Match',
-      width: 88,
+      label: 'Match CV',
+      width: 105,
       type: 'match',
       value: (informe) => `${informe.match}%`,
       className: (informe) => this.matchClase(informe.match),
@@ -121,6 +125,12 @@ export class InformesCliente implements OnInit {
       key: 'correo',
       label: 'Correo electrónico',
       width: 220,
+      wrap: true,
+    },
+    {
+      key: 'motivoM6',
+      label: 'Motivo M6',
+      width: 260,
       wrap: true,
     },
     {
@@ -188,6 +198,18 @@ export class InformesCliente implements OnInit {
     );
   }
 
+  get tituloTablaInformes() {
+    if (this.vistaActiva === 'aprobados') {
+      return 'Informes aprobados';
+    }
+
+    if (this.vistaActiva === 'pendientes') {
+      return 'Informes pendientes';
+    }
+
+    return 'Informes no aprobados';
+  }
+
   get informesFiltrados() {
     const filtrosNormalizados = {
       idSolicitud: this.normalizar(this.filtros.idSolicitud),
@@ -197,9 +219,9 @@ export class InformesCliente implements OnInit {
     };
 
     return this.informes.filter((informe) => {
-      const coincideVista = this.vistaActiva === 'aprobados' ? informe.aprobado : !informe.aprobado;
+      const coincideVista = this.coincideVistaActiva(informe);
       const textoInforme = this.normalizar(
-        `${informe.idSolicitud} ${informe.nombre} ${informe.correo} ${informe.cargo} ${informe.estado} ${informe.disponibilidad}`,
+        `${informe.idSolicitud} ${informe.nombre} ${informe.correo} ${informe.cargo} ${informe.estado} ${informe.disponibilidad} ${informe.motivoM6}`,
       );
       const coincideTexto =
         textoInforme.includes(filtrosNormalizados.busquedaRapida) &&
@@ -474,11 +496,25 @@ export class InformesCliente implements OnInit {
       experiencia: this.resumenTecnico(item),
       resultadoEntrevista,
       detalleResultado: item.motivo_clasificacion.join(' ') || this.resumenObservaciones(item),
+      motivoM6: item.motivo_clasificacion.join(' ') || 'Sin motivo informado',
       estado: item.estado_postulacion || 'Sin estado',
       disponibilidad: item.disponibilidad || 'Sin disponibilidad',
+      clasificacion: item.clasificacion,
       aprobado: item.clasificacion === 'APROBADO',
       puedeEnviarDirectivos: item.puede_enviar_directivos,
     };
+  }
+
+  private coincideVistaActiva(informe: InformeCandidato) {
+    if (this.vistaActiva === 'aprobados') {
+      return informe.clasificacion === 'APROBADO';
+    }
+
+    if (this.vistaActiva === 'pendientes') {
+      return informe.clasificacion === 'PENDIENTE';
+    }
+
+    return informe.clasificacion === 'NO_APROBADO';
   }
 
   private resumenEntrevista(item: CandidatoInformeApi) {

@@ -86,7 +86,7 @@
   </app-action-bar>
 
   <app-data-table
-    [title]="vistaActiva === 'aprobados' ? 'Informes aprobados' : 'Informes no aprobados'"
+    [title]="tituloTablaInformes"
     [columns]="columnas"
     [rows]="informesPaginados"
     [total]="informesFiltrados.length"

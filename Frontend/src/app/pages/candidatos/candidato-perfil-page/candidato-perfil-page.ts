@@ -49,6 +49,7 @@ import { SolicitudesService } from '../../../services/solicitudes.service';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { extraerLinkedinUrl } from '../../../shared/mappers/candidato.mapper';
+import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { CandidateApplicationsSection } from './components/candidate-applications-section/candidate-applications-section';
 import { CandidateDocumentsSection } from './components/candidate-documents-section/candidate-documents-section';
 import { CandidateEducationSection } from './components/candidate-education-section/candidate-education-section';
@@ -146,6 +147,8 @@ export class CandidatoPerfilPage implements OnInit {
   tipoEvaluacionSeleccionadoId: number | null = null;
   resultadoEvaluacionSeleccionadoId: number | null = null;
   resultadosEvaluacion: NombreResultadoCatalogoApi[] = [];
+  guardandoEvaluacionEntrevista = false;
+  evaluacionEntrevistaError = '';
 
   get puedeGuardarEstadoPostulacion() {
     const contexto =
@@ -190,6 +193,16 @@ export class CandidatoPerfilPage implements OnInit {
     );
 
     return asignados.length ? asignados : tipos;
+  }
+
+  get puedeGuardarEvaluacionEntrevista() {
+    return !this.guardandoEvaluacionEntrevista &&
+      Boolean(this.observacionEntrevistaSeleccionada?.id) &&
+      Boolean(this.tipoEvaluacionSeleccionadoId) &&
+      Boolean(this.resultadoEvaluacionSeleccionadoId) &&
+      this.nombreEstadoEntrevistaPerfil(
+        this.observacionEntrevistaSeleccionada?.estado ?? '',
+      ) === 'realizada';
   }
 
   candidato: CandidatoPerfil;
@@ -412,6 +425,7 @@ export class CandidatoPerfilPage implements OnInit {
 
   abrirModalObservacionEntrevista(etapa: EtapaSeleccion) {
     this.observacionEntrevistaSeleccionada = etapa;
+    this.evaluacionEntrevistaError = '';
     this.tipoEvaluacionSeleccionadoId =
       this.tiposEvaluacionDisponibles[0]?.id ?? null;
     const evaluacionActual =
@@ -434,6 +448,8 @@ export class CandidatoPerfilPage implements OnInit {
     this.agregandoObservacionEntrevista = false;
     this.tipoEvaluacionSeleccionadoId = null;
     this.resultadoEvaluacionSeleccionadoId = null;
+    this.guardandoEvaluacionEntrevista = false;
+    this.evaluacionEntrevistaError = '';
   }
 
   guardarObservacionEntrevista() {
@@ -441,41 +457,81 @@ export class CandidatoPerfilPage implements OnInit {
       this.observacionEntrevistaSeleccionada;
 
     if (
-      !etapa?.id ||
-      !this.tipoEvaluacionSeleccionadoId ||
-      !this.resultadoEvaluacionSeleccionadoId
+      !this.puedeGuardarEvaluacionEntrevista
     ) {
-      this.cerrarModalObservacionEntrevista();
+      this.evaluacionEntrevistaError =
+        this.mensajeEvaluacionEntrevistaIncompleta();
       return;
     }
 
+    const entrevistaId =
+      etapa?.id as string;
+    const tipoId =
+      this.tipoEvaluacionSeleccionadoId as number;
+    const resultadoId =
+      this.resultadoEvaluacionSeleccionadoId as number;
+
     const payload = {
-      nombre_resultado_id: this.resultadoEvaluacionSeleccionadoId,
+      nombre_resultado_id: resultadoId,
       observacion: this.observacionEntrevistaTexto.trim() || null,
     };
     const evaluacionActual =
       this.evaluacionSeleccionadaActual();
     const guardar$ = evaluacionActual
       ? this.entrevistasService.actualizarEvaluacion(
-          etapa.id,
-          this.tipoEvaluacionSeleccionadoId,
+          entrevistaId,
+          tipoId,
           payload,
         )
       : this.entrevistasService.crearEvaluacion(
-          etapa.id,
-          this.tipoEvaluacionSeleccionadoId,
+          entrevistaId,
+          tipoId,
           payload,
         );
 
-    guardar$.subscribe({
-      next: () => {
-        this.cerrarModalObservacionEntrevista();
-        this.recargarEntrevistasPerfil();
-      },
-      error: (error) => {
-        console.warn('No fue posible guardar la evaluación de entrevista.', error);
-      },
-    });
+    this.guardandoEvaluacionEntrevista = true;
+    this.evaluacionEntrevistaError = '';
+
+    guardar$
+      .pipe(
+        finalize(() => {
+          this.guardandoEvaluacionEntrevista = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.cerrarModalObservacionEntrevista();
+          this.recargarEntrevistasPerfil();
+        },
+        error: (error) => {
+          this.evaluacionEntrevistaError =
+            obtenerMensajeError(error, 'No fue posible guardar la evaluación de entrevista.');
+        },
+      });
+  }
+
+  private mensajeEvaluacionEntrevistaIncompleta() {
+    if (
+      this.nombreEstadoEntrevistaPerfil(
+        this.observacionEntrevistaSeleccionada?.estado ?? '',
+      ) !== 'realizada'
+    ) {
+      return 'Solo se puede evaluar una entrevista marcada como Realizada.';
+    }
+
+    if (this.tiposEvaluacionDisponibles.length === 0) {
+      return 'Esta entrevista no tiene tipos asociados para evaluar.';
+    }
+
+    if (!this.tipoEvaluacionSeleccionadoId) {
+      return 'Selecciona el tipo de entrevista a evaluar.';
+    }
+
+    if (!this.resultadoEvaluacionSeleccionadoId) {
+      return 'Selecciona un resultado para guardar la evaluación.';
+    }
+
+    return 'Completa la evaluación antes de guardar.';
   }
 
   guardarEstadoPostulacion() {
@@ -1737,17 +1793,40 @@ export class CandidatoPerfilPage implements OnInit {
     entrevista: EntrevistaApi,
   ) {
     const evaluaciones = entrevista.evaluaciones ?? [];
+    const tipos = entrevista.tipos ?? [];
 
-    if (evaluaciones.length === 0) {
+    if (
+      evaluaciones.length === 0 &&
+      tipos.length === 0
+    ) {
       return 'Sin resultado registrado';
     }
 
-    return evaluaciones
-      .map((evaluacion) => {
-        const tipo = evaluacion.tipo_entrevista_nombre?.trim() ||
-          entrevista.tipos?.find((item) => item.tipo_entrevista_id === evaluacion.tipo_entrevista_id)?.nombre ||
-          'Sin tipo';
-        return `${tipo}: ${evaluacion.resultado_nombre}`;
+    if (tipos.length === 0) {
+      return evaluaciones
+        .map((evaluacion) => {
+          const tipo = evaluacion.tipo_entrevista_nombre?.trim() ||
+            'Sin tipo';
+          return `${tipo}: ${evaluacion.resultado_nombre}`;
+        })
+        .join(' | ');
+    }
+
+    return tipos
+      .map((tipo) => {
+        const evaluacionesTipo = evaluaciones.filter(
+          (evaluacion) =>
+            evaluacion.tipo_entrevista_id === tipo.tipo_entrevista_id,
+        );
+
+        // Integración M5: pendiente por área significa evaluación ausente para ese tipo.
+        if (evaluacionesTipo.length === 0) {
+          return `${tipo.nombre}: Pendiente`;
+        }
+
+        return `${tipo.nombre}: ${evaluacionesTipo
+          .map((evaluacion) => evaluacion.resultado_nombre)
+          .join(', ')}`;
       })
       .join(' | ');
   }
@@ -1779,6 +1858,12 @@ export class CandidatoPerfilPage implements OnInit {
     return entrevista.estado_nombre ??
       entrevista.estado ??
       'Sin estado';
+  }
+
+  private nombreEstadoEntrevistaPerfil(
+    estado: string,
+  ) {
+    return this.normalizarTexto(estado);
   }
 
   private esEstadoEntrevistaTerminal(

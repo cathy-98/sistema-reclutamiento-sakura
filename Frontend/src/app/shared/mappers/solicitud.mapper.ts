@@ -50,9 +50,21 @@ export function mapearSolicitudResumen(
       solicitud.sol_prioridad_id,
       'Sin prioridad',
     ) as PrioridadSolicitud,
-    estado: obtenerNombre(catalogos.estadosPorId, solicitud.sol_estado_solicitud_id, 'Sin estado'),
+    estado: presentarEstadoSolicitud(
+      obtenerNombre(catalogos.estadosPorId, solicitud.sol_estado_solicitud_id, 'Sin estado'),
+    ),
     descripcion: obtenerTextoSolicitud(solicitud.sol_descripcion, 'Sin descripción'),
   };
+}
+
+export function presentarEstadoSolicitud(estado: string) {
+  const estadoNormalizado = estado.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (estadoNormalizado === 'en curso' || estadoNormalizado === 'en_curso') {
+    return 'En publicación';
+  }
+
+  return estado;
 }
 
 function obtenerTextoSolicitud(...valores: Array<string | null | undefined>) {

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
@@ -60,7 +61,6 @@ export class SolicitudesList implements OnInit {
   solicitudSeleccionadaId: string | null = null;
   solicitudSeleccionadaCodigo: string | null = null;
   solicitudSeleccionadaResumen: SolicitudResumen | null = null;
-  observacionCancelacion = '';
   modoFormulario: 'crear' | 'ver' | 'editar' = 'crear';
   solicitudes: SolicitudResumen[] = [];
   seleccionados = new Set<string>();
@@ -74,6 +74,30 @@ export class SolicitudesList implements OnInit {
       label: 'ID solicitud',
       width: 138,
       sticky: 'left',
+      sortable: true,
+    },
+    {
+      key: 'cargo',
+      label: 'Cargo / vacantes',
+      width: 250,
+      wrap: true,
+      value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
+      sortable: true,
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      width: 132,
+      type: 'badge',
+      className: (solicitud) => this.estadoClase(solicitud.estado),
+      sortable: true,
+    },
+    {
+      key: 'prioridad',
+      label: 'Prioridad',
+      width: 118,
+      type: 'badge',
+      className: (solicitud) => this.prioridadClase(solicitud.prioridad),
       sortable: true,
     },
     {
@@ -91,14 +115,6 @@ export class SolicitudesList implements OnInit {
       label: 'Cliente',
       width: 260,
       wrap: true,
-      sortable: true,
-    },
-    {
-      key: 'cargo',
-      label: 'Cargo / vacantes',
-      width: 250,
-      wrap: true,
-      value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
       sortable: true,
     },
     {
@@ -124,22 +140,6 @@ export class SolicitudesList implements OnInit {
       sortable: true,
     },
     {
-      key: 'prioridad',
-      label: 'Prioridad',
-      width: 118,
-      type: 'badge',
-      className: (solicitud) => this.prioridadClase(solicitud.prioridad),
-      sortable: true,
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      width: 132,
-      type: 'badge',
-      className: (solicitud) => this.estadoClase(solicitud.estado),
-      sortable: true,
-    },
-    {
       key: 'descripcion',
       label: 'Descripción',
       width: 360,
@@ -151,6 +151,8 @@ export class SolicitudesList implements OnInit {
   constructor(
     private authService: AuthService,
     private solicitudesService: SolicitudesService,
+    private route: ActivatedRoute,
+    private router: Router,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -273,6 +275,7 @@ export class SolicitudesList implements OnInit {
           this.solicitudes = solicitudes;
           this.paginaActual = 1;
           this.errorCarga = '';
+          this.abrirDetalleDesdeRuta();
         },
         error: (error) => {
           this.solicitudes = [];
@@ -333,7 +336,6 @@ export class SolicitudesList implements OnInit {
     this.solicitudSeleccionadaId = solicitud.id;
     this.solicitudSeleccionadaCodigo = solicitud.codigo;
     this.solicitudSeleccionadaResumen = solicitud;
-    this.observacionCancelacion = '';
     this.mostrarConfirmacionCancelacion = true;
   }
 
@@ -371,7 +373,6 @@ export class SolicitudesList implements OnInit {
     this.solicitudSeleccionadaId = null;
     this.solicitudSeleccionadaCodigo = null;
     this.solicitudSeleccionadaResumen = null;
-    this.observacionCancelacion = '';
   }
 
   confirmarCancelacionSolicitud(observacion: string) {
@@ -398,7 +399,7 @@ export class SolicitudesList implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.aplicarCancelacionEnListado(this.solicitudSeleccionadaId as string, observacionCancelacion);
+          this.aplicarCancelacionEnListado(this.solicitudSeleccionadaId as string);
           this.mostrarAlerta({
             tipo: 'success',
             variante: 'soft',
@@ -423,6 +424,7 @@ export class SolicitudesList implements OnInit {
     this.solicitudSeleccionadaCodigo = null;
     this.solicitudSeleccionadaResumen = null;
     this.modoFormulario = 'crear';
+    this.limpiarDetalleRuta();
   }
 
   manejarFormularioGuardado() {
@@ -456,22 +458,57 @@ export class SolicitudesList implements OnInit {
     });
   }
 
+  private abrirDetalleDesdeRuta() {
+    const params = this.route.snapshot.queryParamMap;
+    const idSolicitud = params.get('detalleSolicitud');
+
+    if (!idSolicitud || this.mostrarFormulario) {
+      return;
+    }
+
+    // Reabre el detalle al volver desde Gestionar candidatos.
+    const resumen = this.solicitudes.find((solicitud) => solicitud.id === idSolicitud);
+
+    this.solicitudSeleccionadaId = idSolicitud;
+    this.solicitudSeleccionadaCodigo = resumen?.codigo ?? params.get('codigoSolicitud');
+    this.solicitudSeleccionadaResumen = resumen ?? null;
+    this.modoFormulario = 'ver';
+    this.mostrarFormulario = true;
+  }
+
+  private limpiarDetalleRuta() {
+    if (!this.route.snapshot.queryParamMap.has('detalleSolicitud')) {
+      return;
+    }
+
+    // Evita reabrir el modal después de cerrar manualmente el detalle.
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        detalleSolicitud: null,
+        codigoSolicitud: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
   private mostrarAlerta(alerta: AlertaUi) {
     this.alerta = alerta;
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
   private estadoPermiteCancelacion(estado: string) {
-    return ['pendiente', 'en curso', 'en entrevistas', 'pausado'].includes(this.normalizar(estado));
+    return ['pendiente', 'en curso', 'en publicacion', 'en entrevistas', 'pausado'].includes(this.normalizar(estado));
   }
 
-  private aplicarCancelacionEnListado(idSolicitud: string, observacion: string) {
+  private aplicarCancelacionEnListado(idSolicitud: string) {
+    // Solo refleja el estado cancelado; no mezcla observaciones de cierre con descripción.
     this.solicitudes = this.solicitudes.map((solicitud) =>
       solicitud.id === idSolicitud
         ? {
             ...solicitud,
             estado: 'Cancelado',
-            descripcion: observacion,
           }
         : solicitud,
     );

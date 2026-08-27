@@ -88,6 +88,20 @@ describe('mapearSolicitudResumen', () => {
     );
 
     expect(resumen.prioridad).toBe('Alta');
-    expect(resumen.estado).toBe('En Curso');
+    expect(resumen.estado).toBe('En publicación');
+  });
+
+  it('mantiene compatibilidad visual con EN_CURSO desde backend', () => {
+    const resumen = mapearSolicitudResumen(
+      solicitudBase({
+        sol_estado_solicitud_id: 2,
+      }),
+      {
+        ...catalogos,
+        estadosPorId: new Map([[2, 'EN_CURSO']]),
+      },
+    );
+
+    expect(resumen.estado).toBe('En publicación');
   });
 });

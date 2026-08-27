@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { catchError, finalize, forkJoin, of, take, timeout } from 'rxjs';
+import { catchError, finalize, forkJoin, of, take, throwError, timeout } from 'rxjs';
 import {
+  EntrevistaApi,
   EntrevistaPayload,
   EntrevistaResumen,
   EntrevistasService,
@@ -25,9 +26,11 @@ import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
-import { CatalogosService } from '../../../services/catalogos.service';
-import { EntrevistaEstadoModal } from '../entrevista-estado-modal/entrevista-estado-modal';
+import { CatalogosService, NombreResultadoCatalogoApi } from '../../../services/catalogos.service';
+import { EntrevistaEstadoModal, EvaluacionTipoPayload } from '../entrevista-estado-modal/entrevista-estado-modal';
 import { EntrevistaFormModal } from '../entrevista-form-modal/entrevista-form-modal';
+import { SolicitudesService } from '../../../services/solicitudes.service';
+import { InformesService } from '../../../services/informes.service';
 
 interface FiltrosEntrevistas {
   busquedaRapida: string;
@@ -37,7 +40,7 @@ interface FiltrosEntrevistas {
   tipo: '' | TipoEntrevista;
 }
 
-type ModoEstadoEntrevista = 'ver' | 'editar' | 'reprogramar' | 'cancelar' | 'confirmar' | 'realizar' | 'no-asistio';
+type ModoEstadoEntrevista = 'ver' | 'gestionar' | 'reprogramar' | 'confirmar' | 'realizar' | 'no-asistio' | 'cancelar';
 
 @Component({
   selector: 'app-entrevistas-list',
@@ -69,6 +72,7 @@ export class EntrevistasList implements OnInit {
   entrevistas: EntrevistaResumen[] = [];
   filtros: FiltrosEntrevistas = this.filtrosIniciales();
   mostrarFormulario = false;
+  errorFormularioAgenda = '';
   candidatosAgendaMasiva: {
     id?: string;
     solicitudCandidatoId?: number;
@@ -81,10 +85,16 @@ export class EntrevistasList implements OnInit {
   asuntoCorreo = '';
   cuerpoCorreo = '';
   entrevistaSeleccionada: EntrevistaResumen | null = null;
-  modoEstado: ModoEstadoEntrevista = 'editar';
+  entrevistaDetalle: EntrevistaApi | null = null;
+  modoEstado: ModoEstadoEntrevista = 'gestionar';
+  guardandoEstado = false;
+  guardandoEvaluaciones = false;
+  errorEstado = '';
+  errorEvaluaciones = '';
 
   estados: EstadoEntrevista[] = ['Pendiente', 'Confirmada', 'Realizada', 'Reprogramada', 'Cancelada', 'No Asistio'];
   tipos: TipoEntrevista[] = [];
+  resultadosEvaluacion: NombreResultadoCatalogoApi[] = [];
 
   readonly columnas: DataTableColumn<EntrevistaResumen>[] = [
     { key: 'idSolicitud', label: 'ID solicitud', width: 138, sticky: 'left' },
@@ -107,10 +117,10 @@ export class EntrevistasList implements OnInit {
   readonly acciones: DataTableAction<EntrevistaResumen>[] = [
     { id: 'ver', label: 'Ver detalle', icon: 'eye' },
     {
-      id: 'confirmar',
-      label: 'Confirmar entrevista',
+      id: 'gestionar',
+      label: 'Gestionar entrevista',
       icon: 'edit',
-      visible: (entrevista) => this.esEstadoEntrevista(entrevista, ['Pendiente', 'Reprogramada']),
+      visible: (entrevista) => this.puedeCambiarEstado(entrevista),
     },
     {
       id: 'reprogramar',
@@ -119,33 +129,24 @@ export class EntrevistasList implements OnInit {
       visible: (entrevista) => this.puedeCambiarEstado(entrevista),
     },
     {
-      id: 'realizar',
-      label: 'Marcar realizada',
+      id: 'feedback',
+      label: 'Registrar feedback',
       icon: 'edit',
-      visible: (entrevista) => this.esEstadoEntrevista(entrevista, ['Pendiente', 'Confirmada', 'Reprogramada']),
-    },
-    {
-      id: 'no-asistio',
-      label: 'Marcar no asistio',
-      icon: 'cancel',
-      visible: (entrevista) => this.puedeCambiarEstado(entrevista),
-    },
-    {
-      id: 'cancelar',
-      label: 'Cancelar entrevista',
-      icon: 'cancel',
-      visible: (entrevista) => this.puedeCambiarEstado(entrevista),
+      visible: (entrevista) => this.esEstadoEntrevista(entrevista, ['Realizada']) && this.cumplePrecondicionM5(entrevista),
     },
   ];
 
   constructor(
     private entrevistasService: EntrevistasService,
     private catalogosService: CatalogosService,
+    private informesService: InformesService,
+    private solicitudesService: SolicitudesService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.cargarCatalogosFiltros();
+    this.cargarCatalogosGestion();
     this.cargarEntrevistas();
   }
 
@@ -209,7 +210,11 @@ export class EntrevistasList implements OnInit {
     this.errorCarga = '';
     this.cdr.detectChanges();
 
-    this.entrevistasService.listar()
+    forkJoin({
+      entrevistas: this.entrevistasService.listar(),
+      solicitudes: this.solicitudesService.listar().pipe(timeout(5000), catchError(() => of([]))),
+      informes: this.informesService.listarCandidatos({ limit: 500 }).pipe(timeout(5000), catchError(() => of({ total: 0, items: [] }))),
+    })
       .pipe(
         take(1),
         finalize(() => {
@@ -218,8 +223,28 @@ export class EntrevistasList implements OnInit {
         }),
       )
       .subscribe({
-      next: (entrevistas) => {
-        this.entrevistas = entrevistas;
+      next: ({ entrevistas, solicitudes, informes }) => {
+        const cargosPorSolicitud = new Map(
+          solicitudes.map((solicitud) => [solicitud.codigo, solicitud.cargo]),
+        );
+        const estadosSolicitudPorCodigo = new Map(
+          solicitudes.map((solicitud) => [solicitud.codigo, solicitud.estado]),
+        );
+        const estadosPostulacionPorId = new Map(
+          informes.items.map((informe) => [informe.solicitud_candidato_id, informe.estado_postulacion ?? 'Sin estado']),
+        );
+
+        // Integración M5: se cruza estado de solicitud/postulación para no ofrecer acciones que backend rechazará.
+        this.entrevistas = entrevistas.map((entrevista) => ({
+          ...entrevista,
+          cargo: entrevista.cargo && entrevista.cargo !== 'Sin cargo'
+            ? entrevista.cargo
+            : cargosPorSolicitud.get(entrevista.idSolicitud) ?? entrevista.cargo,
+          estadoSolicitud: estadosSolicitudPorCodigo.get(entrevista.idSolicitud) ?? entrevista.estadoSolicitud,
+          estadoPostulacion: entrevista.solicitudCandidatoId
+            ? estadosPostulacionPorId.get(entrevista.solicitudCandidatoId) ?? entrevista.estadoPostulacion
+            : entrevista.estadoPostulacion,
+        }));
       },
       error: (error) => {
         this.entrevistas = [];
@@ -255,6 +280,7 @@ export class EntrevistasList implements OnInit {
 
   guardarEntrevista(payload: EntrevistaPayload) {
     const solicitudesCandidatosIds = payload.solicitudesCandidatosIds ?? [];
+    this.errorFormularioAgenda = '';
 
     if (solicitudesCandidatosIds.length > 1) {
       this.entrevistasService.crearMasiva(
@@ -274,11 +300,7 @@ export class EntrevistasList implements OnInit {
           this.cargarEntrevistas();
         },
         error: (error) => {
-          this.alerta = {
-            tipo: 'danger',
-            variante: 'soft',
-            mensaje: obtenerMensajeError(error, 'No se pudieron agendar las entrevistas.'),
-          };
+          this.errorFormularioAgenda = obtenerMensajeError(error, 'No se pudieron agendar las entrevistas.');
         },
       });
       return;
@@ -286,27 +308,37 @@ export class EntrevistasList implements OnInit {
 
     this.entrevistasService.crear(payload).subscribe({
       next: () => {
+        const totalProgramaciones = payload.programacionesPorTipo?.length ?? 0;
         this.mostrarFormulario = false;
         this.candidatosAgendaMasiva = [];
         this.alerta = {
           tipo: 'success',
           variante: 'soft',
-          mensaje: 'Entrevista creada correctamente.',
+          mensaje: totalProgramaciones > 1 ? 'Entrevistas agendadas correctamente.' : 'Entrevista creada correctamente.',
         };
         this.cargarEntrevistas();
       },
       error: (error) => {
-        this.alerta = {
-          tipo: 'danger',
-          variante: 'soft',
-          mensaje: obtenerMensajeError(error, 'No se pudo crear la entrevista.'),
-        };
+        this.errorFormularioAgenda = obtenerMensajeError(error, 'No se pudo crear la entrevista.');
       },
     });
   }
 
+  cargarCatalogosGestion() {
+    this.catalogosService
+      .listarNombresResultado()
+      .pipe(
+        take(1),
+        catchError(() => of([])),
+      )
+      .subscribe((resultados) => {
+        this.resultadosEvaluacion = resultados;
+      });
+  }
+
   abrirFormularioIndividual() {
     this.candidatosAgendaMasiva = [];
+    this.errorFormularioAgenda = '';
     this.mostrarFormulario = true;
   }
 
@@ -318,20 +350,16 @@ export class EntrevistasList implements OnInit {
     }
 
     if (!this.seleccionMismaSolicitud) {
-      this.alerta = {
-        tipo: 'warning',
-        variante: 'soft',
-        mensaje: 'Selecciona entrevistas de una misma solicitud para agendar masivamente.',
-      };
+      this.candidatosAgendaMasiva = [];
+      this.errorFormularioAgenda = 'Selecciona entrevistas de una misma solicitud para agendar masivamente.';
+      this.mostrarFormulario = true;
       return;
     }
 
     if (seleccionadas.some((entrevista) => !entrevista.solicitudCandidatoId)) {
-      this.alerta = {
-        tipo: 'warning',
-        variante: 'soft',
-        mensaje: 'No se pudo identificar la postulación de todas las entrevistas seleccionadas.',
-      };
+      this.candidatosAgendaMasiva = [];
+      this.errorFormularioAgenda = 'No se pudo identificar la postulación de todas las entrevistas seleccionadas.';
+      this.mostrarFormulario = true;
       return;
     }
 
@@ -351,12 +379,14 @@ export class EntrevistasList implements OnInit {
     });
 
     this.candidatosAgendaMasiva = Array.from(porPostulacion.values());
+    this.errorFormularioAgenda = '';
     this.mostrarFormulario = true;
   }
 
   cerrarFormularioAgenda() {
     this.mostrarFormulario = false;
     this.candidatosAgendaMasiva = [];
+    this.errorFormularioAgenda = '';
   }
 
   abrirModalCorreo() {
@@ -393,31 +423,50 @@ export class EntrevistasList implements OnInit {
   }
 
   confirmarEstado(payload: { estado?: EstadoEntrevista; fecha: string; horaInicio: string; horaFin: string; motivo: string }) {
-    if (!this.entrevistaSeleccionada || this.modoEstado === 'ver') {
+    if (!this.entrevistaSeleccionada || this.modoEstado === 'ver' || this.guardandoEstado) {
       return;
     }
 
     const solicitud = this.solicitudEstadoEntrevista(payload);
 
-    solicitud.subscribe({
-      next: () => {
-        this.alerta = {
-          tipo: 'success',
-          variante: 'soft',
-          mensaje:
-            this.mensajeEstadoActualizado(),
-        };
-        this.cerrarModalEstado();
-        this.cargarEntrevistas();
-      },
-      error: (error) => {
-        this.alerta = {
-          tipo: 'danger',
-          variante: 'soft',
-          mensaje: obtenerMensajeError(error, 'No se pudo actualizar la entrevista.'),
-        };
-      },
-    });
+    this.guardandoEstado = true;
+    this.errorEstado = '';
+
+    solicitud
+      .pipe(
+        finalize(() => {
+          this.guardandoEstado = false;
+        }),
+      )
+      .subscribe({
+        next: (entrevistaActualizada) => {
+          const estadoDevuelto =
+            entrevistaActualizada.estado ||
+            payload.estado ||
+            '';
+
+          this.alerta = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje:
+              this.mensajeEstadoActualizado(estadoDevuelto),
+          };
+          this.cargarEntrevistas();
+
+          if (this.modoEstado === 'gestionar' && this.entrevistaSeleccionada && this.normalizar(estadoDevuelto).replace(/\s+/g, '-') === 'realizada') {
+            this.cargarDetalleEntrevista(this.entrevistaSeleccionada.id);
+            return;
+          }
+
+          this.cerrarModalEstado();
+        },
+        error: (error) => {
+          this.errorEstado = obtenerMensajeError(error, 'No se pudo actualizar la entrevista.');
+          if (this.errorEstado.includes('no se puede gestionar porque la postulación')) {
+            this.modoEstado = 'ver';
+          }
+        },
+      });
   }
 
   manejarAccionTabla(evento: DataTableActionEvent<EntrevistaResumen>) {
@@ -426,8 +475,13 @@ export class EntrevistasList implements OnInit {
       return;
     }
 
-    if (evento.action === 'editar-estado') {
-      this.abrirEstado(evento.row, 'editar');
+    if (evento.action === 'gestionar') {
+      this.abrirEstado(evento.row, 'gestionar');
+      return;
+    }
+
+    if (evento.action === 'feedback') {
+      this.abrirEstado(evento.row, 'gestionar');
       return;
     }
 
@@ -436,36 +490,75 @@ export class EntrevistasList implements OnInit {
       return;
     }
 
-    if (evento.action === 'cancelar') {
-      this.abrirEstado(evento.row, 'cancelar');
-      return;
-    }
-
-    if (evento.action === 'confirmar') {
-      this.abrirEstado(evento.row, 'confirmar');
-      return;
-    }
-
-    if (evento.action === 'realizar') {
-      this.abrirEstado(evento.row, 'realizar');
-      return;
-    }
-
-    if (evento.action === 'no-asistio') {
-      this.abrirEstado(evento.row, 'no-asistio');
-      return;
-    }
-
     this.abrirEstado(evento.row, 'ver');
   }
 
   abrirEstado(entrevista: EntrevistaResumen, modo: ModoEstadoEntrevista) {
     this.entrevistaSeleccionada = entrevista;
+    this.entrevistaDetalle = null;
     this.modoEstado = modo;
+    this.errorEstado = '';
+    this.errorEvaluaciones = '';
+    this.guardandoEstado = false;
+    this.guardandoEvaluaciones = false;
+    this.cargarDetalleEntrevista(entrevista.id);
   }
 
   cerrarModalEstado() {
     this.entrevistaSeleccionada = null;
+    this.entrevistaDetalle = null;
+    this.errorEstado = '';
+    this.errorEvaluaciones = '';
+    this.guardandoEstado = false;
+    this.guardandoEvaluaciones = false;
+  }
+
+  guardarEvaluaciones(payloads: EvaluacionTipoPayload[]) {
+    if (!this.entrevistaSeleccionada || payloads.length === 0 || this.guardandoEvaluaciones) {
+      return;
+    }
+
+    this.guardandoEvaluaciones = true;
+    this.errorEvaluaciones = '';
+
+    forkJoin(
+      payloads.map((payload) => {
+        const body = {
+          nombre_resultado_id: payload.nombreResultadoId,
+          observacion: payload.observacion,
+        };
+
+        const area = this.entrevistaDetalle?.tipos?.find((tipo) => tipo.tipo_entrevista_id === payload.tipoId)?.nombre ?? `Área ${payload.tipoId}`;
+        const solicitud = payload.existe
+          ? this.entrevistasService.actualizarEvaluacion(this.entrevistaSeleccionada!.id, payload.tipoId, body)
+          : this.entrevistasService.crearEvaluacion(this.entrevistaSeleccionada!.id, payload.tipoId, body);
+
+        return solicitud.pipe(
+          catchError((error) =>
+            throwError(() => new Error(`${area}: ${obtenerMensajeError(error, 'no se pudo guardar el resultado.')}`)),
+          ),
+        );
+      }),
+    )
+      .pipe(
+        finalize(() => {
+          this.guardandoEvaluaciones = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.alerta = {
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: 'Resultados por área guardados correctamente.',
+          };
+          this.cargarDetalleEntrevista(this.entrevistaSeleccionada!.id);
+          this.cargarEntrevistas();
+        },
+        error: (error) => {
+          this.errorEvaluaciones = obtenerMensajeError(error, 'No se pudieron guardar los resultados por área.');
+        },
+      });
   }
 
   cerrarAlerta() {
@@ -522,9 +615,13 @@ export class EntrevistasList implements OnInit {
 
   private solicitudEstadoEntrevista(payload: { estado?: EstadoEntrevista; fecha: string; horaInicio: string; horaFin: string; motivo: string }) {
     const id = this.entrevistaSeleccionada?.id ?? '';
-    const modo = this.modoEstado === 'editar'
+    const modo = this.modoEstado === 'gestionar'
       ? this.modoDesdeEstado(payload.estado)
       : this.modoEstado;
+
+    if (!modo) {
+      return throwError(() => new Error('La acción seleccionada no está disponible para esta entrevista.'));
+    }
 
     if (modo === 'cancelar') {
       return this.entrevistasService.cancelar(id, payload.motivo);
@@ -542,49 +639,71 @@ export class EntrevistasList implements OnInit {
       return this.entrevistasService.noAsistio(id, payload.motivo);
     }
 
-    return this.entrevistasService.reprogramar(
-      id,
-      payload.fecha,
-      payload.horaInicio,
-      payload.horaFin,
-      payload.motivo,
-    );
+    if (modo === 'reprogramar') {
+      return this.entrevistasService.reprogramar(
+        id,
+        payload.fecha,
+        payload.horaInicio,
+        payload.horaFin,
+        payload.motivo,
+      );
+    }
+
+    return throwError(() => new Error('La acción seleccionada no está disponible para esta entrevista.'));
   }
 
-  private mensajeEstadoActualizado() {
-    const mensajes = {
-      ver: 'Detalle de entrevista revisado.',
-      editar: 'Estado de entrevista actualizado correctamente.',
-      cancelar: 'Entrevista cancelada correctamente.',
-      confirmar: 'Entrevista confirmada correctamente.',
-      realizar: 'Entrevista marcada como realizada.',
-      'no-asistio': 'Entrevista marcada como no asistio.',
-      reprogramar: 'Entrevista reprogramada correctamente.',
-    };
+  private mensajeEstadoActualizado(estadoDevuelto = '') {
+    if (this.modoEstado === 'reprogramar') {
+      return `Entrevista reprogramada correctamente${estadoDevuelto ? `: ${estadoDevuelto}` : ''}.`;
+    }
 
-    return mensajes[this.modoEstado];
+    return `Entrevista actualizada correctamente${estadoDevuelto ? `: ${estadoDevuelto}` : ''}.`;
   }
 
-  private modoDesdeEstado(estado?: EstadoEntrevista): Exclude<ModoEstadoEntrevista, 'ver' | 'editar'> {
+  private modoDesdeEstado(estado?: EstadoEntrevista): ModoEstadoEntrevista | '' {
     const estadoNormalizado = this.normalizar(estado ?? '');
 
-    if (estadoNormalizado === 'confirmada') {
-      return 'confirmar';
+    if (estadoNormalizado === 'confirmar' || estadoNormalizado === 'confirmada') {
+      return 'confirmar' as ModoEstadoEntrevista;
     }
 
-    if (estadoNormalizado === 'realizada') {
-      return 'realizar';
+    if (estadoNormalizado === 'reprogramar' || estadoNormalizado === 'reprogramada') {
+      return 'reprogramar';
     }
 
-    if (estadoNormalizado === 'no asistio') {
-      return 'no-asistio';
+    if (estadoNormalizado === 'realizar' || estadoNormalizado === 'realizada') {
+      return 'realizar' as ModoEstadoEntrevista;
     }
 
-    if (estadoNormalizado === 'cancelada') {
-      return 'cancelar';
+    if (estadoNormalizado === 'no-asistio' || estadoNormalizado === 'no asistio') {
+      return 'no-asistio' as ModoEstadoEntrevista;
     }
 
-    return 'reprogramar';
+    if (estadoNormalizado === 'cancelar' || estadoNormalizado === 'cancelada') {
+      return 'cancelar' as ModoEstadoEntrevista;
+    }
+
+    return '';
+  }
+
+  private cargarDetalleEntrevista(id: string) {
+    forkJoin({
+      detalle: this.entrevistasService.obtener(id),
+      evaluaciones: this.entrevistasService.listarEvaluaciones(id).pipe(catchError(() => of([]))),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: ({ detalle, evaluaciones }) => {
+          // Integración M5: GET evaluaciones completa el detalle para decidir POST vs PATCH por tipo.
+          this.entrevistaDetalle = {
+            ...detalle,
+            evaluaciones,
+          };
+        },
+        error: (error) => {
+          this.errorEstado = obtenerMensajeError(error, 'No se pudo cargar el detalle de la entrevista.');
+        },
+      });
   }
 
   private esEstadoEntrevista(entrevista: EntrevistaResumen, estados: string[]) {
@@ -593,7 +712,15 @@ export class EntrevistasList implements OnInit {
   }
 
   private puedeCambiarEstado(entrevista: EntrevistaResumen) {
-    return !this.esEstadoEntrevista(entrevista, ['Cancelada', 'Realizada', 'No Asistio']);
+    return this.cumplePrecondicionM5(entrevista) &&
+      !this.esEstadoEntrevista(entrevista, ['Cancelada', 'Realizada', 'No Asistio']);
+  }
+
+  private cumplePrecondicionM5(entrevista: EntrevistaResumen) {
+    const estadoPostulacion = this.normalizar(entrevista.estadoPostulacion ?? 'En entrevista');
+    const estadoSolicitud = this.normalizar(entrevista.estadoSolicitud ?? 'En Entrevistas');
+
+    return estadoPostulacion === 'en entrevista' && estadoSolicitud === 'en entrevistas';
   }
 
   private tipoEntrevistaValido(nombre?: string | null) {

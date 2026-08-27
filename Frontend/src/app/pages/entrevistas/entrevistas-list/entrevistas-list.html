@@ -84,6 +84,7 @@
   <app-entrevista-form-modal
     *ngIf="mostrarFormulario"
     [candidatos]="candidatosAgendaMasiva"
+    [errorApi]="errorFormularioAgenda"
     (cerrar)="cerrarFormularioAgenda()"
     (guardar)="guardarEntrevista($event)"
   ></app-entrevista-form-modal>
@@ -138,8 +139,15 @@
   <app-entrevista-estado-modal
     *ngIf="entrevistaSeleccionada"
     [entrevista]="entrevistaSeleccionada"
+    [detalle]="entrevistaDetalle"
     [modo]="modoEstado"
+    [resultados]="resultadosEvaluacion"
+    [guardando]="guardandoEstado"
+    [guardandoEvaluaciones]="guardandoEvaluaciones"
+    [error]="errorEstado"
+    [errorEvaluaciones]="errorEvaluaciones"
     (cerrar)="cerrarModalEstado()"
     (confirmar)="confirmarEstado($event)"
+    (guardarEvaluaciones)="guardarEvaluaciones($event)"
   ></app-entrevista-estado-modal>
 </app-page-layout>
