@@ -2689,7 +2689,7 @@ COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_ant
 1	1	\N	1	2026-07-06 09:00:00	1	Creacion de la solicitud de personal enviada por el cliente.
 2	1	1	2	2026-07-07 09:00:00	2	Vacante tomada por el reclutador y publicada oficialmente en plataformas de empleo.
 3	7	\N	1	2026-08-07 16:55:58.659469	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
-4	7	1	2	2026-08-07 16:58:38.949957	2	Aprobaci├│n de la vacante e inicio formal del proceso de reclutamiento para SOL-005
+4	7	1	2	2026-08-07 16:58:38.949957	2	Aprobacion de la vacante e inicio formal del proceso de reclutamiento para SOL-005
 5	7	2	1	2026-08-07 17:15:30.257059	1	test historial SOL-005
 6	7	1	2	2026-08-07 17:20:02.506268	1	test 2 historial SOL-005
 7	7	2	1	2026-08-07 13:24:00.557267	1	test 3 historial SOL-005
@@ -2698,7 +2698,7 @@ COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_ant
 10	7	1	4	2026-08-07 15:50:13.926865	1	test 6 historial SOL-005
 11	7	4	5	2026-08-07 16:15:25.998341	1	test 7 historial SOL-005
 12	4	2	5	2026-08-10 12:05:18.280043	1	test 4 historial 
-13	4	5	4	2026-08-10 12:05:49.086232	1	Desactivaci├│n (Borrado L├│gico) de la solicitud
+13	4	5	4	2026-08-10 12:05:49.086232	1	Desactivacion (Borrado LLogico) de la solicitud
 14	10	\N	1	2026-08-12 16:17:07.899479	1	QA LIVE RUN a0837ee5
 15	10	1	2	2026-08-12 16:17:08.184114	1	Cambio de estado: Pendiente -> En Curso
 16	10	2	6	2026-08-12 16:17:08.350753	1	Pausa QA a0837ee5
@@ -2829,7 +2829,7 @@ COPY public.tbl_motivo_rechazo (mtrc_id, mtrc_nombre, mtrc_descripcion) FROM std
 --
 
 COPY public.tbl_nivel_educacional (nved_id, nved_nombre) FROM stdin;
-1	Enseñanza Media
+1	Ensenanza Media
 2	Tecnico Nivel Medio
 3	Tecnico Profesional Nivel Superior
 4	Universitario Incompleto
@@ -2961,9 +2961,9 @@ COPY public.tbl_permiso (per_id, per_nombre, per_descripcion) FROM stdin;
 --
 
 COPY public.tbl_plantilla_notificacion (plnt_id, plnt_tipo, plnt_nombre, plnt_asunto, plnt_cuerpo, plnt_activa, plnt_fecha_actualizacion, plnt_usuario_actualizacion_id) FROM stdin;
-1	RECHAZO	Cierre de proceso - rechazo	Cierre proceso de selecci├│n - {cargo}	Estimado/a {nombre},\n\nAgradecemos sinceramente tu participaci├│n en el proceso de selecci├│n para el cargo {cargo}, asociado a la solicitud {codigo_solicitud}.\n\nEn esta oportunidad el proceso ha finalizado y no continuaremos con tu postulaci├│n. Valoramos el tiempo y disposici├│n demostrados durante las distintas etapas.\n\nEsperamos poder considerarte en futuras oportunidades que se ajusten a tu perfil.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
-2	AGRADECIMIENTO	Agradecimiento de participaci├│n	Gracias por participar - {cargo}	Estimado/a {nombre},\n\nAgradecemos tu participaci├│n en el proceso {codigo_solicitud} para el cargo {cargo}.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
-3	DIRECTIVOS	Presentaci├│n de candidatos aprobados	Candidatos aprobados - {cargo} - {codigo_solicitud}	Estimados/as,\n\nAdjuntamos los CVs corporativos de los candidatos aprobados para el proceso {codigo_solicitud}, cargo {cargo}, para su revisi├│n y decisi├│n final.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
+1	RECHAZO	Cierre de proceso - rechazo	Cierre proceso de seleccion - {cargo}	Estimado/a {nombre},\n\nAgradecemos sinceramente tu participacion en el proceso de seleccion para el cargo {cargo}, asociado a la solicitud {codigo_solicitud}.\n\nEn esta oportunidad el proceso ha finalizado y no continuaremos con tu postulacion. Valoramos el tiempo y disposicion demostrados durante las distintas etapas.\n\nEsperamos poder considerarte en futuras oportunidades que se ajusten a tu perfil.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
+2	AGRADECIMIENTO	Agradecimiento de participacion	Gracias por participar - {cargo}	Estimado/a {nombre},\n\nAgradecemos tu participacion en el proceso {codigo_solicitud} para el cargo {cargo}.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
+3	DIRECTIVOS	Presentacion de candidatos aprobados	Candidatos aprobados - {cargo} - {codigo_solicitud}	Estimados/as,\n\nAdjuntamos los CVs corporativos de los candidatos aprobados para el proceso {codigo_solicitud}, cargo {cargo}, para su revision y decision final.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 \.
 
 
@@ -3137,18 +3137,18 @@ COPY public.tbl_rol_permiso (rlpm_rol_id, rlpm_permiso_id) FROM stdin;
 --
 
 COPY public.tbl_solicitud (sol_id, sol_codigo, sol_titulo, sol_cargo_id, sol_descripcion, sol_prioridad_id, sol_cantidad_vacantes, sol_cliente_id, sol_usuario_creador_id, sol_usuario_asignado_id, sol_modalidad_id, sol_salario_min, sol_salario_max, sol_fecha_creacion, sol_fecha_inicio_busqueda, sol_fecha_cierre_busqueda, sol_fecha_inicio_cliente, sol_estado_solicitud_id, sol_hora_inicio_jornada, sol_hora_fin_jornada, sol_tipo_contrato_id, sol_observacion) FROM stdin;
-2	SOL-000002	Desarrollador Python Senior	\N	B├║squeda actualizada con aumento salarial.	\N	\N	1	1	\N	\N	2500000	3500000	\N	\N	\N	\N	4	\N	\N	\N	\N
-8	SOL-000008	L├¡der T├®cnico Fullstack Python & React	1	B├║squeda activa para la c├®lula de innovaci├│n. Se requiere profesional con experiencia s├│lida en arquitectura de microservicios, liderazgo t├®cnico de equipos distribuidos y dise├▒o de APIs REST seguras.	1	3	1	1	2	1	3500000	4500000	\N	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	1	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
-9	SOL-000009	L├¡der T├®cnico Fullstack Python & React	1	B├║squeda activa para la c├®lula de innovaci├│n. Se requiere profesional con experiencia s├│lida en arquitectura de microservicios, liderazgo t├®cnico de equipos distribuidos y dise├▒o de APIs REST seguras.	1	3	1	1	2	1	3500000	4500000	2026-08-07 13:38:36.183106	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	1	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
-4	SOL-000004	L├¡der T├®cnico Fullstack Python & React	1	B├║squeda activa para la c├®lula de innovaci├│n. Se requiere profesional con experiencia s├│lida en arquitectura de microservicios, liderazgo t├®cnico de equipos distribuidos y dise├▒o de APIs REST seguras.	1	3	1	1	2	1	3500000	4500000	\N	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	4	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
-7	SOL-000007	L├¡der T├®cnico Fullstack Python & React	1	B├║squeda actualizada con aumento salarial.	1	3	1	1	2	1	3500000	5000000	\N	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	5	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
-10	SOL-000010	QA LIVE PATCH a0837ee5	1	Solicitud generada por QA LIVE M├│dulo 2	1	1	1	1	3	1	1000	2000	2026-08-12 16:17:07.887267	\N	\N	\N	4	\N	\N	1	QA LIVE RUN a0837ee5
-11	SOL-000011	QA LIVE PATCH 056e0077	1	Solicitud generada por QA LIVE M├│dulo 2	1	1	1	1	3	1	1000	2000	2026-08-12 17:40:21.89793	\N	\N	\N	4	\N	\N	1	QA LIVE RUN 056e0077
-12	SOL-000012	QA M3 cierre parcial 6324b046	1	Solicitud creada por QA LIVE M├│dulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 13:25:06.92056	\N	\N	\N	5	\N	\N	1	RUN 6324b046
-13	SOL-000013	QA M3 cierre parcial 17b5f4d2	1	Solicitud creada por QA LIVE M├│dulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 15:50:05.990295	\N	\N	\N	5	\N	\N	1	RUN 17b5f4d2
-14	SOL-000014	QA M3 cierre parcial 6c870a39	1	Solicitud creada por QA LIVE M├│dulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 16:16:31.364526	\N	\N	\N	5	\N	\N	1	RUN 6c870a39
-15	SOL-000015	QA LIVE PATCH 2d283271	1	Solicitud generada por QA LIVE M├│dulo 2	1	1	1	1	3	1	1000	2000	2026-08-14 17:13:03.812591	\N	\N	\N	4	\N	\N	1	QA LIVE RUN 2d283271
-16	SOL-000016	QA M3 cierre parcial 680ddf0e	1	Solicitud creada por QA LIVE M├│dulo 3	1	2	1	1	3	1	1000	2000	2026-08-14 17:17:34.691519	\N	\N	\N	5	\N	\N	1	RUN 680ddf0e
+2	SOL-000002	Desarrollador Python Senior	\N	Busqueda actualizada con aumento salarial.	\N	\N	1	1	\N	\N	2500000	3500000	\N	\N	\N	\N	4	\N	\N	\N	\N
+8	SOL-000008	Lider Tecnico Fullstack Python & React	1	Busqueda activa para la celula de innovacion. Se requiere profesional con experiencia salida en arquitectura de microservicios, liderazgo tecnico de equipos distribuidos y diseno de APIs REST seguras.	1	3	1	1	2	1	3500000	4500000	\N	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	1	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
+9	SOL-000009	Lider Tecnico Fullstack Python & React	1	Busqueda activa para la celula de innovacion. Se requiere profesional con experiencia salida en arquitectura de microservicios, liderazgo tecnico de equipos distribuidos y diseno de APIs REST seguras.	1	3	1	1	2	1	3500000	4500000	2026-08-07 13:38:36.183106	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	1	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
+4	SOL-000004	Lider Tecnico Fullstack Python & React	1	Busqueda activa para la celula de innovacion. Se requiere profesional con experiencia salida en arquitectura de microservicios, liderazgo tecnico de equipos distribuidos y diseno de APIs REST seguras.	1	3	1	1	2	1	3500000	4500000	\N	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	4	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
+7	SOL-000007	Lider Tecnico Fullstack Python & React	1	Busqueda actualizada con aumento salarial.	1	3	1	1	2	1	3500000	5000000	\N	2026-08-10 09:00:00	2026-09-15 18:00:00	2026-10-01 09:00:00	5	09:00:00	18:00:00	1	Requerimiento urgente asignado al equipo de reclutamiento Q3.
+10	SOL-000010	QA LIVE PATCH a0837ee5	1	Solicitud generada por QA LIVE Modulo 2	1	1	1	1	3	1	1000	2000	2026-08-12 16:17:07.887267	\N	\N	\N	4	\N	\N	1	QA LIVE RUN a0837ee5
+11	SOL-000011	QA LIVE PATCH 056e0077	1	Solicitud generada por QA LIVE Modulo 2	1	1	1	1	3	1	1000	2000	2026-08-12 17:40:21.89793	\N	\N	\N	4	\N	\N	1	QA LIVE RUN 056e0077
+12	SOL-000012	QA M3 cierre parcial 6324b046	1	Solicitud creada por QA LIVE Modulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 13:25:06.92056	\N	\N	\N	5	\N	\N	1	RUN 6324b046
+13	SOL-000013	QA M3 cierre parcial 17b5f4d2	1	Solicitud creada por QA LIVE Modulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 15:50:05.990295	\N	\N	\N	5	\N	\N	1	RUN 17b5f4d2
+14	SOL-000014	QA M3 cierre parcial 6c870a39	1	Solicitud creada por QA LIVE Modulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 16:16:31.364526	\N	\N	\N	5	\N	\N	1	RUN 6c870a39
+15	SOL-000015	QA LIVE PATCH 2d283271	1	Solicitud generada por QA LIVE Modulo 2	1	1	1	1	3	1	1000	2000	2026-08-14 17:13:03.812591	\N	\N	\N	4	\N	\N	1	QA LIVE RUN 2d283271
+16	SOL-000016	QA M3 cierre parcial 680ddf0e	1	Solicitud creada por QA LIVE Modulo 3	1	2	1	1	3	1	1000	2000	2026-08-14 17:17:34.691519	\N	\N	\N	5	\N	\N	1	RUN 680ddf0e
 1	SOL-000001	Desarrollador Senior Backend Python (Presencial)	1	Buscamos un Ingeniero Full Stack o Backend con mas de 5 anos de experiencia disenando arquitecturas basadas en microservicios, APIs REST con FastAPI y optimizacion de consultas SQL nativas en PostgreSQL bajo entornos Docker.	2	2	1	1	3	2	2500000	3000000	2026-07-21 11:00:00	2026-07-21 11:00:00	2026-07-21 18:00:00	2026-07-21 11:00:00	3	09:00:00	18:00:00	2	Solicitud de prueba.
 \.
 
