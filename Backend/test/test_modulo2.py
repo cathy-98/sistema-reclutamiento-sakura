@@ -66,6 +66,7 @@ MODULE2_TABLES = [
     catalog_models.Cargo.__table__,
     catalog_models.Modalidad.__table__,
     catalog_models.TipoContrato.__table__,
+    catalog_models.CategoriaHabilidad.__table__,
     catalog_models.Habilidad.__table__,
     catalog_models.NivelHabilidad.__table__,
     catalog_models.EstadoSolicitud.__table__,
@@ -907,16 +908,40 @@ def test_en_curso_pausado_y_reanudar(client: TestClient, seed_info: SeedInfo):
     assert resumed.status_code == 200
 
 
-def test_en_entrevistas_a_cerrado_requiere_sol_delete(client: TestClient, seed_info: SeedInfo):
+def test_en_entrevistas_a_cerrado_requiere_sol_delete_y_observacion(client: TestClient, seed_info: SeedInfo):
     req = _create_request(client, seed_info)
     assert _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"]).status_code == 200
     assert _change_state(client, seed_info, req["sol_id"], "En Entrevistas", seed_info["update_user_id"]).status_code == 200
 
-    forbidden = _change_state(client, seed_info, req["sol_id"], "Cerrado", seed_info["update_user_id"])
+    # Cerrado sigue siendo una transición terminal: requiere SOL_DELETE.
+    forbidden = _change_state(
+        client, seed_info, req["sol_id"], "Cerrado", seed_info["update_user_id"], "Cierre sin permiso"
+    )
     assert forbidden.status_code == 403
 
-    closed = _change_state(client, seed_info, req["sol_id"], "Cerrado", seed_info["delete_user_id"])
+    # Nuevo requisito: al igual que Pausado y Cancelado, Cerrado exige observación.
+    without_observation = _change_state(
+        client, seed_info, req["sol_id"], "Cerrado", seed_info["delete_user_id"]
+    )
+    assert without_observation.status_code == 422
+
+    observation = "Proceso finalizado; se cierra la solicitud con las vacantes cubiertas."
+    closed = _change_state(
+        client, seed_info, req["sol_id"], "Cerrado", seed_info["delete_user_id"], observation
+    )
     assert closed.status_code == 200, closed.text
+    assert closed.json()["sol_estado_solicitud_id"] == seed_info["estados"]["Cerrado"]
+
+    # La observación queda asociada al cambio de estado en el historial existente.
+    history = client.get(
+        f"/solicitudes/{req['sol_id']}/historial",
+        headers=_headers(seed_info["view_user_id"]),
+    )
+    assert history.status_code == 200
+    rows = history.json()
+    assert rows[-1]["hsol_estado_actual_id"] == seed_info["estados"]["Cerrado"]
+    assert rows[-1]["hsol_usuario_id"] == seed_info["delete_user_id"]
+    assert rows[-1]["hsol_comentario"] == observation
 
 
 def test_estado_terminal_no_permite_transiciones(client: TestClient, seed_info: SeedInfo):
