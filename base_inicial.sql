@@ -1,8 +1,8 @@
-﻿--
+--
 -- PostgreSQL database dump
 --
 
-\restrict QxoTx3f0RRc8mzfUmYZOba4AO4FbmAMG7KPcNadJ0J6bV4A7D2F1ahPGp8fz0HW
+\restrict A1bhLN9hjS2xgWPGV48wTp3pDZ6NzgTKTQK8xz2kEOnl1yvAHDrhXEr6xMaspEp
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Debian 16.14-1.pgdg13+1)
@@ -18,419 +18,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE IF EXISTS ONLY public.tbl_plantilla_notificacion DROP CONSTRAINT IF EXISTS tbl_plantilla_notificacion_plnt_usuario_actualizacion_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_notificacion_reclutamiento DROP CONSTRAINT IF EXISTS tbl_notificacion_reclutamiento_ntfr_usuario_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_notificacion_reclutamiento DROP CONSTRAINT IF EXISTS tbl_notificacion_reclutamiento_ntfr_solicitud_candidato_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_documento_reporte_candidato DROP CONSTRAINT IF EXISTS tbl_documento_reporte_candidato_drcp_usuario_generador_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_documento_reporte_candidato DROP CONSTRAINT IF EXISTS tbl_documento_reporte_candidat_drcp_solicitud_candidato_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_idioma DROP CONSTRAINT IF EXISTS tbl_candidato_idioma_cdio_idioma_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_idioma DROP CONSTRAINT IF EXISTS tbl_candidato_idioma_cdio_candidato_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS fk_tbl_usuario_rol;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS fk_tbl_usuario_estado_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS fk_tbl_usuario_estado;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_usuario_cita_entrevista_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_usuario_cita_entrevista_tipo;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_usuario_cita_entrevista_cita;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS fk_tbl_usuario_area;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_usuario_creador;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_usuario_asignado;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_tipo_contrato;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_prioridad;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_modalidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_habilidad_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_habilidad_nivel;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_habilidad_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_estado;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_cliente;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_cargo;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_motivo_rechazo;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_estado;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS fk_tbl_solicitud_candidato_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_rol_permiso DROP CONSTRAINT IF EXISTS fk_tbl_rol_permiso_rol;
-ALTER TABLE IF EXISTS ONLY public.tbl_rol_permiso DROP CONSTRAINT IF EXISTS fk_tbl_rol_permiso_permiso;
-ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_respuesta_pregunta_pregunta_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_respuesta_pregunta_opcion_respuesta;
-ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_respuesta_pregunta_candidato_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_region DROP CONSTRAINT IF EXISTS fk_tbl_region_pais;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_nivel_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_cuestionario_pregunta;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_pregunta_cuestionario_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_password_reset_token DROP CONSTRAINT IF EXISTS fk_tbl_password_reset_token_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_opcion_respuesta DROP CONSTRAINT IF EXISTS fk_tbl_opcion_respuesta_pregunta;
-ALTER TABLE IF EXISTS ONLY public.tbl_institucion DROP CONSTRAINT IF EXISTS fk_tbl_institucion_tipo_institucion;
-ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_estado_anterior;
-ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS fk_tbl_historial_solicitud_estado_actual;
-ALTER TABLE IF EXISTS ONLY public.tbl_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_habilidad_categoria_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_expl_habilidad_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_expl_habilidad_experiencia;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS fk_tbl_experiencia_laboral_empresa;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS fk_tbl_experiencia_laboral_cargo;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS fk_tbl_experiencia_laboral_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_tipo;
-ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_resultado;
-ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_evaluacion_entrevista_cita;
-ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_nivel_educacional;
-ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_institucion;
-ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_carrera;
-ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS fk_tbl_estudio_candidato_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS fk_tbl_direccion_candidato_comuna;
-ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS fk_tbl_direccion_candidato_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS fk_tbl_curso_institucion;
-ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS fk_tbl_curso_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_cuestionario_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_comuna DROP CONSTRAINT IF EXISTS fk_tbl_comuna_region;
-ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS fk_tbl_cliente_empresa;
-ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS fk_tbl_cliente_cargo_empresa;
-ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS fk_tbl_cliente_area_empresa;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_tipo_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_tipo_entrevista_tipo_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_tipo_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_tipo_entrevista_cita;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_usuario_creador;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_tipo;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_solicitud_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS fk_tbl_cita_entrevista_estado;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_idioma DROP CONSTRAINT IF EXISTS fk_tbl_candidato_idioma_nivel;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_candidato_habilidad_nivel;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_candidato_habilidad_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS fk_tbl_candidato_habilidad_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS fk_tbl_candidato_disponibilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_candidato_cuestionario_estado;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_candidato_cuestionario_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS fk_tbl_candidato_cuestionario_candidato;
-DROP INDEX IF EXISTS public.uq_m5_evaluacion_cita_usuario_tipo;
-DROP INDEX IF EXISTS public.ix_tbl_solicitud_candidato_solicitud_estado;
-DROP INDEX IF EXISTS public.ix_tbl_notificacion_postulacion;
-DROP INDEX IF EXISTS public.ix_tbl_notificacion_fecha;
-DROP INDEX IF EXISTS public.ix_tbl_notificacion_estado;
-DROP INDEX IF EXISTS public.ix_tbl_nivel_idioma_grupo;
-DROP INDEX IF EXISTS public.ix_tbl_nivel_idioma_activo_orden;
-DROP INDEX IF EXISTS public.ix_tbl_habilidad_categoria;
-DROP INDEX IF EXISTS public.ix_tbl_documento_reporte_postulacion;
-DROP INDEX IF EXISTS public.ix_tbl_documento_reporte_fecha;
-DROP INDEX IF EXISTS public.ix_tbl_candidato_idioma_nivel;
-DROP INDEX IF EXISTS public.ix_tbl_candidato_idioma_candidato;
-DROP INDEX IF EXISTS public.ix_tbl_candidato_email_lower;
-DROP INDEX IF EXISTS public.ix_password_reset_usuario;
-DROP INDEX IF EXISTS public.ix_password_reset_expiracion;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_rol;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_nombre_completo;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_estado;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_email;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_cita_entrevista_usuario;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_cita_entrevista_cita;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_area;
-DROP INDEX IF EXISTS public.idx_tbl_usuario_apellidos;
-DROP INDEX IF EXISTS public.idx_tbl_tipo_institucion_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_tipo_entrevista_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_tipo_contrato_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_usuario_creador;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_usuario_asignado;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_tipo_contrato;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_prioridad;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_modalidad;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_solicitud;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_nivel;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_habilidad;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_habilidad_excluyente;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_fecha_inicio_busqueda;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_fecha_creacion;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_fecha_cierre_busqueda;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_estado;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_codigo;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_cliente;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_cargo;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_solicitud;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_puntaje;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_motivo_rechazo;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_fecha_postulacion;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_estado;
-DROP INDEX IF EXISTS public.idx_tbl_solicitud_candidato_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_rol_permiso_rol;
-DROP INDEX IF EXISTS public.idx_tbl_rol_permiso_permiso;
-DROP INDEX IF EXISTS public.idx_tbl_rol_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_pregunta_cuestionario;
-DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_opcion_respuesta;
-DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_correcta;
-DROP INDEX IF EXISTS public.idx_tbl_respuesta_pregunta_candidato_cuestionario;
-DROP INDEX IF EXISTS public.idx_tbl_respuesta_asignacion;
-DROP INDEX IF EXISTS public.idx_tbl_region_pais;
-DROP INDEX IF EXISTS public.idx_tbl_region_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_prioridad_solicitud_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_pregunta_nivel_habilidad;
-DROP INDEX IF EXISTS public.idx_tbl_pregunta_habilidad;
-DROP INDEX IF EXISTS public.idx_tbl_pregunta_fecha_creacion;
-DROP INDEX IF EXISTS public.idx_tbl_pregunta_cuestionario_pregunta;
-DROP INDEX IF EXISTS public.idx_tbl_pregunta_cuestionario_cuestionario;
-DROP INDEX IF EXISTS public.idx_tbl_permiso_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_pais_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_opcion_respuesta_pregunta;
-DROP INDEX IF EXISTS public.idx_tbl_opcion_respuesta_correcta;
-DROP INDEX IF EXISTS public.idx_tbl_nombre_resultado_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_nivel_habilidad_puntaje;
-DROP INDEX IF EXISTS public.idx_tbl_nivel_habilidad_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_nivel_educacional_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_motivo_rechazo_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_modalidad_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_institucion_tipo;
-DROP INDEX IF EXISTS public.idx_tbl_institucion_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_usuario;
-DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_solicitud;
-DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_fecha_cambio;
-DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_estado_anterior;
-DROP INDEX IF EXISTS public.idx_tbl_historial_solicitud_estado_actual;
-DROP INDEX IF EXISTS public.idx_tbl_habilidad_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_expl_habilidad_habilidad;
-DROP INDEX IF EXISTS public.idx_tbl_expl_habilidad_experiencia;
-DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_fecha_inicio;
-DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_fecha_fin;
-DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_empresa;
-DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_cargo;
-DROP INDEX IF EXISTS public.idx_tbl_experiencia_laboral_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_evaluacion_entrevista_resultado;
-DROP INDEX IF EXISTS public.idx_tbl_evaluacion_entrevista_cita;
-DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_nivel_educacional;
-DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_institucion;
-DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_fecha_inicio;
-DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_fecha_fin;
-DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_carrera;
-DROP INDEX IF EXISTS public.idx_tbl_estudio_candidato_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_estado_usuario_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_estado_solicitud_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_estado_solicitud_candidato_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_estado_entrevista_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_estado_cuestionario_candidato_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_empresa_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_empresa_identificacion;
-DROP INDEX IF EXISTS public.idx_tbl_disponibilidad_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_direccion_candidato_comuna;
-DROP INDEX IF EXISTS public.idx_tbl_direccion_candidato_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_direccion_candidato_calle;
-DROP INDEX IF EXISTS public.idx_tbl_curso_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_curso_institucion;
-DROP INDEX IF EXISTS public.idx_tbl_curso_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_curso_anio;
-DROP INDEX IF EXISTS public.idx_tbl_cuestionario_solicitud;
-DROP INDEX IF EXISTS public.idx_tbl_cuestionario_porcentaje_aprobacion;
-DROP INDEX IF EXISTS public.idx_tbl_cuestionario_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_comuna_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_comuna_ciudad;
-DROP INDEX IF EXISTS public.idx_tbl_cliente_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_cliente_empresa;
-DROP INDEX IF EXISTS public.idx_tbl_cliente_email;
-DROP INDEX IF EXISTS public.idx_tbl_cliente_cargo_empresa;
-DROP INDEX IF EXISTS public.idx_tbl_cliente_area_empresa;
-DROP INDEX IF EXISTS public.idx_tbl_cita_tipo_entrevista_tipo;
-DROP INDEX IF EXISTS public.idx_tbl_cita_tipo_entrevista_cita;
-DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_tipo;
-DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_solicitud_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_fecha_inicio;
-DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_fecha_fin;
-DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_fecha_creacion;
-DROP INDEX IF EXISTS public.idx_tbl_cita_entrevista_estado;
-DROP INDEX IF EXISTS public.idx_tbl_carrera_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_cargo_nombre;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_titulo;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_nivel;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_habilidad;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_habilidad_anios;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_fecha_creacion;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_email;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_disponibilidad;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_fecha_asignacion;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_estado;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_cuestionario;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_candidato;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_cuestionario_aprobado;
-DROP INDEX IF EXISTS public.idx_tbl_candidato_apellidos;
-DROP INDEX IF EXISTS public.idx_tbl_area_nombre;
-DROP INDEX IF EXISTS public.idx_m5_usuario_cita_usuario;
-DROP INDEX IF EXISTS public.idx_m5_usuario_cita_tipo;
-DROP INDEX IF EXISTS public.idx_m5_eval_cita;
-DROP INDEX IF EXISTS public.idx_m5_cita_slcd;
-DROP INDEX IF EXISTS public.idx_m5_cita_fecha;
-DROP INDEX IF EXISTS public.idx_m5_cita_estado;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS uq_tbl_usuario_rut;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS uq_tbl_usuario_email;
-ALTER TABLE IF EXISTS ONLY public.tbl_tipo_institucion DROP CONSTRAINT IF EXISTS uq_tbl_tipo_institucion_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_tipo_entrevista DROP CONSTRAINT IF EXISTS uq_tbl_tipo_entrevista_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_tipo_contrato DROP CONSTRAINT IF EXISTS uq_tbl_tipo_contrato_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_codigo;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_candidato_solicitud_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS uq_tbl_solicitud_candidato_postulacion;
-ALTER TABLE IF EXISTS ONLY public.tbl_rol DROP CONSTRAINT IF EXISTS uq_tbl_rol_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS uq_tbl_respuesta_pregunta_candidato_pregunta;
-ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS uq_tbl_respuesta_asignacion_pregunta;
-ALTER TABLE IF EXISTS ONLY public.tbl_region DROP CONSTRAINT IF EXISTS uq_tbl_region_pais_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_prioridad_solicitud DROP CONSTRAINT IF EXISTS uq_tbl_prioridad_solicitud_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS uq_tbl_pregunta_texto_habilidad_nivel;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS uq_tbl_pregunta_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_plantilla_notificacion DROP CONSTRAINT IF EXISTS uq_tbl_plantilla_notificacion_tipo;
-ALTER TABLE IF EXISTS ONLY public.tbl_permiso DROP CONSTRAINT IF EXISTS uq_tbl_permiso_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_password_reset_token DROP CONSTRAINT IF EXISTS uq_tbl_password_reset_token_hash;
-ALTER TABLE IF EXISTS ONLY public.tbl_pais DROP CONSTRAINT IF EXISTS uq_tbl_pais_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_opcion_respuesta DROP CONSTRAINT IF EXISTS uq_tbl_opcion_respuesta_pregunta_opcion;
-ALTER TABLE IF EXISTS ONLY public.tbl_nombre_resultado DROP CONSTRAINT IF EXISTS uq_tbl_nombre_resultado_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_idioma DROP CONSTRAINT IF EXISTS uq_tbl_nivel_idioma_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_idioma DROP CONSTRAINT IF EXISTS uq_tbl_nivel_idioma_codigo;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_nivel_habilidad_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_educacional DROP CONSTRAINT IF EXISTS uq_tbl_nivel_educacional_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_motivo_rechazo DROP CONSTRAINT IF EXISTS uq_tbl_motivo_rechazo_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_modalidad DROP CONSTRAINT IF EXISTS uq_tbl_modalidad_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_institucion DROP CONSTRAINT IF EXISTS uq_tbl_institucion_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_idioma DROP CONSTRAINT IF EXISTS uq_tbl_idioma_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_habilidad_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS uq_tbl_experiencia_laboral_registro;
-ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS uq_tbl_estudio_candidato_registro;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_usuario DROP CONSTRAINT IF EXISTS uq_tbl_estado_usuario_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud DROP CONSTRAINT IF EXISTS uq_tbl_estado_solicitud_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud_candidato DROP CONSTRAINT IF EXISTS uq_tbl_estado_solicitud_candidato_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_entrevista DROP CONSTRAINT IF EXISTS uq_tbl_estado_entrevista_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_cuestionario_candidato DROP CONSTRAINT IF EXISTS uq_tbl_estado_cuestionario_candidato_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_empresa DROP CONSTRAINT IF EXISTS uq_tbl_empresa_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_empresa DROP CONSTRAINT IF EXISTS uq_tbl_empresa_identificacion;
-ALTER TABLE IF EXISTS ONLY public.tbl_disponibilidad DROP CONSTRAINT IF EXISTS uq_tbl_disponibilidad_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS uq_tbl_direccion_candidato_direccion;
-ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS uq_tbl_curso_candidato_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_cuestionario DROP CONSTRAINT IF EXISTS uq_tbl_cuestionario_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_comuna DROP CONSTRAINT IF EXISTS uq_tbl_comuna_comuna_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS uq_tbl_cliente_email2;
-ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS uq_tbl_cliente_email;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS uq_tbl_cita_entrevista_agenda;
-ALTER TABLE IF EXISTS ONLY public.tbl_categoria_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_categoria_habilidad_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_carrera DROP CONSTRAINT IF EXISTS uq_tbl_carrera_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_cargo DROP CONSTRAINT IF EXISTS uq_tbl_cargo_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS uq_tbl_candidato_rut;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_idioma DROP CONSTRAINT IF EXISTS uq_tbl_candidato_idioma;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_candidato_habilidad_candidato_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS uq_tbl_candidato_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS uq_tbl_candidato_email;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS uq_tbl_candidato_cuestionario_candidato_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_area DROP CONSTRAINT IF EXISTS uq_tbl_area_nombre;
-ALTER TABLE IF EXISTS ONLY public.tbl_plantilla_notificacion DROP CONSTRAINT IF EXISTS tbl_plantilla_notificacion_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_password_reset_token DROP CONSTRAINT IF EXISTS tbl_password_reset_token_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_notificacion_reclutamiento DROP CONSTRAINT IF EXISTS tbl_notificacion_reclutamiento_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_idioma DROP CONSTRAINT IF EXISTS tbl_nivel_idioma_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_idioma DROP CONSTRAINT IF EXISTS tbl_idioma_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_documento_reporte_candidato DROP CONSTRAINT IF EXISTS tbl_documento_reporte_candidato_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_categoria_habilidad DROP CONSTRAINT IF EXISTS tbl_categoria_habilidad_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_idioma DROP CONSTRAINT IF EXISTS tbl_candidato_idioma_pkey;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario_cita_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_usuario_cita_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_usuario DROP CONSTRAINT IF EXISTS pk_tbl_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_tipo_institucion DROP CONSTRAINT IF EXISTS pk_tbl_tipo_institucion;
-ALTER TABLE IF EXISTS ONLY public.tbl_tipo_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_tipo_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_tipo_contrato DROP CONSTRAINT IF EXISTS pk_tbl_tipo_contrato;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_solicitud_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud_candidato DROP CONSTRAINT IF EXISTS pk_tbl_solicitud_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_rol_permiso DROP CONSTRAINT IF EXISTS pk_tbl_rol_permiso;
-ALTER TABLE IF EXISTS ONLY public.tbl_rol DROP CONSTRAINT IF EXISTS pk_tbl_rol;
-ALTER TABLE IF EXISTS ONLY public.tbl_respuesta_pregunta DROP CONSTRAINT IF EXISTS pk_tbl_respuesta_pregunta;
-ALTER TABLE IF EXISTS ONLY public.tbl_region DROP CONSTRAINT IF EXISTS pk_tbl_region;
-ALTER TABLE IF EXISTS ONLY public.tbl_prioridad_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_prioridad_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta_cuestionario DROP CONSTRAINT IF EXISTS pk_tbl_pregunta_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_pregunta DROP CONSTRAINT IF EXISTS pk_tbl_pregunta;
-ALTER TABLE IF EXISTS ONLY public.tbl_permiso DROP CONSTRAINT IF EXISTS pk_tbl_permiso;
-ALTER TABLE IF EXISTS ONLY public.tbl_pais DROP CONSTRAINT IF EXISTS pk_tbl_pais;
-ALTER TABLE IF EXISTS ONLY public.tbl_opcion_respuesta DROP CONSTRAINT IF EXISTS pk_tbl_opcion_respuesta;
-ALTER TABLE IF EXISTS ONLY public.tbl_nombre_resultado DROP CONSTRAINT IF EXISTS pk_tbl_nombre_resultado;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_nivel_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_nivel_educacional DROP CONSTRAINT IF EXISTS pk_tbl_nivel_educacional;
-ALTER TABLE IF EXISTS ONLY public.tbl_motivo_rechazo DROP CONSTRAINT IF EXISTS pk_tbl_motivo_rechazo;
-ALTER TABLE IF EXISTS ONLY public.tbl_modalidad DROP CONSTRAINT IF EXISTS pk_tbl_modalidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_institucion DROP CONSTRAINT IF EXISTS pk_tbl_institucion;
-ALTER TABLE IF EXISTS ONLY public.tbl_historial_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_historial_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_experiencia_laboral_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_experiencia_laboral DROP CONSTRAINT IF EXISTS pk_tbl_experiencia_laboral;
-ALTER TABLE IF EXISTS ONLY public.tbl_evaluacion_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_evaluacion_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_estudio_candidato DROP CONSTRAINT IF EXISTS pk_tbl_estudio_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_usuario DROP CONSTRAINT IF EXISTS pk_tbl_estado_usuario;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud_candidato DROP CONSTRAINT IF EXISTS pk_tbl_estado_solicitud_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_solicitud DROP CONSTRAINT IF EXISTS pk_tbl_estado_solicitud;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_estado_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_estado_cuestionario_candidato DROP CONSTRAINT IF EXISTS pk_tbl_estado_cuestionario_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_empresa DROP CONSTRAINT IF EXISTS pk_tbl_empresa;
-ALTER TABLE IF EXISTS ONLY public.tbl_disponibilidad DROP CONSTRAINT IF EXISTS pk_tbl_disponibilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_direccion_candidato DROP CONSTRAINT IF EXISTS pk_tbl_direccion_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_curso DROP CONSTRAINT IF EXISTS pk_tbl_curso;
-ALTER TABLE IF EXISTS ONLY public.tbl_cuestionario DROP CONSTRAINT IF EXISTS pk_tbl_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_comuna DROP CONSTRAINT IF EXISTS pk_tbl_comuna;
-ALTER TABLE IF EXISTS ONLY public.tbl_cliente DROP CONSTRAINT IF EXISTS pk_tbl_cliente;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_tipo_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_cita_tipo_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_cita_entrevista DROP CONSTRAINT IF EXISTS pk_tbl_cita_entrevista;
-ALTER TABLE IF EXISTS ONLY public.tbl_carrera DROP CONSTRAINT IF EXISTS pk_tbl_carrera;
-ALTER TABLE IF EXISTS ONLY public.tbl_cargo DROP CONSTRAINT IF EXISTS pk_tbl_cargo;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_habilidad DROP CONSTRAINT IF EXISTS pk_tbl_candidato_habilidad;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato_cuestionario DROP CONSTRAINT IF EXISTS pk_tbl_candidato_cuestionario;
-ALTER TABLE IF EXISTS ONLY public.tbl_candidato DROP CONSTRAINT IF EXISTS pk_tbl_candidato;
-ALTER TABLE IF EXISTS ONLY public.tbl_area DROP CONSTRAINT IF EXISTS pk_tbl_area;
-DROP TABLE IF EXISTS public.tbl_usuario_cita_entrevista;
-DROP TABLE IF EXISTS public.tbl_usuario;
-DROP TABLE IF EXISTS public.tbl_tipo_institucion;
-DROP TABLE IF EXISTS public.tbl_tipo_entrevista;
-DROP TABLE IF EXISTS public.tbl_tipo_contrato;
-DROP TABLE IF EXISTS public.tbl_solicitud_habilidad;
-DROP TABLE IF EXISTS public.tbl_solicitud_candidato;
-DROP TABLE IF EXISTS public.tbl_solicitud;
-DROP TABLE IF EXISTS public.tbl_rol_permiso;
-DROP TABLE IF EXISTS public.tbl_rol;
-DROP TABLE IF EXISTS public.tbl_respuesta_pregunta;
-DROP TABLE IF EXISTS public.tbl_region;
-DROP TABLE IF EXISTS public.tbl_prioridad_solicitud;
-DROP TABLE IF EXISTS public.tbl_pregunta_cuestionario;
-DROP TABLE IF EXISTS public.tbl_pregunta;
-DROP TABLE IF EXISTS public.tbl_plantilla_notificacion;
-DROP TABLE IF EXISTS public.tbl_permiso;
-DROP TABLE IF EXISTS public.tbl_password_reset_token;
-DROP TABLE IF EXISTS public.tbl_pais;
-DROP TABLE IF EXISTS public.tbl_opcion_respuesta;
-DROP TABLE IF EXISTS public.tbl_notificacion_reclutamiento;
-DROP TABLE IF EXISTS public.tbl_nombre_resultado;
-DROP TABLE IF EXISTS public.tbl_nivel_idioma;
-DROP TABLE IF EXISTS public.tbl_nivel_habilidad;
-DROP TABLE IF EXISTS public.tbl_nivel_educacional;
-DROP TABLE IF EXISTS public.tbl_motivo_rechazo;
-DROP TABLE IF EXISTS public.tbl_modalidad;
-DROP TABLE IF EXISTS public.tbl_institucion;
-DROP TABLE IF EXISTS public.tbl_idioma;
-DROP TABLE IF EXISTS public.tbl_historial_solicitud;
-DROP TABLE IF EXISTS public.tbl_habilidad;
-DROP TABLE IF EXISTS public.tbl_experiencia_laboral_habilidad;
-DROP TABLE IF EXISTS public.tbl_experiencia_laboral;
-DROP TABLE IF EXISTS public.tbl_evaluacion_entrevista;
-DROP TABLE IF EXISTS public.tbl_estudio_candidato;
-DROP TABLE IF EXISTS public.tbl_estado_usuario;
-DROP TABLE IF EXISTS public.tbl_estado_solicitud_candidato;
-DROP TABLE IF EXISTS public.tbl_estado_solicitud;
-DROP TABLE IF EXISTS public.tbl_estado_entrevista;
-DROP TABLE IF EXISTS public.tbl_estado_cuestionario_candidato;
-DROP TABLE IF EXISTS public.tbl_empresa;
-DROP TABLE IF EXISTS public.tbl_documento_reporte_candidato;
-DROP TABLE IF EXISTS public.tbl_disponibilidad;
-DROP TABLE IF EXISTS public.tbl_direccion_candidato;
-DROP TABLE IF EXISTS public.tbl_curso;
-DROP TABLE IF EXISTS public.tbl_cuestionario;
-DROP TABLE IF EXISTS public.tbl_comuna;
-DROP TABLE IF EXISTS public.tbl_cliente;
-DROP TABLE IF EXISTS public.tbl_cita_tipo_entrevista;
-DROP TABLE IF EXISTS public.tbl_cita_entrevista;
-DROP TABLE IF EXISTS public.tbl_categoria_habilidad;
-DROP TABLE IF EXISTS public.tbl_carrera;
-DROP TABLE IF EXISTS public.tbl_cargo;
-DROP TABLE IF EXISTS public.tbl_candidato_idioma;
-DROP TABLE IF EXISTS public.tbl_candidato_habilidad;
-DROP TABLE IF EXISTS public.tbl_candidato_cuestionario;
-DROP TABLE IF EXISTS public.tbl_candidato;
-DROP TABLE IF EXISTS public.tbl_area;
-DROP EXTENSION IF EXISTS unaccent;
-DROP EXTENSION IF EXISTS pgcrypto;
--- *not* dropping schema, since initdb creates it
 --
 -- Name: public; Type: SCHEMA; Schema: -; Owner: elitsoft_admin
 --
@@ -632,18 +219,12 @@ CREATE TABLE public.tbl_candidato_idioma (
     cdio_id integer NOT NULL,
     cdio_candidato_id integer NOT NULL,
     cdio_idioma_id integer NOT NULL,
-    cdio_nivel_idioma_id integer NOT NULL
+    cdio_nivel character varying(30) NOT NULL,
+    CONSTRAINT chk_tbl_candidato_idioma_nivel CHECK (((cdio_nivel)::text = ANY (ARRAY[('Basico'::character varying)::text, ('Intermedio'::character varying)::text, ('Avanzado'::character varying)::text, ('Nativo'::character varying)::text])))
 );
 
 
 ALTER TABLE public.tbl_candidato_idioma OWNER TO elitsoft_admin;
-
---
--- Name: COLUMN tbl_candidato_idioma.cdio_nivel_idioma_id; Type: COMMENT; Schema: public; Owner: elitsoft_admin
---
-
-COMMENT ON COLUMN public.tbl_candidato_idioma.cdio_nivel_idioma_id IS 'Nivel normalizado del idioma del candidato. FK a tbl_nivel_idioma.';
-
 
 --
 -- Name: tbl_candidato_idioma_cdio_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
@@ -999,7 +580,7 @@ CREATE TABLE public.tbl_documento_reporte_candidato (
     drcp_snapshot_json jsonb,
     CONSTRAINT chk_tbl_documento_reporte_hash CHECK ((length((drcp_hash_sha256)::text) = 64)),
     CONSTRAINT chk_tbl_documento_reporte_nombre CHECK ((TRIM(BOTH FROM drcp_nombre_archivo) <> ''::text)),
-    CONSTRAINT chk_tbl_documento_reporte_tipo CHECK (((drcp_tipo_documento)::text = ANY ((ARRAY['RESUMEN'::character varying, 'CV_CORPORATIVO'::character varying])::text[])))
+    CONSTRAINT chk_tbl_documento_reporte_tipo CHECK (((drcp_tipo_documento)::text = ANY (ARRAY[('RESUMEN'::character varying)::text, ('CV_CORPORATIVO'::character varying)::text])))
 );
 
 
@@ -1533,70 +1114,6 @@ ALTER TABLE public.tbl_nivel_habilidad ALTER COLUMN nvhb_id ADD GENERATED ALWAYS
 
 
 --
--- Name: tbl_nivel_idioma; Type: TABLE; Schema: public; Owner: elitsoft_admin
---
-
-CREATE TABLE public.tbl_nivel_idioma (
-    nvid_id integer NOT NULL,
-    nvid_codigo character varying(20) NOT NULL,
-    nvid_nombre character varying(100) NOT NULL,
-    nvid_grupo character varying(30) NOT NULL,
-    nvid_es_generico boolean DEFAULT false NOT NULL,
-    nvid_orden integer NOT NULL,
-    nvid_descripcion character varying(255),
-    nvid_activo boolean DEFAULT true NOT NULL,
-    CONSTRAINT chk_tbl_nivel_idioma_codigo CHECK ((TRIM(BOTH FROM nvid_codigo) <> ''::text)),
-    CONSTRAINT chk_tbl_nivel_idioma_grupo CHECK (((nvid_grupo)::text = ANY ((ARRAY['Basico'::character varying, 'Intermedio'::character varying, 'Avanzado'::character varying, 'Nativo'::character varying])::text[]))),
-    CONSTRAINT chk_tbl_nivel_idioma_nombre CHECK ((TRIM(BOTH FROM nvid_nombre) <> ''::text)),
-    CONSTRAINT chk_tbl_nivel_idioma_orden CHECK ((nvid_orden > 0))
-);
-
-
-ALTER TABLE public.tbl_nivel_idioma OWNER TO elitsoft_admin;
-
---
--- Name: TABLE tbl_nivel_idioma; Type: COMMENT; Schema: public; Owner: elitsoft_admin
---
-
-COMMENT ON TABLE public.tbl_nivel_idioma IS 'Cat├ílogo normalizado de niveles de dominio de idiomas. Incluye niveles gen├®ricos hist├│ricos y niveles CEFR.';
-
-
---
--- Name: COLUMN tbl_nivel_idioma.nvid_codigo; Type: COMMENT; Schema: public; Owner: elitsoft_admin
---
-
-COMMENT ON COLUMN public.tbl_nivel_idioma.nvid_codigo IS 'C├│digo estable del nivel. Ejemplos: BAS, A1, A2, INT, B1, B2, AVA, C1, C2, NAT.';
-
-
---
--- Name: COLUMN tbl_nivel_idioma.nvid_grupo; Type: COMMENT; Schema: public; Owner: elitsoft_admin
---
-
-COMMENT ON COLUMN public.tbl_nivel_idioma.nvid_grupo IS 'Grupo funcional resumido utilizado por Sakura: Basico, Intermedio, Avanzado o Nativo.';
-
-
---
--- Name: COLUMN tbl_nivel_idioma.nvid_es_generico; Type: COMMENT; Schema: public; Owner: elitsoft_admin
---
-
-COMMENT ON COLUMN public.tbl_nivel_idioma.nvid_es_generico IS 'TRUE cuando el nivel representa una clasificaci├│n general sin precisi├│n CEFR.';
-
-
---
--- Name: tbl_nivel_idioma_nvid_id_seq; Type: SEQUENCE; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE public.tbl_nivel_idioma ALTER COLUMN nvid_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tbl_nivel_idioma_nvid_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
 -- Name: tbl_nombre_resultado; Type: TABLE; Schema: public; Owner: elitsoft_admin
 --
 
@@ -1643,8 +1160,8 @@ CREATE TABLE public.tbl_notificacion_reclutamiento (
     CONSTRAINT chk_tbl_notificacion_asunto CHECK ((TRIM(BOTH FROM ntfr_asunto) <> ''::text)),
     CONSTRAINT chk_tbl_notificacion_cuerpo CHECK ((TRIM(BOTH FROM ntfr_cuerpo) <> ''::text)),
     CONSTRAINT chk_tbl_notificacion_destinatario CHECK ((TRIM(BOTH FROM ntfr_destinatario) <> ''::text)),
-    CONSTRAINT chk_tbl_notificacion_estado CHECK (((ntfr_estado)::text = ANY ((ARRAY['BORRADOR'::character varying, 'ENVIADO'::character varying, 'ERROR'::character varying])::text[]))),
-    CONSTRAINT chk_tbl_notificacion_tipo CHECK (((ntfr_tipo)::text = ANY ((ARRAY['RECHAZO'::character varying, 'AGRADECIMIENTO'::character varying, 'DIRECTIVOS'::character varying])::text[])))
+    CONSTRAINT chk_tbl_notificacion_estado CHECK (((ntfr_estado)::text = ANY (ARRAY[('BORRADOR'::character varying)::text, ('ENVIADO'::character varying)::text, ('ERROR'::character varying)::text]))),
+    CONSTRAINT chk_tbl_notificacion_tipo CHECK (((ntfr_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text])))
 );
 
 
@@ -1796,7 +1313,7 @@ CREATE TABLE public.tbl_plantilla_notificacion (
     CONSTRAINT chk_tbl_plantilla_notificacion_asunto CHECK ((TRIM(BOTH FROM plnt_asunto) <> ''::text)),
     CONSTRAINT chk_tbl_plantilla_notificacion_cuerpo CHECK ((TRIM(BOTH FROM plnt_cuerpo) <> ''::text)),
     CONSTRAINT chk_tbl_plantilla_notificacion_nombre CHECK ((TRIM(BOTH FROM plnt_nombre) <> ''::text)),
-    CONSTRAINT chk_tbl_plantilla_notificacion_tipo CHECK (((plnt_tipo)::text = ANY ((ARRAY['RECHAZO'::character varying, 'AGRADECIMIENTO'::character varying, 'DIRECTIVOS'::character varying])::text[])))
+    CONSTRAINT chk_tbl_plantilla_notificacion_tipo CHECK (((plnt_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text])))
 );
 
 
@@ -2354,7 +1871,7 @@ COPY public.tbl_candidato_habilidad (cdhb_id, cdhb_candidato_id, cdhb_habilidad_
 -- Data for Name: tbl_candidato_idioma; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
-COPY public.tbl_candidato_idioma (cdio_id, cdio_candidato_id, cdio_idioma_id, cdio_nivel_idioma_id) FROM stdin;
+COPY public.tbl_candidato_idioma (cdio_id, cdio_candidato_id, cdio_idioma_id, cdio_nivel) FROM stdin;
 \.
 
 
@@ -2447,13 +1964,13 @@ COPY public.tbl_carrera (crra_id, crra_nombre) FROM stdin;
 --
 
 COPY public.tbl_categoria_habilidad (cthb_id, cthb_nombre, cthb_descripcion) FROM stdin;
-1	Lenguajes	Lenguajes de programaci├│n
-2	Frameworks / Librer├¡as	Frameworks y librer├¡as de desarrollo
-3	Bases de Datos	Motores, tecnolog├¡as y herramientas de datos
-4	Cloud / DevOps	Cloud, contenedores, CI/CD y automatizaci├│n
-5	Herramientas	Herramientas t├®cnicas generales
-6	Metodolog├¡as	Metodolog├¡as, pr├ícticas y marcos de trabajo
-7	Otros	Conocimientos sin categor├¡a espec├¡fica
+1	Lenguajes	Lenguajes de programacion
+2	Frameworks / Librerias	Frameworks y librerias de desarrollo
+3	Bases de Datos	Motores, tecnologias y herramientas de datos
+4	Cloud / DevOps	Cloud, contenedores, CI/CD y automatizacion
+5	Herramientas	Herramientas tecnicas generales
+6	Metodologias	Metodologias, practicas y marcos de trabajo
+7	Otros	Conocimientos sin categoria especifica
 \.
 
 
@@ -2942,42 +2459,6 @@ COPY public.tbl_disponibilidad (disp_id, disp_nombre) FROM stdin;
 --
 
 COPY public.tbl_documento_reporte_candidato (drcp_id, drcp_solicitud_candidato_id, drcp_tipo_documento, drcp_nombre_archivo, drcp_ruta_archivo, drcp_fecha_generacion, drcp_usuario_generador_id, drcp_hash_sha256, drcp_snapshot_json) FROM stdin;
-1	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:15:52.636064	12	13b74c964025caa7f4124bb97c3efbb497354be626728f8b62c7189039a48006	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-2	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:15:52.81382	12	107b8d8e12acbffd1d692f09029d96696a15c8dfef6a494acac37bb06f783502	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "QA LIVE d5cb0028", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-3	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:15:52.961136	12	5f94b0d77b2f642c5f84d3c63df1c11bc7aed6cd02a185c9a700f832047db1e4	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-4	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-17 22:15:53.020719	12	9307ca242b5a95babc5dfbe03f407010b674f2625770ea582c3618a439c1c930	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-5	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:15:53.478449	12	e94f9dadbd7ac4eeb05b0853226e284d05005464bbfa9014c829015770e050f6	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-6	8	RESUMEN	RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	2026-08-17 22:15:53.513563	12	ca1300965da9ca23e426891fcd1abc53d37e35e0b0ae7aafe5451575c3c77d01	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [{"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 2, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 4, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 11, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}], "tecnologias": [], "candidato_id": 11, "solicitud_id": 1, "clasificacion": "NO_APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand1.m5@sakura.cl", "candidato_nombre": "Candidato Uno QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000001", "estado_postulacion": "Descartado", "motivo_clasificacion": ["Estado de postulaci├│n: Descartado"], "puede_enviar_rechazo": true, "clasificacion_sugerida": false, "solicitud_candidato_id": 8, "puede_enviar_directivos": false}
-7	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:15:53.611609	12	7b899512f3c2073efed424231a3e45e5982a821352dc5d934cccbf0e11fc2b10	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-8	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-17 22:15:53.663805	12	c8f3f921605dadcafdf0c2d52f62134f1a965ee8b99c246865fbc23d16618521	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-9	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:18:34.484777	12	c1b386569417360a09ee324d66fa04b1fc0601d54d88497476b8c1a8e21e73d7	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-10	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:18:34.640008	12	c76136abb8ea55e3533149e2124fc969a0373f5190154333c7450e188fbbdce1	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "QA LIVE 6b10b963", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-11	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:18:34.813975	12	805ad5c12aee3141248674c60c8b0440489e858638326ba71d2e73b188cb165d	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-12	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-17 22:18:34.899853	12	da5f9141ae48cbb10bfee08f8daa7cbba0537bde99d1f03125da3e03da3710c8	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-13	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:18:35.038644	12	30ab48598e43ac0beabe40f63aaa494b938e3e95256203c6d0fe29371e844020	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-14	8	RESUMEN	RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	2026-08-17 22:18:35.100839	12	ceabe5b5c0bd216a7f4bbe6f9882722f24b0353541e46ddaa48b277c0d005008	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [{"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 2, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 4, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 11, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}], "tecnologias": [], "candidato_id": 11, "solicitud_id": 1, "clasificacion": "NO_APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand1.m5@sakura.cl", "candidato_nombre": "Candidato Uno QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000001", "estado_postulacion": "Descartado", "motivo_clasificacion": ["Estado de postulaci├│n: Descartado"], "puede_enviar_rechazo": true, "clasificacion_sugerida": false, "solicitud_candidato_id": 8, "puede_enviar_directivos": false}
-15	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:18:35.239621	12	b983a02bd451bf5496c2f831cbe3a26f837969daa50a51da4998cd4743e1eac0	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-16	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-17 22:18:35.328795	12	98a2766fc2007d6dd9e566925dcb621a18bf9953fa2bb6793f506feafab088e2	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-17	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:18:35.506069	12	2bd7235ab1224a99ed383d8d96ab3ed1d277a32360af4bf9d4687c79f2dcd987	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-18	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:33:34.032608	12	c3ac066054331afd490155051d0ba6fe7bab5595057aa148cfbbff748e673e0d	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-19	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:33:34.472123	12	8936f04801fe840ca68cae74469040b4d9ae95ef6fdfc8be92c0436bc7135b4b	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "QA LIVE 279b039e", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-20	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:33:34.67459	12	3e608d7564c08e19a399f0b5d9ce195422c4e6eca83d5e5bd6c0a45029b4da26	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-21	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-17 22:33:34.764705	12	0f029eb85247350ef2cc98e070ff23c12da06d2a91ffd957397c288ab4153c92	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-22	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:33:34.975597	12	adcad9bc01b225ad8b938394b072233d8951098352c1c681a6547c282dd6ff14	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-23	8	RESUMEN	RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	2026-08-17 22:33:35.033604	12	195e2d424cd9ca2ca5c5552e87909794bffb31b76c10e0e137462dd399b72a30	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [{"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 2, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 4, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 11, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}], "tecnologias": [], "candidato_id": 11, "solicitud_id": 1, "clasificacion": "NO_APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand1.m5@sakura.cl", "candidato_nombre": "Candidato Uno QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000001", "estado_postulacion": "Descartado", "motivo_clasificacion": ["Estado de postulaci├│n: Descartado"], "puede_enviar_rechazo": true, "clasificacion_sugerida": false, "solicitud_candidato_id": 8, "puede_enviar_directivos": false}
-24	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:33:35.14926	12	36ab857658f9d025fc25379956940b4232044e64327572a1a72adab7fcabfb3e	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-25	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-17 22:33:35.206696	12	a504ad6ba874fdf6cc78a93c20f024eeafec29a6bd7325df2678e2ff5a60bc1d	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-26	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-17 22:33:35.392906	12	7ae8d3966f0d8259ebf8723dadcf142b575cb146f2ec06d28d15eb2f57e2b53f	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-27	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:29.311409	12	fe99eadc815b999c713ec70dccf16c74fc116b0404de4ac493c0dec9cc1cf47a	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-28	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:46.990252	12	b07026d707ebc9058a39df9023fc45974fdf417faa4ccd7c2e5a8a938e90ec96	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-29	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:47.104485	12	d5df753d03c31ba02ab7e84813aab5e369457d445fa704c10029eece76bbee68	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "QA LIVE 2de3c7ea", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-30	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:47.324055	12	798aca25bd06bfccdc0fe0e4a68d8c934ee5797ad59f69c6830f6045f552834b	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-31	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-18 21:51:47.377595	12	9ec923ccb23d9a80253233a846f0f2b56f42c7d002db7507a0be26b6ed031813	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-32	9	RESUMEN	RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:47.576048	12	e2e9c763ec8ed6cf3939c8571c895e57ea967331a4f6385d85fd9a3584eeb677	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [], "tecnologias": [], "candidato_id": 12, "solicitud_id": 1, "clasificacion": "APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand2.m5@sakura.cl", "candidato_nombre": "Candidato Dos QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000002", "estado_postulacion": "Seleccionado", "motivo_clasificacion": ["Estado de postulaci├│n: Seleccionado"], "puede_enviar_rechazo": false, "clasificacion_sugerida": false, "solicitud_candidato_id": 9, "puede_enviar_directivos": true}
-33	8	RESUMEN	RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	/app/storage/informes/resumen/RESUMEN_Candidato_Uno_QA_SOL_000001.pdf	2026-08-18 21:51:47.63378	12	a6161ecc10f290f2927f279ceca1ab9515c48f6548981a4c0a4ebd8de6eab87f	{"cargo": "Desarrollador Backend", "match": 90.0, "cargo_id": 1, "tecnicas": [{"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "Cuestionario Tecnico Backend Python Senior", "cuestionario_id": 1}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-184117", "cuestionario_id": 4}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-184117", "cuestionario_id": 5}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-184117", "cuestionario_id": 6}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-184117", "cuestionario_id": 7}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-184117", "cuestionario_id": 8}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260813-210328", "cuestionario_id": 9}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260813-210328", "cuestionario_id": 10}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260813-210328", "cuestionario_id": 11}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260813-210328", "cuestionario_id": 12}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260813-210328", "cuestionario_id": 13}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 IND-20260814-173441", "cuestionario_id": 14}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 MASS-20260814-173441", "cuestionario_id": 15}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-20260814-173441", "cuestionario_id": 16}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 ALL-PAST-20260814-173441", "cuestionario_id": 17}, {"estado": null, "aprobado": null, "porcentaje": null, "cuestionario": "QA LIVE M4 TECH-20260814-173441", "cuestionario_id": 18}], "entrevistas": [{"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 2, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 2, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 4, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 4, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado", "observacion": "QA editada", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}, {"tipo": "RRHH", "tipo_id": 1, "resultado": "Aprobado con Observaciones", "observacion": "QA segundo", "entrevista_id": 11, "entrevistador": "Recruiter QA M5", "entrevistador_id": 13}, {"tipo": "Tecnica", "tipo_id": 2, "resultado": "Aprobado", "observacion": "QA segundo tipo", "entrevista_id": 11, "entrevistador": "Admin QA M5", "entrevistador_id": 12}], "tecnologias": [], "candidato_id": 11, "solicitud_id": 1, "clasificacion": "NO_APROBADO", "disponibilidad": "Inmediata", "candidato_email": "qa.cand1.m5@sakura.cl", "candidato_nombre": "Candidato Uno QA", "solicitud_codigo": "SOL-000001", "solicitud_titulo": "Desarrollador Senior Backend Python (Presencial)", "disponibilidad_id": 1, "candidato_telefono": "970000001", "estado_postulacion": "Descartado", "motivo_clasificacion": ["Estado de postulaci├│n: Descartado"], "puede_enviar_rechazo": true, "clasificacion_sugerida": false, "solicitud_candidato_id": 8, "puede_enviar_directivos": false}
-34	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:47.754079	12	9f62f4e31a4d2208d7e65e5d7985390963647f3cedd7fd17df9ff77305e1432b	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
-35	4	CV_CORPORATIVO	CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_QA_ModuloTres_SOL_000014.pdf	2026-08-18 21:51:47.810073	12	f0224eeb58154ecdf3fef9d0eac42384c9835ba44edde72471624bdedbd10ac8	{"pais": null, "nombre": "QA ModuloTres", "titulo": "QA PATCH 6c870a39", "idiomas": [], "educacion": [], "fortalezas": ["Conocimientos t├®cnicos destacados en PostgreSQL.", "Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Candidato generado por QA LIVE 6c870a39", "perfil_profesional": "Candidato generado por QA LIVE 6c870a39", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {"Bases de Datos": [{"anios": 6, "nivel": "Trainee", "categoria": "Bases de Datos", "habilidad": "PostgreSQL"}]}}
-36	9	CV_CORPORATIVO	CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	/app/storage/informes/cv_corporativo/CV_ELITSOFT_Candidato_Dos_QA_SOL_000001.pdf	2026-08-18 21:51:47.987479	12	59ef63556f86ff4e22bdaed8527da144b20dae3a2a6bc5baf53da9db0bdbcc33	{"pais": null, "nombre": "Candidato Dos QA", "titulo": "Ingeniero QA", "idiomas": [], "educacion": [], "fortalezas": ["Perfil profesional orientado a los objetivos y responsabilidades descritos por el candidato."], "experiencia": [], "certificaciones": [], "resumen_ejecutivo": "Segundo candidato para QA LIVE Modulo 5.", "perfil_profesional": "Segundo candidato para QA LIVE Modulo 5.", "roles_recomendados": ["Desarrollador Backend ÔÇô por su alineaci├│n con la solicitud y experiencia declarada."], "habilidades_por_categoria": {}}
 \.
 
 
@@ -3249,7 +2730,6 @@ COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_ant
 42	16	1	2	2026-08-14 17:17:34.7372	1	Cambio de estado: Pendiente -> En Curso
 43	16	2	3	2026-08-14 17:17:34.788027	1	Cambio de estado: En Curso -> En Entrevistas
 44	16	3	5	2026-08-14 17:17:35.158334	1	Cambio de estado: En Entrevistas -> Cerrado
-45	1	3	4	2026-08-17 19:54:57.039641	1	Solicitud cancelada por confirmaci├│n del usuario.
 \.
 
 
@@ -3258,11 +2738,11 @@ COPY public.tbl_historial_solicitud (hsol_id, hsol_solicitud_id, hsol_estado_ant
 --
 
 COPY public.tbl_idioma (idio_id, idio_nombre) FROM stdin;
-1	Espa├▒ol
-2	Ingl├®s
-3	Portugu├®s
-4	Franc├®s
-5	Alem├ín
+1	Espanol
+2	Ingles
+3	Portugues
+4	Frances
+5	Aleman
 6	Italiano
 7	Otro
 \.
@@ -3320,7 +2800,7 @@ COPY public.tbl_institucion (inst_id, inst_nombre, inst_tipo_institucion_id) FRO
 COPY public.tbl_modalidad (mdld_id, mdld_nombre, mdld_descripcion) FROM stdin;
 1	Presencial	Trabajo obligatorio en las oficinas del cliente de lunes a viernes.
 2	Remoto	Trabajo completamente desde el hogar, mediante teletrabajo nacional o internacional.
-3	Hibrido	Esquema flexible de trabajo que combina dÔö£┬ías presenciales y remotos (por ejemplo, 3 dÔö£┬ías en casa y 2 dÔö£┬ías en la oficina).
+3	Hibrido	Esquema flexible de trabajo que combina dias presenciales y remotos (por ejemplo, 3 dias en casa y 2 dias en la oficina).
 \.
 
 
@@ -3349,8 +2829,8 @@ COPY public.tbl_motivo_rechazo (mtrc_id, mtrc_nombre, mtrc_descripcion) FROM std
 --
 
 COPY public.tbl_nivel_educacional (nved_id, nved_nombre) FROM stdin;
-1	Ense├▒anza Media
-2	Tenico Nivel Medio
+1	Enseñanza Media
+2	Tecnico Nivel Medio
 3	Tecnico Profesional Nivel Superior
 4	Universitario Incompleto
 5	Universitario Completo
@@ -3373,24 +2853,6 @@ COPY public.tbl_nivel_habilidad (nvhb_id, nvhb_nombre, nvhb_descripcion, nvhb_pu
 
 
 --
--- Data for Name: tbl_nivel_idioma; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
---
-
-COPY public.tbl_nivel_idioma (nvid_id, nvid_codigo, nvid_nombre, nvid_grupo, nvid_es_generico, nvid_orden, nvid_descripcion, nvid_activo) FROM stdin;
-1	BAS	B├ísico	Basico	t	10	Nivel b├ísico gen├®rico. Utilizado cuando la fuente no permite determinar A1 o A2.	t
-2	A1	B├ísico A1	Basico	f	11	CEFR A1 - Usuario b├ísico inicial.	t
-3	A2	B├ísico A2	Basico	f	12	CEFR A2 - Usuario b├ísico.	t
-4	INT	Intermedio	Intermedio	t	20	Nivel intermedio gen├®rico. Utilizado cuando la fuente no permite determinar B1 o B2.	t
-5	B1	Intermedio B1	Intermedio	f	21	CEFR B1 - Usuario independiente intermedio.	t
-6	B2	Intermedio B2	Intermedio	f	22	CEFR B2 - Usuario independiente intermedio alto.	t
-7	AVA	Avanzado	Avanzado	t	30	Nivel avanzado gen├®rico. Utilizado cuando la fuente no permite determinar C1 o C2.	t
-8	C1	Avanzado C1	Avanzado	f	31	CEFR C1 - Usuario competente avanzado.	t
-9	C2	Avanzado C2	Avanzado	f	32	CEFR C2 - Usuario competente con dominio pleno.	t
-10	NAT	Nativo	Nativo	f	40	Idioma nativo o de dominio equivalente a lengua materna.	t
-\.
-
-
---
 -- Data for Name: tbl_nombre_resultado; Type: TABLE DATA; Schema: public; Owner: elitsoft_admin
 --
 
@@ -3408,9 +2870,6 @@ COPY public.tbl_nombre_resultado (nore_id, nore_nombre) FROM stdin;
 --
 
 COPY public.tbl_notificacion_reclutamiento (ntfr_id, ntfr_solicitud_candidato_id, ntfr_tipo, ntfr_destinatario, ntfr_cc, ntfr_asunto, ntfr_cuerpo, ntfr_estado, ntfr_usuario_id, ntfr_fecha_creacion, ntfr_fecha_envio, ntfr_error) FROM stdin;
-1	9	DIRECTIVOS	noelidch@gmail.com	\N	QA M6 6b10b963	Correo QA LIVE	ERROR	12	2026-08-17 22:18:35.513412	\N	La variable de entorno SMTP_USERNAME no est├í configurada
-2	9	DIRECTIVOS	noelidch@gmail.com	\N	QA M6 279b039e	Correo QA LIVE	ERROR	12	2026-08-17 22:33:37.999315	\N	No fue posible enviar el correo
-3	9	DIRECTIVOS	noelidch@gmail.com	\N	QA M6 2de3c7ea	Correo QA LIVE	ERROR	12	2026-08-18 21:51:50.077128	\N	No fue posible enviar el correo
 \.
 
 
@@ -3502,9 +2961,9 @@ COPY public.tbl_permiso (per_id, per_nombre, per_descripcion) FROM stdin;
 --
 
 COPY public.tbl_plantilla_notificacion (plnt_id, plnt_tipo, plnt_nombre, plnt_asunto, plnt_cuerpo, plnt_activa, plnt_fecha_actualizacion, plnt_usuario_actualizacion_id) FROM stdin;
+1	RECHAZO	Cierre de proceso - rechazo	Cierre proceso de selecci├│n - {cargo}	Estimado/a {nombre},\n\nAgradecemos sinceramente tu participaci├│n en el proceso de selecci├│n para el cargo {cargo}, asociado a la solicitud {codigo_solicitud}.\n\nEn esta oportunidad el proceso ha finalizado y no continuaremos con tu postulaci├│n. Valoramos el tiempo y disposici├│n demostrados durante las distintas etapas.\n\nEsperamos poder considerarte en futuras oportunidades que se ajusten a tu perfil.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 2	AGRADECIMIENTO	Agradecimiento de participaci├│n	Gracias por participar - {cargo}	Estimado/a {nombre},\n\nAgradecemos tu participaci├│n en el proceso {codigo_solicitud} para el cargo {cargo}.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 3	DIRECTIVOS	Presentaci├│n de candidatos aprobados	Candidatos aprobados - {cargo} - {codigo_solicitud}	Estimados/as,\n\nAdjuntamos los CVs corporativos de los candidatos aprobados para el proceso {codigo_solicitud}, cargo {cargo}, para su revisi├│n y decisi├│n final.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
-1	RECHAZO	Cierre de proceso - rechazo	Cierre proceso de selecci├│n - {cargo}	Estimado/a {nombre},\n\nAgradecemos sinceramente tu participaci├│n en el proceso de selecci├│n para el cargo {cargo}, asociado a la solicitud {codigo_solicitud}.\n\nEn esta oportunidad el proceso ha finalizado y no continuaremos con tu postulaci├│n. Valoramos el tiempo y disposici├│n demostrados durante las distintas etapas.\n\nEsperamos poder considerarte en futuras oportunidades que se ajusten a tu perfil.\n\nSaludos cordiales,\nEquipo de Reclutamiento ELITSOFT	t	2026-08-18 21:51:47.918514	12
 \.
 
 
@@ -3690,7 +3149,7 @@ COPY public.tbl_solicitud (sol_id, sol_codigo, sol_titulo, sol_cargo_id, sol_des
 14	SOL-000014	QA M3 cierre parcial 6c870a39	1	Solicitud creada por QA LIVE M├│dulo 3	1	2	1	1	3	1	1000	2000	2026-08-13 16:16:31.364526	\N	\N	\N	5	\N	\N	1	RUN 6c870a39
 15	SOL-000015	QA LIVE PATCH 2d283271	1	Solicitud generada por QA LIVE M├│dulo 2	1	1	1	1	3	1	1000	2000	2026-08-14 17:13:03.812591	\N	\N	\N	4	\N	\N	1	QA LIVE RUN 2d283271
 16	SOL-000016	QA M3 cierre parcial 680ddf0e	1	Solicitud creada por QA LIVE M├│dulo 3	1	2	1	1	3	1	1000	2000	2026-08-14 17:17:34.691519	\N	\N	\N	5	\N	\N	1	RUN 680ddf0e
-1	SOL-000001	Desarrollador Senior Backend Python (Presencial)	1	Buscamos un Ingeniero Full Stack o Backend con mas de 5 anos de experiencia disenando arquitecturas basadas en microservicios, APIs REST con FastAPI y optimizacion de consultas SQL nativas en PostgreSQL bajo entornos Docker.	2	2	1	1	3	2	2500000	3000000	2026-07-21 11:00:00	2026-07-21 11:00:00	2026-07-21 18:00:00	2026-07-21 11:00:00	4	09:00:00	18:00:00	2	Solicitud de prueba.
+1	SOL-000001	Desarrollador Senior Backend Python (Presencial)	1	Buscamos un Ingeniero Full Stack o Backend con mas de 5 anos de experiencia disenando arquitecturas basadas en microservicios, APIs REST con FastAPI y optimizacion de consultas SQL nativas en PostgreSQL bajo entornos Docker.	2	2	1	1	3	2	2500000	3000000	2026-07-21 11:00:00	2026-07-21 11:00:00	2026-07-21 18:00:00	2026-07-21 11:00:00	3	09:00:00	18:00:00	2	Solicitud de prueba.
 \.
 
 
@@ -3705,8 +3164,8 @@ COPY public.tbl_solicitud_candidato (slcd_id, slcd_candidato_id, slcd_solicitud_
 4	7	14	1500000	95.00	6	2026-08-13 20:16:31.882178	QA PATCH	\N
 6	5	1	\N	\N	1	\N	\N	\N
 7	9	16	1500000	95.00	6	2026-08-14 21:17:34.869922	QA PATCH	\N
-8	11	1	2000000	90.00	5	2026-08-17 10:20:42.104393	Postulacion QA LIVE M5	\N
-9	12	1	2000000	90.00	4	2026-08-17 10:20:42.104393	Postulacion QA LIVE M5	\N
+8	11	1	2000000	90.00	2	2026-08-17 10:20:42.104393	Postulacion QA LIVE M5	\N
+9	12	1	2000000	90.00	2	2026-08-17 10:20:42.104393	Postulacion QA LIVE M5	\N
 \.
 
 
@@ -3809,6 +3268,7 @@ COPY public.tbl_usuario (usr_id, usr_rol_id, usr_estado_usuario_id, usr_area_id,
 13	2	1	1	Recruiter	QA	M5	60000002	2	960000002	qa.rec.m5@sakura.cl	$2a$12$sCFeep7hnPTx.Ld1rIQa3OXfaOJdeZDaKzF2peHqsh.PX63lnShf2
 14	4	1	1	Interviewer1	QA	M5	60000003	3	960000003	qa.int1.m5@sakura.cl	$2a$12$VH.SGNjaTIAvdIsQAeosY.UF4t2jxjDWGYgLxWC6WZwcsvTHkSMcS
 15	4	1	1	Interviewer2	QA	M5	60000004	4	960000004	qa.int2.m5@sakura.cl	$2a$12$BOgNHqjQGgfqedNGAt0Vve7NIH1U0Vfw7D4iDpS.SqCqLwmL.aAES
+16	1	1	2	Reclutamiento	Elitsoft	Prueba	12345678	9	123456789	reclutamiento@gmail.com	$2b$12$VvkQ/neQUuzS1AV7WGMtaeZoK8IfwDgMwBd54T0j6kDykvgsSxgMC
 \.
 
 
@@ -3959,7 +3419,7 @@ SELECT pg_catalog.setval('public.tbl_disponibilidad_disp_id_seq', 7, true);
 -- Name: tbl_documento_reporte_candidato_drcp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_documento_reporte_candidato_drcp_id_seq', 36, true);
+SELECT pg_catalog.setval('public.tbl_documento_reporte_candidato_drcp_id_seq', 1, false);
 
 
 --
@@ -4036,7 +3496,7 @@ SELECT pg_catalog.setval('public.tbl_habilidad_hab_id_seq', 54, true);
 -- Name: tbl_historial_solicitud_hsol_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_historial_solicitud_hsol_id_seq', 45, true);
+SELECT pg_catalog.setval('public.tbl_historial_solicitud_hsol_id_seq', 44, true);
 
 
 --
@@ -4082,13 +3542,6 @@ SELECT pg_catalog.setval('public.tbl_nivel_habilidad_nvhb_id_seq', 7, true);
 
 
 --
--- Name: tbl_nivel_idioma_nvid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
---
-
-SELECT pg_catalog.setval('public.tbl_nivel_idioma_nvid_id_seq', 10, true);
-
-
---
 -- Name: tbl_nombre_resultado_nore_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
@@ -4099,7 +3552,7 @@ SELECT pg_catalog.setval('public.tbl_nombre_resultado_nore_id_seq', 7, true);
 -- Name: tbl_notificacion_reclutamiento_ntfr_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_notificacion_reclutamiento_ntfr_id_seq', 3, true);
+SELECT pg_catalog.setval('public.tbl_notificacion_reclutamiento_ntfr_id_seq', 1, false);
 
 
 --
@@ -4225,7 +3678,7 @@ SELECT pg_catalog.setval('public.tbl_tipo_institucion_tint_id_seq', 11, true);
 -- Name: tbl_usuario_usr_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_usuario_usr_id_seq', 15, true);
+SELECT pg_catalog.setval('public.tbl_usuario_usr_id_seq', 16, true);
 
 
 --
@@ -4661,14 +4114,6 @@ ALTER TABLE ONLY public.tbl_idioma
 
 
 --
--- Name: tbl_nivel_idioma tbl_nivel_idioma_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_nivel_idioma
-    ADD CONSTRAINT tbl_nivel_idioma_pkey PRIMARY KEY (nvid_id);
-
-
---
 -- Name: tbl_notificacion_reclutamiento tbl_notificacion_reclutamiento_pkey; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
 --
 
@@ -4962,22 +4407,6 @@ ALTER TABLE ONLY public.tbl_nivel_educacional
 
 ALTER TABLE ONLY public.tbl_nivel_habilidad
     ADD CONSTRAINT uq_tbl_nivel_habilidad_nombre UNIQUE (nvhb_nombre);
-
-
---
--- Name: tbl_nivel_idioma uq_tbl_nivel_idioma_codigo; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_nivel_idioma
-    ADD CONSTRAINT uq_tbl_nivel_idioma_codigo UNIQUE (nvid_codigo);
-
-
---
--- Name: tbl_nivel_idioma uq_tbl_nivel_idioma_nombre; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_nivel_idioma
-    ADD CONSTRAINT uq_tbl_nivel_idioma_nombre UNIQUE (nvid_nombre);
 
 
 --
@@ -6151,13 +5580,6 @@ CREATE INDEX ix_tbl_candidato_idioma_candidato ON public.tbl_candidato_idioma US
 
 
 --
--- Name: ix_tbl_candidato_idioma_nivel; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_candidato_idioma_nivel ON public.tbl_candidato_idioma USING btree (cdio_nivel_idioma_id);
-
-
---
 -- Name: ix_tbl_documento_reporte_fecha; Type: INDEX; Schema: public; Owner: elitsoft_admin
 --
 
@@ -6176,20 +5598,6 @@ CREATE INDEX ix_tbl_documento_reporte_postulacion ON public.tbl_documento_report
 --
 
 CREATE INDEX ix_tbl_habilidad_categoria ON public.tbl_habilidad USING btree (hab_categoria_habilidad_id);
-
-
---
--- Name: ix_tbl_nivel_idioma_activo_orden; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_nivel_idioma_activo_orden ON public.tbl_nivel_idioma USING btree (nvid_activo, nvid_orden);
-
-
---
--- Name: ix_tbl_nivel_idioma_grupo; Type: INDEX; Schema: public; Owner: elitsoft_admin
---
-
-CREATE INDEX ix_tbl_nivel_idioma_grupo ON public.tbl_nivel_idioma USING btree (nvid_grupo);
 
 
 --
@@ -6281,14 +5689,6 @@ ALTER TABLE ONLY public.tbl_candidato_habilidad
 
 ALTER TABLE ONLY public.tbl_candidato_habilidad
     ADD CONSTRAINT fk_tbl_candidato_habilidad_nivel FOREIGN KEY (cdhb_nivel_habilidad_id) REFERENCES public.tbl_nivel_habilidad(nvhb_id);
-
-
---
--- Name: tbl_candidato_idioma fk_tbl_candidato_idioma_nivel; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
---
-
-ALTER TABLE ONLY public.tbl_candidato_idioma
-    ADD CONSTRAINT fk_tbl_candidato_idioma_nivel FOREIGN KEY (cdio_nivel_idioma_id) REFERENCES public.tbl_nivel_idioma(nvid_id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 
 --
@@ -6902,4 +6302,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict QxoTx3f0RRc8mzfUmYZOba4AO4FbmAMG7KPcNadJ0J6bV4A7D2F1ahPGp8fz0HW
+\unrestrict A1bhLN9hjS2xgWPGV48wTp3pDZ6NzgTKTQK8xz2kEOnl1yvAHDrhXEr6xMaspEp
+
