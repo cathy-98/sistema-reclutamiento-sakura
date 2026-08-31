@@ -2,6 +2,7 @@ export type PrioridadSolicitud = 'Alta' | 'Media' | 'Baja';
 export type EstadoSolicitud =
   | 'Pendiente'
   | 'En Curso'
+  | 'En publicación'
   | 'En Entrevistas'
   | 'Cancelado'
   | 'Cerrado'

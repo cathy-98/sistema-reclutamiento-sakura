@@ -2,17 +2,53 @@
   <section class="profile-page">
     <header class="profile-hero">
       <app-candidate-profile-header
+        *ngIf="perfilCargado; else profileHeroSkeleton"
         [candidato]="candidato"
         [matchClass]="matchClass"
+        [postulaciones]="postulaciones"
+        [postulacionSeleccionadaId]="postulacionSeleccionadaId"
+        [estadosPostulacion]="estadosPostulacionPerfil"
+        [canSavePostulationState]="puedeGuardarEstadoPostulacion"
         (back)="volver()"
-        (addObservation)="abrirModalObservacion()"
         (sendTest)="abrirModalTest()"
         (scheduleInterview)="abrirModalEntrevista()"
+        (savePostulationState)="guardarEstadoPostulacion()"
+        (saveRent)="guardarRentaPostulacion($event)"
+        (saveAvailability)="guardarDisponibilidadCandidato($event)"
+        (postulacionSeleccionadaIdChange)="seleccionarPostulacion($event)"
       ></app-candidate-profile-header>
 
-      <app-candidate-quick-observations
-        [historial]="historialObservaciones"
-      ></app-candidate-quick-observations>
+      <ng-template #profileHeroSkeleton>
+        <div class="profile-hero-skeleton" aria-hidden="true">
+          <div class="skeleton-line skeleton-back"></div>
+          <div class="skeleton-layout">
+            <div>
+              <div class="skeleton-line skeleton-title"></div>
+              <div class="skeleton-line skeleton-text"></div>
+              <div class="skeleton-line skeleton-summary"></div>
+              <div class="skeleton-line skeleton-actions"></div>
+            </div>
+            <div>
+              <div class="skeleton-line skeleton-badge"></div>
+              <div class="skeleton-line skeleton-select"></div>
+            </div>
+          </div>
+          <div class="skeleton-cards">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+        </div>
+      </ng-template>
+
+     <!--M3: Observaciones ocultas según definición funcional actual.
+  Se conserva el componente para una futura habilitación.
+-->
+<!--
+<app-candidate-quick-observations
+  [historial]="historialObservaciones"
+></app-candidate-quick-observations>
+-->
     </header>
 
     <div class="profile-tabs-bar">
@@ -51,9 +87,11 @@
               <app-candidate-applications-section
                 [candidato]="candidato"
                 [postulaciones]="postulaciones"
+                [proximaEntrevista]="proximaEntrevistaSeleccionada"
                 [postulacionSeleccionadaId]="postulacionSeleccionadaId"
                 [busqueda]="busquedaPostulacion"
                 [proceso]="procesoSeleccionado"
+                (editInterviewObservation)="abrirModalObservacionEntrevista($event)"
                 (postulacionSeleccionadaIdChange)="seleccionarPostulacion($event)"
                 (busquedaChange)="busquedaPostulacion = $event"
               ></app-candidate-applications-section>
@@ -96,15 +134,15 @@
               <div class="evaluations-summary">
                 <article>
                   <span>Enviados</span>
-                  <strong>1</strong>
+                  <strong>{{ totalEvaluacionesTecnicas }}</strong>
                 </article>
                 <article>
                   <span>Pendientes</span>
-                  <strong>1</strong>
+                  <strong>{{ totalEvaluacionesPendientes }}</strong>
                 </article>
                 <article>
                   <span>Último estado</span>
-                  <strong>Pendiente</strong>
+                  <strong>{{ ultimoEstadoEvaluacionTecnica }}</strong>
                 </article>
               </div>
 
@@ -120,12 +158,15 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let evaluacion of evaluacionesTecnicas">
+                    <tr *ngFor="let evaluacion of evaluacionesTecnicasSeleccionadas">
                       <td>{{ evaluacion[0] }}</td>
                       <td><span class="state-chip">{{ evaluacion[1] }}</span></td>
                       <td>{{ evaluacion[2] }}</td>
                       <td>{{ evaluacion[3] }}</td>
                       <td>{{ evaluacion[4] }}</td>
+                    </tr>
+                    <tr *ngIf="evaluacionesTecnicasSeleccionadas.length === 0">
+                      <td colspan="5">Sin evaluaciones técnicas para esta solicitud.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -147,18 +188,23 @@
           </section>
         }
 
-        @case ('observaciones') {
-          <section class="section-stack">
-            @defer {
-              <app-candidate-observation-history
-                [historial]="historialObservaciones"
-                (addObservation)="abrirModalObservacion()"
-              ></app-candidate-observation-history>
-            } @placeholder {
-              <p class="section-loading">Cargando observaciones...</p>
-            }
-          </section>
-        }
+        <!--
+  M3: Historial de observaciones oculto según definición funcional actual.
+-->
+<!--
+@case ('observaciones') {
+  <section class="section-stack">
+    @defer {
+      <app-candidate-observation-history
+        [historial]="historialObservaciones"
+        (addObservation)="abrirModalObservacion()"
+      ></app-candidate-observation-history>
+    } @placeholder {
+      <p class="section-loading">Cargando observaciones...</p>
+    }
+  </section>
+}
+-->
       }
     </section>
   </section>
@@ -195,6 +241,157 @@
   ></app-entrevista-form-modal>
 
   <app-modal
+    *ngIf="mostrarModalEstadoPostulacion"
+    titulo="Guardar estado de postulación"
+    [subtitulo]="postulacionSeleccionadaId || 'Solicitud seleccionada'"
+    ancho="sm"
+    (cerrar)="cerrarModalEstadoPostulacion()"
+  >
+    <div class="observation-modal-body">
+      <dl class="observation-context">
+        <div>
+          <dt>Estado actual</dt>
+          <dd>{{ estadoPostulacionOriginalNombre || 'Sin estado' }}</dd>
+        </div>
+        <div>
+          <dt>Nuevo estado</dt>
+          <dd>{{ estadoPostulacionPendienteNombre || candidato.estado }}</dd>
+        </div>
+      </dl>
+
+      <label *ngIf="estadoPostulacionRequiereMotivo">
+        Motivo
+        <select [(ngModel)]="motivoRechazoSeleccionadoId">
+          <option
+            *ngFor="let motivo of motivosRechazo"
+            [ngValue]="motivo.mtrc_id"
+          >
+            {{ motivo.mtrc_nombre }}
+          </option>
+        </select>
+      </label>
+
+      <p
+        class="observation-modal-note is-error"
+        *ngIf="estadoPostulacionRequiereMotivo && motivosRechazo.length === 0"
+      >
+        No hay motivos de rechazo configurados para guardar este estado.
+      </p>
+
+      <label>
+        Observación
+        <textarea
+          [(ngModel)]="observacionEstadoPostulacion"
+          maxlength="300"
+          placeholder="Deja el contexto del cambio de estado"
+        ></textarea>
+      </label>
+
+      <p class="observation-modal-note is-error" *ngIf="estadoPostulacionError">
+        {{ estadoPostulacionError }}
+      </p>
+    </div>
+
+    <div class="observation-modal-footer" modal-footer>
+      <app-button variant="secondary" (pressed)="cerrarModalEstadoPostulacion()">Cancelar</app-button>
+      <app-button
+        (pressed)="confirmarEstadoPostulacion()"
+        [disabled]="!puedeConfirmarEstadoPostulacion"
+      >
+        {{ guardandoEstadoPostulacion ? 'Guardando...' : 'Guardar estado' }}
+      </app-button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    *ngIf="mostrarModalObservacionEntrevista"
+    [titulo]="tituloModalObservacionEntrevista"
+    [subtitulo]="observacionEntrevistaSeleccionada?.etapa || 'Proceso seleccionado'"
+    ancho="sm"
+    (cerrar)="cerrarModalObservacionEntrevista()"
+  >
+    <div class="observation-modal-body">
+      <dl
+        class="observation-context"
+        *ngIf="observacionEntrevistaSeleccionada"
+      >
+        <div>
+          <dt>Solicitud</dt>
+          <dd>{{ observacionEntrevistaSeleccionada.solicitud || postulacionSeleccionadaId }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de entrevista</dt>
+          <dd>{{ observacionEntrevistaSeleccionada.fecha }}</dd>
+        </div>
+        <div>
+          <dt>Entrevistador</dt>
+          <dd>{{ observacionEntrevistaSeleccionada.entrevistador }}</dd>
+        </div>
+        <div>
+          <dt>Tipo entrevista</dt>
+          <dd>{{ observacionEntrevistaSeleccionada.tipoEntrevista }}</dd>
+        </div>
+      </dl>
+
+      <div class="observation-form-grid">
+        <label>
+          Tipo entrevista
+          <select
+            [(ngModel)]="tipoEvaluacionSeleccionadoId"
+            (ngModelChange)="actualizarFormularioEvaluacionEntrevista()"
+          >
+            <option
+              *ngFor="let tipo of tiposEvaluacionDisponibles"
+              [ngValue]="tipo.id"
+            >
+              {{ tipo.nombre }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Resultado
+          <select [(ngModel)]="resultadoEvaluacionSeleccionadoId">
+            <option
+              *ngFor="let resultado of resultadosEvaluacion"
+              [ngValue]="resultado.nore_id"
+            >
+              {{ resultado.nore_nombre }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <p
+        class="observation-modal-note"
+        *ngIf="tiposEvaluacionDisponibles.length === 0"
+      >
+        Esta entrevista no tiene tipos asociados para evaluar.
+      </p>
+
+      <p class="observation-modal-note is-error" *ngIf="evaluacionEntrevistaError">
+        {{ evaluacionEntrevistaError }}
+      </p>
+
+      <label>
+        Observación
+        <textarea
+          [(ngModel)]="observacionEntrevistaTexto"
+          maxlength="300"
+          placeholder="Escribe una observación para esta entrevista"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="observation-modal-footer" modal-footer>
+      <app-button variant="secondary" [disabled]="guardandoEvaluacionEntrevista" (pressed)="cerrarModalObservacionEntrevista()">Cancelar</app-button>
+      <app-button [disabled]="guardandoEvaluacionEntrevista" (pressed)="guardarObservacionEntrevista()">
+        {{ guardandoEvaluacionEntrevista ? 'Guardando...' : 'Guardar observación' }}
+      </app-button>
+    </div>
+  </app-modal>
+
+  <app-modal
     *ngIf="mostrarModalTest"
     titulo="Enviar test técnico"
     [subtitulo]="candidato.nombre + ' - ' + candidato.cargo"
@@ -212,15 +409,15 @@
           <dd>{{ candidato.idSolicitud }}</dd>
         </div>
         <div>
-          <dt>Test sugerido</dt>
-          <dd>Test Angular Junior</dd>
+          <dt>Cuestionario</dt>
+          <dd>Selecciona el cuestionario desde el banco M4</dd>
         </div>
         <div>
           <dt>Duración estimada</dt>
-          <dd>45 min</dd>
+          <dd>Según cuestionario seleccionado</dd>
         </div>
       </dl>
-      <p>El envío real quedará conectado cuando se defina el flujo de cuestionarios para candidatos.</p>
+      <p>El envío se realiza desde el flujo de cuestionarios asociado a la solicitud seleccionada.</p>
     </div>
 
     <div class="test-modal-footer" modal-footer>

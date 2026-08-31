@@ -67,7 +67,7 @@ export function mapearCandidatoPerfil(candidato: CandidatoPerfilApi): CandidatoP
     fechaNacimiento: formatearFecha(candidato.cand_fecha_nacimiento),
     tituloProfesional: candidato.cand_titulo ?? undefined,
     resumenProfesional: candidato.cand_resumen_profesional ?? undefined,
-    urlPerfil: candidato.cand_url_1 ?? undefined,
+    urlPerfil: extraerLinkedinUrl(candidato.cand_url_1),
     comuna,
     direccion: [calleNumero, direccion?.drcd_dpto_oficina ?? direccion?.drcd_depto_oficina]
       .filter(Boolean)
@@ -112,4 +112,23 @@ function normalizarNumero(valor?: number | string | null) {
 
   const numero = Number(valor);
   return Number.isNaN(numero) ? undefined : numero;
+}
+
+export function extraerLinkedinUrl(valor?: string | string[] | null) {
+  if (!valor) {
+    return undefined;
+  }
+
+  const urls = (Array.isArray(valor) ? valor.join(';') : valor)
+    .split(/[\s,;|]+/)
+    .map((item) => item.trim().replace(/[).,\];]+$/g, ''))
+    .filter(Boolean);
+
+  const linkedin = urls.find((item) => /(^https?:\/\/)?(www\.)?linkedin\.com\//i.test(item));
+
+  if (!linkedin) {
+    return undefined;
+  }
+
+  return /^https?:\/\//i.test(linkedin) ? linkedin : `https://${linkedin}`;
 }

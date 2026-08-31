@@ -1,18 +1,22 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService, RolUsuario } from '../services/auth.service';
+import { AuthService, PermisoUsuario, RolUsuario } from '../services/auth.service';
 
 export const authGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  // M1 Navegacion protegida: sin JWT vigente, cualquier ruta privada vuelve a /login.
   if (!authService.estaAutenticado()) {
     return router.createUrlTree(['/login']);
   }
 
+  // M1 RBAC frontend: las rutas pueden declarar roles y/o permissions.
+  // Si /auth/me ya cargo permisos, se usan como criterio principal; roles quedan como respaldo.
   const rolesPermitidos = route.data?.['roles'] as RolUsuario[] | undefined;
+  const permisosPermitidos = route.data?.['permissions'] as PermisoUsuario[] | undefined;
 
-  if (!rolesPermitidos?.length || authService.tieneRol(rolesPermitidos)) {
+  if (authService.puedeAcceder(rolesPermitidos, permisosPermitidos)) {
     return true;
   }
 

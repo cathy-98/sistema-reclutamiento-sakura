@@ -297,6 +297,22 @@ nivel_educacional_crud = CatalogCRUD(
     required_fields=("nved_nombre",),
 )
 
+nivel_idioma_crud = CatalogCRUD(
+    models.NivelIdioma,
+    id_field="nvid_id",
+    search_fields=(
+        "nvid_codigo",
+        "nvid_nombre",
+        "nvid_grupo",
+        "nvid_descripcion",
+    ),
+    required_fields=(
+        "nvid_codigo",
+        "nvid_nombre",
+        "nvid_grupo",
+        "nvid_orden",
+    ),
+)
 categoria_habilidad_crud = CatalogCRUD(
     models.CategoriaHabilidad,
     id_field="cthb_id",
@@ -454,6 +470,11 @@ CATALOGS = (
     CatalogRouteConfig(
         "idiomas", "Catálogo - Idiomas", "idioma", idioma_crud,
         schemas.IdiomaRead, schemas.IdiomaCreate, schemas.IdiomaUpdate,
+    ),
+    CatalogRouteConfig(
+        "niveles-idioma", "Catálogo - Niveles de Idioma", "nivel de idioma",
+        nivel_idioma_crud,
+        schemas.NivelIdiomaRead, schemas.NivelIdiomaCreate, schemas.NivelIdiomaUpdate,
     ),
     CatalogRouteConfig(
         "habilidades", "Catálogo - Habilidades", "habilidad", habilidad_crud,

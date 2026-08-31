@@ -1,8 +1,15 @@
-<section class="data-table-panel" [attr.aria-labelledby]="titleId" [attr.aria-describedby]="descriptionId">
+<section
+  class="data-table-panel"
+  [attr.aria-labelledby]="titleId"
+  [attr.aria-describedby]="descriptionId"
+>
   <!-- Encabezado de tabla reutilizable: título y estado resumido del listado. -->
-  <header class="table-header">
+  <header class="table-header" *ngIf="!hideHeader">
     <div>
-      <h3 [id]="titleId">{{ title }}</h3>
+      <h3 [id]="titleId">
+        {{ title }}
+      </h3>
+
       <p [id]="descriptionId">
         {{
           loading
@@ -40,18 +47,37 @@
     (action)="clear.emit()"
   ></app-state-message>
 
-  <div class="table-scroll" *ngIf="!loading && !errorMessage && total > 0">
+  <div
+    class="table-scroll"
+    *ngIf="!loading && !errorMessage && total > 0"
+  >
     <!-- Tabla de datos operativos con columnas configuradas desde el módulo padre. -->
     <table [style.min-width]="tableMinWidth">
       <colgroup>
-        <col *ngIf="selectable" class="select-col" />
-        <col *ngFor="let column of visibleColumns; trackBy: trackColumn" [style.width.px]="column.width" />
-        <col *ngIf="hasActions" class="actions-col" />
+        <col
+          *ngIf="selectable"
+          class="select-col"
+        />
+
+        <col
+          *ngFor="let column of visibleColumns; trackBy: trackColumn"
+          [style.width.px]="column.width"
+        />
+
+        <col
+          *ngIf="hasActions"
+          class="actions-col"
+        />
       </colgroup>
 
       <thead>
         <tr>
-          <th *ngIf="selectable" class="select-column sticky-left" scope="col" [ngStyle]="selectColumnStyle()">
+          <th
+            *ngIf="selectable"
+            class="select-column sticky-left"
+            scope="col"
+            [ngStyle]="selectColumnStyle()"
+          >
             <input
               type="checkbox"
               aria-label="Seleccionar todos los registros visibles"
@@ -59,45 +85,95 @@
               (change)="toggleVisibleRows($any($event.target).checked)"
             />
           </th>
+
           <th
             *ngFor="let column of visibleColumns; trackBy: trackColumn"
             scope="col"
             [class.sticky-left]="column.sticky === 'left'"
             [class.sticky-right]="column.sticky === 'right'"
-            [class.is-sortable]="column.sortable"
+            [class.is-sortable]="isSortable(column)"
             [class.is-sorted]="sortKey === column.key"
-            [attr.aria-sort]="sortKey === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null"
+            [attr.aria-sort]="
+              sortKey === column.key
+                ? sortDirection === 'asc'
+                  ? 'ascending'
+                  : 'descending'
+                : null
+            "
             [ngStyle]="columnStyle(column)"
             (click)="toggleSort(column)"
           >
-            <button class="sort-button" type="button" *ngIf="column.sortable; else plainHeader">
-              <span>{{ column.label }}</span>
-              <span class="sort-indicator" aria-hidden="true">{{ sortKey === column.key ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              <span class="sr-only">{{ sortLabel(column) }}</span>
+            <button
+              class="sort-button"
+              type="button"
+              *ngIf="isSortable(column); else plainHeader"
+            >
+              <span>
+                {{ column.label }}
+              </span>
+
+              <span
+                class="sort-indicator"
+                aria-hidden="true"
+              >
+                {{
+                  sortKey === column.key
+                    ? sortDirection === 'asc'
+                      ? '↑'
+                      : '↓'
+                    : '↕'
+                }}
+              </span>
+
+              <span class="sr-only">
+                {{ sortLabel(column) }}
+              </span>
             </button>
-            <ng-template #plainHeader>{{ column.label }}</ng-template>
+
+            <ng-template #plainHeader>
+              {{ column.label }}
+            </ng-template>
           </th>
-          <th *ngIf="hasActions" class="actions-column sticky-right" scope="col" [ngStyle]="actionsColumnStyle()">
+
+          <th
+            *ngIf="hasActions"
+            class="actions-column sticky-right"
+            scope="col"
+            [ngStyle]="actionsColumnStyle()"
+          >
             Acciones
           </th>
         </tr>
       </thead>
 
       <tbody>
-        <tr *ngFor="let row of sortedRows; trackBy: trackRow">
-          <td *ngIf="selectable" class="select-column sticky-left" [ngStyle]="selectColumnStyle()">
+        <tr
+          *ngFor="let row of sortedRows; trackBy: trackRow"
+          [class.is-clickable]="clickableRows"
+          [attr.tabindex]="clickableRows ? 0 : null"
+          (click)="emitRowClick(row)"
+          (keydown.enter)="emitRowClick(row)"
+        >
+          <td
+            *ngIf="selectable"
+            class="select-column sticky-left"
+            [ngStyle]="selectColumnStyle()"
+          >
             <input
               type="checkbox"
               [checked]="isSelected(row)"
               [attr.aria-label]="'Seleccionar registro ' + rowId(row)"
+              (click)="$event.stopPropagation()"
               (change)="toggleRow(row, $any($event.target).checked)"
             />
           </td>
+
           <td
             *ngFor="let column of visibleColumns; trackBy: trackColumn"
             [class.sticky-left]="column.sticky === 'left'"
             [class.sticky-right]="column.sticky === 'right'"
             [class.wrap-cell]="column.wrap"
+            [ngClass]="cellClass(row, column)"
             [ngStyle]="columnStyle(column)"
             [title]="cellTitle(row, column)"
           >
@@ -114,21 +190,50 @@
                 [scoreClass]="cellClass(row, column)"
               ></app-match-score>
 
-              <div *ngSwitchCase="'person'" class="person-cell">
-                <app-avatar [initials]="secondaryValue(row, column).toString()"></app-avatar>
-                <strong>{{ columnValue(row, column) }}</strong>
+              <div
+                *ngSwitchCase="'person'"
+                class="person-cell"
+              >
+                <app-avatar
+                  [initials]="secondaryValue(row, column).toString()"
+                ></app-avatar>
+
+                <strong>
+                  {{ columnValue(row, column) }}
+                </strong>
               </div>
 
-              <div *ngSwitchCase="'stack'" class="stack-cell">
-                <span>{{ columnValue(row, column) }}</span>
-                <small>{{ secondaryValue(row, column) }}</small>
+              <div
+                *ngSwitchCase="'stack'"
+                class="stack-cell"
+              >
+                <span>
+                  {{ columnValue(row, column) }}
+                </span>
+
+                <small>
+                  {{ secondaryValue(row, column) }}
+                </small>
               </div>
 
-              <span *ngSwitchDefault>{{ columnValue(row, column) }}</span>
+              <span *ngSwitchDefault>
+                {{ columnValue(row, column) }}
+              </span>
             </ng-container>
           </td>
-          <td *ngIf="hasActions" class="actions-column sticky-right" [ngStyle]="actionsColumnStyle()">
-            <div class="row-actions" *ngIf="!compactActions">
+
+          <td
+            *ngIf="hasActions"
+            class="actions-column sticky-right"
+            [class.has-open-menu]="isActionMenuOpen(row)"
+            [ngStyle]="actionsColumnStyle()"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Acciones completas -->
+            <div
+              class="row-actions"
+              *ngIf="!compactActions"
+            >
               <app-icon-button
                 *ngFor="let item of actions; trackBy: trackAction"
                 [icon]="item.icon"
@@ -139,7 +244,11 @@
               ></app-icon-button>
             </div>
 
-            <div class="row-actions compact" *ngIf="compactActions">
+            <!-- Acciones compactas -->
+            <div
+              class="row-actions compact"
+              *ngIf="compactActions"
+            >
               <app-icon-button
                 *ngIf="primaryRowAction(row) as primaryAction"
                 [icon]="primaryAction.icon"
@@ -148,23 +257,40 @@
                 (pressed)="emitAction(primaryAction, row)"
               ></app-icon-button>
 
-              <div class="row-menu" *ngIf="secondaryRowActions(row).length > 0">
+              <!--
+                UX/UI DataTable
+
+                El menú secundario se abre debajo del botón ⋮.
+                El click se detiene dentro del menú para evitar
+                que el listener global lo cierre inmediatamente.
+              -->
+              <div
+                class="row-menu"
+                *ngIf="secondaryRowActions(row).length > 0"
+                (click)="$event.stopPropagation()"
+              >
                 <button
                   class="row-menu-trigger"
                   type="button"
                   aria-label="Más acciones"
+                  aria-haspopup="menu"
                   [attr.aria-expanded]="isActionMenuOpen(row)"
-                  (click)="toggleActionMenu(row)"
+                  (click)="toggleActionMenu(row, $event)"
                 >
                   ⋮
                 </button>
 
-                <div class="row-menu-list" *ngIf="isActionMenuOpen(row)">
+                <div
+                  class="row-menu-list"
+                  role="menu"
+                  *ngIf="isActionMenuOpen(row)"
+                >
                   <button
                     *ngFor="let item of secondaryRowActions(row); trackBy: trackAction"
                     type="button"
+                    role="menuitem"
                     [disabled]="disabledAction(item, row)"
-                    (click)="emitAction(item, row)"
+                    (click)="emitActionAndClose(item, row, $event)"
                   >
                     {{ item.label }}
                   </button>
@@ -178,11 +304,11 @@
   </div>
 
   <app-pagination
-    *ngIf="!loading && !errorMessage && total > 0"
+    *ngIf="!hidePagination && !loading && !errorMessage && total > 0"
     [page]="page"
     [pageSize]="pageSize"
     [total]="total"
-    [visibleCount]="rows.length"
+    [visibleCount]="visibleRowCount"
     [pageSizeOptions]="pageSizeOptions"
     (pageChange)="changePage($event)"
     (pageSizeChange)="changePageSize($event)"

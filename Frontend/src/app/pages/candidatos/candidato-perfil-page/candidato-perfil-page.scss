@@ -147,13 +147,137 @@
 }
 
 .observation-modal-body {
+  display: grid;
+  gap: 16px;
   padding: 22px 24px;
+}
+
+.profile-hero-skeleton {
+  display: grid;
+  gap: 18px;
+  min-height: 520px;
+}
+
+.skeleton-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+}
+
+.skeleton-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.skeleton-line {
+  min-height: 46px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-soft) 0%,
+    var(--color-surface-hover) 45%,
+    var(--color-surface-soft) 90%
+  );
+  background-size: 220% 100%;
+  animation: profile-skeleton-pulse 1.3s ease-in-out infinite;
+}
+
+.skeleton-back {
+  width: 240px;
+}
+
+.skeleton-title {
+  width: min(560px, 80%);
+  min-height: 44px;
+}
+
+.skeleton-text {
+  width: min(360px, 58%);
+}
+
+.skeleton-summary {
+  width: min(920px, 100%);
+  min-height: 62px;
+}
+
+.skeleton-actions {
+  width: 360px;
+}
+
+.skeleton-badge {
+  width: 220px;
+  margin-left: auto;
+}
+
+.skeleton-select {
+  width: 100%;
+  min-height: 60px;
+  margin-top: 18px;
+}
+
+.skeleton-cards .skeleton-line {
+  min-height: 146px;
+}
+
+@keyframes profile-skeleton-pulse {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.observation-context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.observation-context div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.observation-context dt {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.observation-context dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
 }
 
 .observation-modal-body label {
   display: grid;
   gap: 10px;
   color: var(--color-text);
+  font-weight: 700;
+}
+
+.observation-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.observation-modal-body select {
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
   font-weight: 700;
 }
 
@@ -168,6 +292,16 @@
   resize: vertical;
 }
 
+.observation-modal-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.observation-modal-note.is-error {
+  color: var(--color-danger);
+}
+
 .test-modal-footer,
 .observation-modal-footer {
   display: flex;
@@ -180,7 +314,11 @@
 
 @media (max-width: 760px) {
   .evaluations-header,
-  .evaluations-summary {
+  .evaluations-summary,
+  .observation-context,
+  .observation-form-grid,
+  .skeleton-layout,
+  .skeleton-cards {
     grid-template-columns: 1fr;
   }
 }

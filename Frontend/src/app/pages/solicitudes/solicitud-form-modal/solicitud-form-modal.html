@@ -277,16 +277,38 @@
           <div class="form-field">
             <span>Estado</span>
             <input type="text" [value]="estadoSolicitudTexto" disabled />
+            <small class="state-help" *ngIf="mostrarAyudaEstadoPendiente">
+              <span class="state-help-icon" aria-hidden="true">i</span>
+              Queda pendiente hasta que la solicitud esté completa y sea tomada para iniciar el proceso.
+            </small>
           </div>
 
           <label class="form-field">
             Salario mínimo
-            <input type="number" min="0" placeholder="Ej. 1200000" formControlName="salario_minimo" />
+            <input
+              type="number"
+              min="0"
+              [max]="salarioMaximoPermitido"
+              placeholder="Ej. 1200000"
+              formControlName="salario_minimo"
+            />
+            <small class="form-error" *ngIf="control('salario_minimo')?.touched && control('salario_minimo')?.hasError('max')">
+              Ingresa un monto menor a $100.000.000.
+            </small>
           </label>
 
           <label class="form-field">
             Salario máximo
-            <input type="number" min="0" placeholder="Ej. 1800000" formControlName="salario_maximo" />
+            <input
+              type="number"
+              min="0"
+              [max]="salarioMaximoPermitido"
+              placeholder="Ej. 1800000"
+              formControlName="salario_maximo"
+            />
+            <small class="form-error" *ngIf="control('salario_maximo')?.touched && control('salario_maximo')?.hasError('max')">
+              Ingresa un monto menor a $100.000.000.
+            </small>
           </label>
 
           <small class="form-error form-error--full" *ngIf="formularioSolicitud.hasError('rangoSalarioInvalido')">
@@ -469,8 +491,8 @@
     </div>
 
     <app-form-actions modal-footer>
-      <app-button formActionsStart variant="ghost" type="button" (pressed)="cerrar.emit()">
-        {{ modo === 'ver' ? 'Listado de candidatos' : 'Cancelar' }}
+      <app-button formActionsStart variant="ghost" type="button" (pressed)="manejarAccionPrincipal()">
+        {{ modo === 'ver' ? 'Gestionar candidatos' : 'Cancelar' }}
       </app-button>
 
       <app-button variant="ghost" type="button" *ngIf="modo !== 'ver' && !cargandoDetalle" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">

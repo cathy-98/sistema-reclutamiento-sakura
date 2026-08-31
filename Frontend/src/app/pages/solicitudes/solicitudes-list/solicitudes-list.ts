@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, take, timeout } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
@@ -66,7 +67,6 @@ export class SolicitudesList implements OnInit {
   paginaActual = 1;
   registrosPorPagina = 5;
   filtros: FiltrosSolicitudes = this.filtrosIniciales();
-  private cargaTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
     {
@@ -74,6 +74,30 @@ export class SolicitudesList implements OnInit {
       label: 'ID solicitud',
       width: 138,
       sticky: 'left',
+      sortable: true,
+    },
+    {
+      key: 'cargo',
+      label: 'Cargo / vacantes',
+      width: 250,
+      wrap: true,
+      value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
+      sortable: true,
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      width: 132,
+      type: 'badge',
+      className: (solicitud) => this.estadoClase(solicitud.estado),
+      sortable: true,
+    },
+    {
+      key: 'prioridad',
+      label: 'Prioridad',
+      width: 118,
+      type: 'badge',
+      className: (solicitud) => this.prioridadClase(solicitud.prioridad),
       sortable: true,
     },
     {
@@ -91,14 +115,6 @@ export class SolicitudesList implements OnInit {
       label: 'Cliente',
       width: 260,
       wrap: true,
-      sortable: true,
-    },
-    {
-      key: 'cargo',
-      label: 'Cargo / vacantes',
-      width: 250,
-      wrap: true,
-      value: (solicitud) => `${solicitud.cargo} / ${solicitud.vacantes}`,
       sortable: true,
     },
     {
@@ -124,22 +140,6 @@ export class SolicitudesList implements OnInit {
       sortable: true,
     },
     {
-      key: 'prioridad',
-      label: 'Prioridad',
-      width: 118,
-      type: 'badge',
-      className: (solicitud) => this.prioridadClase(solicitud.prioridad),
-      sortable: true,
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      width: 132,
-      type: 'badge',
-      className: (solicitud) => this.estadoClase(solicitud.estado),
-      sortable: true,
-    },
-    {
       key: 'descripcion',
       label: 'Descripción',
       width: 360,
@@ -151,6 +151,8 @@ export class SolicitudesList implements OnInit {
   constructor(
     private authService: AuthService,
     private solicitudesService: SolicitudesService,
+    private route: ActivatedRoute,
+    private router: Router,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -159,15 +161,19 @@ export class SolicitudesList implements OnInit {
   }
 
   get puedeCrearSolicitud() {
-    return this.authService.tieneRol(['Administrador', 'Reclutador']);
+    return this.authService.puedeAcceder(['Administrador', 'Reclutador'], ['SOL_CREATE']);
   }
 
   get puedeEditarSolicitud() {
-    return this.authService.tieneRol(['Administrador', 'Reclutador']);
+    return this.authService.puedeAcceder(['Administrador', 'Reclutador'], ['SOL_UPDATE']);
   }
 
   get puedeCancelarSolicitud() {
-    return this.authService.tieneRol(['Administrador']);
+    return this.authService.puedeAcceder(['Administrador'], ['SOL_DELETE']);
+  }
+
+  puedeCancelarSolicitudFila(solicitud: SolicitudResumen) {
+    return this.puedeCancelarSolicitud && this.estadoPermiteCancelacion(solicitud.estado);
   }
 
   get codigoSolicitudEstimado() {
@@ -233,6 +239,7 @@ export class SolicitudesList implements OnInit {
         label: 'Cancelar solicitud',
         icon: 'cancel',
         visible: () => this.puedeCancelarSolicitud,
+        disabled: (solicitud) => !this.puedeCancelarSolicitudFila(solicitud),
       },
     ];
   }
@@ -245,19 +252,13 @@ export class SolicitudesList implements OnInit {
     return prioridad.toLowerCase();
   }
 
-  cargarSolicitudes() {
+  cargarSolicitudes(opciones: { conservarAlerta?: boolean } = {}) {
     this.cargando = true;
     this.errorCarga = '';
-    this.alerta = null;
+    if (!opciones.conservarAlerta) {
+      this.alerta = null;
+    }
     this.cdr.detectChanges();
-    this.limpiarTimeoutCarga();
-
-    this.cargaTimeoutId = window.setTimeout(() => {
-      this.cargando = false;
-      this.solicitudes = [];
-      this.errorCarga = 'El listado superó 4 segundos de espera. Reintenta la carga.';
-      this.cdr.detectChanges();
-    }, SOLICITUDES_LOAD_TIMEOUT_MS);
 
     this.solicitudesService
       .listar()
@@ -265,22 +266,20 @@ export class SolicitudesList implements OnInit {
         timeout(SOLICITUDES_LOAD_TIMEOUT_MS),
         take(1),
         finalize(() => {
-          this.limpiarTimeoutCarga();
+          this.cargando = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe({
         next: (solicitudes) => {
-          this.cargando = false;
           this.solicitudes = solicitudes;
           this.paginaActual = 1;
           this.errorCarga = '';
-          this.cdr.detectChanges();
+          this.abrirDetalleDesdeRuta();
         },
         error: (error) => {
-          this.cargando = false;
           this.solicitudes = [];
           this.errorCarga = obtenerMensajeError(error, 'El listado superó 4 segundos de espera. Reintenta la carga.');
-          this.cdr.detectChanges();
         },
       });
   }
@@ -325,8 +324,18 @@ export class SolicitudesList implements OnInit {
       return;
     }
 
+    if (!this.estadoPermiteCancelacion(solicitud.estado)) {
+      this.mostrarAlerta({
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: `No puedes cancelar una solicitud en estado "${solicitud.estado}".`,
+      });
+      return;
+    }
+
     this.solicitudSeleccionadaId = solicitud.id;
     this.solicitudSeleccionadaCodigo = solicitud.codigo;
+    this.solicitudSeleccionadaResumen = solicitud;
     this.mostrarConfirmacionCancelacion = true;
   }
 
@@ -363,10 +372,22 @@ export class SolicitudesList implements OnInit {
     this.mostrarConfirmacionCancelacion = false;
     this.solicitudSeleccionadaId = null;
     this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaResumen = null;
   }
 
-  confirmarCancelacionSolicitud() {
+  confirmarCancelacionSolicitud(observacion: string) {
     if (!this.solicitudSeleccionadaId) {
+      return;
+    }
+
+    const observacionCancelacion = observacion.trim();
+
+    if (!observacionCancelacion) {
+      this.mostrarAlerta({
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Ingresa una observación para cancelar la solicitud.',
+      });
       return;
     }
 
@@ -374,24 +395,24 @@ export class SolicitudesList implements OnInit {
       .cambiarEstado(
         this.solicitudSeleccionadaId,
         'Cancelado',
-        'Solicitud cancelada por confirmación del usuario.',
+        observacionCancelacion,
       )
       .subscribe({
         next: () => {
-          this.alerta = {
+          this.aplicarCancelacionEnListado(this.solicitudSeleccionadaId as string);
+          this.mostrarAlerta({
             tipo: 'success',
             variante: 'soft',
             mensaje: 'Solicitud cancelada correctamente.',
-          };
+          });
           this.cerrarConfirmacionCancelacion();
-          this.cargarSolicitudes();
         },
         error: (error) => {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo cancelar la solicitud.'),
-          };
+          });
           this.cerrarConfirmacionCancelacion();
         },
       });
@@ -403,16 +424,17 @@ export class SolicitudesList implements OnInit {
     this.solicitudSeleccionadaCodigo = null;
     this.solicitudSeleccionadaResumen = null;
     this.modoFormulario = 'crear';
+    this.limpiarDetalleRuta();
   }
 
   manejarFormularioGuardado() {
     this.cerrarFormulario();
-    this.alerta = {
+    this.mostrarAlerta({
       tipo: 'success',
       variante: 'soft',
       mensaje: 'Solicitud guardada correctamente.',
-    };
-    this.cargarSolicitudes();
+    });
+    this.cargarSolicitudes({ conservarAlerta: true });
   }
 
   cerrarAlerta() {
@@ -429,11 +451,67 @@ export class SolicitudesList implements OnInit {
   }
 
   private mostrarAlertaPermisos() {
-    this.alerta = {
+    this.mostrarAlerta({
       tipo: 'warning',
       variante: 'soft',
       mensaje: 'No tienes permisos para realizar esta acción.',
-    };
+    });
+  }
+
+  private abrirDetalleDesdeRuta() {
+    const params = this.route.snapshot.queryParamMap;
+    const idSolicitud = params.get('detalleSolicitud');
+
+    if (!idSolicitud || this.mostrarFormulario) {
+      return;
+    }
+
+    // Reabre el detalle al volver desde Gestionar candidatos.
+    const resumen = this.solicitudes.find((solicitud) => solicitud.id === idSolicitud);
+
+    this.solicitudSeleccionadaId = idSolicitud;
+    this.solicitudSeleccionadaCodigo = resumen?.codigo ?? params.get('codigoSolicitud');
+    this.solicitudSeleccionadaResumen = resumen ?? null;
+    this.modoFormulario = 'ver';
+    this.mostrarFormulario = true;
+  }
+
+  private limpiarDetalleRuta() {
+    if (!this.route.snapshot.queryParamMap.has('detalleSolicitud')) {
+      return;
+    }
+
+    // Evita reabrir el modal después de cerrar manualmente el detalle.
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        detalleSolicitud: null,
+        codigoSolicitud: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private mostrarAlerta(alerta: AlertaUi) {
+    this.alerta = alerta;
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  private estadoPermiteCancelacion(estado: string) {
+    return ['pendiente', 'en curso', 'en publicacion', 'en entrevistas', 'pausado'].includes(this.normalizar(estado));
+  }
+
+  private aplicarCancelacionEnListado(idSolicitud: string) {
+    // Solo refleja el estado cancelado; no mezcla observaciones de cierre con descripción.
+    this.solicitudes = this.solicitudes.map((solicitud) =>
+      solicitud.id === idSolicitud
+        ? {
+            ...solicitud,
+            estado: 'Cancelado',
+          }
+        : solicitud,
+    );
   }
 
   obtenerIdSolicitud(solicitud: SolicitudResumen) {
@@ -477,13 +555,5 @@ export class SolicitudesList implements OnInit {
     return solicitud.seleccion.split(' - ');
   }
 
-  private limpiarTimeoutCarga() {
-    if (!this.cargaTimeoutId) {
-      return;
-    }
-
-    window.clearTimeout(this.cargaTimeoutId);
-    this.cargaTimeoutId = null;
-  }
 }
 

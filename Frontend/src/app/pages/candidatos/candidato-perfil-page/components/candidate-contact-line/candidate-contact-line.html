@@ -12,7 +12,7 @@
     </svg>
     {{ candidato.telefono }}
   </span>
-  <a href="https://linkedin.com/in/juanperez" target="_blank" rel="noreferrer">
+  <a *ngIf="candidato.urlPerfil" [href]="candidato.urlPerfil" target="_blank" rel="noreferrer">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-sakura)" stroke-width="2" aria-hidden="true">
       <path d="M6 9v10" />
       <path d="M6 5v.2" />

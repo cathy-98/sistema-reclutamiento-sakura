@@ -1,3 +1,8 @@
+:host {
+  display: grid;
+  gap: 16px;
+}
+
 .hero-top,
 .candidate-brief {
   display: flex;
@@ -40,6 +45,14 @@
   font-weight: 800;
 }
 
+.request-selector {
+  justify-self: stretch;
+}
+
+.request-selector select {
+  font-weight: 800;
+}
+
 .candidate-main {
   flex: 1;
   display: grid;
@@ -75,6 +88,18 @@ p {
 
 .candidate-actions-menu {
   position: relative;
+}
+
+.candidate-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.candidate-primary-actions app-button {
+  min-width: 150px;
 }
 
 .kebab-button {
@@ -138,7 +163,6 @@ p {
   gap: 12px;
   align-content: start;
   min-width: 0;
-  padding-bottom: 18px;
 }
 
 label {
@@ -162,5 +186,9 @@ select {
   .candidate-brief {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .candidate-primary-actions app-button {
+    min-width: min(100%, 190px);
   }
 }

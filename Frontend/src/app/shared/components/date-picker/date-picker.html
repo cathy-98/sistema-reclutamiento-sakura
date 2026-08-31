@@ -7,7 +7,12 @@
     </svg>
   </button>
 
-  <div class="date-menu" *ngIf="abierto">
+  <div
+    class="date-menu"
+    [class.opens-up]="abrirHaciaArriba"
+    [class.align-right]="alinearDerecha"
+    *ngIf="abierto"
+  >
     <div class="date-menu-header">
       <button type="button" aria-label="Mes anterior" (click)="cambiarMes(-1)">‹</button>
       <strong>{{ etiquetaMes }}</strong>
