@@ -26,8 +26,10 @@
 }
 
 .calendar-panel header {
-  display: grid;
+  align-items: center;
+  display: flex;
   gap: 10px;
+  justify-content: space-between;
 }
 
 .calendar-panel h2,
@@ -38,7 +40,6 @@
   text-transform: capitalize;
 }
 
-.calendar-panel input,
 .day-header input {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -48,8 +49,29 @@
   width: 100%;
 }
 
-.calendar-panel label {
-  display: block;
+.month-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.month-actions button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.month-actions button:hover {
+  background: var(--color-surface-soft);
+  color: var(--color-sakura);
 }
 
 .calendar-grid {
@@ -90,13 +112,13 @@
 }
 
 .calendar-day.has-events {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: var(--color-surface-soft);
+  border-color: var(--color-border);
 }
 
 .calendar-day.is-selected {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--color-sakura);
+  color: var(--color-white);
 }
 
 .calendar-day small {

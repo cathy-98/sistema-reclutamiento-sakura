@@ -22,6 +22,7 @@ export type CatalogoPath =
   | 'instituciones'
   | 'carreras'
   | 'niveles-educacionales'
+  | 'categorias-habilidad'
   | 'habilidades'
   | 'niveles-habilidad'
   | 'cargos'
@@ -59,16 +60,9 @@ export interface RegionCatalogoApi {
   reg_nombre: string | null;
 }
 
-export interface CiudadCatalogoApi {
-  ciu_id: number;
-  ciu_region_id?: number | null;
-  ciu_nombre: string | null;
-}
-
 export interface ComunaCatalogoApi {
   com_id: number;
   com_region_id?: number | null;
-  com_ciudad_id?: number | null;
   com_nombre: string | null;
 }
 
@@ -111,10 +105,18 @@ export interface ModalidadCatalogoApi {
   mdld_descripcion?: string | null;
 }
 
+export interface CategoriaHabilidadCatalogoApi {
+  cthb_id: number;
+  cthb_nombre: string | null;
+  cthb_descripcion?: string | null;
+}
+
 export interface HabilidadCatalogoApi {
   hab_id: number;
   hab_nombre: string | null;
   hab_descripcion?: string | null;
+  hab_categoria_habilidad_id?: number | null;
+  categoria?: CategoriaHabilidadCatalogoApi | null;
 }
 
 export interface HabilidadCreatePayload {
@@ -263,12 +265,6 @@ export class CatalogosService {
     return this.listarCatalogo<RegionCatalogoApi>('regiones', params);
   }
 
-  listarCiudades(regionId?: number) {
-    return this.http.get<CiudadCatalogoApi[]>(`${this.apiUrl}/ciudades`, {
-      params: this.crearParams(regionId ? { region_id: regionId } : undefined),
-    });
-  }
-
   listarComunas(params?: CatalogoListParams) {
     return this.listarCatalogo<ComunaCatalogoApi>('comunas', params);
   }
@@ -361,6 +357,10 @@ export class CatalogosService {
 
   listarHabilidades() {
     return this.http.get<HabilidadCatalogoApi[]>(`${this.apiUrl}/habilidades`);
+  }
+
+  listarCategoriasHabilidad() {
+    return this.http.get<CategoriaHabilidadCatalogoApi[]>(`${this.apiUrl}/categorias-habilidad`);
   }
 
   crearHabilidad(payload: HabilidadCreatePayload) {

@@ -174,6 +174,40 @@ class CursoResponse(BaseModel):
     curs_anio_curso: int | None
 
 
+class IdiomaCandidatoCreate(StrictSchema):
+    cdio_idioma_id: int = Field(gt=0)
+    cdio_nivel_idioma_id: int = Field(gt=0)
+
+
+class IdiomaCandidatoUpdate(StrictSchema):
+    cdio_nivel_idioma_id: int = Field(gt=0)
+
+
+class IdiomaCatalogoMini(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    idio_id: int
+    idio_nombre: str
+
+
+class NivelIdiomaCatalogoMini(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    nvid_id: int
+    nvid_codigo: str
+    nvid_nombre: str
+    nvid_grupo: str
+    nvid_es_generico: bool
+
+
+class IdiomaCandidatoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    cdio_id: int
+    cdio_candidato_id: int
+    cdio_idioma_id: int
+    cdio_nivel_idioma_id: int
+    idioma: IdiomaCatalogoMini | None = None
+    nivel_idioma: NivelIdiomaCatalogoMini | None = None
+
+
 class CandidatoBase(StrictSchema):
     cand_email: EmailStr
     cand_nombres: str = Field(min_length=1, max_length=20)
@@ -239,6 +273,7 @@ class CandidatoCreate(CandidatoBase):
     estudios: list[EstudioCreate] = Field(default_factory=list)
     experiencias: list[ExperienciaCreate] = Field(default_factory=list)
     cursos: list[CursoCreate] = Field(default_factory=list)
+    idiomas: list[IdiomaCandidatoCreate] = Field(default_factory=list)
 
 
 class CandidatoReplace(CandidatoBase):
@@ -327,6 +362,7 @@ class CandidatoPerfilResponse(CandidatoResponse):
     estudios: list[EstudioResponse] = Field(default_factory=list)
     experiencias: list[ExperienciaResponse] = Field(default_factory=list)
     cursos: list[CursoResponse] = Field(default_factory=list)
+    idiomas: list[IdiomaCandidatoResponse] = Field(default_factory=list)
 
 
 class CandidatoPerfilCompletoResponse(CandidatoPerfilResponse):

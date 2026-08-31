@@ -29,6 +29,7 @@ export function mapearEntrevistaResumen(
     candidato: obtenerNombre(catalogos.candidatosPorSolicitudCandidatoId, solicitudCandidatoId, 'Candidato pendiente'),
     estado: obtenerNombre(catalogos.estadosPorId, entrevista.ctev_estado_entrevista_id, 'Sin estado'),
     tipo: obtenerNombre(catalogos.tiposPorId, entrevista.ctev_tipo_entrevista_id, 'Sin tipo'),
+    resultadoEntrevista: 'Sin resultado',
     asunto: entrevista.ctev_titulo_evento ?? 'Entrevista',
     cargo: obtenerNombre(catalogos.cargosPorSolicitudCandidatoId, solicitudCandidatoId, 'Cargo pendiente'),
     fecha: inicio.fecha,

@@ -19,15 +19,10 @@
     <aside class="calendar-panel" aria-labelledby="calendar-title">
       <header>
         <h2 id="calendar-title">{{ tituloMes }}</h2>
-        <label for="agenda-month">
-          <span class="sr-only">Mes de agenda</span>
-          <input
-            id="agenda-month"
-            type="month"
-            [(ngModel)]="mesSeleccionado"
-            (ngModelChange)="actualizarCalendario()"
-          />
-        </label>
+        <div class="month-actions" aria-label="Cambiar mes de agenda">
+          <button type="button" aria-label="Mes anterior" (click)="cambiarMes(-1)">‹</button>
+          <button type="button" aria-label="Mes siguiente" (click)="cambiarMes(1)">›</button>
+        </div>
       </header>
 
       <div class="calendar-grid calendar-weekdays">

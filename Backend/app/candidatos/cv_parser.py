@@ -101,3 +101,54 @@ def parse_core(text: str) -> tuple[dict, list[str]]:
         "cand_url_1": ";".join(dict.fromkeys(social)) or None,
         "cand_titulo": title,
     }, warnings
+
+
+# ==========================================================
+# IDIOMAS - extracción conservadora para M3
+# ==========================================================
+
+_LANGUAGE_ALIASES = {
+    "ingles": {"ingles", "english"},
+    "espanol": {"espanol", "spanish", "castellano"},
+    "portugues": {"portugues", "portuguese"},
+    "frances": {"frances", "french"},
+    "aleman": {"aleman", "german"},
+    "italiano": {"italiano", "italian"},
+    "mandarin": {"mandarin", "chino mandarin", "mandarin chinese"},
+}
+
+
+def fold_text(value: str) -> str:
+    raw = unicodedata.normalize("NFKD", value or "")
+    raw = "".join(ch for ch in raw if not unicodedata.combining(ch))
+    return " ".join(raw.casefold().strip().split())
+
+
+def language_aliases(catalog_name: str) -> set[str]:
+    folded = fold_text(catalog_name)
+    aliases = {folded}
+    aliases.update(_LANGUAGE_ALIASES.get(folded, set()))
+    return {x for x in aliases if x}
+
+
+def detect_language_level_code(value: str) -> str | None:
+    """Retorna código estable del catálogo de nivel, sin inventar precisión CEFR."""
+    folded = fold_text(value)
+    # CEFR explícito tiene prioridad.
+    m = re.search(r"(?<![a-z0-9])([abc][12])(?![a-z0-9])", folded, re.I)
+    if m:
+        return m.group(1).upper()
+    if re.search(r"\b(nativo|native|native speaker|mother tongue|lengua materna)\b", folded):
+        return "NAT"
+    if re.search(r"\b(avanzado|advanced|fluent|fluido)\b", folded):
+        return "AVA"
+    if re.search(r"\b(intermedio|intermediate)\b", folded):
+        return "INT"
+    if re.search(r"\b(basico|basic|elementary)\b", folded):
+        return "BAS"
+    return None
+
+
+def candidate_language_lines(text: str) -> list[str]:
+    """Líneas limpias para detección de idiomas; conserva contexto local del CV."""
+    return [" ".join(x.split()) for x in (text or "").splitlines() if x.strip()]

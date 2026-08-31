@@ -13,13 +13,22 @@
       <h2 [id]="titleId">{{ titulo }}</h2>
       <p [id]="messageId">{{ mensaje }}</p>
       <small *ngIf="detalle">{{ detalle }}</small>
+      <label class="confirm-field" *ngIf="observacionLabel">
+        {{ observacionLabel }}
+        <textarea
+          [(ngModel)]="observacion"
+          [placeholder]="observacionPlaceholder"
+          rows="3"
+        ></textarea>
+        <span *ngIf="observacionInvalida">Campo obligatorio.</span>
+      </label>
     </div>
 
     <footer class="confirm-actions">
       <button class="secondary-action" type="button" (click)="cancelar.emit()">
         {{ textoCancelar }}
       </button>
-      <button class="primary-action" [ngClass]="variante" type="button" (click)="confirmar.emit()">
+      <button class="primary-action" [ngClass]="variante" type="button" [disabled]="observacionInvalida" (click)="confirmarAccion()">
         {{ textoConfirmar }}
       </button>
     </footer>

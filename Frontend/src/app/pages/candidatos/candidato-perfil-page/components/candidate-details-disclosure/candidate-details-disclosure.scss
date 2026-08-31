@@ -78,6 +78,33 @@ dd {
   line-height: 1.25;
 }
 
+.inline-list {
+  display: inline;
+  font-weight: 700;
+}
+
+.profile-links {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-links a {
+  display: grid;
+  gap: 2px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.profile-links a:hover {
+  color: var(--color-sakura);
+}
+
+.profile-links span {
+  color: var(--color-sakura);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .details-toggle span:first-child {
   display: grid;
   gap: 6px;

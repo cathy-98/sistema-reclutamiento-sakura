@@ -13,7 +13,7 @@ import {
   SolicitudResumen,
   SolicitudUpdatePayload,
 } from '../shared/models/solicitud.model';
-import { mapearSolicitudResumen } from '../shared/mappers/solicitud.mapper';
+import { mapearSolicitudResumen, presentarEstadoSolicitud } from '../shared/mappers/solicitud.mapper';
 
 @Injectable({
   providedIn: 'root',
@@ -27,7 +27,7 @@ export class SolicitudesService {
   ]);
   private readonly estadosBase = new Map([
     [1, 'Pendiente'],
-    [2, 'En Curso'],
+    [2, 'En publicación'],
     [3, 'En Entrevistas'],
     [4, 'Cancelado'],
     [5, 'Cerrado'],
@@ -136,7 +136,7 @@ export class SolicitudesService {
       ...this.estadosBase,
       ...(catalogos?.estados ?? []).map((estado): [number, string] => [
         Number(estado.essl_id),
-        estado.essl_nombre ?? 'Sin estado',
+        presentarEstadoSolicitud(estado.essl_nombre ?? 'Sin estado'),
       ]),
     ]);
 

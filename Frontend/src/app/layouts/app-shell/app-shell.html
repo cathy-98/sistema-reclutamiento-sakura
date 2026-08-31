@@ -33,7 +33,8 @@
               *ngIf="child.route; else submenuButton"
               class="sidebar-submenu-link"
               [routerLink]="child.route"
-              routerLinkActive="is-active"
+              [queryParams]="child.queryParams"
+              [class.is-active]="estaSubMenuItemActivo(child)"
               (click)="abrirMenuSiEstaCerrado()"
             >
               {{ child.label }}
@@ -52,6 +53,7 @@
           *ngIf="item.route; else menuButton"
           class="sidebar-link sidebar-link-module"
           [routerLink]="item.route"
+          [queryParams]="item.queryParams"
           routerLinkActive="is-active"
           [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
           [attr.title]="!menuAbierto ? item.label : null"

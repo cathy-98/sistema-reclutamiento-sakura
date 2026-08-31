@@ -21,6 +21,7 @@ from app.informes.models import (
     CategoriaHabilidad,
     DocumentoReporteCandidato,
     Idioma,
+    NivelIdioma,
     NotificacionReclutamiento,
     PlantillaNotificacion,
 )
@@ -366,9 +367,13 @@ def get_candidate_languages(db: Session, candidate_id: int) -> list[dict]:
     return _rows(
         db,
         """
-        SELECT ci.cdio_idioma_id AS idioma_id, i.idio_nombre AS idioma, ci.cdio_nivel AS nivel
+        SELECT ci.cdio_idioma_id AS idioma_id, i.idio_nombre AS idioma,
+               ci.cdio_nivel_idioma_id AS nivel_idioma_id,
+               ni.nvid_codigo AS nivel_codigo, ni.nvid_nombre AS nivel,
+               ni.nvid_grupo AS nivel_grupo
         FROM tbl_candidato_idioma ci
         JOIN tbl_idioma i ON i.idio_id=ci.cdio_idioma_id
+        JOIN tbl_nivel_idioma ni ON ni.nvid_id=ci.cdio_nivel_idioma_id
         WHERE ci.cdio_candidato_id=:cid
         ORDER BY i.idio_nombre
         """,
@@ -383,10 +388,27 @@ def replace_candidate_languages(db: Session, candidate_id: int, values: list) ->
     requested = {x.idioma_id for x in values}
     if valid != requested:
         raise HTTPException(status_code=422, detail="Uno o más idiomas no existen")
+
+    legacy_codes = {"Basico": "BAS", "Intermedio": "INT", "Avanzado": "AVA", "Nativo": "NAT"}
+    resolved = []
+    for x in values:
+        level = None
+        if x.nivel_idioma_id is not None:
+            level = db.get(NivelIdioma, x.nivel_idioma_id)
+        elif x.nivel is not None:
+            level = db.scalar(select(NivelIdioma).where(NivelIdioma.nvid_codigo == legacy_codes[x.nivel]))
+        if level is None or not level.nvid_activo:
+            raise HTTPException(status_code=422, detail="Uno o más niveles de idioma no existen o están inactivos")
+        resolved.append((x.idioma_id, level.nvid_id))
+
     try:
         db.execute(text("DELETE FROM tbl_candidato_idioma WHERE cdio_candidato_id=:cid"), {"cid": candidate_id})
-        for x in values:
-            db.add(CandidatoIdioma(cdio_candidato_id=candidate_id, cdio_idioma_id=x.idioma_id, cdio_nivel=x.nivel))
+        for idioma_id, nivel_id in resolved:
+            db.add(CandidatoIdioma(
+                cdio_candidato_id=candidate_id,
+                cdio_idioma_id=idioma_id,
+                cdio_nivel_idioma_id=nivel_id,
+            ))
         db.commit()
     except Exception:
         db.rollback(); raise

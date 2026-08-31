@@ -11,6 +11,15 @@ button {
   font: inherit;
   font-size: 14px;
   font-weight: 700;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 8%);
+  transform: translateY(0);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease,
+    filter 150ms ease,
+    transform 120ms ease;
 }
 
 .sm {
@@ -28,11 +37,21 @@ button {
   color: var(--color-white);
 }
 
+.primary:hover:not(:disabled) {
+  background: var(--color-sakura-hover);
+  border-color: var(--color-sakura-hover);
+}
+
 .secondary,
 .ghost {
   border-color: var(--color-sakura);
   background: var(--color-white);
   color: var(--color-sakura);
+}
+
+.secondary:hover:not(:disabled),
+.ghost:hover:not(:disabled) {
+  background: var(--color-sakura-soft);
 }
 
 .danger {
@@ -41,8 +60,20 @@ button {
   color: var(--color-white);
 }
 
+.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
 button:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgb(17 24 39 / 12%);
   filter: brightness(0.98);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  box-shadow: 0 1px 3px rgb(17 24 39 / 14%);
+  filter: brightness(0.94);
+  transform: translateY(1px) scale(0.99);
 }
 
 button:disabled {
@@ -50,6 +81,8 @@ button:disabled {
   background: var(--color-surface-hover);
   color: var(--color-muted);
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 button:focus-visible {

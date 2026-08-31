@@ -8,6 +8,9 @@
         <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
       </select>
     </label>
+    <button type="button" aria-label="Primera página" [disabled]="page === 1" (click)="changePage(1)">
+      «
+    </button>
     <button type="button" aria-label="Página anterior" [disabled]="page === 1" (click)="changePage(page - 1)">
       ‹
     </button>
@@ -31,6 +34,9 @@
       (click)="changePage(page + 1)"
     >
       ›
+    </button>
+    <button type="button" aria-label="Última página" [disabled]="page === totalPages" (click)="changePage(totalPages)">
+      »
     </button>
   </div>
 </nav>

@@ -15,6 +15,8 @@
     description="Usa uno o más campos para encontrar solicitudes."
     quickSearchPlaceholder="Ej. SOL-000001, Banco BICE o Frontend"
     [(quickSearch)]="filtros.busquedaRapida"
+    [collapsible]="true"
+    [filtersExpanded]="false"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
@@ -64,7 +66,7 @@
       <select [(ngModel)]="filtros.estado">
         <option value="">Todos</option>
         <option>Pendiente</option>
-        <option>En Curso</option>
+        <option>En publicación</option>
         <option>En Entrevistas</option>
         <option>Cancelado</option>
         <option>Cerrado</option>
@@ -113,9 +115,12 @@
   titulo="Cancelar solicitud"
   mensaje="Esta acción cambiará el estado de la solicitud a Cancelado."
   [detalle]="'Solicitud seleccionada: ' + (solicitudSeleccionadaCodigo || solicitudSeleccionadaId)"
+  observacionLabel="Observación de cancelación *"
+  observacionPlaceholder="Ej. Cancelada por solicitud del cliente"
+  [observacionRequerida]="true"
   textoCancelar="Volver"
   textoConfirmar="Confirmar cancelación"
   variante="danger"
   (cancelar)="cerrarConfirmacionCancelacion()"
-  (confirmar)="confirmarCancelacionSolicitud()"
+  (confirmar)="confirmarCancelacionSolicitud($event)"
 ></app-confirm-dialog>

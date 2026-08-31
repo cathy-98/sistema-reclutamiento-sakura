@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   AbstractControl,
   ReactiveFormsModule,
@@ -41,6 +42,7 @@ import {
   SolicitudResumen,
   SolicitudUpdatePayload,
 } from '../../../shared/models/solicitud.model';
+import { presentarEstadoSolicitud } from '../../../shared/mappers/solicitud.mapper';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
 
 interface HabilidadSolicitud {
@@ -70,6 +72,7 @@ interface CatalogosSolicitud {
 
 const SOLICITUD_DETALLE_TIMEOUT_MS = 6000;
 const CATALOGOS_DETALLE_TIMEOUT_MS = 3000;
+const SALARIO_MAXIMO_CLP = 99_999_999;
 
 @Component({
   selector: 'app-solicitud-form-modal',
@@ -145,8 +148,8 @@ export class SolicitudFormModal implements OnInit {
       id_usuario_responsable: new UntypedFormControl(null),
       id_modalidad: new UntypedFormControl(null, Validators.required),
       id_tipo_contrato: new UntypedFormControl(null),
-      salario_minimo: new UntypedFormControl(null),
-      salario_maximo: new UntypedFormControl(null),
+      salario_minimo: new UntypedFormControl(null, [Validators.min(0), Validators.max(SALARIO_MAXIMO_CLP)]),
+      salario_maximo: new UntypedFormControl(null, [Validators.min(0), Validators.max(SALARIO_MAXIMO_CLP)]),
       fecha_inicio_busqueda: new UntypedFormControl(''),
       fecha_cierre_busqueda: new UntypedFormControl(''),
       fecha_inicio_cliente: new UntypedFormControl(''),
@@ -175,7 +178,9 @@ export class SolicitudFormModal implements OnInit {
     private catalogosService: CatalogosService,
     private clientesService: ClientesService,
     private authService: AuthService,
+    private router: Router,
     private cdr: ChangeDetectorRef,
+    private elementRef: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit() {
@@ -257,10 +262,16 @@ export class SolicitudFormModal implements OnInit {
     const estadoId = this.numeroONull(this.formularioSolicitud.get('id_estado_solicitud')?.value);
 
     if (estadoId != null) {
-      return this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? this.solicitudResumenInicial?.estado ?? 'Pendiente';
+      return presentarEstadoSolicitud(
+        this.estadosSolicitudCatalogo.find((estado) => estado.id === estadoId)?.nombre ?? this.solicitudResumenInicial?.estado ?? 'Pendiente',
+      );
     }
 
     return 'Pendiente';
+  }
+
+  get mostrarAyudaEstadoPendiente() {
+    return this.estadoSolicitudTexto.toLowerCase() === 'pendiente';
   }
 
   get pasosCompletados() {
@@ -375,6 +386,10 @@ export class SolicitudFormModal implements OnInit {
     return `${inicio} - ${fin}`;
   }
 
+  get salarioMaximoPermitido() {
+    return SALARIO_MAXIMO_CLP;
+  }
+
   validarRangoSalario(control: AbstractControl): ValidationErrors | null {
     const salarioMinimo = Number(control.get('salario_minimo')?.value);
     const salarioMaximo = Number(control.get('salario_maximo')?.value);
@@ -462,17 +477,17 @@ export class SolicitudFormModal implements OnInit {
         } else if (habilidades) {
           this.aplicarHabilidadesDetalle(habilidades);
         } else if (!puedeMostrarResumen) {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: 'No se pudo cargar el detalle de la solicitud.',
-          };
+          });
         } else {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'warning',
             variante: 'soft',
             mensaje: 'Mostramos la información disponible. No se pudo cargar el detalle completo.',
-          };
+          });
         }
 
         this.cargandoDetalle = false;
@@ -609,6 +624,13 @@ export class SolicitudFormModal implements OnInit {
 
     if (this.formularioSolicitud.invalid || !this.validarHabilidadesSolicitud()) {
       this.formularioSolicitud.markAllAsTouched();
+      if (!this.alerta) {
+        this.mostrarAlerta({
+          tipo: 'warning',
+          variante: 'soft',
+          mensaje: 'Revisa los campos marcados antes de guardar.',
+        });
+      }
       return;
     }
 
@@ -667,11 +689,11 @@ export class SolicitudFormModal implements OnInit {
         id_cliente: null,
       });
       this.mostrarCreacionEmpresa = false;
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'La empresa ya existe. La dejamos seleccionada.',
-      };
+      });
       return;
     }
 
@@ -700,11 +722,11 @@ export class SolicitudFormModal implements OnInit {
           this.actualizarClientesCatalogo();
         },
         error: (error) => {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo crear la empresa cliente.'),
-          };
+          });
         },
       });
   }
@@ -724,11 +746,11 @@ export class SolicitudFormModal implements OnInit {
         id_cargo: cargoExistente.id,
       });
       this.mostrarCreacionCargo = false;
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'El cargo ya existe. Lo dejamos seleccionado.',
-      };
+      });
       return;
     }
 
@@ -755,11 +777,11 @@ export class SolicitudFormModal implements OnInit {
           });
         },
         error: (error) => {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo crear el cargo solicitado.'),
-          };
+          });
         },
       });
   }
@@ -777,11 +799,11 @@ export class SolicitudFormModal implements OnInit {
       this.nuevaHabilidad.patchValue({ id_habilidad: habilidadExistente.id });
       this.formularioSolicitud.patchValue({ nueva_habilidad_nombre: '' });
       this.mostrarCreacionHabilidad = false;
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'La tecnología ya existe. La dejamos seleccionada.',
-      };
+      });
       return;
     }
 
@@ -806,11 +828,11 @@ export class SolicitudFormModal implements OnInit {
           this.nuevaHabilidad.patchValue({ id_habilidad: habilidad.hab_id });
         },
         error: (error) => {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo crear la tecnología.'),
-          };
+          });
         },
       });
   }
@@ -835,11 +857,11 @@ export class SolicitudFormModal implements OnInit {
         id_cliente: clienteExistente.cli_id,
       });
       this.mostrarCreacionCliente = false;
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'El cliente solicitante ya existe para esa empresa. Lo dejamos seleccionado.',
-      };
+      });
       return;
     }
 
@@ -864,11 +886,11 @@ export class SolicitudFormModal implements OnInit {
           this.mostrarCreacionCliente = false;
         },
         error: (error) => {
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo crear el cliente solicitante.'),
-          };
+          });
         },
       });
   }
@@ -883,6 +905,41 @@ export class SolicitudFormModal implements OnInit {
 
   cerrarAlerta() {
     this.alerta = null;
+  }
+
+  manejarAccionPrincipal() {
+    if (this.modo === 'ver') {
+      this.navegarAGestionCandidatos();
+      return;
+    }
+
+    this.cerrar.emit();
+  }
+
+  private navegarAGestionCandidatos() {
+    const solicitudId = this.idSolicitud ?? this.solicitudResumenInicial?.id ?? '';
+    const solicitudCodigo = this.codigoSolicitud || this.codigoSolicitudInicial || this.solicitudResumenInicial?.codigo || solicitudId;
+    const solicitudCargo = this.detalleCargo;
+    const solicitudEstado = this.estadoSolicitudTexto;
+
+    // Transporta el contexto sin crear una pantalla nueva de candidatos.
+    this.router.navigate(['/candidatos'], {
+      queryParams: {
+        solicitudId,
+        solicitudCodigo,
+        solicitudCargo,
+        solicitudEstado,
+        origen: 'solicitud',
+      },
+      state: {
+        solicitudContexto: {
+          id: solicitudId,
+          codigo: solicitudCodigo,
+          cargo: solicitudCargo,
+          estado: solicitudEstado,
+        },
+      },
+    });
   }
 
   detalleTexto(control: string, fallback = 'Sin información') {
@@ -1061,7 +1118,7 @@ export class SolicitudFormModal implements OnInit {
     // Integración catálogo de estados de solicitud -> selector "Estado".
     this.estadosSolicitudCatalogo = catalogos.estados.map((estado) => ({
       id: estado.essl_id,
-      nombre: estado.essl_nombre ?? 'Sin estado',
+      nombre: presentarEstadoSolicitud(estado.essl_nombre ?? 'Sin estado'),
     }));
     // Integración catálogo de modalidades -> selector "Modalidad".
     this.modalidadesCatalogo = catalogos.modalidades.map((modalidad) => ({
@@ -1189,32 +1246,32 @@ export class SolicitudFormModal implements OnInit {
         },
         error: (error) => {
           this.guardando = false;
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo crear la solicitud.'),
-          };
+          });
         },
       });
   }
 
   private creacionBloqueadaPorDependencias() {
     if (this.empresasCatalogo.length === 0) {
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Selecciona o crea una empresa cliente antes de guardar.',
-      };
+      });
       this.tabFormulario = 'general';
       return true;
     }
 
     if (this.clientesCatalogo.length === 0) {
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Selecciona o crea un cliente solicitante antes de guardar.',
-      };
+      });
       this.tabFormulario = 'general';
       return true;
     }
@@ -1238,11 +1295,11 @@ export class SolicitudFormModal implements OnInit {
         },
         error: (error) => {
           this.guardando = false;
-          this.alerta = {
+          this.mostrarAlerta({
             tipo: 'danger',
             variante: 'soft',
             mensaje: obtenerMensajeError(error, 'No se pudo actualizar la solicitud.'),
-          };
+          });
         },
       });
   }
@@ -1253,11 +1310,11 @@ export class SolicitudFormModal implements OnInit {
     const { sol_cantidad_vacantes: _vacantes, ...payloadBase } = this.crearPayloadBase();
 
     if (clienteId == null) {
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Selecciona o crea un cliente solicitante antes de guardar.',
-      };
+      });
       this.tabFormulario = 'general';
       return null;
     }
@@ -1326,21 +1383,21 @@ export class SolicitudFormModal implements OnInit {
     if (this.nuevaHabilidad.invalid || habilidad.id_habilidad == null || habilidad.id_nivel_habilidad == null) {
       this.tabFormulario = 'habilidades';
       this.nuevaHabilidad.markAllAsTouched();
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Completa la habilidad seleccionada antes de guardar.',
-      };
+      });
       return false;
     }
 
     if (this.habilidadesSolicitud.some((item) => item.id_habilidad === habilidad.id_habilidad)) {
       this.tabFormulario = 'habilidades';
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Esa habilidad ya fue agregada a la solicitud.',
-      };
+      });
       return false;
     }
 
@@ -1485,11 +1542,11 @@ export class SolicitudFormModal implements OnInit {
   private validarHabilidadesSolicitud() {
     if (this.habilidadesSolicitud.length === 0) {
       this.tabFormulario = 'habilidades';
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Agrega al menos una habilidad técnica para la solicitud.',
-      };
+      });
       return false;
     }
 
@@ -1497,14 +1554,21 @@ export class SolicitudFormModal implements OnInit {
 
     if (!tieneExcluyente) {
       this.tabFormulario = 'habilidades';
-      this.alerta = {
+      this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
         mensaje: 'Marca al menos una habilidad como excluyente para evaluar candidatos.',
-      };
+      });
       return false;
     }
 
     return true;
+  }
+
+  private mostrarAlerta(alerta: AlertaUi) {
+    this.alerta = alerta;
+    window.requestAnimationFrame(() => {
+      this.elementRef.nativeElement.closest('.modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 }

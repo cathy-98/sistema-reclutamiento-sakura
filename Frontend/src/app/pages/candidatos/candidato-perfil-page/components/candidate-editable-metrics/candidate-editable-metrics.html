@@ -7,15 +7,72 @@
   </article>
 
   <article class="metric-item" aria-labelledby="candidate-income-title">
-    <label id="candidate-income-title" class="metric-title" for="candidate-income-input">Renta esperada</label>
-    <input id="candidate-income-input" type="number" [(ngModel)]="rentaInput" />
-    <small>{{ rentaFormateada }}</small>
+    <header class="metric-header">
+      <h3 id="candidate-income-title" class="metric-title">Renta esperada</h3>
+      <app-icon-button
+        *ngIf="!editandoRenta"
+        icon="edit"
+        label="Editar renta esperada"
+        (pressed)="iniciarEdicionRenta()"
+      ></app-icon-button>
+    </header>
+
+    <strong *ngIf="!editandoRenta" class="metric-value">{{ rentaFormateada }}</strong>
+
+    <ng-container *ngIf="editandoRenta">
+      <input
+        id="candidate-income-input"
+        type="number"
+        min="0"
+        step="10000"
+        [(ngModel)]="rentaEdicion"
+      />
+      <small>{{ rentaEdicionFormateada }}</small>
+      <small *ngIf="errorRenta" class="metric-error">{{ errorRenta }}</small>
+
+      <div class="edit-actions">
+        <button type="button" class="secondary-action" (click)="cancelarEdicionRenta()">
+          Cancelar
+        </button>
+        <button type="button" class="primary-action" (click)="guardarRenta()">
+          Guardar
+        </button>
+      </div>
+    </ng-container>
   </article>
 
   <article class="metric-item" aria-labelledby="candidate-availability-title">
-    <label id="candidate-availability-title" class="metric-title" for="candidate-availability-select">Disponibilidad</label>
-    <select id="candidate-availability-select" [(ngModel)]="candidato.disponibilidad">
+    <header class="metric-header">
+      <h3 id="candidate-availability-title" class="metric-title">Disponibilidad</h3>
+      <app-icon-button
+        *ngIf="!editandoDisponibilidad"
+        icon="edit"
+        label="Editar disponibilidad"
+        (pressed)="iniciarEdicionDisponibilidad()"
+      ></app-icon-button>
+    </header>
+
+    <strong *ngIf="!editandoDisponibilidad" class="metric-value">{{ candidato.disponibilidad }}</strong>
+
+    <select
+      *ngIf="editandoDisponibilidad"
+      id="candidate-availability-select"
+      [(ngModel)]="disponibilidadEdicion"
+    >
+      <option value="">Seleccionar disponibilidad</option>
       <option *ngFor="let disponibilidad of disponibilidades">{{ disponibilidad }}</option>
     </select>
+    <small *ngIf="errorDisponibilidad" class="metric-error">{{ errorDisponibilidad }}</small>
+
+    <ng-container *ngIf="editandoDisponibilidad">
+      <div class="edit-actions">
+        <button type="button" class="secondary-action" (click)="cancelarEdicionDisponibilidad()">
+          Cancelar
+        </button>
+        <button type="button" class="primary-action" (click)="guardarDisponibilidad()">
+          Guardar
+        </button>
+      </div>
+    </ng-container>
   </article>
 </section>

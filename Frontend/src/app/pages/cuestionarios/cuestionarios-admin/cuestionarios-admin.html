@@ -9,17 +9,33 @@
       <form class="question-form" [formGroup]="formulario" (ngSubmit)="agregarPregunta()">
         <header class="section-header">
           <h2 id="crear-pregunta-title">Crear pregunta</h2>
-          <p>Completa el enunciado, sus alternativas y la opcion correcta. Al guardar, quedara seleccionada para el test.</p>
+          <p>Completa el enunciado, sus alternativas y la opcion correcta. Al guardar, quedara seleccionada para el cuestionario.</p>
         </header>
 
         <div class="form-grid">
-          <app-form-field class="span-2" label="Pregunta" [required]="true">
-            <input type="text" formControlName="texto" placeholder="Por que el cielo es azul?" />
+          <app-form-field label="Categoria">
+            <select
+              [(ngModel)]="categoriaPreguntaActiva"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="cambiarCategoriaPregunta()"
+            >
+              <option
+                *ngFor="let categoria of categoriasFiltroBanco"
+                [ngValue]="categoria.id"
+              >
+                {{ categoria.nombre }}
+              </option>
+            </select>
           </app-form-field>
 
-          <app-form-field label="Tecnologia" [required]="true">
+          <app-form-field label="Habilidad" [required]="true">
             <select formControlName="tecnologiaId" (change)="buscar()">
-              <option *ngFor="let tecnologia of tecnologias" [ngValue]="tecnologia.id">{{ tecnologia.nombre }}</option>
+              <option
+                *ngFor="let tecnologia of tecnologiasFormularioFiltradas"
+                [ngValue]="tecnologia.id"
+              >
+                {{ tecnologia.nombre }} - {{ tecnologia.categoriaNombre }}
+              </option>
             </select>
           </app-form-field>
 
@@ -27,6 +43,10 @@
             <select formControlName="nivelId">
               <option *ngFor="let nivel of niveles" [ngValue]="nivel.id">{{ nivel.nombre }}</option>
             </select>
+          </app-form-field>
+
+          <app-form-field class="question-field" label="Pregunta" [required]="true">
+            <input type="text" formControlName="texto" placeholder="Por que el cielo es azul?" />
           </app-form-field>
         </div>
 
@@ -67,20 +87,37 @@
     <header class="section-header">
       <div>
         <h2 id="banco-title">Banco de preguntas</h2>
-        <p>Resumen de preguntas disponibles por tecnologia y nivel.</p>
+        <p>Resumen de preguntas disponibles por categoría, habilidad y nivel.</p>
       </div>
 
-      <app-form-field label="Buscar tecnologia">
-        <span class="search-control">
+      <div class="bank-controls">
+        <app-form-field class="bank-category" label="Categoría">
+          <select
+            [(ngModel)]="categoriaBancoActiva"
+            [ngModelOptions]="{ standalone: true }"
+            (change)="cambiarCategoriaBanco()"
+          >
+            <option
+              *ngFor="let categoria of categoriasFiltroBanco"
+              [ngValue]="categoria.id"
+            >
+              {{ categoria.nombre }}
+            </option>
+          </select>
+        </app-form-field>
+
+        <app-form-field class="bank-search" label="Buscar habilidad">
           <input
             type="search"
             [(ngModel)]="busquedaTecnologia"
             [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="buscar()"
             placeholder="JAVA, Python, Angular"
           />
-          <app-button type="button" (pressed)="limpiarBusquedaTecnologia()">Limpiar</app-button>
-        </span>
-      </app-form-field>
+        </app-form-field>
+
+        <app-button type="button" variant="secondary" (pressed)="limpiarBusquedaTecnologia()">Limpiar</app-button>
+      </div>
     </header>
 
     <app-tabs
@@ -94,24 +131,28 @@
       [title]="tituloBanco"
       [subtitle]="subtituloBanco"
       [columns]="columnasBanco"
-      [rows]="tecnologiasFiltradas"
+      [rows]="tecnologiasBancoPaginadas"
       [total]="tecnologiasFiltradas.length"
-      [page]="1"
+      [page]="paginaBanco"
       [pageSize]="10"
       [pageSizeOptions]="[10]"
       [loading]="false"
       [selectable]="false"
+      [clickableRows]="true"
       [rowId]="obtenerIdTecnologiaResumen"
-      emptyTitle="No hay tecnologias"
-      emptyMessage="Limpia la busqueda o crea preguntas para una tecnologia."
+      emptyTitle="No hay habilidades"
+      emptyMessage="Limpia la busqueda o crea preguntas para una habilidad."
+      (rowClick)="verPreguntasBanco($event)"
+      (pageChange)="cambiarPaginaBanco($event)"
       (clear)="limpiarBusquedaTecnologia()"
     ></app-data-table>
+
   </section>
 
   <ng-container *ngIf="vistaActiva === 'armar'">
   <section class="test-builder" aria-labelledby="test-builder-title">
     <div>
-      <h2 id="test-builder-title">Test en preparacion</h2>
+      <h2 id="test-builder-title">Cuestionario en preparacion</h2>
       <p>{{ resumenTestSeleccionado }}</p>
     </div>
 
@@ -119,10 +160,10 @@
       <app-button variant="secondary" type="button" (pressed)="deseleccionarPreguntas()" [disabled]="cantidadPreguntasParaEnviar === 0">
         Deseleccionar
       </app-button>
-      <app-button type="button" (pressed)="abrirModalEnvio()" [disabled]="!puedeEnviarCuestionario">Enviar test</app-button>
+      <app-button type="button" (pressed)="abrirModalEnvio()" [disabled]="!puedeEnviarCuestionario">Enviar cuestionario</app-button>
     </footer>
 
-    <dl aria-label="Resumen del test seleccionado">
+    <dl aria-label="Resumen del cuestionario seleccionado">
       <div>
         <dt>Preguntas</dt>
         <dd>{{ cantidadPreguntasParaEnviar }}</dd>
@@ -132,12 +173,12 @@
         <dd>{{ duracionParaEnviar }}</dd>
       </div>
       <div>
-        <dt>Tecnologias</dt>
+        <dt>Habilidades</dt>
         <dd>{{ tecnologiasEnTest }}</dd>
       </div>
     </dl>
 
-    <ul *ngIf="resumenSeleccionPorTecnologia.length > 0" class="selection-chips" aria-label="Tecnologias incluidas">
+    <ul *ngIf="resumenSeleccionPorTecnologia.length > 0" class="selection-chips" aria-label="Habilidades incluidas">
       <li *ngFor="let item of resumenSeleccionPorTecnologia">
         <strong>{{ item.nombre }}</strong>
         <span>{{ item.cantidad }} preguntas - {{ item.duracion }}</span>
@@ -146,7 +187,7 @@
 
     <section class="selected-questions" aria-labelledby="preguntas-seleccionadas-title">
       <h3 id="preguntas-seleccionadas-title">Preguntas seleccionadas</h3>
-      <p *ngIf="preguntasSeleccionadasDetalle.length === 0">Selecciona preguntas desde la tabla de una o varias tecnologias.</p>
+      <p *ngIf="preguntasSeleccionadasDetalle.length === 0">Selecciona preguntas desde la tabla de una o varias habilidades.</p>
 
       <ul *ngIf="preguntasSeleccionadasDetalle.length > 0">
         <li *ngFor="let pregunta of preguntasSeleccionadasDetalle">
@@ -167,40 +208,56 @@
   <section class="questionnaire-workspace" aria-labelledby="tecnologias-title">
     <aside class="technology-panel" aria-labelledby="tecnologias-title">
       <header class="section-header">
-        <h2 id="tecnologias-title">Tecnologias</h2>
-        <p>{{ tecnologiasFiltradas.length }} disponibles</p>
+        <h2 id="tecnologias-title">Habilidades</h2>
+        <p>{{ tecnologiasFiltradasArmar.length }} disponibles</p>
       </header>
 
-      <app-form-field label="Buscar tecnologia">
+      <app-form-field label="Buscar habilidad">
         <input
           type="search"
-          [(ngModel)]="busquedaTecnologia"
+          [(ngModel)]="busquedaTecnologiaArmar"
           [ngModelOptions]="{ standalone: true }"
           placeholder="JAVA, Python, Angular"
         />
       </app-form-field>
 
-      <nav class="technology-list" aria-label="Seleccionar tecnologia">
-        <button
-          type="button"
-          *ngFor="let item of tecnologiasFiltradas"
-          [class.is-active]="tecnologiaDetalle?.id === item.tecnologia.id"
-          (click)="verDetalleTecnologia(item.tecnologia)"
+      <div class="empty-state is-compact" *ngIf="cargando && tecnologiasFiltradasArmar.length === 0">
+        <h3>Cargando habilidades</h3>
+        <p>Estamos preparando el banco para armar el cuestionario.</p>
+      </div>
+
+      <nav class="technology-list" aria-label="Seleccionar habilidad" *ngIf="!cargando || tecnologiasFiltradasArmar.length > 0">
+        <section
+          class="technology-category"
+          *ngFor="let grupo of tecnologiasFiltradasPorCategoria"
         >
-          <span>
-            <strong>{{ item.tecnologia.nombre }}</strong>
-            <small>{{ item.cantidad }} preguntas</small>
-          </span>
-          <span class="level-counts" aria-label="Distribucion por nivel">
-            <small>B {{ item.basico }}</small>
-            <small>J {{ item.junior }}</small>
-            <small>SS {{ item.semiSenior }}</small>
-            <small>S {{ item.senior }}</small>
-          </span>
-        </button>
+          <h3>{{ grupo.nombre }}</h3>
+          <button
+            type="button"
+            *ngFor="let item of grupo.items"
+            [class.is-active]="tecnologiaDetalle?.id === item.tecnologia.id"
+            (click)="verDetalleTecnologia(item.tecnologia)"
+          >
+            <span>
+              <strong>{{ item.tecnologia.nombre }}</strong>
+              <small *ngIf="item.cantidad > 0">{{ item.cantidad }} preguntas</small>
+              <small *ngIf="item.cantidad === 0">Sin preguntas</small>
+              <small *ngIf="item.cantidad > 0">{{ item.profundidad }}</small>
+            </span>
+            <span
+              class="level-counts"
+              *ngIf="item.cantidad > 0"
+              aria-label="Distribucion por nivel"
+            >
+              <small *ngFor="let nivel of item.niveles" [class.is-empty]="nivel.cantidad === 0">
+                {{ nivel.nombre | slice:0:2 }} {{ nivel.cantidad }}
+              </small>
+            </span>
+          </button>
+        </section>
       </nav>
 
-      <div class="empty-state is-compact" *ngIf="tecnologiasFiltradas.length === 0">
+      <div class="empty-state is-compact" *ngIf="!cargando && tecnologiasFiltradasArmar.length === 0">
         <h3>No hay resultados</h3>
         <p>Ajusta la busqueda para volver al listado completo.</p>
         <app-button variant="secondary" size="sm" type="button" (pressed)="limpiarBusquedaTecnologia()">Limpiar</app-button>
@@ -212,73 +269,123 @@
         <header class="detail-header">
           <div>
             <h2 id="detalle-tecnologia-title">{{ tecnologiaDetalle.nombre }}</h2>
-            <p>Preguntas disponibles para armar y enviar el cuestionario.</p>
+            <p>{{ profundidadTecnologiaDetalle }}</p>
           </div>
-          <app-button variant="secondary" type="button" (pressed)="volverListadoTecnologias()">Quitar seleccion</app-button>
-        </header>
-
-        <aside class="detail-summary" aria-label="Resumen de preguntas de la tecnologia">
-          <dl>
+          <dl class="detail-inline-summary" aria-label="Resumen de preguntas">
             <div>
               <dt>Preguntas</dt>
               <dd>{{ totalPreguntasDetalle }}</dd>
             </div>
             <div>
-              <dt>Duracion total</dt>
+              <dt>Duracion</dt>
               <dd>{{ duracionTotalDetalle }}</dd>
             </div>
-            <div *ngFor="let nivel of resumenNivelesDetalle">
-              <dt>{{ nivel.nombre }}</dt>
-              <dd>{{ nivel.cantidad }}</dd>
-            </div>
           </dl>
-        </aside>
+          <app-button variant="secondary" type="button" (pressed)="volverListadoTecnologias()">Quitar seleccion</app-button>
+        </header>
 
-        <div class="questions-toolbar">
-          <app-form-field label="Buscar pregunta">
-            <span class="search-control">
-              <input
-                type="search"
-                [(ngModel)]="busquedaPreguntas"
-                [ngModelOptions]="{ standalone: true }"
-                placeholder="ID o texto de pregunta"
-              />
-              <app-button type="button" (pressed)="buscar()">Buscar</app-button>
-            </span>
-          </app-form-field>
-        </div>
+        <section
+          class="depth-summary"
+          *ngIf="totalPreguntasDetalle > 0"
+          aria-label="Profundidad de preguntas por nivel"
+        >
+          <article *ngFor="let nivel of resumenNivelesDetalle">
+            <header>
+              <strong>{{ nivel.nombre }}</strong>
+              <span>{{ nivel.cantidad }} preguntas</span>
+            </header>
+            <div class="depth-meter" aria-hidden="true">
+              <span [style.width.%]="nivel.porcentaje"></span>
+            </div>
+            <footer>
+              <span>{{ nivel.porcentaje }}%</span>
+              <span>{{ nivel.duracion }}</span>
+            </footer>
+          </article>
+        </section>
 
-        <app-data-table
-          [title]="'Preguntas de ' + tecnologiaDetalle.nombre"
-          [subtitle]="preguntasFiltradas.length + ' preguntas encontradas.'"
-          [columns]="columnasPreguntas"
-          [rows]="preguntasPaginadas"
-          [total]="preguntasFiltradas.length"
-          [page]="paginaActual"
-          [pageSize]="registrosPorPagina"
-          [pageSizeOptions]="[10, 25, 50]"
-          [loading]="cargando"
-          [rowId]="obtenerIdPregunta"
-          [selectable]="true"
-          [selectedIds]="preguntasSeleccionadas"
-          emptyTitle="No hay preguntas para esta tecnologia"
-          emptyMessage="Agrega una pregunta o cambia la busqueda."
-          (selectedIdsChange)="actualizarPreguntasSeleccionadas($event)"
-          (pageChange)="cambiarPagina($event)"
-          (pageSizeChange)="cambiarRegistrosPorPagina($event)"
-          (clear)="limpiarBusquedaPreguntas()"
-        ></app-data-table>
+        <section class="questions-table-shell" aria-labelledby="preguntas-habilidad-title">
+          <header class="questions-table-toolbar">
+            <div>
+              <h3 id="preguntas-habilidad-title">Preguntas de {{ tecnologiaDetalle.nombre }}</h3>
+              <p>{{ preguntasFiltradas.length }} preguntas encontradas.</p>
+            </div>
+            <input
+              class="question-filter"
+              type="search"
+              [(ngModel)]="busquedaPreguntas"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="buscar()"
+              placeholder="Filtrar por ID o texto"
+              aria-label="Filtrar preguntas"
+            />
+          </header>
+
+          <app-data-table
+            [title]="''"
+            [subtitle]="''"
+            [hideHeader]="true"
+            [columns]="columnasPreguntasArmar"
+            [rows]="preguntasPaginadas"
+            [total]="preguntasFiltradas.length"
+            [page]="paginaActual"
+            [pageSize]="registrosPorPagina"
+            [pageSizeOptions]="[10, 25, 50]"
+            [loading]="cargando"
+            [rowId]="obtenerIdPregunta"
+            [selectable]="true"
+            [selectedIds]="preguntasSeleccionadas"
+            emptyTitle="No hay preguntas para esta habilidad"
+            emptyMessage="Agrega una pregunta o cambia la busqueda."
+            (selectedIdsChange)="actualizarPreguntasSeleccionadas($event)"
+            (pageChange)="cambiarPagina($event)"
+            (pageSizeChange)="cambiarRegistrosPorPagina($event)"
+            (clear)="limpiarBusquedaPreguntas()"
+          ></app-data-table>
+        </section>
       </ng-container>
 
       <ng-template #sinTecnologiaSeleccionada>
         <div class="empty-state">
-          <h2 id="sin-tecnologia-title">Selecciona una tecnologia</h2>
+        <h2 id="sin-tecnologia-title">Selecciona una habilidad</h2>
           <p>El detalle, la duracion total y el envio al candidato apareceran aqui.</p>
         </div>
       </ng-template>
     </section>
   </section>
+
   </ng-container>
+
+  <section
+    class="assignments-panel"
+    *ngIf="vistaActiva === 'asignaciones'"
+    aria-labelledby="asignaciones-title"
+  >
+    <app-data-table
+      id="asignaciones-title"
+      title="Asignaciones de cuestionarios"
+      subtitle="Seguimiento de envios, estados y resultados de M4."
+      [columns]="columnasAsignaciones"
+      [rows]="asignacionesPaginadas"
+      [total]="asignaciones.length"
+      [page]="paginaAsignaciones"
+      [pageSize]="registrosPorPaginaAsignaciones"
+      [pageSizeOptions]="[10, 25, 50]"
+      [loading]="cargandoAsignaciones"
+      [errorMessage]="errorAsignaciones"
+      [selectable]="false"
+      [rowId]="obtenerIdAsignacion"
+      [actions]="accionesAsignaciones"
+      [compactActions]="true"
+      emptyTitle="No hay asignaciones"
+      emptyMessage="Cuando envies un cuestionario, sus asignaciones apareceran aqui."
+      (actionClick)="manejarAccionAsignacion($event)"
+      (pageChange)="cambiarPaginaAsignaciones($event)"
+      (pageSizeChange)="cambiarRegistrosPorPaginaAsignaciones($event)"
+      (retry)="cargarAsignaciones()"
+      (clear)="cargarAsignaciones()"
+    ></app-data-table>
+  </section>
 </app-page-layout>
 
 <app-cuestionario-envio-modal
@@ -286,6 +393,86 @@
   [cantidadPreguntas]="cantidadPreguntasParaEnviar"
   [duracion]="duracionParaEnviar"
   [resumen]="resumenTestSeleccionado"
+  [enviando]="enviando"
+  [cargandoOpciones]="cargandoOpcionesEnvio"
+  [solicitudes]="solicitudesEnvio"
+  [candidatos]="candidatosEnvio"
   (cerrar)="cerrarModalEnvio()"
   (enviar)="enviarCuestionario($event)"
 ></app-cuestionario-envio-modal>
+
+<app-modal
+  *ngIf="vistaActiva === 'crear' && tecnologiaDetalle"
+  [titulo]="tituloDetalleBanco"
+  [subtitulo]="subtituloDetalleBanco"
+  [ancho]="anchoDetalleBanco"
+  (cerrar)="cerrarDetalleBanco()"
+>
+  <section
+    class="bank-modal-empty"
+    *ngIf="preguntasBancoDetalle.length === 0; else preguntasBancoTabla"
+  >
+    <h3>{{ tecnologiaDetalle.nombre }}</h3>
+    <p>
+      No hay preguntas creadas para esta habilidad en
+      {{ nivelBancoActivo === 'todos' ? 'ningun nivel' : nombreNivelBancoActivo }}.
+    </p>
+    <app-button type="button" (pressed)="cerrarDetalleBanco()">
+      Volver al banco
+    </app-button>
+  </section>
+
+  <ng-template #preguntasBancoTabla>
+    <app-data-table
+    [title]="''"
+    [subtitle]="''"
+    [hideHeader]="true"
+    [columns]="columnasPreguntas"
+    [rows]="preguntasBancoDetallePaginadas"
+    [total]="preguntasBancoDetalle.length"
+    [page]="paginaActual"
+    [pageSize]="registrosPorPagina"
+    [pageSizeOptions]="[10, 25, 50]"
+    [loading]="cargando"
+    [rowId]="obtenerIdPregunta"
+    [selectable]="false"
+    emptyTitle="No hay preguntas creadas"
+    emptyMessage="Crea una pregunta para esta tecnologia y nivel."
+    (pageChange)="cambiarPaginaDetalleBanco($event)"
+    (pageSizeChange)="cambiarRegistrosPorPagina($event)"
+  ></app-data-table>
+  </ng-template>
+</app-modal>
+
+<app-modal
+  *ngIf="asignacionReintento"
+  titulo="Habilitar reintento"
+  [subtitulo]="asignacionReintento.cuestionario_nombre || 'Asignación de cuestionario'"
+  ancho="md"
+  (cerrar)="cerrarModalReintento()"
+>
+  <section class="retry-modal">
+    <p>
+      El backend limpiará las respuestas del intento con error técnico y devolverá la asignación a estado Asignado.
+    </p>
+
+    <app-form-field label="Nueva fecha de vencimiento" [required]="true">
+      <app-date-picker
+        [min]="fechaHoyInput"
+        [(ngModel)]="reintentoFecha"
+      ></app-date-picker>
+    </app-form-field>
+
+    <app-form-field label="Hora de vencimiento" [required]="true">
+      <input
+        type="time"
+        [(ngModel)]="reintentoHora"
+      />
+    </app-form-field>
+  </section>
+
+  <div class="modal-actions" modal-footer>
+    <app-button variant="ghost" type="button" (pressed)="cerrarModalReintento()">Cancelar</app-button>
+    <app-button type="button" [disabled]="guardandoReintento" (pressed)="confirmarReintento()">Habilitar reintento</app-button>
+  </div>
+</app-modal>

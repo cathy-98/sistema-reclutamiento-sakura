@@ -1,112 +1,442 @@
 <app-page-layout>
+
+  <!--
+    Integración M3 - Candidatos y Postulaciones
+
+    Esta pantalla administra candidatos como personas independientes
+    de sus postulaciones.
+
+    Un candidato puede participar en múltiples solicitudes.
+    Los datos de proceso como código SOL-XXX, match, estado,
+    renta y fecha pertenecen a la postulación.
+  -->
   <app-page-header
-    title="Listado de candidatos"
-    subtitle="Gestión de candidatos"
+    *ngIf="!enContextoSolicitud"
+    [title]="tituloPagina"
+    [subtitle]="subtituloPagina"
   >
     <div pageHeaderActions>
-      <app-button type="button">Realizar match</app-button>
+      <app-button
+        type="button"
+        variant="ghost"
+        *ngIf="enContextoSolicitud"
+        (pressed)="volverASolicitud()"
+      >
+        Volver a solicitud
+      </app-button>
+
+      <app-button type="button" *ngIf="!enContextoSolicitud && vistaGeneral === 'listado'">
+        Realizar match
+      </app-button>
     </div>
   </app-page-header>
 
-  <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+  <section class="request-context" *ngIf="solicitudContexto">
+    <div class="request-context__main">
+      <div>
+        <span>Gestionar candidatos</span>
+        <h1>Candidatos para {{ solicitudContexto.codigo || solicitudContexto.id }}</h1>
+        <strong>{{ solicitudContexto.cargo || 'Sin cargo informado' }}</strong>
+      </div>
 
+      <app-button
+        type="button"
+        variant="ghost"
+        size="sm"
+        (pressed)="volverASolicitud()"
+      >
+        Volver a solicitud
+      </app-button>
+    </div>
+
+    <div class="request-context__meta" *ngIf="metadataSolicitudContexto.length > 0">
+      <span *ngFor="let item of metadataSolicitudContexto">{{ item }}</span>
+    </div>
+
+    <div class="request-context__skills" *ngIf="habilidadesSolicitudContexto.length > 0">
+      <strong>Habilidades requeridas</strong>
+      <div>
+        <span *ngFor="let habilidad of habilidadesSolicitudContexto">{{ habilidad.nombre }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="match-context-message" *ngIf="mostrarMensajeSinMatchContexto">
+    <strong>Aún no hay resultados de match para esta solicitud.</strong>
+    <span>Los candidatos asociados todavía no tienen evaluación de compatibilidad registrada.</span>
+  </section>
+
+
+  <app-alert-region
+    [alerta]="alerta"
+    (cerrar)="cerrarAlerta()"
+  ></app-alert-region>
+
+
+  <!--
+    Integración M3
+
+    La importación de CV pertenece al flujo administrativo
+    de candidatos.
+
+    Backend soporta importación mediante multipart/form-data.
+  -->
   <app-file-dropzone
+    *ngIf="mostrarCargaCandidatos"
     title="Carga CVs de candidatos"
     description="Arrastra uno o más CVs para dejarlos listos antes de procesarlos."
     buttonText="Seleccionar CVs"
-    [allowedExtensions]="['pdf', 'doc', 'docx']"
+    [allowedExtensions]="['pdf', 'docx', 'txt']"
     [maxFileSizeMb]="10"
     (filesChange)="actualizarArchivosCv($event)"
-  ></app-file-dropzone>
-
-  <app-filter-panel
-    description="Usa uno o más campos para encontrar candidatos."
-    quickSearchPlaceholder="Ej. Macarena Lopez, SOL-021 o Frontend"
-    [(quickSearch)]="busquedaRapida"
-    (search)="buscar()"
-    (clear)="limpiarFiltros()"
   >
-    <label>
-      ID solicitud
-      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. SOL-021" />
+    <div class="associated-request-field">
+      <label for="solicitud-asociada-cv">Solicitud asociada</label>
+
+      <div class="associated-request-field__control">
+        <input
+          id="solicitud-asociada-cv"
+          type="text"
+          list="solicitudes-carga-cv"
+          placeholder="Ej. SOL-000017"
+          [(ngModel)]="codigoSolicitudCarga"
+          (ngModelChange)="validarSolicitudCargaPorCodigo()"
+          (blur)="validarSolicitudCargaPorCodigo()"
+        />
+
+        <button
+          type="button"
+          *ngIf="solicitudCargaSeleccionada"
+          (click)="limpiarSolicitudCarga()"
+        >
+          Cambiar
+        </button>
+      </div>
+
+      <datalist id="solicitudes-carga-cv">
+        <option *ngFor="let solicitud of solicitudesCargaDisponibles" [value]="solicitud.codigo"></option>
+      </datalist>
+
+      <span class="associated-request-field__success" *ngIf="solicitudCargaSeleccionada">
+        ✓ {{ solicitudCargaSeleccionada.codigo }} · {{ solicitudCargaSeleccionada.cargo }}
+      </span>
+
+      <span class="associated-request-field__error" *ngIf="mostrarSolicitudCargaNoEncontrada">
+        No se encontró una solicitud con ese número.
+      </span>
+    </div>
+  </app-file-dropzone>
+
+  <div class="cv-upload-actions" *ngIf="mostrarCargaCandidatos && archivosCv.length > 0">
+    <span>{{ archivosCv.length }} archivo(s) listo(s) para procesar.</span>
+    <app-button
+      type="button"
+      [disabled]="importandoCvs"
+      (pressed)="procesarArchivosCv()"
+    >
+      {{ importandoCvs ? 'Procesando...' : 'Procesar CVs' }}
+    </app-button>
+  </div>
+
+
+  <!--
+    Decisión UX/UI M3
+
+    La búsqueda rápida es la acción principal del listado.
+    Permite localizar candidatos utilizando:
+    - nombre
+    - correo
+    - código de solicitud SOL-XXX
+    - cargo
+
+    Los filtros específicos se mantienen para búsquedas
+    de reclutamiento más precisas.
+  -->
+  <app-filter-panel
+    *ngIf="mostrarListadoCandidatos"
+    [class.is-request-context]="enContextoSolicitud"
+    [title]="enContextoSolicitud ? 'Filtrar candidatos' : 'Buscar y filtrar'"
+    [description]="descripcionFiltros"
+    [quickSearchPlaceholder]="placeholderBusquedaRapida"
+    [filtersButtonLabel]="enContextoSolicitud ? 'Filtros' : 'Filtros'"
+
+  [(quickSearch)]="busquedaRapida"
+
+  [collapsible]="true"
+  [filtersExpanded]="false"
+
+  (search)="buscar()"
+  (clear)="limpiarFiltros()"
+>
+
+    <!--
+      Integración M3
+
+      Busca cualquiera de las solicitudes asociadas al candidato.
+      No corresponde a cand_id.
+    -->
+    <label *ngIf="!enContextoSolicitud">
+      Código de solicitud
+
+      <input
+        [(ngModel)]="filtros.idSolicitud"
+        type="text"
+        placeholder="Ej. SOL-000001"
+      />
     </label>
+
+
     <label>
-      Cargo postulado
-      <input [(ngModel)]="filtros.cargo" type="text" placeholder="Ej. Frontend Angular" />
-    </label>
-    <label>
-      Nombre completo
-      <input [(ngModel)]="filtros.nombre" type="text" placeholder="Ej. Macarena Lopez" />
-    </label>
-    <label>
-      Correo electrónico
-      <input [(ngModel)]="filtros.correo" type="email" placeholder="Ej. macarena.lopez@mail.com" />
-    </label>
-    <label>
-      Número de teléfono
-      <input [(ngModel)]="filtros.telefono" type="text" placeholder="Ej. +56 9 5634 8547" />
-    </label>
-    <label>
-      Estado postulación
-      <select [(ngModel)]="filtros.estado">
-        <option *ngFor="let estado of estados" [ngValue]="estado">{{ estado }}</option>
+      Estado de postulación
+
+      <select
+        [(ngModel)]="filtros.estado"
+      >
+        <option
+          *ngFor="let estado of estados"
+          [ngValue]="estado"
+        >
+          {{ estado }}
+        </option>
       </select>
     </label>
+
+
+    <label *ngIf="!enContextoSolicitud">
+      Cargo postulado
+
+      <input
+        [(ngModel)]="filtros.cargo"
+        type="text"
+        placeholder="Ej. Frontend Angular"
+      />
+    </label>
+
+
+    <!--
+      Decisión UX/UI M3
+
+      El filtro funciona como match mínimo.
+      Ejemplo: ingresar 75 muestra candidatos con match >= 75%.
+    -->
+    <label *ngIf="mostrarFiltroMatch">
+      Match mínimo (%)
+
+      <input
+        [(ngModel)]="filtros.match"
+        type="number"
+        min="0"
+        max="100"
+        placeholder="Ej. 75"
+      />
+    </label>
+
+
     <label>
       Disponibilidad
-      <select *ngIf="disponibilidades.length > 0; else disponibilidadTexto" [(ngModel)]="filtros.disponibilidad">
-        <option value="">Todas</option>
-        <option *ngFor="let disponibilidad of disponibilidades" [ngValue]="disponibilidad">
+
+      <select
+        *ngIf="disponibilidades.length > 0; else disponibilidadTexto"
+        [(ngModel)]="filtros.disponibilidad"
+      >
+        <option value="">
+          Todas
+        </option>
+
+        <option
+          *ngFor="let disponibilidad of disponibilidades"
+          [ngValue]="disponibilidad"
+        >
           {{ disponibilidad }}
         </option>
       </select>
+
+
       <ng-template #disponibilidadTexto>
-        <input [(ngModel)]="filtros.disponibilidad" type="text" placeholder="Ej. Inmediata" />
+        <input
+          [(ngModel)]="filtros.disponibilidad"
+          type="text"
+          placeholder="Ej. Inmediata"
+        />
       </ng-template>
     </label>
-    <label>
-      Pretensión de renta
-      <input [(ngModel)]="filtros.renta" type="number" min="0" placeholder="Ej. 900000" />
+
+
+    <!--
+      Decisión UX/UI M3
+
+      El filtro de renta representa un monto máximo.
+      La lógica actual del listado utiliza:
+      candidato.renta <= filtros.renta.
+    -->
+    <label *ngIf="!enContextoSolicitud">
+      Renta máxima
+
+      <input
+        [(ngModel)]="filtros.renta"
+        type="number"
+        min="0"
+        placeholder="Ej. 900000"
+      />
     </label>
-    <label>
-      Match
-      <input [(ngModel)]="filtros.match" type="number" min="0" max="100" placeholder="Ej. 75" />
-    </label>
+
+
     <label>
       Nivel
-      <select [(ngModel)]="filtros.nivel">
-        <option value="">Todos</option>
-        <option *ngFor="let nivel of niveles" [ngValue]="nivel">{{ nivel }}</option>
+
+      <select
+        [(ngModel)]="filtros.nivel"
+      >
+        <option value="">
+          Todos
+        </option>
+
+        <option
+          *ngFor="let nivel of niveles"
+          [ngValue]="nivel"
+        >
+          {{ nivel }}
+        </option>
       </select>
     </label>
+
+
     <label>
-      Años de experiencia
-      <input [(ngModel)]="filtros.experiencia" type="number" min="0" placeholder="Ej. 3" />
+      Experiencia mínima
+
+      <input
+        [(ngModel)]="filtros.experiencia"
+        type="number"
+        min="0"
+        placeholder="Ej. 3 años"
+      />
     </label>
+
+
+    <!--
+      Filtros secundarios de identificación.
+
+      Se conservan para búsquedas específicas aunque
+      nombre y correo también participan de la búsqueda rápida.
+    -->
+    <label *ngIf="!enContextoSolicitud">
+      Nombre completo
+
+      <input
+        [(ngModel)]="filtros.nombre"
+        type="text"
+        placeholder="Nombre del candidato"
+      />
+    </label>
+
+
+    <label *ngIf="!enContextoSolicitud">
+      Correo electrónico
+
+      <input
+        [(ngModel)]="filtros.correo"
+        type="email"
+        placeholder="Ej. macarena.lopez@mail.com"
+      />
+    </label>
+
+
+    <label *ngIf="!enContextoSolicitud">
+      Número de teléfono
+
+      <input
+        [(ngModel)]="filtros.telefono"
+        type="text"
+        placeholder="Ej. +56 9 5634 8547"
+      />
+    </label>
+
   </app-filter-panel>
 
+
+  <!--
+    Integración M3
+
+    Las acciones masivas se realizan sobre candidatos seleccionados
+    mediante cand_id.
+
+    No se utiliza el código de solicitud como identificador
+    de selección porque un candidato puede tener varias postulaciones.
+  -->
   <app-action-bar
+    *ngIf="
+      mostrarListadoCandidatos &&
+      !cargando &&
+      !errorCarga &&
+      candidatosFiltrados.length > 0
+    "
     [message]="mensajeAccionesMasivas"
     aria-label="Acciones masivas"
-    *ngIf="!cargando && !errorCarga && candidatosFiltrados.length > 0"
   >
-    <button type="button" [disabled]="seleccionados.size === 0">
-      <span aria-hidden="true">✓</span>
+
+    <button
+      *ngIf="!enContextoSolicitud"
+      type="button"
+      [disabled]="seleccionados.size === 0"
+    >
+      <span aria-hidden="true">
+        ✓
+      </span>
+
       Enviar correo
     </button>
-    <button type="button" [disabled]="seleccionados.size === 0" (click)="abrirAgendaMasiva()">
-      <span aria-hidden="true">✦</span>
+
+
+    <button
+      type="button"
+      [disabled]="seleccionados.size === 0"
+      (click)="abrirAgendaMasiva()"
+    >
+      <span aria-hidden="true">
+        ✦
+      </span>
+
       Agendar entrevistas
     </button>
-    <button type="button" [disabled]="seleccionados.size === 0" (click)="prepararTestMasivo()">
-      <span aria-hidden="true">+</span>
+
+
+    <button
+      type="button"
+      [disabled]="seleccionados.size === 0"
+      (click)="prepararTestMasivo()"
+    >
+      <span aria-hidden="true">
+        +
+      </span>
+
       Enviar test
     </button>
+
   </app-action-bar>
 
+
+  <!--
+    Integración M3
+
+    La primera columna "Solicitudes" puede representar múltiples
+    postulaciones para un mismo candidato.
+
+    Visualización definida en candidatos-list.ts:
+
+    SOL-XXXXXX
+    SOL-XXXXXX · SOL-YYYYYY
+    SOL-XXXXXX · SOL-YYYYYY · +2
+
+    Match, cargo, estado, renta y fecha muestran actualmente
+    la postulación más reciente como resumen de la fila.
+
+    El detalle completo de cada proceso se gestiona
+    desde el perfil del candidato.
+  -->
   <app-data-table
-    title="Listado de candidatos"
-    [columns]="columnas"
+    *ngIf="mostrarListadoCandidatos"
+    [title]="tituloTabla"
+    [columns]="columnasTabla"
     [rows]="candidatosPaginados"
     [total]="candidatosFiltrados.length"
     [page]="paginaActual"
@@ -118,8 +448,8 @@
     [actions]="acciones"
     [compactActions]="true"
     [selectedIds]="seleccionados"
-    emptyTitle="No hay candidatos para mostrar"
-    emptyMessage="Ajusta los filtros o limpia la búsqueda para volver al listado completo."
+    [emptyTitle]="tituloVacio"
+    [emptyMessage]="mensajeVacio"
     (selectedIdsChange)="seleccionados = $event"
     (pageChange)="cambiarPagina($event)"
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"
@@ -128,6 +458,17 @@
     (retry)="cargarCandidatos()"
   ></app-data-table>
 
+
+  <!--
+    Integración M3 -> M5
+
+    El candidato puede iniciar el flujo de agenda desde M3,
+    pero la creación y gestión de entrevistas pertenece a M5.
+
+    Cuando existan varias postulaciones, el siguiente ajuste
+    del modal deberá permitir identificar explícitamente
+    sobre cuál proceso se agenda la entrevista.
+  -->
   <app-entrevista-form-modal
     *ngIf="mostrarModalAgenda"
     [candidatos]="candidatosAgenda"
@@ -136,13 +477,27 @@
     (guardar)="guardarAgendaEntrevista($event)"
   ></app-entrevista-form-modal>
 
+
 </app-page-layout>
 
+
+<!--
+  Integración M3
+
+  La desactivación afecta la cuenta del candidato,
+  no el estado de una postulación.
+
+  Los cambios de estado de postulación se gestionarán
+  posteriormente desde el perfil/proceso seleccionado.
+-->
 <app-confirm-dialog
   *ngIf="mostrarConfirmacionDesactivacion"
   titulo="Desactivar cuenta"
   mensaje="Esta acción cambiará el estado de cuenta del candidato a Inactivo."
-  [detalle]="'Candidato seleccionado: ' + (candidatoSeleccionadoDesactivacion?.nombre || '')"
+  [detalle]="
+    'Candidato seleccionado: ' +
+    (candidatoSeleccionadoDesactivacion?.nombre || '')
+  "
   textoCancelar="Volver"
   textoConfirmar="Confirmar inactivación"
   variante="danger"

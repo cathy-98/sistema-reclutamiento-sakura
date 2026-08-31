@@ -2,38 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.catalogos.models import CategoriaHabilidad, Idioma
-
-                               
-                                             
-
-                                                                                       
-                                                                                      
-                                                                                    
-
-
-                   
-                                
-
-                                                                                       
-                                                                                      
-
-
-class CandidatoIdioma(Base):
-    __tablename__ = "tbl_candidato_idioma"
-    __table_args__ = (
-        UniqueConstraint("cdio_candidato_id", "cdio_idioma_id", name="uq_tbl_candidato_idioma"),
-    )
-
-    cdio_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    cdio_candidato_id: Mapped[int] = mapped_column(Integer, ForeignKey("tbl_candidato.cand_id"), nullable=False)
-    cdio_idioma_id: Mapped[int] = mapped_column(Integer, ForeignKey("tbl_idioma.idio_id"), nullable=False)
-    cdio_nivel: Mapped[str] = mapped_column(String(30), nullable=False)
-
+from app.catalogos.models import CategoriaHabilidad, Idioma, NivelIdioma
+from app.candidatos.models import CandidatoIdioma
 
 class DocumentoReporteCandidato(Base):
     __tablename__ = "tbl_documento_reporte_candidato"

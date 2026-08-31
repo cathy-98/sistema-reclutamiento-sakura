@@ -9,7 +9,7 @@
   >
     <span>
       <strong id="candidate-extra-data-title">Datos adicionales del candidato</strong>
-      <small>RUT, ubicación, título y registro</small>
+      <small>RUT, ubicación, título, idiomas y enlaces</small>
     </span>
     <span aria-hidden="true">{{ abierto ? '↑' : '↓' }}</span>
   </button>
@@ -36,6 +36,39 @@
       <dl>
         <div><dt>Título</dt><dd>{{ candidato.tituloProfesional }}</dd></div>
         <div><dt>Registro</dt><dd>{{ candidato.fechaRegistro }}</dd></div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="candidate-links-title">
+      <h3 id="candidate-links-title">Idiomas y enlaces</h3>
+      <dl>
+        <div>
+          <dt>Idiomas</dt>
+          <dd>
+            <ng-container *ngIf="candidato.idiomas.length > 0; else noLanguages">
+              <span class="inline-list">{{ candidato.idiomas.join(' · ') }}</span>
+            </ng-container>
+            <ng-template #noLanguages>Sin idiomas informados</ng-template>
+          </dd>
+        </div>
+
+        <div>
+          <dt>Links</dt>
+          <dd class="profile-links" *ngIf="candidato.enlaces.length > 0; else noLinks">
+            <a
+              *ngFor="let enlace of candidato.enlaces"
+              [href]="enlace.url"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>{{ enlace.tipo }}</span>
+              {{ enlace.texto }}
+            </a>
+          </dd>
+          <ng-template #noLinks>
+            <dd>Sin enlaces registrados</dd>
+          </ng-template>
+        </div>
       </dl>
     </section>
   </div>

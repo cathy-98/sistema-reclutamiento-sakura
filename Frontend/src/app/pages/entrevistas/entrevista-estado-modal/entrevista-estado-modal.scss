@@ -11,6 +11,176 @@ p {
   line-height: 1.45;
 }
 
+.state-summary {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.state-summary h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.status-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.available-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.available-actions h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.action-select {
+  gap: 8px;
+}
+
+.status-panel > div {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.status-panel span {
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.state-badge {
+  display: inline-flex;
+  justify-self: start;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.state-badge.confirmada,
+.state-badge.realizada {
+  background: #edf9f0;
+  color: #267a3f;
+}
+
+.state-badge.cancelada,
+.state-badge.no-asistio {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summary-grid span {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-white);
+}
+
+.summary-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.summary-grid small {
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summary-grid strong {
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.detail-view {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-view h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+details {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+summary {
+  min-height: 44px;
+  padding: 12px 14px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0 14px 14px;
+}
+
+.detail-grid div {
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-grid .wide {
+  grid-column: 1 / -1;
+}
+
+dt {
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .date-grid,
 label {
   display: grid;
@@ -24,6 +194,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   min-height: 44px;
@@ -43,6 +214,86 @@ textarea {
   resize: vertical;
 }
 
+label span {
+  color: var(--color-text-soft);
+  font-weight: 600;
+}
+
 small {
   color: var(--color-danger);
+}
+
+.state-warning,
+.state-error,
+.state-note {
+  padding: 10px 12px;
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+.state-warning {
+  border: 1px solid var(--color-warning);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+}
+
+.state-error {
+  border: 1px solid var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.state-note {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-text-soft);
+}
+
+.results-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.results-section header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.results-section h4,
+.result-card h5 {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.results-section h4 {
+  font-size: 15px;
+}
+
+.results-section p {
+  margin-top: 3px;
+  color: var(--color-text-soft);
+  font-size: 12px;
+}
+
+.result-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.result-card h5 {
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .summary-grid,
+  .detail-grid,
+  .status-panel {
+    grid-template-columns: 1fr;
+  }
 }
