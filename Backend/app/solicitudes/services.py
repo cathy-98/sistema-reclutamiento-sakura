@@ -39,7 +39,7 @@ STATE_TRANSITIONS: dict[str, set[str]] = {
 }
 
 TERMINAL_STATE_NAMES = {"cerrado", "cancelado"}
-COMMENT_REQUIRED_STATE_NAMES = {"pausado", "cancelado"}
+COMMENT_REQUIRED_STATE_NAMES = {"pausado", "cancelado", "cerrado"}
 
 
 class SolicitudModuleError(Exception):
