@@ -2800,7 +2800,7 @@ COPY public.tbl_institucion (inst_id, inst_nombre, inst_tipo_institucion_id) FRO
 COPY public.tbl_modalidad (mdld_id, mdld_nombre, mdld_descripcion) FROM stdin;
 1	Presencial	Trabajo obligatorio en las oficinas del cliente de lunes a viernes.
 2	Remoto	Trabajo completamente desde el hogar, mediante teletrabajo nacional o internacional.
-3	HÔö£┬íbrido	Esquema flexible de trabajo que combina dÔö£┬ías presenciales y remotos (por ejemplo, 3 dÔö£┬ías en casa y 2 dÔö£┬ías en la oficina).
+3	Hibrido	Esquema flexible de trabajo que combina dÔö£┬ías presenciales y remotos (por ejemplo, 3 dÔö£┬ías en casa y 2 dÔö£┬ías en la oficina).
 \.
 
 
