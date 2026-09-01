@@ -124,7 +124,7 @@ def _seed():
         cat_lang=informe_models.CategoriaHabilidad(cthb_nombre="Lenguajes",cthb_descripcion="Lenguajes"); cat_db=informe_models.CategoriaHabilidad(cthb_nombre="Bases de Datos",cthb_descripcion="BD"); lang_es=informe_models.Idioma(idio_nombre="Español"); lang_en=informe_models.Idioma(idio_nombre="Inglés"); db.add_all([cat_lang,cat_db,lang_es,lang_en]); db.flush()
         db.execute(text("UPDATE tbl_habilidad SET hab_categoria_habilidad_id=:c WHERE hab_id=:h"),{"c":cat_lang.cthb_id,"h":skill.hab_id}); db.execute(text("UPDATE tbl_habilidad SET hab_categoria_habilidad_id=:c WHERE hab_id=:h"),{"c":cat_db.cthb_id,"h":skill2.hab_id})
         req_states={}; post_states={}; qstates={}; istates={}; types={}; results={}
-        for n in ["Pendiente","En Curso","En Entrevistas","Cancelado","Cerrado","Pausado"]:
+        for n in ["Pendiente","En Publicacion","En Entrevistas","Cancelado","Cerrado","Pausado"]:
             o=catalog_models.EstadoSolicitud(essl_nombre=n,essl_descripcion=n); db.add(o); db.flush(); req_states[n]=o.essl_id
         for n in ["En revision","En entrevista","Inhabilitado","Seleccionado","Descartado","Contratado"]:
             o=catalog_models.EstadoSolicitudCandidato(essc_nombre=n,essc_descripcion=n); db.add(o); db.flush(); post_states[n]=o.essc_id

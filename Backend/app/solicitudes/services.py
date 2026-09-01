@@ -30,10 +30,10 @@ RECRUITER_ROLE_NAME = "Reclutador"
 INITIAL_REQUEST_STATUS_NAME = "Pendiente"
 
 STATE_TRANSITIONS: dict[str, set[str]] = {
-    "pendiente": {"en curso", "cancelado"},
-    "en curso": {"en entrevistas", "pausado", "cancelado"},
-    "en entrevistas": {"en curso", "pausado", "cerrado", "cancelado"},
-    "pausado": {"en curso", "cancelado"},
+    "pendiente": {"en publicacion", "cancelado"},
+    "en publicacion": {"en entrevistas", "pausado", "cancelado"},
+    "en entrevistas": {"en publicacion", "pausado", "cerrado", "cancelado"},
+    "pausado": {"en publicacion", "cancelado"},
     "cerrado": set(),
     "cancelado": set(),
 }
@@ -417,7 +417,7 @@ def _assert_ready_for_in_progress(db: Session, solicitud: models.Solicitud) -> N
         missing.append("habilidad_excluyente")
     if missing:
         raise ValidationError(
-            "La solicitud no está completa para pasar a En Curso. Faltan: " + ", ".join(missing)
+            "La solicitud no está completa para pasar a En Publicacion. Faltan: " + ", ".join(missing)
         )
     _validate_recruiter(db, solicitud.sol_usuario_asignado_id)
 
@@ -455,7 +455,7 @@ def change_state(
     if target_name in COMMENT_REQUIRED_STATE_NAMES and not payload.observacion:
         raise ValidationError(f"Debe informar una observación para pasar a {target.essl_nombre}")
 
-    if target_name == "en curso":
+    if target_name == "en publicacion":
         _assert_ready_for_in_progress(db, solicitud)
 
     closure_warning = None

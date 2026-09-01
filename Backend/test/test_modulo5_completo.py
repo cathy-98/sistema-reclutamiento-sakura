@@ -142,7 +142,7 @@ def _seed():
         recruiter = _make_user(db, r_recruiter, activo, area, 10, "recruiter.m5@sakura.cl")
 
         req_states = {}
-        for n in ["Pendiente", "En Curso", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
+        for n in ["Pendiente", "En Publicacion", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
             o = catalog_models.EstadoSolicitud(essl_nombre=n, essl_descripcion=n); db.add(o); db.flush(); req_states[n] = o.essl_id
         post_states = {}
         for n in ["En revision", "En entrevista", "Inhabilitado", "Seleccionado", "Descartado", "Contratado"]:
@@ -164,7 +164,7 @@ def _seed():
         db.add_all([c1,c2,c3]); db.flush()
 
         s1 = solicitud_models.Solicitud(sol_codigo="SOL-900001", sol_titulo="QA M5", sol_cantidad_vacantes=3, sol_estado_solicitud_id=req_states["En Entrevistas"], sol_usuario_creador_id=admin.usr_id, sol_usuario_asignado_id=recruiter.usr_id)
-        s2 = solicitud_models.Solicitud(sol_codigo="SOL-900002", sol_titulo="QA M5 No Stage", sol_cantidad_vacantes=1, sol_estado_solicitud_id=req_states["En Curso"], sol_usuario_creador_id=admin.usr_id, sol_usuario_asignado_id=recruiter.usr_id)
+        s2 = solicitud_models.Solicitud(sol_codigo="SOL-900002", sol_titulo="QA M5 No Stage", sol_cantidad_vacantes=1, sol_estado_solicitud_id=req_states["En Publicacion"], sol_usuario_creador_id=admin.usr_id, sol_usuario_asignado_id=recruiter.usr_id)
         db.add_all([s1,s2]); db.flush()
         p1 = solicitud_models.SolicitudCandidato(slcd_candidato_id=c1.cand_id, slcd_solicitud_id=s1.sol_id, slcd_estado_solicitud_candidato_id=post_states["En entrevista"], slcd_fecha_postulacion=datetime.now())
         p2 = solicitud_models.SolicitudCandidato(slcd_candidato_id=c2.cand_id, slcd_solicitud_id=s1.sol_id, slcd_estado_solicitud_candidato_id=post_states["En entrevista"], slcd_fecha_postulacion=datetime.now())

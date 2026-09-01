@@ -217,7 +217,7 @@ def _seed_database() -> SeedInfo:
         db.add_all([cargo, modalidad, contrato, prioridad, habilidad1, habilidad2, habilidad3, nivel])
 
         estados = {}
-        for name in ["Pendiente", "En Curso", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
+        for name in ["Pendiente", "En Publicacion", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
             obj = catalog_models.EstadoSolicitud(essl_nombre=name, essl_descripcion=f"Estado {name}")
             db.add(obj)
             db.flush()
@@ -864,9 +864,9 @@ def _change_state(client: TestClient, seed: SeedInfo, req_id: int, target: str, 
 
 def test_pendiente_a_en_curso(client: TestClient, seed_info: SeedInfo):
     req = _create_request(client, seed_info)
-    response = _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"])
+    response = _change_state(client, seed_info, req["sol_id"], "En Publicacion", seed_info["update_user_id"])
     assert response.status_code == 200, response.text
-    assert response.json()["sol_estado_solicitud_id"] == seed_info["estados"]["En Curso"]
+    assert response.json()["sol_estado_solicitud_id"] == seed_info["estados"]["En Publicacion"]
 
 
 def test_transicion_pendiente_a_pausado_no_permitida_409(client: TestClient, seed_info: SeedInfo):
@@ -899,18 +899,18 @@ def test_pendiente_a_cancelado_con_sol_delete(client: TestClient, seed_info: See
 
 def test_en_curso_pausado_y_reanudar(client: TestClient, seed_info: SeedInfo):
     req = _create_request(client, seed_info)
-    assert _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"]).status_code == 200
+    assert _change_state(client, seed_info, req["sol_id"], "En Publicacion", seed_info["update_user_id"]).status_code == 200
     no_obs = _change_state(client, seed_info, req["sol_id"], "Pausado", seed_info["update_user_id"])
     assert no_obs.status_code == 422
     paused = _change_state(client, seed_info, req["sol_id"], "Pausado", seed_info["update_user_id"], "Pausa temporal")
     assert paused.status_code == 200
-    resumed = _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"])
+    resumed = _change_state(client, seed_info, req["sol_id"], "En Publicacion", seed_info["update_user_id"])
     assert resumed.status_code == 200
 
 
 def test_en_entrevistas_a_cerrado_requiere_sol_delete_y_observacion(client: TestClient, seed_info: SeedInfo):
     req = _create_request(client, seed_info)
-    assert _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"]).status_code == 200
+    assert _change_state(client, seed_info, req["sol_id"], "En Publicacion", seed_info["update_user_id"]).status_code == 200
     assert _change_state(client, seed_info, req["sol_id"], "En Entrevistas", seed_info["update_user_id"]).status_code == 200
 
     # Cerrado sigue siendo una transición terminal: requiere SOL_DELETE.
@@ -949,13 +949,13 @@ def test_estado_terminal_no_permite_transiciones(client: TestClient, seed_info: 
     assert _change_state(
         client, seed_info, req["sol_id"], "Cancelado", seed_info["delete_user_id"], "Fin"
     ).status_code == 200
-    response = _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"])
+    response = _change_state(client, seed_info, req["sol_id"], "En Publicacion", seed_info["update_user_id"])
     assert response.status_code == 409
 
 
 def test_historial_registra_usuario_y_observacion(client: TestClient, seed_info: SeedInfo):
     req = _create_request(client, seed_info)
-    assert _change_state(client, seed_info, req["sol_id"], "En Curso", seed_info["update_user_id"]).status_code == 200
+    assert _change_state(client, seed_info, req["sol_id"], "En Publicacion", seed_info["update_user_id"]).status_code == 200
     assert _change_state(
         client, seed_info, req["sol_id"], "Pausado", seed_info["update_user_id"], "Cliente pidió pausa"
     ).status_code == 200

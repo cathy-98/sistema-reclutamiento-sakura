@@ -101,7 +101,7 @@ def build_context(token: str) -> Context:
     sol_states = named_map("estados-solicitud", "essl_id", "essl_nombre", token)
     cand_states = named_map("estados-solicitud-candidato", "essc_id", "essc_nombre", token)
 
-    required_sol = {"Pendiente", "En Curso", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"}
+    required_sol = {"Pendiente", "En Publicacion", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"}
     required_cand = {"En revision", "En entrevista", "Inhabilitado", "Seleccionado", "Descartado", "Contratado"}
     if missing := required_sol - set(sol_states):
         raise LiveQAError(f"Faltan estados solicitud: {sorted(missing)}")
@@ -264,7 +264,7 @@ def run():
     # Crear solicitud con 2 vacantes, llevar a En Entrevistas.
     sol = req("POST", "/solicitudes", expected=(201,), token=token, json=solicitud_payload(ctx)).json()
     sol_id = int(sol["sol_id"])
-    req("PATCH", f"/solicitudes/{sol_id}/estado", expected=(200,), token=token, json={"sol_estado_solicitud_id": ctx.solicitud_estados["En Curso"]})
+    req("PATCH", f"/solicitudes/{sol_id}/estado", expected=(200,), token=token, json={"sol_estado_solicitud_id": ctx.solicitud_estados["En Publicacion"]})
     req("PATCH", f"/solicitudes/{sol_id}/estado", expected=(200,), token=token, json={"sol_estado_solicitud_id": ctx.solicitud_estados["En Entrevistas"]})
     passed(f"Solicitud M3 creada y llevada a En Entrevistas -> {sol.get('sol_codigo')}")
 
