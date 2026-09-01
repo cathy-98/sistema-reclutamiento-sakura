@@ -40,7 +40,7 @@ header span {
 
 table {
   width: 100%;
-  min-width: 520px;
+  min-width: 620px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -67,6 +67,62 @@ th:nth-child(2),
 td:nth-child(2) {
   width: 120px;
   color: var(--color-muted);
+}
+
+.file-status {
+  display: grid;
+  gap: 3px;
+  color: var(--color-text-soft);
+}
+
+.file-status strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.file-status strong::before {
+  content: "";
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.file-status.is-pending strong::before {
+  content: "•";
+  background: #eef2f7;
+  color: #475569;
+}
+
+.file-status.is-processing strong::before {
+  content: "…";
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.file-status.is-success strong::before {
+  content: "✓";
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.file-status.is-error strong::before {
+  content: "!";
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.file-status span {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 th:last-child,

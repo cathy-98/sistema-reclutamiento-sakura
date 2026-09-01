@@ -380,7 +380,7 @@ textarea::placeholder {
 
 .skills-form-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1.1fr) minmax(190px, 0.95fr) 138px 150px 118px;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(190px, 0.95fr) 138px 118px;
   gap: 14px 18px;
   align-items: start;
 }

@@ -53,6 +53,29 @@
   font-weight: 800;
 }
 
+.applied-role {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: baseline;
+  margin: 0 0 6px;
+  color: var(--color-text-soft);
+  font-size: 16px;
+}
+
+.applied-role span {
+  color: inherit;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.applied-role strong {
+  color: var(--color-text);
+  font-size: 18px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .candidate-main {
   flex: 1;
   display: grid;
@@ -86,10 +109,6 @@ p {
   line-height: 1.45;
 }
 
-.candidate-actions-menu {
-  position: relative;
-}
-
 .candidate-primary-actions {
   display: flex;
   flex-wrap: wrap;
@@ -100,61 +119,6 @@ p {
 
 .candidate-primary-actions app-button {
   min-width: 150px;
-}
-
-.kebab-button {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border: 1px solid var(--color-sakura-border);
-  border-radius: 8px;
-  background: var(--color-white);
-  color: var(--color-sakura);
-  cursor: pointer;
-  font: inherit;
-  font-size: 24px;
-  font-weight: 800;
-}
-
-.kebab-button:hover {
-  border-color: var(--color-sakura-border);
-  background: var(--color-sakura-soft);
-}
-
-.kebab-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 8;
-  display: grid;
-  min-width: 230px;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-white);
-  box-shadow: var(--shadow-modal);
-}
-
-.kebab-menu button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 700;
-  text-align: left;
-}
-
-.kebab-menu button:hover {
-  background: var(--color-sakura-soft);
-  color: var(--color-sakura);
 }
 
 .candidate-controls {

@@ -31,6 +31,7 @@ import { EntrevistaEstadoModal, EvaluacionTipoPayload } from '../entrevista-esta
 import { EntrevistaFormModal } from '../entrevista-form-modal/entrevista-form-modal';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { InformesService } from '../../../services/informes.service';
+import { AuthService } from '../../../services/auth.service';
 
 interface FiltrosEntrevistas {
   busquedaRapida: string;
@@ -73,6 +74,7 @@ export class EntrevistasList implements OnInit {
   filtros: FiltrosEntrevistas = this.filtrosIniciales();
   mostrarFormulario = false;
   errorFormularioAgenda = '';
+  guardandoFormularioAgenda = false;
   candidatosAgendaMasiva: {
     id?: string;
     solicitudCandidatoId?: number;
@@ -89,29 +91,52 @@ export class EntrevistasList implements OnInit {
   modoEstado: ModoEstadoEntrevista = 'gestionar';
   guardandoEstado = false;
   guardandoEvaluaciones = false;
+  cargandoDetalle = false;
   errorEstado = '';
   errorEvaluaciones = '';
+  mensajeEvaluaciones = '';
+  usuarioActualId: number | null = null;
 
   estados: EstadoEntrevista[] = ['Pendiente', 'Confirmada', 'Realizada', 'Reprogramada', 'Cancelada', 'No Asistio'];
   tipos: TipoEntrevista[] = [];
   resultadosEvaluacion: NombreResultadoCatalogoApi[] = [];
 
   readonly columnas: DataTableColumn<EntrevistaResumen>[] = [
-    { key: 'idSolicitud', label: 'ID solicitud', width: 138, sticky: 'left' },
+    {
+      key: 'idSolicitud',
+      label: 'Solicitud',
+      width: 220,
+      sticky: 'left',
+      type: 'stack',
+      value: (entrevista) => entrevista.idSolicitud,
+      secondaryValue: (entrevista) => entrevista.cargo,
+      title: (entrevista) => `${entrevista.idSolicitud} · ${entrevista.cargo}`,
+    },
     {
       key: 'estado',
       label: 'Estado entrevista',
-      width: 160,
+      width: 150,
       type: 'badge',
       className: (entrevista) => this.estadoClase(entrevista.estado),
     },
-    { key: 'tipo', label: 'Tipo de entrevista', width: 170 },
-    { key: 'resultadoEntrevista', label: 'Resultado por área', width: 260, wrap: true },
-    { key: 'asunto', label: 'Asunto del evento', width: 220, wrap: true },
-    { key: 'cargo', label: 'Cargo vacante', width: 190, wrap: true },
-    { key: 'fecha', label: 'Fecha', width: 135, value: (entrevista) => this.formatearFecha(entrevista.fecha) },
-    { key: 'horaInicio', label: 'Hora', width: 110, value: (entrevista) => entrevista.horaInicio },
-    { key: 'entrevistador', label: 'Entrevistador', width: 210, wrap: true },
+    {
+      key: 'candidato',
+      label: 'Candidato',
+      width: 220,
+      type: 'stack',
+      value: (entrevista) => entrevista.candidato,
+      secondaryValue: (entrevista) => entrevista.cargo,
+      title: (entrevista) => `${entrevista.candidato} · ${entrevista.cargo}`,
+    },
+    {
+      key: 'fecha',
+      label: 'Fecha y hora',
+      width: 170,
+      type: 'stack',
+      value: (entrevista) => this.formatearFechaCorta(entrevista.fecha),
+      secondaryValue: (entrevista) => `${entrevista.horaInicio} - ${entrevista.horaFin}`,
+      title: (entrevista) => `${this.formatearFechaCorta(entrevista.fecha)} · ${entrevista.horaInicio} - ${entrevista.horaFin}`,
+    },
   ];
 
   readonly acciones: DataTableAction<EntrevistaResumen>[] = [
@@ -120,19 +145,29 @@ export class EntrevistasList implements OnInit {
       id: 'gestionar',
       label: 'Gestionar entrevista',
       icon: 'edit',
-      visible: (entrevista) => this.puedeCambiarEstado(entrevista),
+      disabled: (entrevista) => !this.puedeCambiarEstado(entrevista),
+      disabledReason: (entrevista) => this.motivoAccionNoDisponible(entrevista),
     },
     {
       id: 'reprogramar',
       label: 'Reprogramar',
       icon: 'calendar',
-      visible: (entrevista) => this.puedeCambiarEstado(entrevista),
+      disabled: (entrevista) => !this.puedeCambiarEstado(entrevista),
+      disabledReason: (entrevista) => this.motivoAccionNoDisponible(entrevista),
+    },
+    {
+      id: 'cancelar',
+      label: 'Cancelar',
+      icon: 'cancel',
+      disabled: (entrevista) => !this.puedeCambiarEstado(entrevista),
+      disabledReason: (entrevista) => this.motivoAccionNoDisponible(entrevista),
     },
     {
       id: 'feedback',
       label: 'Registrar feedback',
       icon: 'edit',
-      visible: (entrevista) => this.esEstadoEntrevista(entrevista, ['Realizada']) && this.cumplePrecondicionM5(entrevista),
+      disabled: (entrevista) => !this.puedeRegistrarFeedback(entrevista),
+      disabledReason: (entrevista) => this.motivoAccionNoDisponible(entrevista, 'feedback'),
     },
   ];
 
@@ -141,10 +176,12 @@ export class EntrevistasList implements OnInit {
     private catalogosService: CatalogosService,
     private informesService: InformesService,
     private solicitudesService: SolicitudesService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
+    this.usuarioActualId = this.authService.obtenerUsuarioId();
     this.cargarCatalogosFiltros();
     this.cargarCatalogosGestion();
     this.cargarEntrevistas();
@@ -198,6 +235,11 @@ export class EntrevistasList implements OnInit {
     return this.entrevistasSeleccionadas.length > 0 && solicitudes.size === 1;
   }
 
+  get seleccionPermiteNuevasAcciones() {
+    return this.entrevistasSeleccionadas.length > 0 &&
+      this.entrevistasSeleccionadas.every((entrevista) => this.cumplePrecondicionM5(entrevista));
+  }
+
   get correosPreview() {
     return this.entrevistasSeleccionadas
       .map((entrevista) => entrevista.candidatoCorreo || entrevista.candidato)
@@ -213,7 +255,7 @@ export class EntrevistasList implements OnInit {
     forkJoin({
       entrevistas: this.entrevistasService.listar(),
       solicitudes: this.solicitudesService.listar().pipe(timeout(5000), catchError(() => of([]))),
-      informes: this.informesService.listarCandidatos({ limit: 500 }).pipe(timeout(5000), catchError(() => of({ total: 0, items: [] }))),
+      informes: this.informesService.listarCandidatos({ limit: 200 }).pipe(timeout(5000), catchError(() => of({ total: 0, items: [] }))),
     })
       .pipe(
         take(1),
@@ -234,8 +276,9 @@ export class EntrevistasList implements OnInit {
           informes.items.map((informe) => [informe.solicitud_candidato_id, informe.estado_postulacion ?? 'Sin estado']),
         );
 
-        // Integración M5: se cruza estado de solicitud/postulación para no ofrecer acciones que backend rechazará.
-        this.entrevistas = entrevistas.map((entrevista) => ({
+        // Se conservan estados de solicitud/postulación como apoyo interno para acciones de agenda,
+        // pero el listado muestra solo el estado propio de la entrevista.
+        this.entrevistas = this.ordenarEntrevistasInicial(entrevistas.map((entrevista) => ({
           ...entrevista,
           cargo: entrevista.cargo && entrevista.cargo !== 'Sin cargo'
             ? entrevista.cargo
@@ -244,7 +287,7 @@ export class EntrevistasList implements OnInit {
           estadoPostulacion: entrevista.solicitudCandidatoId
             ? estadosPostulacionPorId.get(entrevista.solicitudCandidatoId) ?? entrevista.estadoPostulacion
             : entrevista.estadoPostulacion,
-        }));
+        })));
       },
       error: (error) => {
         this.entrevistas = [];
@@ -281,6 +324,7 @@ export class EntrevistasList implements OnInit {
   guardarEntrevista(payload: EntrevistaPayload) {
     const solicitudesCandidatosIds = payload.solicitudesCandidatosIds ?? [];
     this.errorFormularioAgenda = '';
+    this.guardandoFormularioAgenda = true;
 
     if (solicitudesCandidatosIds.length > 1) {
       this.entrevistasService.crearMasiva(
@@ -288,6 +332,10 @@ export class EntrevistasList implements OnInit {
           ...payload,
           solicitudCandidatoId,
         })),
+      ).pipe(
+        finalize(() => {
+          this.guardandoFormularioAgenda = false;
+        }),
       ).subscribe({
         next: () => {
           this.mostrarFormulario = false;
@@ -306,7 +354,11 @@ export class EntrevistasList implements OnInit {
       return;
     }
 
-    this.entrevistasService.crear(payload).subscribe({
+    this.entrevistasService.crear(payload).pipe(
+      finalize(() => {
+        this.guardandoFormularioAgenda = false;
+      }),
+    ).subscribe({
       next: () => {
         const totalProgramaciones = payload.programacionesPorTipo?.length ?? 0;
         this.mostrarFormulario = false;
@@ -333,12 +385,14 @@ export class EntrevistasList implements OnInit {
       )
       .subscribe((resultados) => {
         this.resultadosEvaluacion = resultados;
+        this.cdr.markForCheck();
       });
   }
 
   abrirFormularioIndividual() {
     this.candidatosAgendaMasiva = [];
     this.errorFormularioAgenda = '';
+    this.guardandoFormularioAgenda = false;
     this.mostrarFormulario = true;
   }
 
@@ -352,6 +406,15 @@ export class EntrevistasList implements OnInit {
     if (!this.seleccionMismaSolicitud) {
       this.candidatosAgendaMasiva = [];
       this.errorFormularioAgenda = 'Selecciona entrevistas de una misma solicitud para agendar masivamente.';
+      this.guardandoFormularioAgenda = false;
+      this.mostrarFormulario = true;
+      return;
+    }
+
+    if (!seleccionadas.every((entrevista) => this.cumplePrecondicionM5(entrevista))) {
+      this.candidatosAgendaMasiva = [];
+      this.errorFormularioAgenda = 'No se pueden agendar entrevistas para una solicitud cancelada o una postulación que no está en entrevista.';
+      this.guardandoFormularioAgenda = false;
       this.mostrarFormulario = true;
       return;
     }
@@ -359,6 +422,7 @@ export class EntrevistasList implements OnInit {
     if (seleccionadas.some((entrevista) => !entrevista.solicitudCandidatoId)) {
       this.candidatosAgendaMasiva = [];
       this.errorFormularioAgenda = 'No se pudo identificar la postulación de todas las entrevistas seleccionadas.';
+      this.guardandoFormularioAgenda = false;
       this.mostrarFormulario = true;
       return;
     }
@@ -380,6 +444,7 @@ export class EntrevistasList implements OnInit {
 
     this.candidatosAgendaMasiva = Array.from(porPostulacion.values());
     this.errorFormularioAgenda = '';
+    this.guardandoFormularioAgenda = false;
     this.mostrarFormulario = true;
   }
 
@@ -387,6 +452,7 @@ export class EntrevistasList implements OnInit {
     this.mostrarFormulario = false;
     this.candidatosAgendaMasiva = [];
     this.errorFormularioAgenda = '';
+    this.guardandoFormularioAgenda = false;
   }
 
   abrirModalCorreo() {
@@ -476,17 +542,58 @@ export class EntrevistasList implements OnInit {
     }
 
     if (evento.action === 'gestionar') {
+      if (!this.puedeCambiarEstado(evento.row)) {
+        this.alerta = {
+          tipo: 'warning',
+          variante: 'soft',
+          mensaje: this.mensajeSolicitudBloqueada(evento.row),
+        };
+        return;
+      }
+
       this.abrirEstado(evento.row, 'gestionar');
       return;
     }
 
     if (evento.action === 'feedback') {
+      if (!this.puedeRegistrarFeedback(evento.row)) {
+        this.alerta = {
+          tipo: 'warning',
+          variante: 'soft',
+          mensaje: 'El feedback estará disponible cuando la entrevista esté realizada.',
+        };
+        return;
+      }
+
       this.abrirEstado(evento.row, 'gestionar');
       return;
     }
 
     if (evento.action === 'reprogramar') {
+      if (!this.puedeCambiarEstado(evento.row)) {
+        this.alerta = {
+          tipo: 'warning',
+          variante: 'soft',
+          mensaje: this.mensajeSolicitudBloqueada(evento.row),
+        };
+        return;
+      }
+
       this.abrirEstado(evento.row, 'reprogramar');
+      return;
+    }
+
+    if (evento.action === 'cancelar') {
+      if (!this.puedeCambiarEstado(evento.row)) {
+        this.alerta = {
+          tipo: 'warning',
+          variante: 'soft',
+          mensaje: this.mensajeSolicitudBloqueada(evento.row),
+        };
+        return;
+      }
+
+      this.abrirEstado(evento.row, 'cancelar');
       return;
     }
 
@@ -499,6 +606,7 @@ export class EntrevistasList implements OnInit {
     this.modoEstado = modo;
     this.errorEstado = '';
     this.errorEvaluaciones = '';
+    this.mensajeEvaluaciones = '';
     this.guardandoEstado = false;
     this.guardandoEvaluaciones = false;
     this.cargarDetalleEntrevista(entrevista.id);
@@ -509,6 +617,7 @@ export class EntrevistasList implements OnInit {
     this.entrevistaDetalle = null;
     this.errorEstado = '';
     this.errorEvaluaciones = '';
+    this.mensajeEvaluaciones = '';
     this.guardandoEstado = false;
     this.guardandoEvaluaciones = false;
   }
@@ -518,8 +627,15 @@ export class EntrevistasList implements OnInit {
       return;
     }
 
+    if (!this.esEstadoEntrevista(this.entrevistaSeleccionada, ['Realizada'])) {
+      this.errorEvaluaciones = 'Solo puedes registrar feedback cuando la entrevista está realizada.';
+      this.cdr.markForCheck();
+      return;
+    }
+
     this.guardandoEvaluaciones = true;
     this.errorEvaluaciones = '';
+    this.mensajeEvaluaciones = '';
 
     forkJoin(
       payloads.map((payload) => {
@@ -534,29 +650,30 @@ export class EntrevistasList implements OnInit {
           : this.entrevistasService.crearEvaluacion(this.entrevistaSeleccionada!.id, payload.tipoId, body);
 
         return solicitud.pipe(
-          catchError((error) =>
-            throwError(() => new Error(`${area}: ${obtenerMensajeError(error, 'no se pudo guardar el resultado.')}`)),
-          ),
+          catchError((error) => {
+            this.registrarDiagnosticoFeedback(payload, body, error);
+            const mensaje = this.mensajeErrorEvaluacion(error, 'no se pudo guardar el resultado.');
+            return throwError(() => new Error(this.esErrorEstadoSolicitudFeedback(mensaje) ? mensaje : `${area}: ${mensaje}`));
+          }),
         );
       }),
     )
       .pipe(
         finalize(() => {
           this.guardandoEvaluaciones = false;
+          this.cdr.markForCheck();
         }),
       )
       .subscribe({
         next: () => {
-          this.alerta = {
-            tipo: 'success',
-            variante: 'soft',
-            mensaje: 'Resultados por área guardados correctamente.',
-          };
+          this.mensajeEvaluaciones = 'Feedback guardado correctamente.';
           this.cargarDetalleEntrevista(this.entrevistaSeleccionada!.id);
           this.cargarEntrevistas();
+          this.cdr.markForCheck();
         },
         error: (error) => {
-          this.errorEvaluaciones = obtenerMensajeError(error, 'No se pudieron guardar los resultados por área.');
+          this.errorEvaluaciones = this.mensajeErrorEvaluacion(error, 'No se pudieron guardar los resultados por área.');
+          this.cdr.markForCheck();
         },
       });
   }
@@ -587,7 +704,7 @@ export class EntrevistasList implements OnInit {
     return entrevista.id;
   }
 
-  estadoClase(estado: EstadoEntrevista) {
+  estadoClase(estado: string) {
     return estado.toLowerCase().replace(/\s+/g, '-');
   }
 
@@ -611,6 +728,14 @@ export class EntrevistasList implements OnInit {
 
   private formatearFecha(fecha: string) {
     return new Date(`${fecha}T00:00:00`).toLocaleDateString('es-CL');
+  }
+
+  private formatearFechaCorta(fecha: string) {
+    return new Date(`${fecha}T00:00:00`).toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   private solicitudEstadoEntrevista(payload: { estado?: EstadoEntrevista; fecha: string; horaInicio: string; horaFin: string; motivo: string }) {
@@ -687,11 +812,20 @@ export class EntrevistasList implements OnInit {
   }
 
   private cargarDetalleEntrevista(id: string) {
+    this.cargandoDetalle = true;
+    this.cdr.markForCheck();
+
     forkJoin({
       detalle: this.entrevistasService.obtener(id),
       evaluaciones: this.entrevistasService.listarEvaluaciones(id).pipe(catchError(() => of([]))),
     })
-      .pipe(take(1))
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargandoDetalle = false;
+          this.cdr.markForCheck();
+        }),
+      )
       .subscribe({
         next: ({ detalle, evaluaciones }) => {
           // Integración M5: GET evaluaciones completa el detalle para decidir POST vs PATCH por tipo.
@@ -699,9 +833,12 @@ export class EntrevistasList implements OnInit {
             ...detalle,
             evaluaciones,
           };
+          this.registrarDiagnosticoAperturaFeedback();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.errorEstado = obtenerMensajeError(error, 'No se pudo cargar el detalle de la entrevista.');
+          this.cdr.markForCheck();
         },
       });
   }
@@ -711,20 +848,142 @@ export class EntrevistasList implements OnInit {
     return estados.some((estado) => this.normalizar(estado) === actual);
   }
 
+  private puedeRegistrarFeedback(entrevista: EntrevistaResumen) {
+    return this.esEstadoEntrevista(entrevista, ['Realizada']);
+  }
+
   private puedeCambiarEstado(entrevista: EntrevistaResumen) {
     return this.cumplePrecondicionM5(entrevista) &&
       !this.esEstadoEntrevista(entrevista, ['Cancelada', 'Realizada', 'No Asistio']);
   }
 
   private cumplePrecondicionM5(entrevista: EntrevistaResumen) {
-    const estadoPostulacion = this.normalizar(entrevista.estadoPostulacion ?? 'En entrevista');
-    const estadoSolicitud = this.normalizar(entrevista.estadoSolicitud ?? 'En Entrevistas');
+    const estadoPostulacion = this.normalizar(entrevista.estadoPostulacion ?? '');
+    const estadoSolicitud = this.normalizar(entrevista.estadoSolicitud ?? '');
 
     return estadoPostulacion === 'en entrevista' && estadoSolicitud === 'en entrevistas';
+  }
+
+  private mensajeSolicitudBloqueada(entrevista: EntrevistaResumen) {
+    return this.solicitudCancelada(entrevista)
+      ? 'Esta solicitud está cancelada. Puedes revisar la entrevista como historial, pero no realizar nuevas acciones.'
+      : 'La entrevista no cumple las condiciones actuales para realizar esta acción.';
+  }
+
+  private motivoAccionNoDisponible(entrevista: EntrevistaResumen, accion: 'feedback' | 'gestion' = 'gestion') {
+    if (accion === 'feedback') {
+      return 'No disponible: la entrevista aún no está realizada.';
+    }
+
+    if (this.solicitudCancelada(entrevista)) {
+      return 'No disponible: solicitud cancelada.';
+    }
+
+    if (this.normalizar(entrevista.estadoSolicitud ?? '') !== 'en entrevistas') {
+      return 'No disponible: la solicitud no está en etapa de entrevistas.';
+    }
+
+    if (this.normalizar(entrevista.estadoPostulacion ?? '') !== 'en entrevista') {
+      return 'No disponible: la postulación no está en entrevista.';
+    }
+
+    if (!this.esEstadoEntrevista(entrevista, ['Realizada'])) {
+      return 'No disponible para el estado actual de la entrevista.';
+    }
+
+    return 'No disponible para esta entrevista.';
+  }
+
+  private ordenarEntrevistasInicial(entrevistas: EntrevistaResumen[]) {
+    return [...entrevistas].sort((a, b) => {
+      const grupoA = this.grupoOrdenEstadoEntrevista(a.estado);
+      const grupoB = this.grupoOrdenEstadoEntrevista(b.estado);
+
+      if (grupoA !== grupoB) {
+        return grupoA - grupoB;
+      }
+
+      const fechaA = `${a.fecha}T${a.horaInicio}`;
+      const fechaB = `${b.fecha}T${b.horaInicio}`;
+
+      if (grupoA === 0) {
+        return fechaA.localeCompare(fechaB);
+      }
+
+      return fechaB.localeCompare(fechaA);
+    });
+  }
+
+  private grupoOrdenEstadoEntrevista(estado: string) {
+    const normalizado = this.normalizar(estado);
+
+    if (normalizado === 'pendiente') {
+      return 0;
+    }
+
+    if (normalizado === 'realizada') {
+      return 1;
+    }
+
+    return 2;
+  }
+
+  private solicitudCancelada(entrevista: EntrevistaResumen) {
+    return this.normalizar(entrevista.estadoSolicitud ?? '') === 'cancelado';
   }
 
   private tipoEntrevistaValido(nombre?: string | null) {
     const normalizado = this.normalizar(nombre ?? '').replace(/\s+/g, '-');
     return Boolean(normalizado) && normalizado !== 'ingles';
+  }
+
+  private mensajeErrorEvaluacion(error: unknown, mensajePorDefecto: string) {
+    if (error instanceof Error && error.message.trim()) {
+      return this.mensajeEstadoSolicitudFeedback(error.message);
+    }
+
+    return this.mensajeEstadoSolicitudFeedback(obtenerMensajeError(error, mensajePorDefecto));
+  }
+
+  private mensajeEstadoSolicitudFeedback(mensaje: string) {
+    return this.esErrorEstadoSolicitudFeedback(mensaje)
+      ? 'No se pudo guardar el feedback. La solicitud asociada a esta entrevista no permite registrar evaluaciones en su estado actual.'
+      : mensaje;
+  }
+
+  private esErrorEstadoSolicitudFeedback(mensaje: string) {
+    return /Solo se permiten entrevistas y evaluaciones cuando la solicitud está en estado 'En Entrevistas'/i.test(mensaje);
+  }
+
+  private registrarDiagnosticoFeedback(
+    payload: EvaluacionTipoPayload,
+    body: { nombre_resultado_id: number; observacion: string | null },
+    error: unknown,
+  ) {
+    console.warn('Diagnóstico feedback entrevista', {
+      entrevista_id: this.entrevistaSeleccionada?.id,
+      solicitud_id: this.entrevistaDetalle?.solicitud_id,
+      solicitud_candidato_id: this.entrevistaDetalle?.solicitud_candidato_id,
+      candidato_id: this.entrevistaDetalle?.candidato_id,
+      tipo_entrevista_id: payload.tipoId,
+      usuario_id: this.usuarioActualId,
+      payload: body,
+      error,
+    });
+  }
+
+  private registrarDiagnosticoAperturaFeedback() {
+    if (this.modoEstado !== 'gestionar' || !this.entrevistaDetalle) {
+      return;
+    }
+
+    console.debug('Diagnóstico apertura feedback entrevista', {
+      entrevista_id: this.entrevistaDetalle.entrevista_id,
+      solicitud_id: this.entrevistaDetalle.solicitud_id,
+      solicitud_candidato_id: this.entrevistaDetalle.solicitud_candidato_id,
+      candidato_id: this.entrevistaDetalle.candidato_id,
+      tipo_entrevista_id: this.entrevistaDetalle.tipos?.map((tipo) => tipo.tipo_entrevista_id) ?? [],
+      usuario_id: this.usuarioActualId,
+    });
   }
 }

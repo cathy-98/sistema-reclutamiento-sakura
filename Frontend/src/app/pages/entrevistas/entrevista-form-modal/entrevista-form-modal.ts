@@ -63,6 +63,7 @@ export class EntrevistaFormModal implements OnInit {
   @Input() initialData: Partial<EntrevistaPayload> | null = null;
   @Input() candidatos: EntrevistaCandidatoSeleccionado[] = [];
   @Input() errorApi = '';
+  @Input() guardando = false;
   @Output() cerrar = new EventEmitter<void>();
   @Output() candidatosChange = new EventEmitter<EntrevistaCandidatoSeleccionado[]>();
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
@@ -144,6 +145,10 @@ export class EntrevistaFormModal implements OnInit {
 
   get postulacionesSeleccionadasCantidad() {
     return this.postulacionesSeleccionadasIds.length;
+  }
+
+  get mensajeValidacionVisible() {
+    return this.errorEnvio || this.errorApi;
   }
 
   get todasPostulacionesSeleccionadas() {
@@ -379,7 +384,24 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   fechaValida(programacion: ProgramacionTipoForm) {
-    return Boolean(programacion.fecha) && programacion.fecha >= this.fechaHoyInput;
+    if (!programacion.fecha) {
+      return false;
+    }
+
+    if (!programacion.horaInicio) {
+      return programacion.fecha >= this.fechaHoyInput;
+    }
+
+    const fechaHora = new Date(`${programacion.fecha}T${programacion.horaInicio}:00`);
+    return !Number.isNaN(fechaHora.getTime()) && fechaHora > new Date();
+  }
+
+  mensajeErrorFecha(programacion: ProgramacionTipoForm) {
+    if (!programacion.fecha || this.fechaValida(programacion)) {
+      return '';
+    }
+
+    return 'El horario debe ser posterior al momento actual.';
   }
 
   validarPaso(paso: string) {
@@ -395,7 +417,7 @@ export class EntrevistaFormModal implements OnInit {
         return false;
       }
       if (this.programaciones.size === 0) {
-        this.errorEnvio = 'No se pudo preparar la reunión por una dependencia técnica del contrato actual.';
+        this.errorEnvio = 'No hay una configuración de entrevista disponible para agendar.';
         return false;
       }
       return true;
@@ -429,17 +451,35 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   enviar() {
-    if (!this.validarPaso('datos') || !this.validarPaso('programacion') || !this.validarPaso('participantes')) {
+    if (this.guardando) {
+      return;
+    }
+
+    const pasoInvalido = this.primerPasoInvalido();
+    if (pasoInvalido) {
+      this.tabFormulario = pasoInvalido;
       return;
     }
 
     const payload = this.crearPayload();
     if (!payload) {
-      this.errorEnvio = 'No se pudo construir el agendamiento con IDs reales.';
+      this.errorEnvio = 'Selecciona una solicitud y al menos un candidato para agendar.';
       return;
     }
 
     this.guardar.emit(payload);
+  }
+
+  private primerPasoInvalido(): 'datos' | 'programacion' | 'participantes' | null {
+    const pasos: Array<'datos' | 'programacion' | 'participantes'> = ['datos', 'programacion', 'participantes'];
+
+    for (const paso of pasos) {
+      if (!this.validarPaso(paso)) {
+        return paso;
+      }
+    }
+
+    return null;
   }
 
   nombrePostulacion(postulacion: PostulacionCandidatoApi) {
@@ -490,7 +530,7 @@ export class EntrevistaFormModal implements OnInit {
         }),
       )
       .subscribe(({ solicitudes, candidatos }) => {
-        this.solicitudes = solicitudes;
+        this.solicitudes = solicitudes.filter((solicitud) => this.normalizar(solicitud.estado ?? '') !== 'cancelada');
         this.candidatosDisponibles = candidatos;
         this.aplicarPreseleccion();
       });
@@ -537,11 +577,52 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   private aplicarPreseleccion() {
+    const solicitudInicial =
+      this.solicitudInicialDesdePayload();
+
+    if (solicitudInicial) {
+      this.solicitudSeleccionadaId = Number(solicitudInicial.id);
+    }
+
+    if (this.initialData?.solicitudCandidatoId) {
+      this.postulacionesSeleccionadas = new Set([
+        this.initialData.solicitudCandidatoId,
+      ]);
+    }
+
+    if (
+      this.solicitudSeleccionadaId &&
+      this.postulacionesSolicitud.length === 0
+    ) {
+      this.cargarCandidatosSolicitud(this.solicitudSeleccionadaId);
+    }
+
     if (!this.tieneCandidatosPreseleccionados) {
+      this.actualizarCargoDesdeSolicitud();
+      this.actualizarTitulosSugeridos();
       return;
     }
     this.cargo = this.candidatos.length === 1 ? this.candidatos[0].cargo : 'Múltiples cargos';
     this.actualizarTitulosSugeridos();
+  }
+
+  private solicitudInicialDesdePayload() {
+    const idSolicitud =
+      this.initialData?.idSolicitud;
+
+    if (!idSolicitud || this.solicitudes.length === 0) {
+      return null;
+    }
+
+    const normalizado =
+      this.normalizarCodigoSolicitud(idSolicitud);
+
+    return this.solicitudes.find((solicitud) =>
+      this.normalizarCodigoSolicitud(
+        solicitud.codigo || String(solicitud.id),
+      ) === normalizado ||
+      Number(solicitud.id) === Number(idSolicitud),
+    ) ?? null;
   }
 
   private crearPayload(): EntrevistaPayload | null {
@@ -623,7 +704,7 @@ export class EntrevistaFormModal implements OnInit {
       tipoId: tipoCompatibilidad.tpet_id,
       tipoNombre: tipoCompatibilidad.tpet_nombre ?? 'Entrevista',
       asunto: this.tituloSugerido(tipoCompatibilidad.tpet_nombre ?? 'Entrevista'),
-      fecha: '',
+      fecha: this.initialData?.fecha ?? '',
       horaInicio: '',
       horaFin: '',
       duracion: '60 min',
@@ -697,6 +778,20 @@ export class EntrevistaFormModal implements OnInit {
 
   private normalizar(valor: string) {
     return valor.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
+  }
+
+  private normalizarCodigoSolicitud(codigo?: string | null) {
+    const limpio = codigo?.trim();
+
+    if (!limpio) {
+      return '';
+    }
+
+    const coincidencia = limpio.match(/^SOL-(\d+)$/i);
+
+    return coincidencia
+      ? `SOL-${coincidencia[1].padStart(6, '0')}`
+      : limpio;
   }
 
   private minutosDesdeDuracion(duracion: string) {

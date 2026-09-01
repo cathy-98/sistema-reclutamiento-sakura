@@ -11,13 +11,13 @@
     </div>
 
     <div class="request-modal-body">
-      <div class="modal-loading" *ngIf="cargandoDetalle && modo !== 'crear'">
+      <div class="modal-loading" *ngIf="cargandoDetalle || cargandoCatalogosFormulario">
         <span aria-hidden="true"></span>
-        <strong>Cargando solicitud...</strong>
-        <small>Estamos preparando el detalle.</small>
+        <strong>{{ cargandoCatalogosFormulario ? 'Cargando catálogos...' : 'Cargando solicitud...' }}</strong>
+        <small>{{ cargandoCatalogosFormulario ? 'Estamos preparando las opciones del formulario.' : 'Estamos preparando el detalle.' }}</small>
       </div>
 
-      <app-alert-region *ngIf="!cargandoDetalle" [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
+      <app-alert-region *ngIf="!cargandoDetalle && !cargandoCatalogosFormulario" [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
       <div class="request-detail" *ngIf="modo === 'ver' && !cargandoDetalle">
         <div class="detail-overview">
@@ -79,18 +79,16 @@
           <table *ngIf="habilidadesDetalleVisibles.length > 0">
             <thead>
               <tr>
-                <th>Excluyente</th>
-                <th>Nivel técnico</th>
                 <th>Tecnología</th>
-                <th>Años mínimo experiencia</th>
+                <th>Nivel requerido</th>
+                <th>Condición</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let habilidad of habilidadesDetalleVisibles">
-                <td><input type="checkbox" [checked]="habilidad.es_excluyente" disabled /></td>
-                <td>{{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }}</td>
                 <td>{{ obtenerNombreHabilidad(habilidad.id_habilidad) }}</td>
-                <td>{{ habilidad.anios_experiencia }}</td>
+                <td>{{ obtenerNombreNivel(habilidad.id_nivel_habilidad) }}</td>
+                <td>{{ habilidad.es_excluyente ? 'Obligatoria' : 'No obligatoria' }}</td>
               </tr>
             </tbody>
           </table>
@@ -100,7 +98,7 @@
         </section>
       </div>
 
-      <form class="modal-form" *ngIf="modo !== 'ver' && !cargandoDetalle" [formGroup]="formularioSolicitud">
+      <form class="modal-form" *ngIf="modo !== 'ver' && !cargandoDetalle && !cargandoCatalogosFormulario" [formGroup]="formularioSolicitud">
       <app-stepper
         [pasos]="pasosFormulario"
         [pasoActivo]="tabFormulario"
@@ -247,9 +245,19 @@
 
           <label class="form-field">
             Cantidad de vacantes *
-            <input type="number" min="1" formControlName="cantidad_vacantes" />
-            <small class="form-error" *ngIf="control('cantidad_vacantes')?.touched && control('cantidad_vacantes')?.invalid">
-              Debe ser mayor a cero.
+            <input
+              class="vacancies-input"
+              type="text"
+              inputmode="numeric"
+              maxlength="3"
+              formControlName="cantidad_vacantes"
+              (blur)="normalizarCantidadVacantes()"
+            />
+            <small class="form-error" *ngIf="control('cantidad_vacantes')?.touched && control('cantidad_vacantes')?.hasError('max')">
+              Máximo {{ maximoVacantesPermitido }} vacantes.
+            </small>
+            <small class="form-error" *ngIf="control('cantidad_vacantes')?.touched && !control('cantidad_vacantes')?.hasError('max') && control('cantidad_vacantes')?.invalid">
+              Ingresa un número entero mayor a cero.
             </small>
           </label>
 
@@ -388,7 +396,7 @@
         *ngIf="tabFormulario === 'habilidades'"
         step="5"
         title="Habilidades técnicas"
-        description="Define tecnologías, nivel y años de experiencia."
+        description="Define tecnologías y nivel requerido. Las habilidades son obligatorias por defecto."
       >
 
         <div class="skills-form-grid" [formGroup]="nuevaHabilidad">
@@ -434,14 +442,6 @@
             <input type="number" min="0" formControlName="anios_experiencia" />
           </label>
 
-          <label class="form-field skill-check-field">
-            Excluyente
-            <span class="skill-check-control">
-              <input type="checkbox" formControlName="es_excluyente" />
-              <span>Obligatoria</span>
-            </span>
-          </label>
-
           <app-button variant="ghost" type="button" (pressed)="agregarHabilidad()">
             + Agregar
           </app-button>
@@ -464,7 +464,7 @@
             </div>
 
             <div class="form-field">
-              <span>Nivel</span>
+              <span>Nivel requerido</span>
               <app-compact-select
                 formControlName="id_nivel_habilidad"
                 placeholder="Selecciona nivel"
@@ -477,10 +477,17 @@
               <input type="number" min="0" formControlName="anios_experiencia" />
             </label>
 
-            <label class="skill-inline-toggle">
-              <input type="checkbox" formControlName="es_excluyente" />
-              <span>{{ habilidadForm.get('es_excluyente')?.value ? 'Excluyente' : 'No excluyente' }}</span>
-            </label>
+            <div class="form-field">
+              <span>Condición</span>
+              <label class="skill-inline-toggle">
+                <input
+                  type="checkbox"
+                  [checked]="habilidadNoExcluyente(i)"
+                  (change)="actualizarHabilidadNoExcluyente(i, $event)"
+                />
+                <span>No obligatoria</span>
+              </label>
+            </div>
           </div>
           <button type="button" aria-label="Eliminar habilidad" (click)="eliminarHabilidad(i)">
             Eliminar
@@ -492,13 +499,13 @@
 
     <app-form-actions modal-footer>
       <app-button formActionsStart variant="ghost" type="button" (pressed)="manejarAccionPrincipal()">
-        {{ modo === 'ver' ? 'Gestionar candidatos' : 'Cancelar' }}
+        {{ modo === 'ver' ? 'Listar candidatos' : 'Cancelar' }}
       </app-button>
 
-      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver' && !cargandoDetalle" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
+      <app-button variant="ghost" type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && !cargandoCatalogosFormulario" [disabled]="pasoActualIndice() === 0" (pressed)="volverPaso()">
         Volver
       </app-button>
-      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
-      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && !cargandoCatalogosFormulario && !esUltimoPaso()" (pressed)="siguientePaso()">Siguiente</app-button>
+      <app-button type="button" *ngIf="modo !== 'ver' && !cargandoDetalle && !cargandoCatalogosFormulario && esUltimoPaso()" (pressed)="guardarSolicitud()">Guardar solicitud</app-button>
     </app-form-actions>
 </app-modal>

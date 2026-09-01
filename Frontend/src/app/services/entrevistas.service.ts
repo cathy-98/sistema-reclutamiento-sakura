@@ -177,6 +177,7 @@ export interface EntrevistaResumen {
    * RRHH: Aprobado | Técnica: Pendiente
    */
   resultadoEntrevista: string;
+  evaluacionesCantidad?: number;
 
   asunto: string;
   cargo: string;
@@ -972,6 +973,10 @@ export class EntrevistasService {
         this.formatearResultados(
           entrevista,
         ),
+
+      evaluacionesCantidad:
+        entrevista.evaluaciones?.length ??
+        0,
 
       asunto:
         entrevista.titulo_evento ||

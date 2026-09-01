@@ -3,6 +3,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Button } from '../button/button';
 import { IconButton } from '../icon-button/icon-button';
 
+export interface FileListStatus {
+  state: 'pending' | 'processing' | 'success' | 'error';
+  label: string;
+  message?: string;
+}
+
 @Component({
   selector: 'app-file-list',
   imports: [CommonModule, Button, IconButton],
@@ -11,6 +17,7 @@ import { IconButton } from '../icon-button/icon-button';
 })
 export class FileList {
   @Input() files: File[] = [];
+  @Input() statuses: Record<string, FileListStatus> = {};
 
   @Output() clear = new EventEmitter<void>();
   @Output() remove = new EventEmitter<File>();
@@ -35,5 +42,13 @@ export class FileList {
 
   trackFile(_index: number, file: File) {
     return `${file.name}-${file.size}-${file.lastModified}`;
+  }
+
+  fileStatus(file: File) {
+    return this.statuses[this.trackFile(0, file)] ?? null;
+  }
+
+  get hasStatuses() {
+    return Object.keys(this.statuses).length > 0;
   }
 }

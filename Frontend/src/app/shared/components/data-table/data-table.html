@@ -239,6 +239,7 @@
                 [icon]="item.icon"
                 [label]="item.label"
                 [disabled]="disabledAction(item, row)"
+                [tooltip]="actionTooltip(item, row)"
                 [hidden]="!visibleAction(item, row)"
                 (pressed)="emitAction(item, row)"
               ></app-icon-button>
@@ -254,6 +255,7 @@
                 [icon]="primaryAction.icon"
                 [label]="primaryAction.label"
                 [disabled]="disabledAction(primaryAction, row)"
+                [tooltip]="actionTooltip(primaryAction, row)"
                 (pressed)="emitAction(primaryAction, row)"
               ></app-icon-button>
 
@@ -282,6 +284,10 @@
 
                 <div
                   class="row-menu-list"
+                  [class.opens-up]="actionMenuPosition?.opensUp"
+                  [style.top.px]="actionMenuPosition?.top"
+                  [style.left.px]="actionMenuPosition?.left"
+                  [style.width.px]="actionMenuPosition?.width"
                   role="menu"
                   *ngIf="isActionMenuOpen(row)"
                 >
@@ -290,6 +296,8 @@
                     type="button"
                     role="menuitem"
                     [disabled]="disabledAction(item, row)"
+                    [title]="actionTooltip(item, row)"
+                    [attr.aria-label]="actionTooltip(item, row)"
                     (click)="emitActionAndClose(item, row, $event)"
                   >
                     {{ item.label }}

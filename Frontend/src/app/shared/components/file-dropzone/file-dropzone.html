@@ -43,5 +43,10 @@
 
   <p class="drop-error" *ngIf="error" [id]="errorId" role="alert">{{ error }}</p>
 
-  <app-file-list [files]="files" (clear)="clearFiles()" (remove)="removeFile($event)"></app-file-list>
+  <app-file-list
+    [files]="files"
+    [statuses]="fileStatuses"
+    (clear)="clearFiles()"
+    (remove)="removeFile($event)"
+  ></app-file-list>
 </section>

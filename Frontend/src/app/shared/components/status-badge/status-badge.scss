@@ -15,26 +15,47 @@
 
 .alta,
 .cancelada,
+.cancelado,
 .descartado {
   color: var(--color-danger);
 }
 
 .media,
 .pendiente,
-.en-revision {
+.en-revision,
+.reprogramada,
+.pausado,
+.status-warning {
   color: var(--color-warning);
 }
 
 .baja,
 .en-curso,
-.contactado {
+.contactado,
+.en-publicacion,
+.status-info {
   color: var(--color-info);
 }
 
 .cerrada,
+.cerrado,
 .entrevista,
 .en-entrevista,
+.en-entrevistas,
+.confirmada,
+.realizada,
 .seleccionado,
-.contratado {
+.contratado,
+.finalizado,
+.aprobado,
+.status-success {
   color: var(--color-success);
+}
+
+.inhabilitado,
+.no-asistio,
+.vencido,
+.reprobado,
+.status-danger {
+  color: var(--color-danger);
 }

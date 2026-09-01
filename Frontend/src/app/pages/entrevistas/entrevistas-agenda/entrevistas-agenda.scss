@@ -6,6 +6,53 @@
   margin-top: 18px;
 }
 
+.agenda-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.today-button,
+.state-filter button {
+  min-height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.today-button {
+  padding: 0 16px;
+}
+
+.state-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.state-filter span {
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.state-filter button {
+  padding: 0 12px;
+}
+
+.today-button.is-active,
+.state-filter button.is-active {
+  border-color: var(--color-sakura);
+  background: var(--color-sakura);
+  color: #ffffff;
+}
+
 .calendar-panel,
 .day-panel {
   background: #ffffff;
@@ -158,9 +205,9 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   display: grid;
-  gap: 12px;
-  grid-template-columns: 42px minmax(0, 1fr);
-  padding: 14px;
+  gap: 10px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  padding: 12px 14px;
 }
 
 .avatar {
@@ -171,13 +218,13 @@
   display: flex;
   font-size: 0.78rem;
   font-weight: 800;
-  height: 42px;
+  height: 40px;
   justify-content: center;
-  width: 42px;
+  width: 40px;
 }
 
 .card-content header {
-  align-items: start;
+  align-items: center;
   display: flex;
   gap: 12px;
   justify-content: space-between;
@@ -191,8 +238,18 @@
 
 .card-content p {
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   margin: 4px 0 0;
+}
+
+.state-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .state-chip {
@@ -204,54 +261,137 @@
 }
 
 .state-chip.pendiente,
-.state-chip.en-curso {
+.state-chip.confirmada,
+.state-chip.reprogramada {
   background: #fef3c7;
   color: #92400e;
 }
 
-.state-chip.cerrada {
+.state-chip.realizada {
   background: #dcfce7;
   color: #166534;
 }
 
-.state-chip.cancelada {
+.state-chip.cancelada,
+.state-chip.no-asistio {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.card-content dl {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 14px 0;
-}
-
-.card-content dt {
-  color: #64748b;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.card-content dd {
-  color: #0f172a;
-  font-size: 0.82rem;
-  margin: 3px 0 0;
-}
-
 .card-content footer {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.card-meta {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.card-meta span::before {
+  content: "·";
+  margin-right: 7px;
+  color: #94a3b8;
+}
+
+.card-meta strong {
+  color: #0f172a;
+}
+
+.card-actions {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
   gap: 8px;
+}
+
+.agenda-menu {
+  position: relative;
+}
+
+.agenda-menu__trigger {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.agenda-menu__trigger:hover,
+.agenda-menu__trigger:focus-visible {
+  border-color: var(--color-sakura);
+  color: var(--color-sakura);
+}
+
+.agenda-menu__list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  display: grid;
+  min-width: 190px;
+  overflow: hidden;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+}
+
+.agenda-menu__list button {
+  min-height: 40px;
+  border: 0;
+  border-bottom: 1px solid #edf0f4;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 12px;
+  text-align: left;
+}
+
+.agenda-menu__list button:hover:not(:disabled),
+.agenda-menu__list button:focus-visible:not(:disabled) {
+  background: #f8fafc;
+}
+
+.agenda-menu__list button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 .agenda-message,
 .empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   color: #475569;
-  padding: 14px;
+  padding: 12px 14px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #475569;
+  font-weight: 700;
 }
 
 .agenda-message.is-error {

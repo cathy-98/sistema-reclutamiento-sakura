@@ -300,8 +300,8 @@ const MENSAJES_EXACTOS: Record<string, string> = {
   'solo puede habilitar reintento cuando el estado es error tecnico': 'Solo puedes habilitar un reintento cuando la evaluación está en Error Técnico.',
   'solo puede responder un cuestionario en progreso': 'Solo puedes responder el cuestionario mientras está en progreso.',
   'token inválido o expirado': 'Tu sesión expiró o no es válida. Vuelve a iniciar sesión.',
-  'toda solicitud debe incluir al menos una habilidad excluyente': 'Marca al menos una habilidad como excluyente.',
-  'toda solicitud debe tener al menos una habilidad excluyente': 'Marca al menos una habilidad como excluyente.',
+  'toda solicitud debe incluir al menos una habilidad excluyente': 'Deja al menos una habilidad obligatoria.',
+  'toda solicitud debe tener al menos una habilidad excluyente': 'Deja al menos una habilidad obligatoria.',
   'usuario inactivo, bloqueado o eliminado': 'Tu cuenta está inactiva. Contacta a un administrador.',
   'usr_rut_sin_dv y usr_dv deben informarse juntos': 'Ingresa el RUT junto con su DV.',
 };

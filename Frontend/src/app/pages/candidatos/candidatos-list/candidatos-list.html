@@ -16,18 +16,7 @@
     [subtitle]="subtituloPagina"
   >
     <div pageHeaderActions>
-      <app-button
-        type="button"
-        variant="ghost"
-        *ngIf="enContextoSolicitud"
-        (pressed)="volverASolicitud()"
-      >
-        Volver a solicitud
-      </app-button>
-
-      <app-button type="button" *ngIf="!enContextoSolicitud && vistaGeneral === 'listado'">
-        Realizar match
-      </app-button>
+      <!-- Ocultamiento obligatorio: el match no se ejecuta desde un CTA global de Candidatos. -->
     </div>
   </app-page-header>
 
@@ -56,7 +45,9 @@
     <div class="request-context__skills" *ngIf="habilidadesSolicitudContexto.length > 0">
       <strong>Habilidades requeridas</strong>
       <div>
-        <span *ngFor="let habilidad of habilidadesSolicitudContexto">{{ habilidad.nombre }}</span>
+        <span *ngFor="let habilidad of habilidadesSolicitudContexto">
+          {{ habilidad.nombre }} · {{ habilidad.nivel || 'Nivel no informado' }}
+        </span>
       </div>
     </div>
   </section>
@@ -83,15 +74,19 @@
   -->
   <app-file-dropzone
     *ngIf="mostrarCargaCandidatos"
-    title="Carga CVs de candidatos"
+    title="Carga de candidato"
     description="Arrastra uno o más CVs para dejarlos listos antes de procesarlos."
     buttonText="Seleccionar CVs"
     [allowedExtensions]="['pdf', 'docx', 'txt']"
     [maxFileSizeMb]="10"
+    [fileStatuses]="estadosVisualesArchivosCv"
     (filesChange)="actualizarArchivosCv($event)"
   >
     <div class="associated-request-field">
-      <label for="solicitud-asociada-cv">Solicitud asociada</label>
+      <label for="solicitud-asociada-cv">
+        Solicitud asociada
+        <small>(opcional)</small>
+      </label>
 
       <div class="associated-request-field__control">
         <input
@@ -109,34 +104,56 @@
           *ngIf="solicitudCargaSeleccionada"
           (click)="limpiarSolicitudCarga()"
         >
-          Cambiar
+          Quitar
         </button>
       </div>
+
+      <small class="associated-request-field__hint">
+        Déjalo vacío para cargarlo como candidato general.
+      </small>
 
       <datalist id="solicitudes-carga-cv">
         <option *ngFor="let solicitud of solicitudesCargaDisponibles" [value]="solicitud.codigo"></option>
       </datalist>
 
-      <span class="associated-request-field__success" *ngIf="solicitudCargaSeleccionada">
-        ✓ {{ solicitudCargaSeleccionada.codigo }} · {{ solicitudCargaSeleccionada.cargo }}
-      </span>
-
       <span class="associated-request-field__error" *ngIf="mostrarSolicitudCargaNoEncontrada">
         No se encontró una solicitud con ese número.
       </span>
+
     </div>
+
+    <small class="cv-readable-text-help">
+      PDF, DOCX o TXT · Máx. 10 MB · El archivo debe contener texto seleccionable.
+    </small>
   </app-file-dropzone>
 
-  <div class="cv-upload-actions" *ngIf="mostrarCargaCandidatos && archivosCv.length > 0">
-    <span>{{ archivosCv.length }} archivo(s) listo(s) para procesar.</span>
-    <app-button
-      type="button"
-      [disabled]="importandoCvs"
-      (pressed)="procesarArchivosCv()"
-    >
-      {{ importandoCvs ? 'Procesando...' : 'Procesar CVs' }}
-    </app-button>
-  </div>
+  <section class="cv-processing-panel" *ngIf="mostrarCargaCandidatos && (archivosCv.length > 0 || feedbackCargaCv)">
+    <div class="cv-upload-actions" *ngIf="archivosCv.length > 0">
+      <div class="cv-upload-processing-state" *ngIf="importandoCvs" aria-live="polite">
+        <strong>Procesando CVs…</strong>
+        <span>Esto puede tardar unos segundos.</span>
+      </div>
+
+      <p class="cv-upload-batch-summary" *ngIf="!importandoCvs && resumenLoteCv">
+        {{ resumenLoteCv }}
+      </p>
+
+      <app-button
+        type="button"
+        [disabled]="importandoCvs || archivosCvProcesables.length === 0"
+        (pressed)="procesarArchivosCv()"
+      >
+        {{ textoBotonProcesarCv }}
+      </app-button>
+    </div>
+
+    <app-alert-region
+      *ngIf="!importandoCvs"
+      [alerta]="feedbackCargaCv"
+      [cerrable]="true"
+      (cerrar)="feedbackCargaCv = null"
+    ></app-alert-region>
+  </section>
 
 
   <!--
@@ -152,6 +169,54 @@
     Los filtros específicos se mantienen para búsquedas
     de reclutamiento más precisas.
   -->
+  <section class="candidate-autocomplete" *ngIf="mostrarListadoCandidatos" aria-label="Buscar candidato por nombre">
+    <label for="candidate-autocomplete-input">Buscar candidato</label>
+
+    <div class="candidate-autocomplete__box" [class.has-selection]="candidatoFiltroSeleccionado">
+      <input
+        id="candidate-autocomplete-input"
+        type="search"
+        [ngModel]="busquedaCandidatoTexto"
+        (ngModelChange)="actualizarBusquedaCandidato($event)"
+        (focus)="abrirAutocompletarCandidato()"
+        [attr.aria-expanded]="autocompletarCandidatoAbierto"
+        aria-controls="candidate-autocomplete-results"
+        autocomplete="off"
+        placeholder="Escribe el nombre de un candidato"
+      />
+
+      <button
+        *ngIf="candidatoFiltroSeleccionado || busquedaCandidatoTexto"
+        type="button"
+        aria-label="Limpiar candidato seleccionado"
+        (click)="limpiarCandidatoFiltro()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div
+      id="candidate-autocomplete-results"
+      class="candidate-autocomplete__results"
+      *ngIf="autocompletarCandidatoAbierto && (sugerenciasCandidatos.length > 0 || mostrarSinSugerenciasCandidato)"
+    >
+      <button
+        type="button"
+        *ngFor="let candidato of sugerenciasCandidatos; trackBy: trackCandidato"
+        (click)="seleccionarCandidatoFiltro(candidato)"
+      >
+        <strong>{{ candidato.nombre }}</strong>
+        <span *ngIf="candidato.correo">{{ candidato.correo }}</span>
+      </button>
+
+      <p *ngIf="mostrarSinSugerenciasCandidato">No se encontraron candidatos.</p>
+    </div>
+
+    <p class="candidate-autocomplete__selected" *ngIf="candidatoFiltroSeleccionado">
+      Candidato seleccionado: {{ candidatoFiltroSeleccionado.nombre }}
+    </p>
+  </section>
+
   <app-filter-panel
     *ngIf="mostrarListadoCandidatos"
     [class.is-request-context]="enContextoSolicitud"
@@ -282,7 +347,7 @@
 
 
     <label>
-      Nivel
+      Nivel profesional
 
       <select
         [(ngModel)]="filtros.nivel"
@@ -298,6 +363,34 @@
           {{ nivel }}
         </option>
       </select>
+    </label>
+
+    <label>
+      Habilidad
+
+      <select
+        *ngIf="habilidadesFiltro.length > 0; else habilidadTexto"
+        [(ngModel)]="filtros.habilidad"
+      >
+        <option value="">
+          Todas
+        </option>
+
+        <option
+          *ngFor="let habilidad of habilidadesFiltro"
+          [ngValue]="habilidad"
+        >
+          {{ habilidad }}
+        </option>
+      </select>
+
+      <ng-template #habilidadTexto>
+        <input
+          [(ngModel)]="filtros.habilidad"
+          type="text"
+          placeholder="Ej. Angular"
+        />
+      </ng-template>
     </label>
 
 
@@ -353,6 +446,11 @@
 
   </app-filter-panel>
 
+  <section class="initial-list-message" *ngIf="mostrarEstadoInicialListado">
+    <strong>Usa los filtros para consultar candidatos.</strong>
+    <span>El listado se mostrará cuando ingreses una búsqueda, solicitud, cargo u otro criterio.</span>
+  </section>
+
 
   <!--
     Integración M3
@@ -365,7 +463,7 @@
   -->
   <app-action-bar
     *ngIf="
-      mostrarListadoCandidatos &&
+      puedeMostrarTablaCandidatos &&
       !cargando &&
       !errorCarga &&
       candidatosFiltrados.length > 0
@@ -375,9 +473,9 @@
   >
 
     <button
-      *ngIf="!enContextoSolicitud"
       type="button"
       [disabled]="seleccionados.size === 0"
+      (click)="abrirModalCorreo()"
     >
       <span aria-hidden="true">
         ✓
@@ -403,13 +501,13 @@
     <button
       type="button"
       [disabled]="seleccionados.size === 0"
-      (click)="prepararTestMasivo()"
+      (click)="abrirModalEstadoMasivo()"
     >
       <span aria-hidden="true">
-        +
+        ↻
       </span>
 
-      Enviar test
+      Cambiar estado
     </button>
 
   </app-action-bar>
@@ -418,14 +516,8 @@
   <!--
     Integración M3
 
-    La primera columna "Solicitudes" puede representar múltiples
-    postulaciones para un mismo candidato.
-
-    Visualización definida en candidatos-list.ts:
-
-    SOL-XXXXXX
-    SOL-XXXXXX · SOL-YYYYYY
-    SOL-XXXXXX · SOL-YYYYYY · +2
+    La solicitud se usa como contexto/filtro de trabajo.
+    Por eso la tabla no repite el código SOL-XXX por fila.
 
     Match, cargo, estado, renta y fecha muestran actualmente
     la postulación más reciente como resumen de la fila.
@@ -434,7 +526,7 @@
     desde el perfil del candidato.
   -->
   <app-data-table
-    *ngIf="mostrarListadoCandidatos"
+    *ngIf="puedeMostrarTablaCandidatos"
     [title]="tituloTabla"
     [columns]="columnasTabla"
     [rows]="candidatosPaginados"
@@ -472,11 +564,98 @@
   <app-entrevista-form-modal
     *ngIf="mostrarModalAgenda"
     [candidatos]="candidatosAgenda"
+    [guardando]="guardandoAgenda"
+    [errorApi]="errorAgenda"
     (candidatosChange)="actualizarCandidatosAgenda($event)"
     (cerrar)="cerrarAgendaEntrevista()"
     (guardar)="guardarAgendaEntrevista($event)"
   ></app-entrevista-form-modal>
 
+  <app-modal
+    *ngIf="mostrarModalCorreo"
+    titulo="Enviar correo"
+    [subtitulo]="solicitudContexto ? solicitudContexto.codigo + ' · ' + solicitudContexto.cargo : 'Candidatos seleccionados'"
+    ancho="md"
+    (cerrar)="cerrarModalCorreo()"
+  >
+    <section class="mail-modal">
+      <p class="mail-note">
+        Prepara el mensaje para los candidatos seleccionados. El envío queda deshabilitado hasta contar con endpoint de correo.
+      </p>
+
+      <label>
+        Plantilla
+        <select [(ngModel)]="plantillaCorreo" (change)="aplicarPlantillaCorreo()">
+          <option value="convocatoria">Convocatoria</option>
+          <option value="manual">Manual</option>
+        </select>
+      </label>
+
+      <label>
+        Destinatarios
+        <textarea [value]="destinatariosCorreo" readonly></textarea>
+      </label>
+
+      <label>
+        Asunto
+        <input type="text" [(ngModel)]="asuntoCorreo" />
+      </label>
+
+      <label>
+        Mensaje
+        <textarea [(ngModel)]="cuerpoCorreo"></textarea>
+      </label>
+
+      <p class="mail-note">
+        Variables disponibles: {{ '{' }}{{ '{' }}Nombre{{ '}' }}{{ '}' }}, {{ '{' }}{{ '{' }}Solicitud{{ '}' }}{{ '}' }}, {{ '{' }}{{ '{' }}Cargo{{ '}' }}{{ '}' }}.
+      </p>
+    </section>
+
+    <div class="modal-actions" modal-footer>
+      <app-button variant="ghost" type="button" (pressed)="cerrarModalCorreo()">Cancelar</app-button>
+      <app-button type="button" [disabled]="true">Enviar correo</app-button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    *ngIf="mostrarModalEstadoMasivo"
+    titulo="Cambiar estado"
+    [subtitulo]="seleccionados.size + ' candidatos seleccionados'"
+    ancho="sm"
+    (cerrar)="cerrarModalEstadoMasivo()"
+  >
+    <section class="bulk-state-modal">
+      <p *ngIf="seleccionEstadosMixtos" class="state-message is-warning">
+        Los candidatos seleccionados tienen estados distintos. Selecciona candidatos con el mismo estado actual para actualizar de forma segura.
+      </p>
+
+      <p *ngIf="!seleccionEstadosMixtos && opcionesEstadoMasivo.length === 0" class="state-message is-warning">
+        No hay transiciones masivas permitidas para el estado actual según la regla existente.
+      </p>
+
+      <label>
+        Nuevo estado
+        <select [(ngModel)]="estadoMasivoSeleccionado" [disabled]="opcionesEstadoMasivo.length === 0 || seleccionEstadosMixtos">
+          <option value="">Seleccionar estado</option>
+          <option *ngFor="let estado of opcionesEstadoMasivo" [ngValue]="estado">{{ estado }}</option>
+        </select>
+      </label>
+
+      <label>
+        Observación
+        <textarea [(ngModel)]="observacionEstadoMasivo" maxlength="300" placeholder="Opcional"></textarea>
+      </label>
+
+      <p class="state-message is-error" *ngIf="errorEstadoMasivo">{{ errorEstadoMasivo }}</p>
+    </section>
+
+    <div class="modal-actions" modal-footer>
+      <app-button variant="ghost" type="button" [disabled]="guardandoEstadoMasivo" (pressed)="cerrarModalEstadoMasivo()">Cancelar</app-button>
+      <app-button type="button" [disabled]="!puedeActualizarEstadoMasivo" (pressed)="actualizarEstadoMasivo()">
+        {{ guardandoEstadoMasivo ? 'Actualizando...' : 'Actualizar candidatos' }}
+      </app-button>
+    </div>
+  </app-modal>
 
 </app-page-layout>
 

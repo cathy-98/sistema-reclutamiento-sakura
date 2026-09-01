@@ -71,7 +71,7 @@ export class SolicitudesList implements OnInit {
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
     {
       key: 'codigo',
-      label: 'ID solicitud',
+      label: 'Solicitud',
       width: 138,
       sticky: 'left',
       sortable: true,

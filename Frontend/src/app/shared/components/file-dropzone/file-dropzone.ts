@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Button } from '../button/button';
-import { FileList } from '../file-list/file-list';
+import { FileList, FileListStatus } from '../file-list/file-list';
 
 @Component({
   selector: 'app-file-dropzone',
@@ -16,6 +16,7 @@ export class FileDropzone {
   @Input() allowedExtensions = ['pdf', 'doc', 'docx'];
   @Input() multiple = true;
   @Input() maxFileSizeMb = 10;
+  @Input() fileStatuses: Record<string, FileListStatus> = {};
 
   @Output() filesChange = new EventEmitter<File[]>();
 
