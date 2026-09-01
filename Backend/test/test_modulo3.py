@@ -144,7 +144,7 @@ def _seed_database() -> SeedInfo:
         db.add_all([institucion, carrera, nivel_edu, h_python, h_fastapi, n_junior, n_senior, cargo, modalidad, contrato, disp, prioridad]); db.flush()
 
         sol_states = {}
-        for name in ["Pendiente", "En Curso", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
+        for name in ["Pendiente", "En Publicacion", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
             s = catalog_models.EstadoSolicitud(essl_nombre=name, essl_descripcion=name)
             db.add(s); db.flush(); sol_states[name] = s.essl_id
 

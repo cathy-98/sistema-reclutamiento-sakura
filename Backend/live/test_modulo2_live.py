@@ -84,7 +84,7 @@ def state_catalog(token: str) -> dict[str, int]:
         params={"limit": 100},
     )
     result = {str(x.get("essl_nombre", "")).strip(): int(x["essl_id"]) for x in response.json()}
-    required = {"Pendiente", "En Curso", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"}
+    required = {"Pendiente", "En Publicacion", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"}
     missing = required - set(result)
     if missing:
         raise LiveQAError(f"Faltan estados de solicitud requeridos: {sorted(missing)}")
@@ -393,12 +393,12 @@ def run():
         raise LiveQAError(f"No se informó habilidad obligatoria faltante: {missing}")
     pass_msg("Evaluación excluyentes: habilidad faltante sin descarte automático")
 
-    # Estados: Pendiente -> En Curso -> Pausado -> En Curso -> Cancelado.
+    # Estados: Pendiente -> En Publicacion -> Pausado -> En Publicacion -> Cancelado.
     request(
         "PATCH", f"/solicitudes/{sol_id}/estado", expected=(200,), token=token,
-        json={"sol_estado_solicitud_id": ctx.estado_ids["En Curso"]},
+        json={"sol_estado_solicitud_id": ctx.estado_ids["En Publicacion"]},
     )
-    pass_msg("Pendiente -> En Curso")
+    pass_msg("Pendiente -> En Publicacion")
 
     request(
         "PATCH", f"/solicitudes/{sol_id}/estado", expected=(422,), token=token,
@@ -412,9 +412,9 @@ def run():
     )
     request(
         "PATCH", f"/solicitudes/{sol_id}/estado", expected=(200,), token=token,
-        json={"sol_estado_solicitud_id": ctx.estado_ids["En Curso"]},
+        json={"sol_estado_solicitud_id": ctx.estado_ids["En Publicacion"]},
     )
-    pass_msg("En Curso -> Pausado -> En Curso")
+    pass_msg("En Publicacion -> Pausado -> En Publicacion")
 
     history = request(
         "GET", f"/solicitudes/{sol_id}/historial", expected=(200,), token=token
@@ -432,7 +432,7 @@ def run():
     )
     request(
         "PATCH", f"/solicitudes/{sol_id}/estado", expected=(409,), token=token,
-        json={"sol_estado_solicitud_id": ctx.estado_ids["En Curso"]},
+        json={"sol_estado_solicitud_id": ctx.estado_ids["En Publicacion"]},
     )
     pass_msg("Cancelado terminal -> no permite reapertura")
 
