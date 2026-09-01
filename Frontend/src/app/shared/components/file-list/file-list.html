@@ -21,6 +21,7 @@
         <tr>
           <th scope="col">Archivo</th>
           <th scope="col">Tamaño</th>
+          <th scope="col" *ngIf="hasStatuses">Estado</th>
           <th scope="col">Acción</th>
         </tr>
       </thead>
@@ -30,6 +31,16 @@
             <span>{{ file.name }}</span>
           </td>
           <td>{{ fileSizeMb(file) | number: '1.1-1' }} MB</td>
+          <td *ngIf="hasStatuses">
+            <div
+              class="file-status"
+              *ngIf="fileStatus(file) as status"
+              [ngClass]="'is-' + status.state"
+            >
+              <strong>{{ status.label }}</strong>
+              <span *ngIf="status.message">{{ status.message }}</span>
+            </div>
+          </td>
           <td>
             <app-icon-button
               icon="trash"

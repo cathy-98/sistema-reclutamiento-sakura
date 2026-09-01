@@ -62,7 +62,8 @@
   gap: 6px;
 }
 
-.match-context-message {
+.match-context-message,
+.initial-list-message {
   display: grid;
   gap: 4px;
   width: min(100%, 1180px);
@@ -74,12 +75,176 @@
   color: #475569;
 }
 
-.match-context-message strong {
-  color: #334155;
+.initial-list-message {
+  background: #f8fafc;
 }
 
-.match-context-message span {
+.candidate-autocomplete {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  width: min(100%, 1180px);
+  margin: 0 auto 12px;
+}
+
+.candidate-autocomplete label {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.candidate-autocomplete__box {
+  display: flex;
+  align-items: center;
+  max-width: 520px;
+  min-height: 46px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.candidate-autocomplete__box.has-selection {
+  border-color: #9f3f45;
+  box-shadow: 0 0 0 3px rgba(159, 63, 69, 0.12);
+}
+
+.candidate-autocomplete__box input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  padding: 0 12px;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+}
+
+.candidate-autocomplete__box button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #9f3f45;
+  font-size: 1.35rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.candidate-autocomplete__results {
+  position: absolute;
+  z-index: 20;
+  top: 76px;
+  left: 0;
+  width: min(100%, 520px);
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+}
+
+.candidate-autocomplete__results button,
+.candidate-autocomplete__results p {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #edf0f4;
+  background: #ffffff;
+  color: #111827;
+  text-align: left;
+  font: inherit;
+}
+
+.candidate-autocomplete__results button {
+  cursor: pointer;
+}
+
+.candidate-autocomplete__results button:hover,
+.candidate-autocomplete__results button:focus-visible {
+  background: #f8fafc;
+}
+
+.candidate-autocomplete__results span,
+.candidate-autocomplete__selected {
+  color: #64748b;
   font-size: 0.88rem;
+}
+
+.candidate-autocomplete__selected {
+  margin: 0;
+  font-weight: 700;
+}
+
+:host ::ng-deep td.candidate-filter-selected {
+  background: #fff7ed;
+  box-shadow: inset 4px 0 0 #9f3f45;
+}
+
+.mail-modal label,
+.bulk-state-modal label {
+  display: grid;
+  gap: 8px;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.mail-modal input,
+.mail-modal select,
+.mail-modal textarea,
+.bulk-state-modal select,
+.bulk-state-modal textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.mail-modal,
+.bulk-state-modal {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.mail-modal textarea,
+.bulk-state-modal textarea {
+  resize: vertical;
+}
+
+.mail-note,
+.state-message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--color-text-soft);
+  line-height: 1.4;
+}
+
+.state-message.is-warning {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.state-message.is-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
 }
 
 :host ::ng-deep app-filter-panel.is-request-context .filter-panel {
@@ -123,15 +288,20 @@
 
 .associated-request-field {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   width: min(100%, 420px);
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .associated-request-field label {
   color: #334155;
   font-size: 0.86rem;
   font-weight: 700;
+}
+
+.associated-request-field label small {
+  color: #64748b;
+  font-weight: 600;
 }
 
 .associated-request-field__control {
@@ -167,21 +337,98 @@
   cursor: pointer;
 }
 
-.associated-request-field__success,
-.associated-request-field__error {
+.associated-request-field__error,
+.associated-request-field__hint {
   display: block;
   color: #64748b;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   line-height: 1.35;
-}
-
-.associated-request-field__success {
-  color: #047857;
-  font-weight: 700;
 }
 
 .associated-request-field__error {
   color: #b91c1c;
+}
+
+.cv-processing-panel {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 1180px);
+  margin: -8px auto 22px;
+}
+
+.cv-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.cv-upload-actions div {
+  display: grid;
+  gap: 3px;
+}
+
+.cv-upload-batch-summary {
+  flex: 1 1 260px;
+  margin: 0 auto 0 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.cv-upload-actions strong {
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.cv-upload-actions span {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
+.cv-upload-processing-state {
+  display: grid;
+  gap: 3px;
+  margin-right: auto;
+}
+
+.cv-upload-processing-state strong {
+  color: var(--color-text);
+}
+
+:host ::ng-deep app-file-dropzone .drop-area {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+:host ::ng-deep app-file-dropzone .drop-area > app-button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+:host ::ng-deep app-file-dropzone .drop-copy > span {
+  max-width: 640px;
+}
+
+:host ::ng-deep app-file-dropzone .drop-copy > small:not(.cv-readable-text-help) {
+  display: none;
+}
+
+.cv-readable-text-help {
+  display: block;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.cv-processing-panel ::ng-deep .app-alert {
+  font-size: 0.86rem;
 }
 
 @media (max-width: 640px) {
@@ -199,5 +446,10 @@
 
   .associated-request-field input {
     max-width: none;
+  }
+
+  .cv-upload-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

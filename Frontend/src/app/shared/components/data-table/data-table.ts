@@ -47,6 +47,7 @@ export interface DataTableAction<T> {
   icon: DataTableActionIcon;
   visible?: (row: T) => boolean;
   disabled?: (row: T) => boolean;
+  disabledReason?: (row: T) => string;
 }
 
 export interface DataTableActionEvent<T> {
@@ -170,6 +171,13 @@ export class DataTable<T> {
    * al mismo tiempo.
    */
   openActionMenuRowId = '';
+  actionMenuPosition:
+    {
+      top: number;
+      left: number;
+      width: number;
+      opensUp: boolean;
+    } | null = null;
 
   sortKey = '';
 
@@ -604,6 +612,16 @@ export class DataTable<T> {
       : false;
   }
 
+  actionTooltip(
+    action:
+      DataTableAction<T>,
+    row: T,
+  ) {
+    return this.disabledAction(action, row) && action.disabledReason
+      ? action.disabledReason(row)
+      : action.label;
+  }
+
   /**
    * Acción estándar utilizada por botones visibles.
    *
@@ -698,11 +716,18 @@ export class DataTable<T> {
     const id =
       this.rowId(row);
 
-    this.openActionMenuRowId =
+    if (
       this.openActionMenuRowId ===
       id
-        ? ''
-        : id;
+    ) {
+      this.closeActionMenu();
+      return;
+    }
+
+    this.openActionMenuRowId = id;
+    this.positionActionMenu(
+      event.currentTarget as HTMLElement,
+    );
   }
 
   isActionMenuOpen(
@@ -731,6 +756,17 @@ export class DataTable<T> {
     this.closeActionMenu();
   }
 
+  @HostListener('document:keydown.escape')
+  handleEscape() {
+    this.closeActionMenu();
+  }
+
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  handleViewportChange() {
+    this.closeActionMenu();
+  }
+
   trackRow = (
     _index: number,
     row: T,
@@ -755,6 +791,55 @@ export class DataTable<T> {
   private closeActionMenu() {
     this.openActionMenuRowId =
       '';
+    this.actionMenuPosition =
+      null;
+  }
+
+  private positionActionMenu(
+    trigger: HTMLElement,
+  ) {
+    const menuWidth = 230;
+    const menuEstimatedHeight = 160;
+    const gap = 6;
+    const padding = 12;
+    const triggerRect =
+      trigger.getBoundingClientRect();
+    const viewportHeight =
+      window.innerHeight;
+    const viewportWidth =
+      window.innerWidth;
+    const spaceBelow =
+      viewportHeight -
+      triggerRect.bottom;
+    const opensUp =
+      spaceBelow <
+      menuEstimatedHeight + gap;
+    const top = opensUp
+      ? Math.max(
+          padding,
+          triggerRect.top -
+            menuEstimatedHeight -
+            gap,
+        )
+      : triggerRect.bottom + gap;
+    const left = Math.min(
+      Math.max(
+        padding,
+        triggerRect.right -
+          menuWidth,
+      ),
+      viewportWidth -
+        menuWidth -
+        padding,
+    );
+
+    // El menú se posiciona contra el viewport para escapar del overflow de la tabla.
+    this.actionMenuPosition = {
+      top,
+      left,
+      width: menuWidth,
+      opensUp,
+    };
   }
 
   private valorOrden(

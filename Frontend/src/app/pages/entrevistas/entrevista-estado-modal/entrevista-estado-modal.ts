@@ -2,12 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Button } from '../../../shared/components/button/button';
-import { DatePicker } from '../../../shared/components/date-picker/date-picker';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { Modal } from '../../../shared/components/modal/modal';
-import { AuthService } from '../../../services/auth.service';
 import { NombreResultadoCatalogoApi } from '../../../services/catalogos.service';
-import { EntrevistaApi, EntrevistaResumen } from '../../../services/entrevistas.service';
+import { EntrevistaApi, EntrevistaResumen, EvaluacionEntrevistaApi } from '../../../services/entrevistas.service';
 
 type ModoEstadoEntrevista = 'ver' | 'gestionar' | 'reprogramar' | 'cancelar' | 'confirmar' | 'realizar' | 'no-asistio';
 type AccionGestionEntrevista = 'confirmar' | 'reprogramar' | 'realizar' | 'no-asistio' | 'cancelar';
@@ -33,7 +31,7 @@ interface AccionGestionOption {
 
 @Component({
   selector: 'app-entrevista-estado-modal',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, Button, DatePicker, FormActions, Modal],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, Button, FormActions, Modal],
   templateUrl: './entrevista-estado-modal.html',
   styleUrl: './entrevista-estado-modal.scss',
 })
@@ -44,8 +42,11 @@ export class EntrevistaEstadoModal implements OnChanges {
   @Input() modo: ModoEstadoEntrevista = 'gestionar';
   @Input() guardando = false;
   @Input() guardandoEvaluaciones = false;
+  @Input() cargandoDetalle = false;
   @Input() error = '';
   @Input() errorEvaluaciones = '';
+  @Input() mensajeEvaluaciones = '';
+  @Input() usuarioActualId: number | null = null;
   @Output() cerrar = new EventEmitter<void>();
   @Output() confirmar = new EventEmitter<{ estado?: string; fecha: string; horaInicio: string; horaFin: string; motivo: string }>();
   @Output() guardarEvaluaciones = new EventEmitter<EvaluacionTipoPayload[]>();
@@ -62,7 +63,7 @@ export class EntrevistaEstadoModal implements OnChanges {
     motivo: new UntypedFormControl(''),
   });
 
-  constructor(private authService: AuthService) {}
+  constructor() {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (!this.entrevista) {
@@ -112,13 +113,33 @@ export class EntrevistaEstadoModal implements OnChanges {
   }
 
   get titulo() {
-    return this.modo === 'ver'
-      ? 'Detalle de entrevista'
+    return this.mostrarResultadosPorArea || this.feedbackSoloConsulta
+      ? 'Feedback de entrevista'
       : this.modo === 'reprogramar'
         ? 'Reprogramar entrevista'
-        : this.estadoActualNormalizado === 'realizada'
-          ? 'Registrar feedback'
+        : this.modo === 'cancelar'
+          ? 'Cancelar entrevista'
+          : this.modo === 'confirmar'
+            ? 'Confirmar entrevista'
+            : this.modo === 'realizar'
+              ? 'Marcar entrevista realizada'
+              : this.modo === 'no-asistio'
+                ? 'Registrar no asistencia'
+        : this.modo === 'ver'
+          ? 'Detalle de entrevista'
           : 'Gestionar entrevista';
+  }
+
+  get subtituloModal() {
+    if (this.mostrarResultadosPorArea) {
+      return '';
+    }
+
+    if (this.esLectura) {
+      return `${this.entrevista?.idSolicitud || 'Sin solicitud'} · ${this.entrevista?.cargo || 'Sin cargo'}`;
+    }
+
+    return this.entrevista?.idSolicitud || '';
   }
 
   get accion() {
@@ -127,7 +148,7 @@ export class EntrevistaEstadoModal implements OnChanges {
     }
 
     if (this.mostrarResultadosPorArea && !this.mostrarSelectorEstado) {
-      return 'Guardar resultados';
+      return 'Guardar feedback';
     }
 
     const seleccionada = this.accionSeleccionada;
@@ -168,6 +189,10 @@ export class EntrevistaEstadoModal implements OnChanges {
 
   get accionesDisponibles(): AccionGestionOption[] {
     // Decisión UX/UI M5: solo muestra transiciones que corresponden a endpoints reales ya integrados.
+    if (!this.solicitudPermiteAcciones) {
+      return [];
+    }
+
     if (['realizada', 'cancelada', 'no-asistio'].includes(this.estadoActualNormalizado)) {
       return [];
     }
@@ -196,11 +221,21 @@ export class EntrevistaEstadoModal implements OnChanges {
   }
 
   get requiereMotivo() {
-    return ['reprogramar', 'cancelar', 'no-asistio'].includes(this.accionSeleccionada) || this.modo === 'reprogramar';
+    return (
+      ['reprogramar', 'cancelar', 'no-asistio'].includes(this.accionSeleccionada) ||
+      ['reprogramar', 'cancelar', 'no-asistio'].includes(this.modo)
+    );
   }
 
   get varianteAccion() {
-    return this.accionSeleccionada === 'cancelar' || this.accionSeleccionada === 'no-asistio' ? 'danger' : 'primary';
+    return (
+      this.accionSeleccionada === 'cancelar' ||
+      this.accionSeleccionada === 'no-asistio' ||
+      this.modo === 'cancelar' ||
+      this.modo === 'no-asistio'
+    )
+      ? 'danger'
+      : 'primary';
   }
 
   get mostrarSelectorEstado() {
@@ -215,29 +250,203 @@ export class EntrevistaEstadoModal implements OnChanges {
     return this.modo === 'reprogramar' || this.accionSeleccionada === 'reprogramar';
   }
 
+  get mostrarGestionEstado() {
+    return !this.esLectura && !this.mostrarResultadosPorArea && !this.feedbackSoloConsulta;
+  }
+
+  get mostrarBotonGestion() {
+    if (!this.mostrarGestionEstado) {
+      return false;
+    }
+
+    return this.modo !== 'gestionar' || Boolean(this.accionSeleccionada);
+  }
+
   get mostrarResultadosPorArea() {
     return this.modo === 'gestionar' &&
-      this.estadoActualNormalizado === 'realizada' &&
-      this.tiposEvaluables.length > 0;
+      this.estadoActualNormalizado === 'realizada';
+  }
+
+  get feedbackSoloConsulta() {
+    return false;
+  }
+
+  get mensajeFeedbackSoloConsulta() {
+    return this.solicitudCancelada
+      ? 'Esta solicitud está cancelada. No permite agendar nuevas entrevistas.'
+      : 'No se pudo confirmar que la solicitud permita registrar feedback. Los feedbacks registrados quedan disponibles solo para consulta.';
+  }
+
+  get estadoPostulacionActual() {
+    return this.entrevista?.estadoPostulacion || 'Sin estado';
+  }
+
+  get estadoSolicitudActual() {
+    return this.entrevista?.estadoSolicitud || '';
+  }
+
+  get estadoSolicitudPresentado() {
+    return this.solicitudCancelada
+      ? 'Cancelada'
+      : this.estadoSolicitudActual;
+  }
+
+  get solicitudDetalle() {
+    const solicitud = this.entrevista?.idSolicitud || 'Sin solicitud';
+    return this.estadoSolicitudPresentado
+      ? `${solicitud} · ${this.estadoSolicitudPresentado}`
+      : solicitud;
+  }
+
+  get solicitudCancelada() {
+    return this.normalizar(this.estadoSolicitudActual) === 'cancelado';
+  }
+
+  get solicitudPermiteAcciones() {
+    const estadoSolicitud = this.normalizar(this.estadoSolicitudActual);
+    const estadoPostulacion = this.normalizar(this.estadoPostulacionActual);
+
+    if (estadoSolicitud !== 'en entrevistas') {
+      return false;
+    }
+
+    if (estadoPostulacion && estadoPostulacion !== 'en entrevista' && estadoPostulacion !== 'sin estado') {
+      return false;
+    }
+
+    return true;
   }
 
   get entrevistaRealizadaSinEvaluacionDisponible() {
     return this.modo === 'gestionar' &&
       this.estadoActualNormalizado === 'realizada' &&
-      this.tiposEvaluables.length === 0;
+      this.opcionesFeedback.length < 2;
   }
 
   get tiposEvaluables() {
-    const usuarioId = this.authService.obtenerUsuarioId();
+    return this.detalle?.tipos ?? [];
+  }
 
-    if (!usuarioId) {
-      return [];
+  get feedbacksRegistrados() {
+    return [...(this.detalle?.evaluaciones ?? [])].sort((a, b) =>
+      this.fechaFeedbackValor(b) - this.fechaFeedbackValor(a),
+    );
+  }
+
+  get totalFeedbacksRegistrados() {
+    return this.feedbacksRegistrados.length;
+  }
+
+  get cantidadFeedbacksDetalle() {
+    const total = this.totalFeedbacksRegistrados;
+    return `${total} registrado${total === 1 ? '' : 's'}`;
+  }
+
+  get textoFeedbacksRegistrados() {
+    const total = this.totalFeedbacksRegistrados;
+    return `${total} feedback${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`;
+  }
+
+  get tipoFeedbackActivo() {
+    return this.tiposEvaluables[0] ?? null;
+  }
+
+  get tipoFeedbackActivoId() {
+    return this.tipoFeedbackActivo?.tipo_entrevista_id ?? 0;
+  }
+
+  get tieneFeedbackHabilitado() {
+    return Boolean(this.tipoFeedbackActivo && this.opcionesFeedback.length >= 2);
+  }
+
+  get resumenContextual() {
+    return `${this.entrevista?.candidato || 'Sin candidato'} · ${this.estadoActual}`;
+  }
+
+  get lineaEntrevista() {
+    return `Entrevista realizada · ${this.entrevista?.fecha || 'Sin fecha'} · ${this.entrevista?.horaInicio || '--:--'} - ${this.entrevista?.horaFin || '--:--'}`;
+  }
+
+  get lineaContextoFeedback() {
+    return `${this.entrevista?.idSolicitud || 'Sin solicitud'} · ${this.entrevista?.cargo || 'Sin cargo'}`;
+  }
+
+  get lineaAgendaFeedback() {
+    return `${this.entrevista?.tipo || 'Tipo no informado'} · ${this.fechaEntrevistaLegible} · ${this.entrevista?.horaInicio || '--:--'} - ${this.entrevista?.horaFin || '--:--'}`;
+  }
+
+  get fechaEntrevistaLegible() {
+    return this.formatearFechaLegible(this.entrevista?.fecha, false) || this.entrevista?.fecha || 'Sin fecha';
+  }
+
+  get linkReunionDetalle() {
+    return this.entrevista?.linkReunion || this.detalle?.enlace_reunion || '';
+  }
+
+  get opcionAprobado() {
+    return this.opcionesFeedback.find((resultado) => this.esResultadoAprobado(resultado.nore_nombre)) ?? this.opcionesFeedback[0] ?? null;
+  }
+
+  get opcionNoAprobado() {
+    return this.opcionesFeedback.find((resultado, index) =>
+      this.esResultadoNoAprobado(resultado.nore_nombre) && resultado.nore_id !== this.opcionAprobado?.nore_id,
+    ) ?? this.opcionesFeedback.find((resultado) => resultado.nore_id !== this.opcionAprobado?.nore_id) ?? null;
+  }
+
+  get opcionesFeedback() {
+    const opciones = this.resultados.filter((resultado) => Boolean(resultado.nore_id));
+    const prioridad = ['aprobado', 'aprobado-con-observaciones', 'no-aprobado'];
+
+    return [...opciones].sort((a, b) => {
+      const indiceA = prioridad.indexOf(this.normalizar(a.nore_nombre ?? ''));
+      const indiceB = prioridad.indexOf(this.normalizar(b.nore_nombre ?? ''));
+
+      return (indiceA === -1 ? 99 : indiceA) - (indiceB === -1 ? 99 : indiceB);
+    });
+  }
+
+  etiquetaResultado(nombre?: string | null) {
+    const normalizado = this.normalizar(nombre ?? '');
+
+    if (normalizado === 'aprobado') {
+      return 'Aprobado';
     }
 
-    // Integración M5: la UI solo permite evaluar tipos donde el usuario actual está asignado.
-    return (this.detalle?.tipos ?? []).filter((tipo) =>
-      (tipo.entrevistadores ?? []).some((entrevistador) => entrevistador.usuario_id === usuarioId),
-    );
+    if (normalizado === 'aprobado-con-observaciones') {
+      return 'Aprobado con observaciones';
+    }
+
+    if (normalizado === 'no-aprobado') {
+      return 'No aprobado';
+    }
+
+    return nombre || 'Resultado';
+  }
+
+  autorFeedback(evaluacion: EvaluacionEntrevistaApi) {
+    return evaluacion.usuario_nombre || 'Entrevistador no informado';
+  }
+
+  fechaFeedback(evaluacion: EvaluacionEntrevistaApi) {
+    const fecha = evaluacion.fecha_actualizacion || evaluacion.fecha_creacion;
+
+    if (!fecha) {
+      return 'Fecha no informada';
+    }
+
+    const fechaParsed = new Date(fecha);
+    return Number.isNaN(fechaParsed.getTime())
+      ? fecha
+      : this.formatearFechaLegible(fecha, true);
+  }
+
+  private esResultadoAprobado(nombre?: string | null) {
+    return this.normalizar(nombre ?? '').includes('aprob');
+  }
+
+  private esResultadoNoAprobado(nombre?: string | null) {
+    const normalizado = this.normalizar(nombre ?? '');
+    return normalizado.includes('no-aprob') || normalizado.includes('rechaz') || normalizado.includes('desaprob');
   }
 
   get estadoObjetivo() {
@@ -272,11 +481,11 @@ export class EntrevistaEstadoModal implements OnChanges {
       return 'La reprogramación conserva la misma entrevista y actualiza fecha, hora y motivo.';
     }
 
-    if (this.accionSeleccionada === 'cancelar') {
+    if (this.accionSeleccionada === 'cancelar' || this.modo === 'cancelar') {
       return 'Esta acción cancelará la entrevista. Indica el motivo para continuar.';
     }
 
-    if (this.accionSeleccionada === 'no-asistio') {
+    if (this.accionSeleccionada === 'no-asistio' || this.modo === 'no-asistio') {
       return 'Esta acción registrará la inasistencia. Indica el motivo para continuar.';
     }
 
@@ -333,8 +542,8 @@ export class EntrevistaEstadoModal implements OnChanges {
 
     const payload = this.payloadEvaluaciones();
 
-    if (payload.length !== this.tiposEvaluables.length) {
-      this.errorLocalEvaluaciones = 'Selecciona un resultado para cada área antes de guardar.';
+    if (payload.length === 0) {
+      this.errorLocalEvaluaciones = 'Selecciona un resultado e ingresa observaciones antes de guardar.';
       return;
     }
 
@@ -394,9 +603,12 @@ export class EntrevistaEstadoModal implements OnChanges {
     const valores: Record<number, EvaluacionTipoForm> = {};
 
     (this.detalle?.tipos ?? []).forEach((tipo) => {
-      const evaluacion = evaluaciones.find((item) =>
-        item.tipo_entrevista_id === tipo.tipo_entrevista_id,
-      ) ?? null;
+      const evaluacion = this.usuarioActualId
+        ? evaluaciones.find((item) =>
+            item.tipo_entrevista_id === tipo.tipo_entrevista_id &&
+            item.usuario_id === this.usuarioActualId,
+          ) ?? null
+        : null;
 
       valores[tipo.tipo_entrevista_id] = {
         resultadoId: evaluacion?.resultado_id ?? null,
@@ -409,21 +621,62 @@ export class EntrevistaEstadoModal implements OnChanges {
   }
 
   private payloadEvaluaciones() {
-    return this.tiposEvaluables
-      .map((tipo) => {
-        const evaluacion = this.evaluacionTipo(tipo.tipo_entrevista_id);
+    const tipo = this.tipoFeedbackActivo;
+    const evaluacion = tipo ? this.evaluacionTipo(tipo.tipo_entrevista_id) : null;
 
-        return {
-          tipoId: tipo.tipo_entrevista_id,
-          existe: evaluacion.existe,
-          nombreResultadoId: Number(evaluacion.resultadoId),
-          observacion: evaluacion.observacion.trim() || null,
-        };
-      })
-      .filter((item) =>
-        Number.isFinite(item.nombreResultadoId) &&
-        item.nombreResultadoId > 0,
-      );
+    if (!tipo || !evaluacion) {
+      return [];
+    }
+
+    return [{
+      // Compatibilidad temporal: la UI sigue enviando el tipo requerido por backend,
+      // pero el usuario solo ve un feedback breve a nivel de entrevista.
+      tipoId: tipo.tipo_entrevista_id,
+      existe: evaluacion.existe,
+      nombreResultadoId: Number(evaluacion.resultadoId),
+      observacion: evaluacion.observacion.trim() || null,
+    }].filter((item) =>
+      Number.isFinite(item.nombreResultadoId) &&
+      item.nombreResultadoId > 0,
+    );
+  }
+
+  private fechaFeedbackValor(evaluacion: EvaluacionEntrevistaApi) {
+    const fecha = evaluacion.fecha_actualizacion || evaluacion.fecha_creacion || '';
+    const fechaParsed = new Date(fecha);
+    return Number.isNaN(fechaParsed.getTime()) ? 0 : fechaParsed.getTime();
+  }
+
+  private formatearFechaLegible(fecha?: string | null, incluirHora = false) {
+    if (!fecha) {
+      return '';
+    }
+
+    const fechaBase = /^\d{4}-\d{2}-\d{2}$/.test(fecha)
+      ? new Date(`${fecha}T00:00:00`)
+      : new Date(fecha);
+
+    if (Number.isNaN(fechaBase.getTime())) {
+      return '';
+    }
+
+    const fechaTexto = new Intl.DateTimeFormat('es-CL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(fechaBase).replace(/\./g, '');
+
+    if (!incluirHora) {
+      return fechaTexto;
+    }
+
+    const horaTexto = new Intl.DateTimeFormat('es-CL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(fechaBase);
+
+    return `${fechaTexto} · ${horaTexto}`;
   }
 
   private normalizar(valor: string) {

@@ -73,6 +73,7 @@ interface CatalogosSolicitud {
 const SOLICITUD_DETALLE_TIMEOUT_MS = 6000;
 const CATALOGOS_DETALLE_TIMEOUT_MS = 3000;
 const SALARIO_MAXIMO_CLP = 99_999_999;
+const VACANTES_MAXIMAS = 100;
 
 @Component({
   selector: 'app-solicitud-form-modal',
@@ -90,6 +91,7 @@ export class SolicitudFormModal implements OnInit {
   @Output() guardado = new EventEmitter<void>();
 
   cargandoDetalle = false;
+  cargandoCatalogosFormulario = false;
   guardando = false;
   tabFormulario = 'general';
   alerta: AlertaUi | null = null;
@@ -141,7 +143,12 @@ export class SolicitudFormModal implements OnInit {
       descripcion: new UntypedFormControl(''),
       id_cargo: new UntypedFormControl(null, Validators.required),
       id_prioridad: new UntypedFormControl(null, Validators.required),
-      cantidad_vacantes: new UntypedFormControl(1, [Validators.required, Validators.min(1)]),
+      cantidad_vacantes: new UntypedFormControl(1, [
+        Validators.required,
+        Validators.min(1),
+        Validators.max(VACANTES_MAXIMAS),
+        Validators.pattern(/^\d+$/),
+      ]),
       id_empresa_cliente: new UntypedFormControl(null, Validators.required),
       id_cliente: new UntypedFormControl(null, Validators.required),
       id_usuario_solicitante: new UntypedFormControl(null),
@@ -169,7 +176,7 @@ export class SolicitudFormModal implements OnInit {
     id_habilidad: new UntypedFormControl(null, Validators.required),
     id_nivel_habilidad: new UntypedFormControl(null, Validators.required),
     anios_experiencia: new UntypedFormControl(0, [Validators.required, Validators.min(0)]),
-    es_excluyente: new UntypedFormControl(false),
+    es_excluyente: new UntypedFormControl(true),
   });
   private habilidadesOriginales: HabilidadSolicitud[] = [];
 
@@ -188,14 +195,12 @@ export class SolicitudFormModal implements OnInit {
       this.actualizarClientesCatalogo();
     });
 
-    setTimeout(() => {
-      if (this.idSolicitud) {
-        this.cargarSolicitud(this.idSolicitud);
-        return;
-      }
+    if (this.idSolicitud) {
+      this.cargarSolicitud(this.idSolicitud);
+      return;
+    }
 
-      this.cargarCatalogosFormulario();
-    });
+    this.cargarCatalogosFormulario();
   }
 
   get habilidadesFormArray() {
@@ -232,7 +237,7 @@ export class SolicitudFormModal implements OnInit {
     }
 
     if (this.habilidadesDetalle.length === 0) {
-      return 'Esta solicitud no tiene habilidades registradas. Edítala y agrega al menos una habilidad excluyente para poder evaluar candidatos.';
+      return 'Esta solicitud no tiene habilidades registradas. Edítala y agrega al menos una habilidad técnica.';
     }
 
     if (this.habilidadesDetalleVisibles.length === 0) {
@@ -240,7 +245,7 @@ export class SolicitudFormModal implements OnInit {
     }
 
     if (!this.tieneHabilidadExcluyenteDetalle) {
-      return 'Esta solicitud tiene habilidades, pero ninguna está marcada como excluyente. Debe tener al menos una para evaluación automática.';
+      return 'Todas las habilidades quedaron como no obligatorias. Deja al menos una obligatoria para evaluación automática.';
     }
 
     if (this.habilidadesDetalleInvalidas > 0) {
@@ -390,6 +395,20 @@ export class SolicitudFormModal implements OnInit {
     return SALARIO_MAXIMO_CLP;
   }
 
+  get maximoVacantesPermitido() {
+    return VACANTES_MAXIMAS;
+  }
+
+  habilidadNoExcluyente(indice: number) {
+    return !Boolean(this.habilidadFormGroup(indice).get('es_excluyente')?.value);
+  }
+
+  actualizarHabilidadNoExcluyente(indice: number, evento: Event) {
+    const marcado = (evento.target as HTMLInputElement).checked;
+    // Mantiene el contrato backend existente: solhb_es_excluyente sigue siendo boolean.
+    this.habilidadFormGroup(indice).get('es_excluyente')?.setValue(!marcado);
+  }
+
   validarRangoSalario(control: AbstractControl): ValidationErrors | null {
     const salarioMinimo = Number(control.get('salario_minimo')?.value);
     const salarioMaximo = Number(control.get('salario_maximo')?.value);
@@ -428,6 +447,17 @@ export class SolicitudFormModal implements OnInit {
     }
 
     return Object.keys(errores).length ? errores : null;
+  }
+
+  normalizarCantidadVacantes() {
+    const control = this.control('cantidad_vacantes');
+    const valor = this.numeroONull(control?.value);
+
+    if (valor == null) {
+      return;
+    }
+
+    control?.setValue(Math.trunc(valor));
   }
 
   cargarSolicitud(id: string) {
@@ -522,6 +552,9 @@ export class SolicitudFormModal implements OnInit {
   }
 
   cargarCatalogosFormulario() {
+    this.cargandoCatalogosFormulario = true;
+    this.alerta = null;
+
     forkJoin({
       clientes: this.clientesService.listarClientes().pipe(timeout(4000), catchError(() => of([]))),
       empresas: this.clientesService.listarEmpresas().pipe(timeout(4000), catchError(() => of([]))),
@@ -534,7 +567,13 @@ export class SolicitudFormModal implements OnInit {
       habilidades: this.catalogosService.listarHabilidades().pipe(timeout(4000), catchError(() => of([]))),
       nivelesHabilidad: this.catalogosService.listarNivelesHabilidad().pipe(timeout(4000), catchError(() => of([]))),
     })
-      .pipe(take(1))
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargandoCatalogosFormulario = false;
+          this.cdr.detectChanges();
+        }),
+      )
       .subscribe(({ clientes, empresas, cargos, usuarios, prioridades, estados, modalidades, tiposContrato, habilidades, nivelesHabilidad }) => {
         this.aplicarCatalogos({
           clientes,
@@ -549,7 +588,6 @@ export class SolicitudFormModal implements OnInit {
           nivelesHabilidad,
         });
         this.aplicarModoFormulario();
-        this.cdr.detectChanges();
       });
   }
 
@@ -1089,14 +1127,14 @@ export class SolicitudFormModal implements OnInit {
     this.clientesBase = catalogos.clientes;
     this.empresasCatalogo = catalogos.empresas.map((empresa) => ({
       id: empresa.emp_id,
-      nombre: empresa.emp_nombre ?? 'Empresa sin nombre',
+      nombre: this.textoCatalogo(empresa.emp_nombre, 'Empresa sin nombre'),
     }));
     this.actualizarEmpresaDesdeCliente();
     this.actualizarClientesCatalogo();
     // Integración catálogo de cargos -> selector "Cargo solicitado" del formulario de solicitudes.
     this.cargosCatalogo = catalogos.cargos.map((cargo) => ({
       id: cargo.crgo_id,
-      nombre: cargo.crgo_nombre ?? 'Cargo sin nombre',
+      nombre: this.textoCatalogo(cargo.crgo_nombre, 'Cargo sin nombre'),
     }));
     // Integración catálogo de usuarios -> solicitante interno y reclutador asignado.
     this.usuariosCatalogo = catalogos.usuarios.map((usuario) => ({
@@ -1113,32 +1151,32 @@ export class SolicitudFormModal implements OnInit {
     // Integración catálogo de prioridades -> selector "Prioridad".
     this.prioridadesCatalogo = catalogos.prioridades.map((prioridad) => ({
       id: prioridad.prsol_id,
-      nombre: prioridad.prsol_nombre ?? 'Sin prioridad',
+      nombre: this.textoCatalogo(prioridad.prsol_nombre, 'Sin prioridad'),
     }));
     // Integración catálogo de estados de solicitud -> selector "Estado".
     this.estadosSolicitudCatalogo = catalogos.estados.map((estado) => ({
       id: estado.essl_id,
-      nombre: presentarEstadoSolicitud(estado.essl_nombre ?? 'Sin estado'),
+      nombre: presentarEstadoSolicitud(this.textoCatalogo(estado.essl_nombre, 'Sin estado')),
     }));
     // Integración catálogo de modalidades -> selector "Modalidad".
     this.modalidadesCatalogo = catalogos.modalidades.map((modalidad) => ({
       id: modalidad.mdld_id,
-      nombre: modalidad.mdld_nombre ?? 'Sin modalidad',
+      nombre: this.textoCatalogo(modalidad.mdld_nombre, 'Sin modalidad'),
     }));
     // Integración catálogo de tipos de contrato -> selector "Tipo de contrato".
     this.tiposContratoCatalogo = catalogos.tiposContrato.map((tipoContrato) => ({
       id: tipoContrato.tpct_id,
-      nombre: tipoContrato.tpct_nombre ?? 'Sin tipo de contrato',
+      nombre: this.textoCatalogo(tipoContrato.tpct_nombre, 'Sin tipo de contrato'),
     }));
     // Integración catálogo de habilidades -> selector "Tecnología" en requisitos técnicos.
     this.habilidadesCatalogo = catalogos.habilidades.map((habilidad) => ({
       id: habilidad.hab_id,
-      nombre: habilidad.hab_nombre ?? 'Habilidad sin nombre',
+      nombre: this.textoCatalogo(habilidad.hab_nombre, 'Habilidad sin nombre'),
     }));
     // Integración catálogo de niveles de habilidad -> selector "Nivel técnico".
     this.nivelesHabilidadCatalogo = catalogos.nivelesHabilidad.map((nivel) => ({
       id: nivel.nvhb_id,
-      nombre: nivel.nvhb_nombre ?? 'Nivel sin nombre',
+      nombre: this.textoCatalogo(nivel.nvhb_nombre, 'Nivel sin nombre'),
     }));
   }
 
@@ -1406,7 +1444,7 @@ export class SolicitudFormModal implements OnInit {
       id_habilidad: null,
       id_nivel_habilidad: null,
       anios_experiencia: 0,
-      es_excluyente: false,
+      es_excluyente: true,
     });
     return true;
   }
@@ -1426,8 +1464,7 @@ export class SolicitudFormModal implements OnInit {
     return (
       habilidad.id_habilidad != null ||
       habilidad.id_nivel_habilidad != null ||
-      habilidad.anios_experiencia > 0 ||
-      habilidad.es_excluyente
+      habilidad.anios_experiencia > 0
     );
   }
 
@@ -1504,6 +1541,42 @@ export class SolicitudFormModal implements OnInit {
     return valor.trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
+  private textoCatalogo(valor: string | null | undefined, fallback: string) {
+    const texto = String(valor ?? '').trim();
+
+    if (!texto) {
+      return fallback;
+    }
+
+    const reparado = this.repararMojibake(texto);
+    return reparado || fallback;
+  }
+
+  private repararMojibake(texto: string) {
+    let limpio = texto;
+
+    if (/[ÃÂ]/.test(limpio)) {
+      try {
+        limpio = decodeURIComponent(escape(limpio));
+      } catch {
+        limpio = texto;
+      }
+    }
+
+    const sinAcentos = limpio
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    if (sinAcentos.startsWith('h') && sinAcentos.endsWith('brido')) {
+      return 'Híbrido';
+    }
+
+    return limpio
+      .replace(/HÃ­brido/g, 'Híbrido')
+      .replace(/HÔôé¼brido/g, 'Híbrido');
+  }
+
   private textoONull(valor: unknown) {
     const texto = String(valor ?? '').trim();
     return texto || null;
@@ -1531,10 +1604,6 @@ export class SolicitudFormModal implements OnInit {
     return this.nivelesHabilidadCatalogo.find((nivel) => nivel.id === id)?.nombre ?? (id == null ? 'Nivel' : `Nivel #${id}`);
   }
 
-  habilidadExcluyenteClase(esExcluyente: boolean) {
-    return esExcluyente ? 'excluyente' : 'no-excluyente';
-  }
-
   private habilidadDetalleValida(habilidad: HabilidadSolicitud) {
     return habilidad.id_habilidad != null && habilidad.id_habilidad > 0 && habilidad.anios_experiencia >= 0;
   }
@@ -1557,7 +1626,7 @@ export class SolicitudFormModal implements OnInit {
       this.mostrarAlerta({
         tipo: 'warning',
         variante: 'soft',
-        mensaje: 'Marca al menos una habilidad como excluyente para evaluar candidatos.',
+        mensaje: 'Deja al menos una habilidad obligatoria para evaluar candidatos.',
       });
       return false;
     }

@@ -20,17 +20,18 @@ export class CandidateProfileHeader {
   @Input() postulacionSeleccionadaId = '';
   @Input() estadosPostulacion: string[] = [];
   @Input() canSavePostulationState = true;
+  @Input() matchText = 'Sin match';
+  @Input() contactSaving = false;
+  @Input() contactError = '';
 
   @Output() back = new EventEmitter<void>();
-  @Output() downloadCv = new EventEmitter<void>();
   @Output() scheduleInterview = new EventEmitter<void>();
   @Output() sendTest = new EventEmitter<void>();
   @Output() savePostulationState = new EventEmitter<void>();
   @Output() saveRent = new EventEmitter<number>();
   @Output() saveAvailability = new EventEmitter<string>();
+  @Output() saveContact = new EventEmitter<{ correo: string; telefono: string }>();
   @Output() postulacionSeleccionadaIdChange = new EventEmitter<string>();
-
-  menuAccionesAbierto = false;
 
   private readonly estadosPostulacionBase = [
     'En revision',
@@ -49,19 +50,6 @@ export class CandidateProfileHeader {
     return estados.includes(this.candidato.estado)
       ? estados
       : [this.candidato.estado, ...estados].filter(Boolean);
-  }
-
-  toggleActions() {
-    this.menuAccionesAbierto = !this.menuAccionesAbierto;
-  }
-
-  closeActions() {
-    this.menuAccionesAbierto = false;
-  }
-
-  selectDownloadCv() {
-    this.downloadCv.emit();
-    this.closeActions();
   }
 
   seleccionarPostulacion(id: string) {

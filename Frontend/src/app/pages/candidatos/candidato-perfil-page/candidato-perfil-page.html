@@ -9,12 +9,16 @@
         [postulacionSeleccionadaId]="postulacionSeleccionadaId"
         [estadosPostulacion]="estadosPostulacionPerfil"
         [canSavePostulationState]="puedeGuardarEstadoPostulacion"
+        [matchText]="matchTexto"
+        [contactSaving]="guardandoContactoPerfil"
+        [contactError]="contactoPerfilError"
         (back)="volver()"
         (sendTest)="abrirModalTest()"
         (scheduleInterview)="abrirModalEntrevista()"
         (savePostulationState)="guardarEstadoPostulacion()"
         (saveRent)="guardarRentaPostulacion($event)"
         (saveAvailability)="guardarDisponibilidadCandidato($event)"
+        (saveContact)="guardarContactoCandidato($event)"
         (postulacionSeleccionadaIdChange)="seleccionarPostulacion($event)"
       ></app-candidate-profile-header>
 
@@ -107,6 +111,7 @@
               <app-candidate-match-section
                 [candidato]="candidato"
                 [matchClass]="matchClass"
+                [matchText]="matchTexto"
                 [habilidades]="habilidadesComparadas"
                 [fortalezas]="fortalezasMatch"
                 [areasMejora]="areasMejoraMatch"
@@ -125,10 +130,6 @@
                   <h2 id="evaluaciones-title">Evaluaciones técnicas</h2>
                   <p>Tests asociados al candidato y al proceso seleccionado.</p>
                 </div>
-                <app-button type="button" (pressed)="abrirModalTest()">
-                  <span aria-hidden="true">+</span>
-                  Enviar test
-                </app-button>
               </header>
 
               <div class="evaluations-summary">
@@ -236,6 +237,8 @@
   <app-entrevista-form-modal
     *ngIf="mostrarModalEntrevista"
     [initialData]="entrevistaInicial"
+    [guardando]="guardandoEntrevistaPerfil"
+    [errorApi]="entrevistaPerfilError"
     (cerrar)="cerrarModalEntrevista()"
     (guardar)="guardarEntrevista($event)"
   ></app-entrevista-form-modal>
@@ -391,7 +394,8 @@
     </div>
   </app-modal>
 
-  <app-modal
+  <!-- Función temporalmente oculta en perfil; se conserva para futura reactivación. -->
+  <!-- <app-modal
     *ngIf="mostrarModalTest"
     titulo="Enviar test técnico"
     [subtitulo]="candidato.nombre + ' - ' + candidato.cargo"
@@ -424,5 +428,5 @@
       <app-button variant="secondary" (pressed)="cerrarModalTest()">Cancelar</app-button>
       <app-button (pressed)="cerrarModalTest()">Preparar test</app-button>
     </div>
-  </app-modal>
+  </app-modal> -->
 </app-page-layout>

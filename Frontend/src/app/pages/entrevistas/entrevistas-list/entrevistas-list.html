@@ -2,14 +2,7 @@
   <app-page-header
     title="Listado de entrevistas"
     subtitle="Gestión de entrevistas"
-  >
-    <div pageHeaderActions>
-      <app-button type="button" (pressed)="abrirFormularioIndividual()">
-        <span aria-hidden="true">+</span>
-        Crear nueva entrevista
-      </app-button>
-    </div>
-  </app-page-header>
+  ></app-page-header>
 
   <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
@@ -54,7 +47,6 @@
     *ngIf="!cargando && !errorCarga && entrevistasFiltradas.length > 0"
   >
     <button type="button" [disabled]="seleccionados.size === 0" (click)="abrirModalCorreo()">Correos masivos</button>
-    <button type="button" [disabled]="seleccionados.size === 0 || !seleccionMismaSolicitud" (click)="abrirAgendaMasivaSeleccion()">Agendar masivo</button>
   </app-action-bar>
 
   <app-data-table
@@ -72,7 +64,7 @@
     [compactActions]="true"
     [selectedIds]="seleccionados"
     emptyTitle="No hay entrevistas para mostrar"
-    emptyMessage="Ajusta los filtros o crea una nueva entrevista."
+    emptyMessage="Ajusta los filtros o revisa la agenda de entrevistas."
     (selectedIdsChange)="seleccionados = $event"
     (pageChange)="cambiarPagina($event)"
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"
@@ -85,6 +77,7 @@
     *ngIf="mostrarFormulario"
     [candidatos]="candidatosAgendaMasiva"
     [errorApi]="errorFormularioAgenda"
+    [guardando]="guardandoFormularioAgenda"
     (cerrar)="cerrarFormularioAgenda()"
     (guardar)="guardarEntrevista($event)"
   ></app-entrevista-form-modal>
@@ -98,7 +91,7 @@
   >
     <section class="mail-modal">
       <p class="mail-note">
-        Prepara el mensaje con plantilla. El envío queda bloqueado hasta que exista endpoint de correos masivos.
+        Prepara el mensaje con plantilla. El envío de correos aún no está habilitado en esta pantalla.
       </p>
 
       <label>
@@ -144,8 +137,11 @@
     [resultados]="resultadosEvaluacion"
     [guardando]="guardandoEstado"
     [guardandoEvaluaciones]="guardandoEvaluaciones"
+    [cargandoDetalle]="cargandoDetalle"
     [error]="errorEstado"
     [errorEvaluaciones]="errorEvaluaciones"
+    [mensajeEvaluaciones]="mensajeEvaluaciones"
+    [usuarioActualId]="usuarioActualId"
     (cerrar)="cerrarModalEstado()"
     (confirmar)="confirmarEstado($event)"
     (guardarEvaluaciones)="guardarEvaluaciones($event)"

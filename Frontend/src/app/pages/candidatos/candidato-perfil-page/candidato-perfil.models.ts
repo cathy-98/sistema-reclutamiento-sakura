@@ -2,7 +2,7 @@ export type PerfilTab = 'experiencia' | 'estudios' | 'postulaciones' | 'match' |
 
 export interface CandidatoPerfil {
   idSolicitud: string;
-  match: number;
+  match: number | null;
   nombre: string;
   correo: string;
   telefono: string;

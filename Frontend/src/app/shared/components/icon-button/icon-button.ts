@@ -12,6 +12,7 @@ export type IconButtonName = 'eye' | 'download' | 'calendar' | 'edit' | 'cancel'
 export class IconButton {
   @Input() icon: IconButtonName = 'eye';
   @Input() label = '';
+  @Input() tooltip = '';
   @Input() disabled = false;
   @Input() type: 'button' | 'submit' = 'button';
 

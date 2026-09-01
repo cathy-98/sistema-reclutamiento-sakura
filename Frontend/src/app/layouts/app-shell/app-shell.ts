@@ -99,8 +99,8 @@ export class AppShell {
       roles: ['Administrador', 'Reclutador', 'Entrevistador'],
       permissions: ['INT_VIEW'],
       children: [
-        { label: 'Listado de entrevistas', route: '/entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'], permissions: ['INT_VIEW'] },
         { label: 'Agenda de entrevistas', route: '/agenda-entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'], permissions: ['INT_VIEW'] },
+        { label: 'Listado de entrevistas', route: '/entrevistas', roles: ['Administrador', 'Reclutador', 'Entrevistador'], permissions: ['INT_VIEW'] },
       ],
     },
     {

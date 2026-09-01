@@ -1,11 +1,10 @@
 <section class="match-panel" aria-labelledby="match-summary-title">
   <!-- Resumen de compatibilidad del candidato con el cargo. -->
-  <app-match-score [value]="candidato.match + '%'" [scoreClass]="matchClass"></app-match-score>
+  <app-match-score [value]="matchText" [scoreClass]="matchClass"></app-match-score>
   <div>
     <h2 id="match-summary-title">Buen match para el cargo</h2>
     <p>El candidato cumple con la mayoría de los requisitos técnicos y tiene buena alineación con el rol.</p>
   </div>
-  <app-button variant="secondary">Actualizar análisis</app-button>
 </section>
 
 <section class="content-panel match-detail-panel" aria-labelledby="match-skills-title">
@@ -39,7 +38,11 @@
   </div>
 </section>
 
-<section class="content-panel qualitative-panel" aria-labelledby="qualitative-match-title">
+<section
+  *ngIf="false"
+  class="content-panel qualitative-panel"
+  aria-labelledby="qualitative-match-title"
+>
   <!-- Lectura cualitativa del análisis de match. -->
   <h2 id="qualitative-match-title">Análisis cualitativo</h2>
   <div class="analysis-columns">

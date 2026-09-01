@@ -119,7 +119,7 @@
                 />
               </app-form-field>
 
-              <app-form-field label="Fecha" [error]="programacionActiva.fecha && !fechaValida(programacionActiva) ? 'No puede ser anterior a hoy.' : ''" [required]="true">
+              <app-form-field label="Fecha" [error]="mensajeErrorFecha(programacionActiva)" [required]="true">
                 <app-date-picker
                   [(ngModel)]="programacionActiva.fecha"
                   [ngModelOptions]="{ standalone: true }"
@@ -184,7 +184,7 @@
 
         <ng-template #sinTipos>
           <div class="empty-state">
-            No se pudo preparar la reunión por una dependencia técnica del contrato actual.
+            No hay una configuración de entrevista disponible para agendar.
           </div>
         </ng-template>
       </section>
@@ -275,13 +275,18 @@
       </section>
     </ng-container>
 
-    <p class="form-error" *ngIf="errorEnvio || errorApi">{{ errorEnvio || errorApi }}</p>
+    <div class="form-feedback" *ngIf="mensajeValidacionVisible" role="alert" aria-live="polite">
+      <strong>No se pudo completar la agenda.</strong>
+      <span>{{ mensajeValidacionVisible }}</span>
+    </div>
 
     <app-form-actions>
       <app-button variant="secondary" type="button" (pressed)="cerrar.emit()">Cancelar</app-button>
       <app-button *ngIf="tabFormulario !== 'datos'" variant="ghost" type="button" (pressed)="volverPaso()">Volver</app-button>
-      <app-button *ngIf="!esUltimoPaso()" type="button" (pressed)="siguientePaso()">Siguiente</app-button>
-      <app-button *ngIf="esUltimoPaso()" type="button" (pressed)="enviar()">Agendar entrevista</app-button>
+      <app-button *ngIf="!esUltimoPaso()" type="button" [disabled]="guardando" (pressed)="siguientePaso()">Siguiente</app-button>
+      <app-button *ngIf="esUltimoPaso()" type="button" [disabled]="guardando" (pressed)="enviar()">
+        {{ guardando ? 'Agendando...' : 'Agendar entrevista' }}
+      </app-button>
     </app-form-actions>
   </form>
 </app-modal>

@@ -1,170 +1,183 @@
-<app-modal [titulo]="titulo" [subtitulo]="entrevista?.idSolicitud || ''" ancho="lg" (cerrar)="cerrar.emit()">
+<app-modal [titulo]="titulo" [subtitulo]="subtituloModal" ancho="md" (cerrar)="cerrar.emit()">
   <form class="state-form" [formGroup]="formulario">
-    <section class="state-summary" *ngIf="entrevista">
-      <h3>{{ entrevista.asunto }}</h3>
-
-      <div class="summary-grid">
-        <span>
-          <small>Candidato</small>
-          <strong>{{ entrevista.candidato }}</strong>
-        </span>
-        <span>
-          <small>Solicitud</small>
-          <strong>{{ entrevista.idSolicitud }}</strong>
-        </span>
-        <span>
-          <small>Cargo</small>
-          <strong>{{ entrevista.cargo }}</strong>
-        </span>
-        <span>
-          <small>Fecha / hora actual</small>
-          <strong>{{ entrevista.fecha }} · {{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</strong>
-        </span>
-        <span class="wide">
-          <small>Tipos asociados</small>
-          <strong>{{ entrevista.tipo }}</strong>
-        </span>
-      </div>
+    <section class="feedback-context" *ngIf="(mostrarResultadosPorArea || feedbackSoloConsulta) && entrevista">
+      <strong>{{ lineaContextoFeedback }}</strong>
+      <span>{{ lineaAgendaFeedback }}</span>
     </section>
 
-    <section class="status-panel" *ngIf="!esLectura">
-      <div>
-        <span>Estado de la entrevista</span>
-        <strong [class]="'state-badge ' + estadoActualNormalizado">{{ estadoActual }}</strong>
+    <section class="feedback-summary" *ngIf="!mostrarResultadosPorArea && entrevista">
+      <div class="feedback-summary__title">
+        <h3>{{ entrevista.candidato }}</h3>
+        <span class="state-badge realizada" *ngIf="estadoActualNormalizado === 'realizada'">Realizada</span>
+        <span class="state-badge" *ngIf="estadoActualNormalizado !== 'realizada'">{{ estadoActual }}</span>
       </div>
 
-      <section class="available-actions" *ngIf="mostrarSelectorEstado">
-        <label class="action-select">
-          Acción
-          <select formControlName="estado" (change)="seleccionarAccion($any($event.target).value)">
-            <option value="">Selecciona qué hacer</option>
-            <option *ngFor="let accionDisponible of accionesDisponibles" [value]="accionDisponible.valor">
-              {{ accionDisponible.etiqueta }}
-            </option>
-          </select>
-        </label>
+      <p *ngIf="!esLectura && estadoActualNormalizado === 'realizada'">{{ lineaEntrevista }}</p>
+      <p *ngIf="!esLectura && estadoActualNormalizado !== 'realizada'">{{ entrevista.asunto }}</p>
+      <p class="feedback-summary__context" *ngIf="!esLectura">{{ entrevista.idSolicitud }} · {{ entrevista.cargo }}</p>
+    </section>
+
+    <p class="state-note compact-note" *ngIf="cargandoDetalle && !detalle">
+      Cargando detalle de entrevista...
+    </p>
+
+    <section class="detail-view" *ngIf="esLectura && entrevista && detalle">
+      <h4 class="section-title">Datos de la entrevista</h4>
+
+      <dl class="detail-grid">
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ fechaEntrevistaLegible }}</dd>
+        </div>
+        <div>
+          <dt>Horario</dt>
+          <dd>{{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</dd>
+        </div>
+        <div>
+          <dt>Tipo</dt>
+          <dd>{{ entrevista.tipo }}</dd>
+        </div>
+        <div>
+          <dt>Estado de entrevista</dt>
+          <dd>
+            <span class="state-badge" [ngClass]="estadoActualNormalizado.split(' ').join('-')">{{ estadoActual }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Solicitud</dt>
+          <dd class="request-state-value">
+            <span>{{ solicitudDetalle }}</span>
+            <span
+              class="request-state-helper"
+              *ngIf="solicitudCancelada"
+              tabindex="0"
+              title="La solicitud está cancelada. No permite agendar nuevas entrevistas."
+              aria-label="La solicitud está cancelada. No permite agendar nuevas entrevistas."
+            >
+              i
+            </span>
+          </dd>
+        </div>
+        <div class="wide">
+          <dt>Participantes</dt>
+          <dd>{{ entrevista.entrevistador }}</dd>
+        </div>
+        <div class="wide">
+          <dt>Reunión</dt>
+          <dd>
+            <a class="meeting-link" *ngIf="linkReunionDetalle; else sinLink" [href]="linkReunionDetalle" target="_blank" rel="noreferrer">
+              ↗ Abrir reunión
+            </a>
+            <ng-template #sinLink>
+              <span class="muted-value">Sin link registrado</span>
+            </ng-template>
+          </dd>
+        </div>
+      </dl>
+
+      <section class="detail-section">
+        <header class="section-heading">
+          <h4 class="section-title">Feedback de entrevista</h4>
+          <span *ngIf="totalFeedbacksRegistrados > 0">{{ cantidadFeedbacksDetalle }}</span>
+        </header>
+
+        <div class="feedback-history" *ngIf="feedbacksRegistrados.length > 0; else feedbackEmpty">
+          <article class="feedback-history__item" *ngFor="let feedback of feedbacksRegistrados">
+            <header class="feedback-history__header">
+              <strong>{{ autorFeedback(feedback) }}</strong>
+              <span>{{ fechaFeedback(feedback) }}</span>
+            </header>
+
+            <p class="feedback-history__type">{{ feedback.tipo_entrevista_nombre || 'Entrevista' }}</p>
+            <p class="feedback-history__result">{{ etiquetaResultado(feedback.resultado_nombre) }}</p>
+            <p class="feedback-history__observation">{{ feedback.observacion || 'Sin observaciones registradas.' }}</p>
+          </article>
+        </div>
+
+        <ng-template #feedbackEmpty>
+          <p class="empty-note">Aún no se han registrado feedbacks para esta entrevista.</p>
+        </ng-template>
       </section>
     </section>
 
-    <section class="detail-view" *ngIf="entrevista && esLectura">
-      <details open>
-        <summary>Agenda y responsables</summary>
-        <dl class="detail-grid">
-          <div>
-            <dt>Fecha</dt>
-            <dd>{{ entrevista.fecha }}</dd>
-          </div>
-          <div>
-            <dt>Hora</dt>
-            <dd>{{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</dd>
-          </div>
-          <div class="wide">
-            <dt>Entrevistador</dt>
-            <dd>{{ entrevista.entrevistador }}</dd>
-          </div>
-          <div class="wide">
-            <dt>Link reunión</dt>
-            <dd>{{ entrevista.linkReunion || 'Sin link registrado' }}</dd>
-          </div>
-        </dl>
-      </details>
+    <section class="state-section" *ngIf="mostrarGestionEstado">
+      <fieldset class="action-selector" *ngIf="mostrarSelectorEstado">
+        <legend>Acción</legend>
 
-      <details open>
-        <summary>Estado y resultado</summary>
-        <dl class="detail-grid">
-          <div>
-            <dt>Estado entrevista</dt>
-            <dd>{{ entrevista.estado }}</dd>
-          </div>
-          <div>
-            <dt>Resultado por área</dt>
-            <dd>{{ entrevista.resultadoEntrevista }}</dd>
-          </div>
-          <div class="wide">
-            <dt>Observación / convocatoria</dt>
-            <dd>{{ entrevista.observacion || 'Sin observación registrada' }}</dd>
-          </div>
-        </dl>
-      </details>
+        <button
+          *ngFor="let accion of accionesDisponibles"
+          type="button"
+          [class.is-selected]="accionSeleccionada === accion.valor"
+          (click)="seleccionarAccion(accion.valor)"
+        >
+          <strong>{{ accion.etiqueta }}</strong>
+          <span>{{ accion.estadoObjetivo }}</span>
+        </button>
+      </fieldset>
+
+      <p class="state-note" *ngIf="mensajeConfirmacionSensible">
+        {{ mensajeConfirmacionSensible }}
+      </p>
+
+      <div class="state-grid" *ngIf="mostrarFecha">
+        <label>
+          Fecha
+          <input formControlName="fecha" type="date" [min]="fechaHoyInput" />
+        </label>
+
+        <label>
+          Hora inicio
+          <input formControlName="horaInicio" type="time" />
+        </label>
+
+        <label>
+          Hora fin
+          <input formControlName="horaFin" type="time" />
+        </label>
+      </div>
+
+      <label class="observations-field" *ngIf="requiereMotivo">
+        Motivo *
+        <textarea
+          formControlName="motivo"
+          maxlength="500"
+          rows="4"
+          placeholder="Indica el motivo para continuar"
+        ></textarea>
+      </label>
     </section>
 
-    <p class="state-note" *ngIf="modo === 'gestionar' && !mostrarSelectorEstado && !mostrarResultadosPorArea">
-      Esta entrevista no tiene cambios de estado disponibles desde la interfaz.
-    </p>
+    <section class="feedback-form" *ngIf="mostrarResultadosPorArea">
+      <fieldset class="result-selector">
+        <legend>Resultado de la entrevista *</legend>
 
-    <label *ngIf="accionSeleccionada === 'cancelar' || accionSeleccionada === 'no-asistio'">
-      {{
-        accionSeleccionada === 'cancelar'
-          ? 'Motivo de cancelación'
-          : 'Motivo de no asistencia'
-      }}
-      <textarea formControlName="motivo" placeholder="Escribe el motivo"></textarea>
-      <small *ngIf="formulario.get('motivo')?.touched && formulario.get('motivo')?.invalid">Campo obligatorio.</small>
-    </label>
-
-    <div class="date-grid" *ngIf="mostrarFecha">
-      <label>
-        Nueva fecha
-        <app-date-picker
-          [min]="fechaHoyInput"
-          formControlName="fecha"
-        ></app-date-picker>
-        <small *ngIf="!fechaValida()">La fecha y hora de inicio deben ser futuras.</small>
-      </label>
-      <label>
-        Hora inicio
-        <input type="time" formControlName="horaInicio" />
-      </label>
-      <label>
-        Hora fin
-        <input type="time" formControlName="horaFin" />
-        <small *ngIf="!horarioValido()">La hora fin debe ser mayor a la hora inicio.</small>
-      </label>
-    </div>
-
-    <label *ngIf="mostrarFecha">
-      Motivo de reprogramación
-      <textarea formControlName="motivo" placeholder="Escribe el motivo para guardar la reprogramación"></textarea>
-      <small *ngIf="formulario.get('motivo')?.touched && formulario.get('motivo')?.invalid">Campo obligatorio.</small>
-    </label>
-
-    <section class="results-section" *ngIf="mostrarResultadosPorArea">
-      <header>
-        <div>
-          <h4>Feedback posterior a la entrevista</h4>
-          <p>Registra resultado y observación por cada tipo asignado. Esto no cambia el estado general de la entrevista.</p>
-        </div>
-      </header>
-
-      <article class="result-card" *ngFor="let tipo of tiposEvaluables">
-        <h5>{{ tipo.nombre }}</h5>
-        <p>
-          Entrevistador:
-          {{ tipo.entrevistadores?.[0]?.nombres || 'Asignado' }}
-          {{ tipo.entrevistadores?.[0]?.apellido_paterno || '' }}
-        </p>
-
-        <label>
-          Resultado *
-          <select [(ngModel)]="evaluacionTipo(tipo.tipo_entrevista_id).resultadoId" [ngModelOptions]="{ standalone: true }">
-            <option [ngValue]="null">Selecciona resultado</option>
-            <option *ngFor="let resultado of resultados" [ngValue]="resultado.nore_id">
-              {{ resultado.nore_nombre }}
-            </option>
-          </select>
-          <small *ngIf="resultadoTipoInvalido(tipo.tipo_entrevista_id)">Campo obligatorio.</small>
-        </label>
-
-        <label>
-          Observación
-          <textarea
-            [(ngModel)]="evaluacionTipo(tipo.tipo_entrevista_id).observacion"
+        <label
+          class="choice-pill"
+          *ngFor="let opcion of opcionesFeedback"
+          [class.is-selected]="evaluacionTipo(tipoFeedbackActivoId).resultadoId === opcion.nore_id"
+        >
+          <input
+            type="radio"
+            name="resultadoFeedback"
+            [value]="opcion.nore_id"
+            [(ngModel)]="evaluacionTipo(tipoFeedbackActivoId).resultadoId"
             [ngModelOptions]="{ standalone: true }"
-            maxlength="300"
-            placeholder="Observación para {{ tipo.nombre }}"
-          ></textarea>
+          />
+          <span>{{ etiquetaResultado(opcion.nore_nombre) }}</span>
         </label>
-      </article>
+      </fieldset>
+
+      <label class="observations-field">
+        Observaciones *
+        <textarea
+          [(ngModel)]="evaluacionTipo(tipoFeedbackActivoId).observacion"
+          [ngModelOptions]="{ standalone: true }"
+          maxlength="300"
+          rows="4"
+          placeholder="Escribe tus observaciones sobre la entrevista"
+        ></textarea>
+        <small>{{ evaluacionTipo(tipoFeedbackActivoId).observacion.length }} / 300</small>
+      </label>
 
       <p class="state-error" *ngIf="errorEvaluaciones">
         {{ errorEvaluaciones }}
@@ -172,26 +185,77 @@
       <p class="state-error" *ngIf="errorLocalEvaluaciones">
         {{ errorLocalEvaluaciones }}
       </p>
+      <p class="state-success" *ngIf="mensajeEvaluaciones && !errorEvaluaciones && !errorLocalEvaluaciones">
+        {{ mensajeEvaluaciones }}
+      </p>
     </section>
 
-    <p class="state-note" *ngIf="entrevistaRealizadaSinEvaluacionDisponible">
-      La entrevista ya está Realizada. El feedback se registra por tipo, pero solo aparece para usuarios asignados a ese tipo y autorizados por backend.
+    <section class="feedback-readonly" *ngIf="feedbackSoloConsulta">
+      <p class="state-note compact-note">
+        {{ mensajeFeedbackSoloConsulta }}
+      </p>
+
+      <div class="feedback-history" *ngIf="feedbacksRegistrados.length > 0; else feedbackSoloConsultaEmpty">
+        <article class="feedback-history__item" *ngFor="let feedback of feedbacksRegistrados">
+          <header>
+            <strong>{{ autorFeedback(feedback) }}</strong>
+            <span>{{ feedback.tipo_entrevista_nombre || 'Entrevista' }} · {{ fechaFeedback(feedback) }}</span>
+          </header>
+
+          <p class="feedback-history__result">{{ etiquetaResultado(feedback.resultado_nombre) }}</p>
+          <p class="feedback-history__observation">{{ feedback.observacion || 'Sin observaciones registradas.' }}</p>
+        </article>
+      </div>
+
+      <ng-template #feedbackSoloConsultaEmpty>
+        <p class="empty-note">Aún no se han registrado feedbacks para esta entrevista.</p>
+      </ng-template>
+    </section>
+
+    <details class="feedback-disclosure" *ngIf="mostrarResultadosPorArea && feedbacksRegistrados.length > 0">
+      <summary>{{ textoFeedbacksRegistrados }} · Ver anteriores</summary>
+
+      <div class="feedback-history">
+        <article class="feedback-history__item" *ngFor="let feedback of feedbacksRegistrados">
+          <header>
+            <strong>{{ autorFeedback(feedback) }}</strong>
+            <span>{{ feedback.tipo_entrevista_nombre || 'Entrevista' }} · {{ fechaFeedback(feedback) }}</span>
+          </header>
+
+          <p class="feedback-history__result">{{ etiquetaResultado(feedback.resultado_nombre) }}</p>
+          <p class="feedback-history__observation">{{ feedback.observacion || 'Sin observaciones registradas.' }}</p>
+        </article>
+      </div>
+    </details>
+
+    <p class="state-note compact-note" *ngIf="entrevistaRealizadaSinEvaluacionDisponible">
+      No tienes permisos para registrar feedback en esta entrevista.
     </p>
 
-    <p class="state-error" *ngIf="error">
+    <p class="state-error" *ngIf="error && !mostrarResultadosPorArea">
       {{ error }}
     </p>
   </form>
 
   <app-form-actions modal-footer>
-    <app-button formActionsStart variant="ghost" [disabled]="guardando || guardandoEvaluaciones" (pressed)="cerrar.emit()">Cancelar</app-button>
+    <app-button formActionsStart variant="ghost" [disabled]="guardando || guardandoEvaluaciones" (pressed)="cerrar.emit()">
+      {{ esLectura ? 'Cerrar' : 'Cancelar' }}
+    </app-button>
     <app-button
-      *ngIf="!esLectura && (accionSeleccionada || mostrarFecha || requiereMotivo || mostrarResultadosPorArea)"
+      *ngIf="mostrarResultadosPorArea"
       [variant]="varianteAccion"
-      [disabled]="guardando || guardandoEvaluaciones || (mostrarSelectorEstado && !accionSeleccionada)"
+      [disabled]="guardando || guardandoEvaluaciones || !evaluacionTipo(tipoFeedbackActivoId).resultadoId || !evaluacionTipo(tipoFeedbackActivoId).observacion.trim()"
       (pressed)="enviar()"
     >
-      {{ guardando || guardandoEvaluaciones ? 'Guardando...' : accion }}
+      {{ guardando || guardandoEvaluaciones ? 'Guardando...' : 'Guardar feedback' }}
+    </app-button>
+    <app-button
+      *ngIf="mostrarBotonGestion"
+      [variant]="varianteAccion"
+      [disabled]="guardando || formulario.invalid || !horarioValido() || !fechaValida()"
+      (pressed)="enviar()"
+    >
+      {{ guardando ? 'Guardando...' : accion }}
     </app-button>
   </app-form-actions>
 </app-modal>

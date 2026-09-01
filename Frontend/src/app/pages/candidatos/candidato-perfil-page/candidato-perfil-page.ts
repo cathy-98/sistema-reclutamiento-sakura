@@ -72,12 +72,14 @@ import {
 
 interface ContextoPostulacionPerfil {
   postulacionId?: number;
+  solicitudId?: number;
   idSolicitud: string;
   cargo: string;
   estado: string;
   estadoId?: number | null;
-  match: number;
+  match: number | null;
   renta: number;
+  fechaPostulacionTimestamp: number;
 }
 
 interface CatalogosPerfilM3 {
@@ -149,6 +151,10 @@ export class CandidatoPerfilPage implements OnInit {
   resultadosEvaluacion: NombreResultadoCatalogoApi[] = [];
   guardandoEvaluacionEntrevista = false;
   evaluacionEntrevistaError = '';
+  guardandoContactoPerfil = false;
+  contactoPerfilError = '';
+  guardandoEntrevistaPerfil = false;
+  entrevistaPerfilError = '';
 
   get puedeGuardarEstadoPostulacion() {
     const contexto =
@@ -259,7 +265,9 @@ export class CandidatoPerfilPage implements OnInit {
 
     this.candidato = {
       idSolicitud: params.get('idSolicitud') || '',
-      match: Number(params.get('match') || 0),
+      match: params.has('match')
+        ? this.normalizarNumero(params.get('match')) ?? null
+        : null,
       nombre: params.get('nombre') || 'Candidato sin nombre',
       correo: params.get('correo') || 'Sin correo',
       telefono: params.get('telefono') || 'Sin teléfono',
@@ -303,8 +311,12 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get entrevistaInicial(): Partial<EntrevistaPayload> {
+    const contexto =
+      this.contextoPostulaciones.get(this.postulacionSeleccionadaId);
+
     return {
       idSolicitud: this.candidato.idSolicitud,
+      solicitudCandidatoId: contexto?.postulacionId,
       candidato: this.candidato.nombre,
       cargo: this.candidato.cargo,
       tipo: 'RRHH',
@@ -313,6 +325,10 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get matchClass() {
+    if (this.candidato.match == null) {
+      return 'is-empty';
+    }
+
     if (this.candidato.match >= 75) {
       return 'is-high';
     }
@@ -331,6 +347,12 @@ export class CandidatoPerfilPage implements OnInit {
 
   get postulacionSeleccionada() {
     return this.postulaciones.find((postulacion) => postulacion[0] === this.postulacionSeleccionadaId) || this.postulaciones[0];
+  }
+
+  get matchTexto() {
+    return this.candidato.match == null
+      ? 'Sin match'
+      : `${this.candidato.match}%`;
   }
 
   get procesoSeleccionado() {
@@ -705,6 +727,48 @@ export class CandidatoPerfilPage implements OnInit {
       });
   }
 
+  guardarContactoCandidato(contacto: { correo: string; telefono: string }) {
+    const candidatoId = this.route.snapshot.paramMap.get('id');
+    const payload = {
+      cand_email: contacto.correo.trim(),
+      cand_telefono: contacto.telefono.trim() || null,
+    };
+
+    const guardar$ = this.esAutoservicio
+      ? this.candidatosService.actualizarMiPerfil(payload)
+      : this.candidatosService.actualizar(candidatoId ?? '', payload);
+
+    if (!this.esAutoservicio && !candidatoId) {
+      this.contactoPerfilError =
+        'No se encontró el candidato para guardar la información de contacto.';
+      return;
+    }
+
+    this.guardandoContactoPerfil = true;
+    this.contactoPerfilError = '';
+
+    guardar$
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.guardandoContactoPerfil = false;
+        }),
+      )
+      .subscribe({
+        next: (perfil) => {
+          this.candidato = {
+            ...this.candidato,
+            correo: perfil.cand_email ?? payload.cand_email,
+            telefono: perfil.cand_telefono ?? payload.cand_telefono ?? '',
+          };
+        },
+        error: (error) => {
+          this.contactoPerfilError =
+            obtenerMensajeError(error, 'No fue posible guardar correo y teléfono.');
+        },
+      });
+  }
+
   actualizarFormularioEvaluacionEntrevista() {
     const evaluacionActual =
       this.evaluacionSeleccionadaActual();
@@ -846,19 +910,38 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   abrirModalEntrevista() {
+    this.entrevistaPerfilError = '';
+    this.guardandoEntrevistaPerfil = false;
     this.mostrarModalEntrevista = true;
   }
 
   cerrarModalEntrevista() {
+    this.entrevistaPerfilError = '';
+    this.guardandoEntrevistaPerfil = false;
     this.mostrarModalEntrevista = false;
   }
 
   guardarEntrevista(payload: EntrevistaPayload) {
-    this.entrevistasService.crear(payload).subscribe({
-      next: () => {
-        this.cerrarModalEntrevista();
-      },
-    });
+    this.guardandoEntrevistaPerfil = true;
+    this.entrevistaPerfilError = '';
+    this.entrevistasService
+      .crear(payload)
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.guardandoEntrevistaPerfil = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.cerrarModalEntrevista();
+          this.recargarEntrevistasPerfil();
+        },
+        error: (error) => {
+          this.entrevistaPerfilError =
+            obtenerMensajeError(error, 'No fue posible agendar la entrevista.');
+        },
+      });
   }
 
   abrirModalTest() {
@@ -878,9 +961,7 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   private cargarPerfilM3() {
-    // El perfil parte con datos base de ruta/query params y luego se hidrata con backend.
-    // No bloqueamos el encabezado por catálogos secundarios para evitar skeleton eterno.
-    this.perfilCargado = true;
+    this.perfilCargado = false;
 
     const candidatoId = this.route.snapshot.paramMap.get('id');
     const perfil$ = this.esAutoservicio
@@ -964,7 +1045,6 @@ export class CandidatoPerfilPage implements OnInit {
       )
       .subscribe({
         next: ({ perfil, solicitudes, solicitudesCatalogo, cuestionariosCatalogo, estadosSolicitudCandidato, motivosRechazo, resultadosEvaluacion, disponibilidades, cargos, empresas, habilidadesCatalogo, nivelesHabilidad, instituciones, carreras, nivelesEducacionales, comunas, entrevistas, evaluacionesTecnicas, idiomas }) => {
-        this.perfilCargado = true;
         this.solicitudesCatalogoPerfil =
           solicitudesCatalogo;
         this.estadosPostulacionPerfil =
@@ -1018,7 +1098,7 @@ export class CandidatoPerfilPage implements OnInit {
         );
         this.postulacionSeleccionadaId =
           this.resolverPostulacionInicial() ??
-          this.postulaciones[0]?.[0] ??
+          this.resolverPostulacionMasReciente() ??
           '';
         this.aplicarContextoPostulacion(this.postulacionSeleccionadaId);
 
@@ -1082,7 +1162,7 @@ export class CandidatoPerfilPage implements OnInit {
     ]
       .filter(Boolean)
       .join(' ') || 'Candidato sin nombre';
-    const primeraSolicitud = solicitudes[0];
+    const primeraSolicitud = this.postulacionMasRecienteApi(solicitudes);
     const solicitudResumen = primeraSolicitud
       ? this.solicitudResumenPorId(solicitudesCatalogo, primeraSolicitud.slcd_solicitud_id)
       : null;
@@ -1105,7 +1185,7 @@ export class CandidatoPerfilPage implements OnInit {
             primeraSolicitud.slcd_solicitud_id,
           )
         : '',
-      match: this.normalizarNumero(primeraSolicitud?.slcd_puntaje_compatibilidad) ?? this.candidato.match,
+      match: this.normalizarNumero(primeraSolicitud?.slcd_puntaje_compatibilidad) ?? null,
       nombre,
       correo: perfil.cand_email ?? 'Sin correo',
       telefono: perfil.cand_telefono ?? '',
@@ -1338,17 +1418,21 @@ export class CandidatoPerfilPage implements OnInit {
         ) ?? 'Sin estado';
         const match = this.normalizarNumero(
           postulacion.slcd_puntaje_compatibilidad,
-        ) ?? 0;
+        ) ?? null;
         const renta = postulacion.slcd_pretension_renta ?? 0;
 
         this.contextoPostulaciones.set(codigo, {
           postulacionId: postulacion.slcd_id,
+          solicitudId: postulacion.slcd_solicitud_id,
           idSolicitud: codigo,
           cargo,
           estado,
           estadoId: postulacion.slcd_estado_solicitud_candidato_id,
           match,
           renta,
+          fechaPostulacionTimestamp: this.fechaTimestamp(
+            postulacion.slcd_fecha_postulacion,
+          ),
         });
 
         return [
@@ -1426,11 +1510,13 @@ export class CandidatoPerfilPage implements OnInit {
 
           this.contextoPostulaciones.set(codigo, {
             postulacionId: idPostulacion,
+            solicitudId: Number(item.idSolicitud) || undefined,
             idSolicitud: codigo,
             cargo: item.cargo || 'Sin cargo',
             estado: item.estado || 'Sin estado',
-            match: Number(item.match ?? 0),
+            match: item.match == null ? null : Number(item.match),
             renta: Number(item.renta ?? 0),
+            fechaPostulacionTimestamp: this.fechaTimestamp(item.fecha),
           });
 
           return [
@@ -1465,6 +1551,30 @@ export class CandidatoPerfilPage implements OnInit {
     });
 
     return Array.from(vistas.values());
+  }
+
+  private resolverPostulacionMasReciente() {
+    let seleccionada: string | null = null;
+    let fechaMayor = Number.NEGATIVE_INFINITY;
+
+    this.contextoPostulaciones.forEach((contexto, codigo) => {
+      if (contexto.fechaPostulacionTimestamp > fechaMayor) {
+        fechaMayor = contexto.fechaPostulacionTimestamp;
+        seleccionada = codigo;
+      }
+    });
+
+    return seleccionada;
+  }
+
+  private postulacionMasRecienteApi(
+    solicitudes: PostulacionCandidatoApi[],
+  ) {
+    return [...solicitudes].sort(
+      (a, b) =>
+        this.fechaTimestamp(b.slcd_fecha_postulacion) -
+        this.fechaTimestamp(a.slcd_fecha_postulacion),
+    )[0];
   }
 
   private resolverPostulacionInicial() {

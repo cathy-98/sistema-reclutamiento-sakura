@@ -100,9 +100,20 @@ export class InformesCliente implements OnInit {
   readonly columnas: DataTableColumn<InformeCandidato>[] = [
     {
       key: 'idSolicitud',
-      label: 'ID solicitud',
-      width: 138,
+      label: 'Solicitud',
+      width: 220,
       sticky: 'left',
+      type: 'stack',
+      value: (informe) => informe.idSolicitud,
+      secondaryValue: (informe) => informe.cargo,
+      title: (informe) => `${informe.idSolicitud} · ${informe.cargo}`,
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      width: 150,
+      type: 'badge',
+      className: (informe) => this.estadoClase(informe.estado),
     },
     {
       key: 'match',
@@ -137,19 +148,6 @@ export class InformesCliente implements OnInit {
       key: 'telefono',
       label: 'Teléfono de contacto',
       width: 170,
-    },
-    {
-      key: 'cargo',
-      label: 'Cargo postulado',
-      width: 160,
-      wrap: true,
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      width: 150,
-      type: 'badge',
-      className: (informe) => this.estadoClase(informe.estado),
     },
     {
       key: 'disponibilidad',

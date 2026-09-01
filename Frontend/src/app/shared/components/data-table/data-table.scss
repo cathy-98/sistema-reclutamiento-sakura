@@ -286,7 +286,7 @@ td.wrap-cell .person-cell strong {
  * Contenedor del botón ⋮ y su menú.
  */
 .row-menu {
-  position: relative;
+  position: static;
 }
 
 .row-menu-trigger {
@@ -317,21 +317,18 @@ td.wrap-cell .person-cell strong {
 /*
  * UX/UI DataTable
  *
- * El menú se abre debajo del botón ⋮ y se alinea
- * con su borde derecho.
- *
- * Así no pisa el botón "Ver" y mantiene una
- * relación clara con el trigger.
+ * El menú flota contra el viewport para no quedar recortado por el
+ * overflow horizontal de la tabla ni por la paginación.
  */
 .row-menu-list {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
 
-  z-index: 40;
+  z-index: 1000;
 
   display: grid;
   min-width: 230px;
+  max-height: min(360px, calc(100vh - 24px));
+  overflow-y: auto;
   padding: 8px;
 
   border: 1px solid var(--color-border);
@@ -339,6 +336,10 @@ td.wrap-cell .person-cell strong {
 
   background: var(--color-white);
   box-shadow: var(--shadow-modal);
+}
+
+.row-menu-list.opens-up {
+  transform-origin: bottom right;
 }
 
 .row-menu-list button {

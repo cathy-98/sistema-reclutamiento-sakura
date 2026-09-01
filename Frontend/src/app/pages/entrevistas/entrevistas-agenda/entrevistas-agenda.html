@@ -2,16 +2,46 @@
   <app-page-header
     title="Agenda de entrevistas"
     subtitle="Vista rápida de entrevistas recientes y próximas"
-  ></app-page-header>
+  >
+    <div pageHeaderActions>
+      <app-button type="button" (pressed)="abrirFormularioIndividual()">
+        <span aria-hidden="true">+</span>
+        Agendar entrevista
+      </app-button>
+    </div>
+  </app-page-header>
 
   <app-alert-region [alerta]="alerta" (cerrar)="cerrarAlerta()"></app-alert-region>
 
-  <app-tabs
-    [tabs]="tabs"
-    [activeTab]="tabActiva"
-    ariaLabel="Filtrar agenda de entrevistas"
-    (activeTabChange)="cambiarTab($event)"
-  ></app-tabs>
+  <section class="agenda-filters" aria-label="Filtros de agenda">
+    <button
+      type="button"
+      class="today-button"
+      [class.is-active]="fechaSeleccionada === fechaHoy()"
+      (click)="seleccionarHoy()"
+    >
+      Hoy
+    </button>
+
+    <div class="state-filter" aria-label="Filtrar por estado de entrevista">
+      <span>Estado entrevista</span>
+      <button
+        type="button"
+        [class.is-active]="!estadoFiltro"
+        (click)="cambiarEstadoFiltro('')"
+      >
+        Todas
+      </button>
+      <button
+        type="button"
+        *ngFor="let estado of estadosEntrevista"
+        [class.is-active]="estadoFiltro === estado"
+        (click)="cambiarEstadoFiltro(estado)"
+      >
+        {{ estado }}
+      </button>
+    </div>
+  </section>
 
   <section class="agenda-layout" aria-labelledby="agenda-layout-title">
     <h2 id="agenda-layout-title" class="sr-only">Agenda de entrevistas</h2>
@@ -48,8 +78,8 @@
     <section class="day-panel" aria-labelledby="entrevistas-dia-title">
       <header class="day-header">
         <div>
-          <h2 id="entrevistas-dia-title">Entrevistas del día</h2>
-          <p>{{ fechaSeleccionada }} · {{ entrevistasDia.length }} entrevista(s)</p>
+          <h2 id="entrevistas-dia-title">{{ tituloPanelDia }}</h2>
+          <p>{{ resumenEntrevistasDia }}</p>
         </div>
         <label>
           Buscar
@@ -70,53 +100,88 @@
                 <h3>{{ entrevista.candidato }}</h3>
                 <p>{{ entrevista.cargo }} · {{ entrevista.idSolicitud }}</p>
               </div>
-              <span class="state-chip" [ngClass]="estadoClase(entrevista.estado)">{{ entrevista.estado }}</span>
+              <span class="state-label">
+                Estado entrevista:
+                <span class="state-chip" [ngClass]="estadoClase(entrevista.estado)">{{ entrevista.estado }}</span>
+              </span>
             </header>
 
-            <dl>
-              <div>
-                <dt>Horario</dt>
-                <dd>{{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</dd>
-              </div>
-              <div>
-                <dt>Tipo</dt>
-                <dd>{{ entrevista.tipo }}</dd>
-              </div>
-              <div>
-                <dt>Entrevistador</dt>
-                <dd>{{ entrevista.entrevistador }}</dd>
-              </div>
-            </dl>
-
             <footer>
-              <app-button variant="secondary" size="sm" type="button" (pressed)="verDetalle(entrevista)">Ver detalle</app-button>
-              <app-button
-                variant="secondary"
-                size="sm"
-                type="button"
-                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Realizada'"
-                (pressed)="abrirEstado(entrevista, 'reprogramar')"
-              >
-                Reprogramar
-              </app-button>
-              <app-button
-                variant="secondary"
-                size="sm"
-                type="button"
-                [disabled]="entrevista.estado === 'Cancelada' || entrevista.estado === 'Realizada'"
-                (pressed)="abrirEstado(entrevista, 'cancelar')"
-              >
-                Cancelar
-              </app-button>
-              <app-button size="sm" type="button" (pressed)="abrirFeedback(entrevista)">Feedback</app-button>
+              <p class="card-meta">
+                <strong>{{ entrevista.horaInicio }} - {{ entrevista.horaFin }}</strong>
+                <span>{{ entrevista.tipo }}</span>
+                <span>{{ entrevista.entrevistador }}</span>
+              </p>
+
+              <div class="card-actions">
+                <app-icon-button
+                  icon="eye"
+                  label="Ver detalle"
+                  tooltip="Ver detalle"
+                  (pressed)="verDetalle(entrevista)"
+                ></app-icon-button>
+
+                <div class="agenda-menu" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="agenda-menu__trigger"
+                    aria-label="Más acciones"
+                    [attr.aria-expanded]="menuAccionesAbierto(entrevista)"
+                    (click)="abrirMenuAcciones(entrevista, $event)"
+                  >
+                    ⋮
+                  </button>
+
+                  <div class="agenda-menu__list" *ngIf="menuAccionesAbierto(entrevista)" role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      [disabled]="!puedeCambiarEstado(entrevista)"
+                      [title]="motivoAccionNoDisponible(entrevista)"
+                      (click)="accionGestionar(entrevista)"
+                    >
+                      Gestionar entrevista
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      [disabled]="!puedeCambiarEstado(entrevista)"
+                      [title]="motivoAccionNoDisponible(entrevista)"
+                      (click)="accionReprogramar(entrevista)"
+                    >
+                      Reprogramar
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      [disabled]="!puedeCambiarEstado(entrevista)"
+                      [title]="motivoAccionNoDisponible(entrevista)"
+                      (click)="accionCancelar(entrevista)"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      [disabled]="!puedeRegistrarFeedback(entrevista)"
+                      [title]="motivoAccionNoDisponible(entrevista, 'feedback')"
+                      (click)="accionFeedback(entrevista)"
+                    >
+                      Feedback
+                    </button>
+                  </div>
+                </div>
+              </div>
             </footer>
           </div>
         </article>
       </div>
 
       <div class="empty-state" *ngIf="!cargando && !errorCarga && entrevistasDia.length === 0">
-        <h3>No hay entrevistas</h3>
-        <p>Cambia la fecha, el estado o limpia la búsqueda. Para histórico completo usa el listado de entrevistas.</p>
+        <p>No hay entrevistas para el {{ fechaSeleccionadaLegible }}.</p>
+        <app-button variant="secondary" size="sm" type="button" (pressed)="abrirFormularioIndividual()">
+          + Agendar para este día
+        </app-button>
       </div>
     </section>
   </section>
@@ -124,8 +189,27 @@
   <app-entrevista-estado-modal
     *ngIf="entrevistaSeleccionada"
     [entrevista]="entrevistaSeleccionada"
+    [detalle]="entrevistaDetalle"
     [modo]="modoEstado"
+    [resultados]="resultadosEvaluacion"
+    [guardando]="guardandoEstado"
+    [guardandoEvaluaciones]="guardandoEvaluaciones"
+    [cargandoDetalle]="cargandoDetalle"
+    [error]="errorEstado"
+    [errorEvaluaciones]="errorEvaluaciones"
+    [mensajeEvaluaciones]="mensajeEvaluaciones"
+    [usuarioActualId]="usuarioActualId"
     (cerrar)="cerrarModalEstado()"
     (confirmar)="confirmarEstado($event)"
+    (guardarEvaluaciones)="guardarEvaluaciones($event)"
   ></app-entrevista-estado-modal>
+
+  <app-entrevista-form-modal
+    *ngIf="mostrarFormulario"
+    [initialData]="initialDataAgenda"
+    [errorApi]="errorFormularioAgenda"
+    [guardando]="guardandoFormularioAgenda"
+    (cerrar)="cerrarFormularioAgenda()"
+    (guardar)="guardarEntrevista($event)"
+  ></app-entrevista-form-modal>
 </app-page-layout>
