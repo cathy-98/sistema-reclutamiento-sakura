@@ -3012,7 +3012,7 @@ COPY public.tbl_nivel_idioma (nvid_id, nvid_codigo, nvid_nombre, nvid_grupo, nvi
 --
 
 COPY public.tbl_nivel_profesional (nvpr_id, nvpr_nombre, nvpr_descripcion) FROM stdin;
-1	Treinee	Profesional sin experiencia
+1	Trainee	Profesional sin experiencia
 2	Junior	Profesional con experiencia inicial
 3	Semi Senior	Profesional con experiencia intermedia
 4	Senior	Profesional con experiencia avanzada
