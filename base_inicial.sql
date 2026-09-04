@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict OnCQ4BdXGcNcoJW9y6IAdjzhGSpstZ5QQnOtWJ4c1k6hRjeS8wDWKLdkmtQyLC7
+\restrict fL3SeYj11THLvZhnycpal0mqdeel7nCk4Hw2r5au6FrxjjVCmoU2LcCbmdhe7hC
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Debian 16.14-1.pgdg13+1)
@@ -1412,7 +1412,7 @@ CREATE TABLE public.tbl_plantilla_notificacion (
     CONSTRAINT chk_tbl_plantilla_notificacion_asunto CHECK ((TRIM(BOTH FROM plnt_asunto) <> ''::text)),
     CONSTRAINT chk_tbl_plantilla_notificacion_cuerpo CHECK ((TRIM(BOTH FROM plnt_cuerpo) <> ''::text)),
     CONSTRAINT chk_tbl_plantilla_notificacion_nombre CHECK ((TRIM(BOTH FROM plnt_nombre) <> ''::text)),
-    CONSTRAINT chk_tbl_plantilla_notificacion_tipo CHECK (((plnt_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text, ('CONTACTO'::character varying)::text, ('INVITACION'::character varying)::text, ('AVANCE'::character varying)::text])))
+    CONSTRAINT chk_tbl_plantilla_notificacion_tipo CHECK (((plnt_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text, ('CONTACTO'::character varying)::text, ('INVITACION'::character varying)::text, ('AVANCE'::character varying)::text, ('SELECCION'::character varying)::text])))
 );
 
 
@@ -3137,6 +3137,7 @@ COPY public.tbl_plantilla_notificacion (plnt_id, plnt_tipo, plnt_nombre, plnt_as
 5	CONTACTO	CONTACTO INICIAL	Oportunidad laboral de tu inter├®s - Sakura	Estimado/a {{params.nombre}},\r\nNos ponemos en contacto contigo porque tu perfil podr├¡a\r\nser de inter├®s para una oportunidad laboral para el cargo {cargo}.\r\nSaludos cordiales,\r\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 6	INVITACION	INVITACIONENTREVISTA	Invitacion a Entrevista Laboral - Sakura	Estimado/a {{params.nombre}},\r\n\r\nQueremos invitarte a una entrevista para el cargo de\r\n{{params.cargo}}.\r\n\r\nFecha: {{params.fecha}}\r\nHora: {{params.hora}}\r\nSaludos cordiales,\r\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 7	AVANCE	AVANCE PROCESO	Avance en proceso de seleccion - Sakura	Estimado/a {{params.nombre}},\r\n\r\nQueremos informarte que has avanzado a la siguiente\r\netapa del proceso de selecci├│n para {{params.cargo}}.\r\n\r\nSaludos cordiales,\r\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
+9	SELECCION	SELECCIONADO	┬íFelicitaciones! Has sido seleccionado/a - Sakura	Estimado/a {{params.nombre}},\r\nNos complace informarte que has sido seleccionado/a para para el cargo de {{params.cargo}}.\r\nAgradecemos tu participaci├│n y el inter├®s demostrado durante el proceso.\r\nNuestro equipo de Reclutamiento se pondr├í en contacto contigo para informarte los pr├│ximos pasos.\r\nSaludos cordiales,\r\nEquipo de Reclutamiento ELITSOFT	t	\N	\N
 \.
 
 
@@ -3774,7 +3775,7 @@ SELECT pg_catalog.setval('public.tbl_permiso_per_id_seq', 22, true);
 -- Name: tbl_plantilla_notificacion_plnt_id_seq; Type: SEQUENCE SET; Schema: public; Owner: elitsoft_admin
 --
 
-SELECT pg_catalog.setval('public.tbl_plantilla_notificacion_plnt_id_seq', 7, true);
+SELECT pg_catalog.setval('public.tbl_plantilla_notificacion_plnt_id_seq', 9, true);
 
 
 --
@@ -6581,5 +6582,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OnCQ4BdXGcNcoJW9y6IAdjzhGSpstZ5QQnOtWJ4c1k6hRjeS8wDWKLdkmtQyLC7
+\unrestrict fL3SeYj11THLvZhnycpal0mqdeel7nCk4Hw2r5au6FrxjjVCmoU2LcCbmdhe7hC
 
