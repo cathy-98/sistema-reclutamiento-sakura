@@ -1,8 +1,14 @@
 .status-badge {
   display: inline-flex;
+  min-height: 28px;
   align-items: center;
   gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: var(--color-white);
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .status-badge::before {

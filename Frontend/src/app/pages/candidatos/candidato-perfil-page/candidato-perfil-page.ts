@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, Observable, of, take, timeout } from 'rxjs';
@@ -239,9 +239,6 @@ export class CandidatoPerfilPage implements OnInit {
 
   habilidadesComparadas: HabilidadComparada[] = [];
 
-  readonly fortalezasMatch: string[] = [];
-  readonly areasMejoraMatch: string[] = [];
-
   evaluacionesTecnicas: EvaluacionTecnicaPerfil[] = [];
 
   // Función futura oculta: lista de documentos visible solo si mostrarModuloDocumentos=true.
@@ -259,6 +256,7 @@ export class CandidatoPerfilPage implements OnInit {
     private candidatosService: CandidatosService,
     private solicitudesService: SolicitudesService,
     private authService: AuthService,
+    private cdr: ChangeDetectorRef,
   ) {
     const params = this.route.snapshot.queryParamMap;
     const tabInicial = params.get('tab') as PerfilTab | null;
@@ -325,19 +323,7 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get matchClass() {
-    if (this.candidato.match == null) {
-      return 'is-empty';
-    }
-
-    if (this.candidato.match >= 75) {
-      return 'is-high';
-    }
-
-    if (this.candidato.match >= 55) {
-      return 'is-medium';
-    }
-
-    return 'is-low';
+    return this.candidato.match == null ? 'is-empty' : '';
   }
 
   get postulacionesFiltradas() {
@@ -1041,6 +1027,7 @@ export class CandidatoPerfilPage implements OnInit {
         take(1),
         finalize(() => {
           this.perfilCargado = true;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe({
@@ -1189,7 +1176,7 @@ export class CandidatoPerfilPage implements OnInit {
       nombre,
       correo: perfil.cand_email ?? 'Sin correo',
       telefono: perfil.cand_telefono ?? '',
-      cargo: solicitudResumen?.cargo ?? perfil.cand_titulo ?? this.candidato.cargo,
+      cargo: solicitudResumen?.cargo ?? 'Sin solicitud asociada',
       estado: this.candidato.estado,
       disponibilidad: disponibilidadNombre ?? this.candidato.disponibilidad,
       renta: primeraSolicitud?.slcd_pretension_renta ?? this.candidato.renta,
@@ -1329,15 +1316,22 @@ export class CandidatoPerfilPage implements OnInit {
     return habilidades.map((habilidad) => {
       const nombre =
         habilidad.habilidad?.hab_nombre ??
-        this.nombrePorId(catalogos.habilidades, habilidad.cdhb_habilidad_id) ??
-        `Habilidad ${habilidad.cdhb_habilidad_id ?? ''}`.trim();
+        this.nombrePorId(catalogos.habilidades, habilidad.cdhb_habilidad_id);
       const nivel =
         habilidad.nivel_habilidad?.nvhb_nombre ??
-        this.nombrePorId(catalogos.nivelesHabilidad, habilidad.cdhb_nivel_habilidad_id) ??
-        'Sin nivel';
-      const anios = String(habilidad.cdhb_anios_experiencia ?? 0);
-      return [nombre, nivel, anios, nombre, nivel, anios, '100%', 'success'];
-    });
+        this.nombrePorId(catalogos.nivelesHabilidad, habilidad.cdhb_nivel_habilidad_id);
+      const anios = habilidad.cdhb_anios_experiencia;
+
+      if (!nombre) {
+        return null;
+      }
+
+      return [
+        nombre,
+        nivel ?? 'Sin información',
+        anios == null ? 'Sin información' : String(anios),
+      ] as HabilidadComparada;
+    }).filter((habilidad): habilidad is HabilidadComparada => Boolean(habilidad));
   }
 
   private nombrePorId(
@@ -1798,7 +1792,10 @@ export class CandidatoPerfilPage implements OnInit {
             `Cuestionario ${cuestionarioId}`,
           this.estadoAsignacionTecnica(asignacion),
           codigoSolicitud,
-          `${this.duracionAsignacionTecnica(asignacion) || cuestionario?.duracion_minutos || 0} min`,
+          this.formatearDuracionEvaluacionTecnica(
+            this.duracionAsignacionTecnica(asignacion) ??
+              cuestionario?.duracion_minutos,
+          ),
           this.resultadoAsignacionTecnica(asignacion),
         ];
       });
@@ -1856,6 +1853,12 @@ export class CandidatoPerfilPage implements OnInit {
     return asignacion.duracion_minutos;
   }
 
+  private formatearDuracionEvaluacionTecnica(duracion?: number | null) {
+    return duracion == null
+      ? 'Sin duración informada'
+      : `${duracion} min`;
+  }
+
   private resultadoAsignacionTecnica(
     asignacion: AsignacionCuestionarioApi | AsignacionCuestionarioCandidatoApi,
   ) {
@@ -1880,7 +1883,7 @@ export class CandidatoPerfilPage implements OnInit {
     }
 
     return porcentaje == null
-      ? 'Pendiente'
+      ? 'Sin resultado informado'
       : `${porcentaje}%`;
   }
 

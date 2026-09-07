@@ -18,18 +18,22 @@
         <textarea
           [(ngModel)]="observacion"
           [placeholder]="observacionPlaceholder"
+          [attr.maxlength]="observacionMaxLength ?? null"
+          [disabled]="procesando"
           rows="3"
         ></textarea>
         <span *ngIf="observacionInvalida">Campo obligatorio.</span>
+        <small *ngIf="observacionMaxLength != null">{{ observacion.length }} / {{ observacionMaxLength }}</small>
       </label>
+      <p class="confirm-error" *ngIf="errorMessage">{{ errorMessage }}</p>
     </div>
 
     <footer class="confirm-actions">
-      <button class="secondary-action" type="button" (click)="cancelar.emit()">
+      <button class="secondary-action" type="button" [disabled]="procesando" (click)="cancelar.emit()">
         {{ textoCancelar }}
       </button>
-      <button class="primary-action" [ngClass]="variante" type="button" [disabled]="observacionInvalida" (click)="confirmarAccion()">
-        {{ textoConfirmar }}
+      <button class="primary-action" [ngClass]="variante" type="button" [disabled]="confirmarDeshabilitado" (click)="confirmarAccion()">
+        {{ procesando ? 'Guardando...' : textoConfirmar }}
       </button>
     </footer>
   </section>

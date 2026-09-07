@@ -30,6 +30,7 @@ import {
   CandidatosService,
   HabilidadCandidatoApi,
   ImportCvResponse,
+  PostulacionConEvaluacionApi,
   PostulacionCandidatoApi,
 } from '../../../services/candidatos.service';
 
@@ -158,13 +159,34 @@ interface HabilidadSolicitudContexto {
   nivel: string;
 }
 
-type EstadoArchivoCv = 'pendiente' | 'procesando' | 'procesado' | 'error';
+type EstadoArchivoCv = 'pendiente' | 'procesando' | 'procesado' | 'observado' | 'error';
 
 interface EstadoCargaArchivoCv {
   estado: EstadoArchivoCv;
   mensaje: string;
+  etiqueta?: string;
+  detalles?: FileListStatus['details'];
   resultado?: ImportCvResponse;
+  asociacion?: PostulacionConEvaluacionApi;
+  errorAsociacion?: string;
   sinConfirmacion?: boolean;
+}
+
+interface ResultadoCargaCv {
+  clave: string;
+  archivo: string;
+  resultado: ImportCvResponse | null;
+  asociacion: PostulacionConEvaluacionApi | null;
+  error: string;
+  errorAsociacion: string;
+  sinConfirmacion: boolean;
+}
+
+interface ResultadoCargaSolicitud {
+  solicitud: SolicitudResumen;
+  procesados: number;
+  asociados: number;
+  total: number;
 }
 
 @Component({
@@ -198,9 +220,6 @@ export class CandidatosList implements OnInit, OnDestroy {
   registrosPorPagina = 5;
 
   busquedaRapida = '';
-  busquedaCandidatoTexto = '';
-  candidatoFiltroSeleccionado: Candidato | null = null;
-  autocompletarCandidatoAbierto = false;
   busquedaEjecutada = false;
 
   /**
@@ -215,6 +234,7 @@ export class CandidatosList implements OnInit, OnDestroy {
   archivosCv: File[] = [];
   estadosCargaCv: Record<string, EstadoCargaArchivoCv> = {};
   feedbackCargaCv: AlertaUi | null = null;
+  resultadoCargaSolicitud: ResultadoCargaSolicitud | null = null;
 
   candidatosAgenda: EntrevistaCandidatoSeleccionado[] = [];
   mostrarModalAgenda = false;
@@ -291,22 +311,15 @@ export class CandidatosList implements OnInit, OnDestroy {
       wrap: true,
 
       value: (candidato) =>
-        this.candidatoSeleccionadoParaFiltro(candidato)
-          ? `✓ ${candidato.nombre}`
-          : candidato.nombre,
+        candidato.nombre,
 
       secondaryValue: (candidato) =>
         this.iniciales(candidato.nombre),
-
-      className: (candidato) =>
-        this.candidatoSeleccionadoParaFiltro(candidato)
-          ? 'candidate-filter-selected'
-          : '',
     },
 
     {
       key: 'estado',
-      label: 'Estado postulación',
+      label: 'Estado de postulación',
       width: 170,
       type: 'badge',
 
@@ -511,7 +524,6 @@ export class CandidatosList implements OnInit, OnDestroy {
       this.mostrarListadoCandidatos &&
       (
         this.enContextoSolicitud ||
-        Boolean(this.candidatoFiltroSeleccionado) ||
         this.busquedaEjecutada ||
         this.tieneFiltrosActivos()
       )
@@ -572,18 +584,20 @@ export class CandidatosList implements OnInit, OnDestroy {
     return this.candidatosSolicitudContexto.some((candidato) => candidato.matchDisponible);
   }
 
-  get mostrarMensajeSinMatchContexto() {
-    return (
-      this.enContextoSolicitud &&
-      this.tieneCandidatosAsociadosContexto &&
-      !this.tieneMatchCalculadoContexto
-    );
-  }
-
   get tituloTabla() {
     return this.solicitudContexto
       ? `Candidatos para ${this.solicitudContexto.codigo || this.solicitudContexto.id}`
+      : this.solicitudFiltroSeleccionada
+      ? `Candidatos para ${this.solicitudFiltroSeleccionada.codigo}`
       : 'Listado de candidatos';
+  }
+
+  get subtituloTabla() {
+    if (!this.solicitudFiltroSeleccionada || this.enContextoSolicitud) {
+      return '';
+    }
+
+    return this.solicitudFiltroSeleccionada.cargo;
   }
 
   get descripcionFiltros() {
@@ -598,33 +612,6 @@ export class CandidatosList implements OnInit, OnDestroy {
       : 'Buscar por nombre, correo, solicitud o cargo';
   }
 
-  get sugerenciasCandidatos() {
-    const texto = this.normalizar(this.busquedaCandidatoTexto);
-
-    if (texto.length < 2 || this.candidatoFiltroSeleccionado) {
-      return [];
-    }
-
-    const candidatosBase = this.enContextoSolicitud
-      ? this.candidatosSolicitudContexto
-      : this.candidatos;
-
-    return candidatosBase
-      .filter((candidato) =>
-        this.normalizar(`${candidato.nombre} ${candidato.correo}`).includes(texto),
-      )
-      .slice(0, 6);
-  }
-
-  get mostrarSinSugerenciasCandidato() {
-    return (
-      this.autocompletarCandidatoAbierto &&
-      this.busquedaCandidatoTexto.trim().length >= 2 &&
-      !this.candidatoFiltroSeleccionado &&
-      this.sugerenciasCandidatos.length === 0
-    );
-  }
-
   get tituloVacio() {
     if (this.enContextoSolicitud && !this.tieneCandidatosAsociadosContexto) {
       return 'No hay candidatos asociados a esta solicitud.';
@@ -632,7 +619,7 @@ export class CandidatosList implements OnInit, OnDestroy {
 
     return this.enContextoSolicitud
       ? 'No se encontraron candidatos compatibles para esta solicitud.'
-      : 'No hay candidatos para mostrar';
+      : 'No se encontraron candidatos con los filtros seleccionados.';
   }
 
   get mensajeVacio() {
@@ -655,9 +642,26 @@ export class CandidatosList implements OnInit, OnDestroy {
     );
   }
 
+  get solicitudFiltroSeleccionada() {
+    if (this.enContextoSolicitud) {
+      return null;
+    }
+
+    const codigoNormalizado = this.resolverCodigoSolicitudIngresado(this.filtros.idSolicitud);
+
+    if (!codigoNormalizado) {
+      return null;
+    }
+
+    return this.solicitudesCargaDisponibles.find(
+      (solicitud) =>
+        this.codigoSolicitudCoincide(solicitud.codigo, codigoNormalizado),
+    ) ?? null;
+  }
+
   get descripcionProcesamientoCv() {
     if (this.solicitudCargaSeleccionada) {
-      return 'Se procesará el CV usando la solicitud seleccionada como contexto.';
+      return 'Se procesará el CV y se asociará el candidato a la solicitud seleccionada.';
     }
 
     return 'Se procesará sin solicitud asociada. Si el correo ya existe, se actualiza el perfil y se agrega el CV.';
@@ -669,8 +673,9 @@ export class CandidatosList implements OnInit, OnDestroy {
         clave,
         {
           state: this.estadoVisualArchivoCv(estado.estado),
-          label: this.etiquetaEstadoArchivoCv(estado.estado),
+          label: estado.etiqueta ?? this.etiquetaEstadoArchivoCv(estado.estado),
           message: estado.mensaje,
+          details: estado.detalles,
         },
       ]),
     );
@@ -705,7 +710,10 @@ export class CandidatosList implements OnInit, OnDestroy {
       return '';
     }
 
-    const procesados = this.contarArchivosCvPorEstado('procesado');
+    const procesados =
+      this.contarArchivosCvPorEstado('procesado') +
+      this.contarArchivosCvPorEstado('observado');
+    const observados = this.contarArchivosCvPorEstado('observado');
     const errores = this.contarArchivosCvPorEstado('error');
 
     if (procesados === 0 && errores === 0) {
@@ -713,14 +721,34 @@ export class CandidatosList implements OnInit, OnDestroy {
     }
 
     if (procesados === total) {
+      if (observados > 0) {
+        return `${procesados} de ${total} CV procesado${total === 1 ? '' : 's'} · ${observados} con observaciones.`;
+      }
+
       return `${procesados} de ${total} CV procesado${total === 1 ? '' : 's'} correctamente.`;
     }
 
     if (errores === total) {
-      return `No fue posible procesar los ${total} CV.`;
+      return total === 1
+        ? 'No se pudo procesar el CV. Intenta nuevamente.'
+        : `No se pudieron procesar los ${total} CV. Intenta nuevamente.`;
     }
 
-    return `${procesados} de ${total} CV procesado${procesados === 1 ? '' : 's'} correctamente · ${errores} con error.`;
+    return `${procesados} de ${total} CV procesado${procesados === 1 ? '' : 's'} · ${observados} con observaciones · ${errores} con error.`;
+  }
+
+  get tituloResultadoCargaSolicitud() {
+    const resultado = this.resultadoCargaSolicitud;
+
+    if (!resultado) {
+      return '';
+    }
+
+    const codigo = resultado.solicitud.codigo;
+
+    return resultado.procesados === resultado.total
+      ? `${resultado.procesados} candidato${resultado.procesados === 1 ? '' : 's'} procesado${resultado.procesados === 1 ? '' : 's'} para ${codigo}`
+      : `${resultado.procesados} de ${resultado.total} candidato${resultado.total === 1 ? '' : 's'} procesado${resultado.procesados === 1 ? '' : 's'} para ${codigo}`;
   }
 
   volverASolicitud() {
@@ -738,6 +766,41 @@ export class CandidatosList implements OnInit, OnDestroy {
         solicitudContexto: this.solicitudContexto,
       },
     });
+  }
+
+  verCandidatosSolicitudCarga() {
+    const resultado = this.resultadoCargaSolicitud;
+
+    if (!resultado) {
+      return;
+    }
+
+    const solicitud = resultado.solicitud;
+
+    this.router.navigate(['/candidatos'], {
+      queryParams: {
+        origen: 'solicitud',
+        solicitudId: solicitud.id,
+        solicitudCodigo: solicitud.codigo,
+        solicitudCargo: solicitud.cargo,
+        solicitudEstado: solicitud.estado,
+      },
+      state: {
+        solicitudContexto: {
+          id: String(solicitud.id),
+          codigo: solicitud.codigo,
+          cargo: solicitud.cargo,
+          estado: solicitud.estado,
+          prioridad: solicitud.prioridad,
+          vacantes: solicitud.vacantes,
+        },
+      },
+    });
+  }
+
+  cerrarFeedbackCargaCv() {
+    this.feedbackCargaCv = null;
+    this.resultadoCargaSolicitud = null;
   }
 
   /**
@@ -849,13 +912,15 @@ export class CandidatosList implements OnInit, OnDestroy {
                   postulaciones: this.candidatosService
                     .listarSolicitudes(String(candidato.cand_id))
                     .pipe(
-                      timeout(5000),
+                      timeout(15000),
 
                       catchError((error) => {
-                        console.warn(
-                          `No se pudieron cargar postulaciones del candidato ${candidato.cand_id}.`,
-                          error,
-                        );
+                        if (!this.esTimeoutError(error)) {
+                          console.warn(
+                            `No se pudieron cargar postulaciones del candidato ${candidato.cand_id}.`,
+                            error,
+                          );
+                        }
 
                         return of(
                           [] as PostulacionCandidatoApi[],
@@ -865,13 +930,15 @@ export class CandidatosList implements OnInit, OnDestroy {
                   habilidades: this.candidatosService
                     .listarHabilidades(candidato.cand_id)
                     .pipe(
-                      timeout(5000),
+                      timeout(15000),
 
                       catchError((error) => {
-                        console.warn(
-                          `No se pudieron cargar habilidades del candidato ${candidato.cand_id}.`,
-                          error,
-                        );
+                        if (!this.esTimeoutError(error)) {
+                          console.warn(
+                            `No se pudieron cargar habilidades del candidato ${candidato.cand_id}.`,
+                            error,
+                          );
+                        }
 
                         return of(
                           [] as HabilidadCandidatoApi[],
@@ -1149,10 +1216,6 @@ export class CandidatosList implements OnInit, OnDestroy {
     );
 
     const candidatosFiltrados = this.candidatos.filter((candidato) => {
-      const coincideCandidatoSeleccionado =
-        !this.candidatoFiltroSeleccionado ||
-        this.obtenerIdCandidato(candidato) === this.obtenerIdCandidato(this.candidatoFiltroSeleccionado);
-
       const codigosSolicitudes = candidato.postulaciones
         .map(
           (postulacion) =>
@@ -1185,8 +1248,13 @@ export class CandidatosList implements OnInit, OnDestroy {
         );
 
       const coincideSolicitud =
-        this.normalizar(codigosSolicitudes).includes(
-          filtrosNormalizados.idSolicitud,
+        !filtrosNormalizados.idSolicitud ||
+        candidato.postulaciones.some(
+          (postulacion) =>
+            this.codigoSolicitudCoincide(
+              postulacion.codigoSolicitud,
+              filtrosNormalizados.idSolicitud,
+            ),
         );
 
       const coincideCargo =
@@ -1269,7 +1337,6 @@ export class CandidatosList implements OnInit, OnDestroy {
         candidato.experiencia >= experiencia;
 
       return (
-        coincideCandidatoSeleccionado &&
         coincideTexto &&
         coincideSolicitud &&
         coincideCargo &&
@@ -1389,7 +1456,6 @@ export class CandidatosList implements OnInit, OnDestroy {
       };
 
       this.busquedaRapida = '';
-      this.limpiarCandidatoFiltro(false);
       this.busquedaEjecutada = true;
       this.paginaActual = 1;
       return;
@@ -1399,50 +1465,15 @@ export class CandidatosList implements OnInit, OnDestroy {
       this.filtrosIniciales();
 
     this.busquedaRapida = '';
-    this.limpiarCandidatoFiltro(false);
     this.busquedaEjecutada = false;
 
     this.paginaActual = 1;
   }
 
   buscar() {
+    this.normalizarFiltroSolicitud();
     this.busquedaEjecutada = true;
     this.paginaActual = 1;
-  }
-
-  actualizarBusquedaCandidato(valor: string) {
-    this.busquedaCandidatoTexto = valor;
-
-    if (
-      this.candidatoFiltroSeleccionado &&
-      this.normalizar(this.candidatoFiltroSeleccionado.nombre) !== this.normalizar(valor)
-    ) {
-      this.candidatoFiltroSeleccionado = null;
-    }
-
-    this.autocompletarCandidatoAbierto = true;
-  }
-
-  abrirAutocompletarCandidato() {
-    this.autocompletarCandidatoAbierto = true;
-  }
-
-  seleccionarCandidatoFiltro(candidato: Candidato) {
-    this.candidatoFiltroSeleccionado = candidato;
-    this.busquedaCandidatoTexto = candidato.nombre;
-    this.autocompletarCandidatoAbierto = false;
-    this.busquedaEjecutada = true;
-    this.paginaActual = 1;
-  }
-
-  limpiarCandidatoFiltro(actualizarListado = true) {
-    this.candidatoFiltroSeleccionado = null;
-    this.busquedaCandidatoTexto = '';
-    this.autocompletarCandidatoAbierto = false;
-
-    if (actualizarListado) {
-      this.paginaActual = 1;
-    }
   }
 
   cambiarPagina(pagina: number) {
@@ -1473,13 +1504,6 @@ export class CandidatosList implements OnInit, OnDestroy {
   ) {
     return this.seleccionados.has(
       this.obtenerIdCandidato(candidato),
-    );
-  }
-
-  candidatoSeleccionadoParaFiltro(candidato: Candidato) {
-    return Boolean(
-      this.candidatoFiltroSeleccionado &&
-      this.obtenerIdCandidato(candidato) === this.obtenerIdCandidato(this.candidatoFiltroSeleccionado),
     );
   }
 
@@ -1874,6 +1898,7 @@ export class CandidatosList implements OnInit, OnDestroy {
           take(1),
           finalize(() => {
             this.guardandoAgenda = false;
+            this.cdr.detectChanges();
           }),
         )
         .subscribe({
@@ -1894,6 +1919,7 @@ export class CandidatosList implements OnInit, OnDestroy {
                 error,
                 'No se pudo agendar la entrevista. Intenta nuevamente.',
               );
+            this.cdr.detectChanges();
           },
         });
 
@@ -1925,6 +1951,7 @@ export class CandidatosList implements OnInit, OnDestroy {
         take(1),
         finalize(() => {
           this.guardandoAgenda = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe({
@@ -1949,6 +1976,7 @@ export class CandidatosList implements OnInit, OnDestroy {
               error,
               'No se pudieron agendar las entrevistas. Intenta nuevamente.',
             );
+          this.cdr.detectChanges();
         },
       });
   }
@@ -1971,12 +1999,15 @@ export class CandidatosList implements OnInit, OnDestroy {
       }),
     );
     this.feedbackCargaCv = null;
+    this.resultadoCargaSolicitud = null;
   }
 
   validarSolicitudCargaPorCodigo() {
     const codigoNormalizado = this.normalizarCodigoBusqueda(
       this.codigoSolicitudCarga,
     );
+
+    this.resultadoCargaSolicitud = null;
 
     // Valida exclusivamente por código SOL; el cargo solo confirma la selección.
     this.solicitudCargaFueBuscada = codigoNormalizado.length > 0;
@@ -1989,9 +2020,34 @@ export class CandidatosList implements OnInit, OnDestroy {
     this.solicitudCargaSeleccionada =
       this.solicitudesCargaDisponibles.find(
         (solicitud) =>
-          this.normalizarCodigoBusqueda(solicitud.codigo) ===
-          codigoNormalizado,
+          this.codigoSolicitudCoincide(solicitud.codigo, codigoNormalizado),
       ) ?? null;
+  }
+
+  validarSolicitudFiltroPorCodigo() {
+    if (!this.filtros.idSolicitud.trim()) {
+      return;
+    }
+
+    this.busquedaEjecutada = true;
+    this.paginaActual = 1;
+  }
+
+  normalizarFiltroSolicitud() {
+    const codigoNormalizado = this.resolverCodigoSolicitudIngresado(this.filtros.idSolicitud);
+
+    if (!codigoNormalizado) {
+      this.filtros = {
+        ...this.filtros,
+        idSolicitud: '',
+      };
+      return;
+    }
+
+    this.filtros = {
+      ...this.filtros,
+      idSolicitud: codigoNormalizado,
+    };
   }
 
   limpiarSolicitudCarga() {
@@ -1999,6 +2055,7 @@ export class CandidatosList implements OnInit, OnDestroy {
     this.codigoSolicitudCarga = '';
     this.solicitudCargaSeleccionada = null;
     this.solicitudCargaFueBuscada = false;
+    this.resultadoCargaSolicitud = null;
   }
 
   abrirModalCorreo() {
@@ -2113,6 +2170,7 @@ export class CandidatosList implements OnInit, OnDestroy {
 
     this.importandoCvs = true;
     this.feedbackCargaCv = null;
+    this.resultadoCargaSolicitud = null;
     this.estadosCargaCv = {
       ...this.estadosCargaCv,
       ...Object.fromEntries(
@@ -2120,32 +2178,15 @@ export class CandidatosList implements OnInit, OnDestroy {
           this.claveArchivoCv(archivo),
           {
             estado: 'procesando' as EstadoArchivoCv,
-            mensaje: 'Procesando este archivo.',
+            mensaje: 'Procesando CV...',
           },
         ]),
       ),
     };
 
+    const solicitudSeleccionada = this.solicitudCargaSeleccionada;
     const cargasCv$ = archivosProcesables.map((archivo) =>
-      this.candidatosService
-        .subirCv(archivo)
-        .pipe(
-          timeout(60000),
-          map((resultado) => ({
-            clave: this.claveArchivoCv(archivo),
-            archivo: archivo.name,
-            resultado,
-            error: '',
-            sinConfirmacion: false,
-          })),
-          catchError((error) => of({
-            clave: this.claveArchivoCv(archivo),
-            archivo: archivo.name,
-            resultado: null,
-            error: this.obtenerMensajeErrorCargaCv(error),
-            sinConfirmacion: this.esTimeoutCargaCv(error),
-          })),
-        ),
+      this.procesarArchivoCv(archivo, solicitudSeleccionada),
     );
 
     forkJoin(cargasCv$)
@@ -2157,45 +2198,72 @@ export class CandidatosList implements OnInit, OnDestroy {
         }),
       )
       .subscribe({
-        next: (cargas) => {
+        next: (cargas: ResultadoCargaCv[]) => {
           this.importandoCvs = false;
           const exitosas = cargas.filter((carga) => carga.resultado);
           const fallidas = cargas.filter((carga) => carga.error);
+          const asociacionesExitosas = cargas.filter((carga) => carga.asociacion);
+          const asociacionesFallidas = cargas.filter((carga) => carga.errorAsociacion);
           const sinConfirmacion = fallidas.some((carga) => carga.sinConfirmacion);
           const creadas = exitosas.filter((carga) => carga.resultado?.creado).length;
           const actualizadas = exitosas.filter((carga) => carga.resultado?.actualizado).length;
-          const advertencias = exitosas.flatMap((carga) => [
-            ...(carga.resultado?.advertencias ?? []),
-            ...(carga.resultado?.warnings ?? []),
-          ]);
+          const conObservaciones = exitosas.filter((carga) =>
+            this.tieneObservacionesCargaCv(carga),
+          ).length;
+          const correctas = exitosas.length - conObservaciones;
 
           this.estadosCargaCv = {
             ...this.estadosCargaCv,
             ...Object.fromEntries(
-              cargas.map((carga) => [
-                carga.clave,
-                carga.resultado
-                  ? {
-                      estado: 'procesado' as EstadoArchivoCv,
-                      mensaje: carga.resultado.creado
-                        ? 'Procesado correctamente. Candidato creado.'
-                        : 'Procesado correctamente. Perfil actualizado.',
-                      resultado: carga.resultado,
-                    }
-                  : {
-                      estado: 'error' as EstadoArchivoCv,
-                      mensaje: carga.error || 'No fue posible procesar el CV. Intenta nuevamente.',
-                      sinConfirmacion: carga.sinConfirmacion,
-                    },
-              ]),
+              cargas.map((carga) => {
+                const estado = this.estadoCargaCvArchivo(carga, solicitudSeleccionada);
+
+                return [
+                  carga.clave,
+                  carga.resultado
+                    ? {
+                        ...estado,
+                        resultado: carga.resultado,
+                        asociacion: carga.asociacion ?? undefined,
+                        errorAsociacion: carga.errorAsociacion || undefined,
+                      }
+                    : {
+                        estado: 'error' as EstadoArchivoCv,
+                        etiqueta: 'No se pudo procesar',
+                        mensaje: carga.error || 'No se pudo procesar el CV. Intenta nuevamente.',
+                        sinConfirmacion: carga.sinConfirmacion,
+                      },
+                ];
+              }),
             ),
           };
 
           this.feedbackCargaCv = {
-            tipo: fallidas.length || advertencias.length ? 'warning' : 'success',
+            tipo: fallidas.length || asociacionesFallidas.length || conObservaciones ? 'warning' : 'success',
             variante: 'soft',
-            mensaje: this.resumenCargaCv(exitosas.length, this.archivosCv.length, fallidas.length, creadas, actualizadas, advertencias),
+            mensaje: this.resumenCargaCv(
+              exitosas.length,
+              this.archivosCv.length,
+              fallidas.length,
+              creadas,
+              actualizadas,
+              correctas,
+              conObservaciones,
+              asociacionesExitosas.length,
+              asociacionesFallidas.length,
+              Boolean(solicitudSeleccionada),
+            ),
           };
+
+          this.resultadoCargaSolicitud =
+            solicitudSeleccionada && asociacionesExitosas.length > 0
+              ? {
+                  solicitud: solicitudSeleccionada,
+                  procesados: asociacionesExitosas.length,
+                  asociados: asociacionesExitosas.length,
+                  total: this.archivosCv.length,
+                }
+              : null;
 
           if (exitosas.length > 0) {
             this.cargarCandidatos();
@@ -2216,21 +2284,181 @@ export class CandidatosList implements OnInit, OnDestroy {
       });
   }
 
-  private detalleCargaCvCompacto(
-    advertencias: string[],
-    errores: string[],
+  private procesarArchivoCv(
+    archivo: File,
+    solicitudSeleccionada: SolicitudResumen | null,
   ) {
-    const maxDetalles = 3;
-    const detalles = [...advertencias, ...errores].filter(Boolean);
-    const visibles = detalles.slice(0, maxDetalles);
-    const restantes = detalles.length - visibles.length;
+    const clave = this.claveArchivoCv(archivo);
 
+    return this.candidatosService
+      .subirCv(archivo)
+      .pipe(
+        timeout(60000),
+        switchMap((resultado) => {
+          if (!solicitudSeleccionada) {
+            return of({
+              clave,
+              archivo: archivo.name,
+              resultado,
+              asociacion: null,
+              error: '',
+              errorAsociacion: '',
+              sinConfirmacion: false,
+            } as ResultadoCargaCv);
+          }
+
+          const candidatoId = resultado.candidato?.cand_id;
+
+          if (!candidatoId) {
+            return of({
+              clave,
+              archivo: archivo.name,
+              resultado,
+              asociacion: null,
+              error: '',
+              errorAsociacion: 'El CV fue procesado, pero falta información para asociar el candidato a la solicitud.',
+              sinConfirmacion: false,
+            } as ResultadoCargaCv);
+          }
+
+          return this.candidatosService
+            .vincularVacante(String(candidatoId), solicitudSeleccionada.id, {})
+            .pipe(
+              timeout(10000),
+              map((asociacion) => ({
+                clave,
+                archivo: archivo.name,
+                resultado,
+                asociacion,
+                error: '',
+                errorAsociacion: '',
+                sinConfirmacion: false,
+              }) as ResultadoCargaCv),
+              catchError((error) => of({
+                clave,
+                archivo: archivo.name,
+                resultado,
+                asociacion: null,
+                error: '',
+                errorAsociacion: this.mensajeErrorAsociacionCv(
+                  error,
+                ),
+                sinConfirmacion: false,
+              } as ResultadoCargaCv)),
+            );
+        }),
+        catchError((error) => of({
+          clave,
+          archivo: archivo.name,
+          resultado: null,
+          asociacion: null,
+          error: this.obtenerMensajeErrorCargaCv(error),
+          errorAsociacion: '',
+          sinConfirmacion: this.esTimeoutCargaCv(error),
+        } as ResultadoCargaCv)),
+      );
+  }
+
+  private mensajeCargaCvExitosa(
+    carga: ResultadoCargaCv,
+    solicitudSeleccionada: SolicitudResumen | null,
+  ) {
+    if (!solicitudSeleccionada) {
+      return 'Candidato cargado como candidato general.';
+    }
+
+    if (carga.asociacion) {
+      return `Candidato asociado a ${solicitudSeleccionada.codigo}.`;
+    }
+
+    return carga.errorAsociacion || 'El CV fue procesado, pero no se pudo asociar el candidato a la solicitud.';
+  }
+
+  private etiquetaCargaCvExitosa(carga: ResultadoCargaCv) {
+    const conObservaciones = this.tieneObservacionesCargaCv(carga);
+
+    return conObservaciones
+      ? 'CV procesado con observaciones'
+      : 'CV procesado correctamente';
+  }
+
+  private advertenciasCargaCv(carga: ResultadoCargaCv) {
     return [
-      ...visibles,
-      restantes > 0 ? `${restantes} detalle(s) más.` : '',
+      ...(carga.resultado?.advertencias ?? []),
+      ...(carga.resultado?.warnings ?? []),
     ]
-      .filter(Boolean)
-      .join(' ');
+      .map((mensaje) => this.mensajeSeguroCargaCv(mensaje, 'Hay datos del CV que requieren revisión.'))
+      .filter(Boolean);
+  }
+
+  private tieneObservacionesCargaCv(carga: ResultadoCargaCv) {
+    return (
+      this.advertenciasCargaCv(carga).length > 0 ||
+      Boolean(carga.errorAsociacion) ||
+      Boolean(carga.asociacion?.evaluacion?.advertencia) ||
+      Boolean(carga.asociacion?.evaluacion?.habilidades_faltantes?.length)
+    );
+  }
+
+  private detallesCargaCv(
+    carga: ResultadoCargaCv,
+  ): FileListStatus['details'] {
+    const detalles: NonNullable<FileListStatus['details']> = [];
+    const advertenciasCv = this.advertenciasCargaCv(carga);
+
+    if (advertenciasCv.length > 0) {
+      detalles.push({
+        title: 'Observaciones del CV',
+        messages: advertenciasCv,
+      });
+    }
+
+    if (carga.errorAsociacion) {
+      detalles.push({
+        title: 'Asociación',
+        messages: [
+          this.mensajeSeguroCargaCv(
+            carga.errorAsociacion,
+            'El CV fue procesado, pero no se pudo asociar el candidato a la solicitud.',
+          ),
+        ],
+      });
+    }
+
+    const evaluacion = carga.asociacion?.evaluacion;
+    const faltantes = evaluacion?.habilidades_faltantes ?? [];
+
+    if (evaluacion?.advertencia || faltantes.length > 0) {
+      detalles.push({
+        title: 'Requisitos excluyentes',
+        messages: [
+          evaluacion?.advertencia
+            ? this.mensajeSeguroCargaCv(evaluacion.advertencia, 'La evaluación de requisitos requiere revisión.')
+            : '',
+          ...faltantes.map((item) => {
+            const habilidad = String(item['habilidad'] || `Habilidad #${item['habilidad_id']}`);
+            const motivo = String(item['motivo'] || '');
+            return motivo ? `${habilidad}: ${motivo}` : habilidad;
+          }),
+        ].filter((message): message is string => Boolean(message)),
+      });
+    }
+
+    return detalles;
+  }
+
+  private estadoCargaCvArchivo(
+    carga: ResultadoCargaCv,
+    solicitudSeleccionada: SolicitudResumen | null,
+  ): EstadoCargaArchivoCv {
+    const observado = this.tieneObservacionesCargaCv(carga);
+
+    return {
+      estado: observado ? 'observado' : 'procesado',
+      etiqueta: this.etiquetaCargaCvExitosa(carga),
+      mensaje: this.mensajeCargaCvExitosa(carga, solicitudSeleccionada),
+      detalles: this.detallesCargaCv(carga),
+    };
   }
 
   private claveArchivoCv(archivo: File) {
@@ -2250,6 +2478,10 @@ export class CandidatosList implements OnInit, OnDestroy {
       return 'success';
     }
 
+    if (estado === 'observado') {
+      return 'warning';
+    }
+
     return 'error';
   }
 
@@ -2264,6 +2496,10 @@ export class CandidatosList implements OnInit, OnDestroy {
 
     if (estado === 'procesado') {
       return 'Procesado';
+    }
+
+    if (estado === 'observado') {
+      return 'Procesado con observaciones';
     }
 
     return 'Error';
@@ -2281,22 +2517,58 @@ export class CandidatosList implements OnInit, OnDestroy {
     fallidas: number,
     creadas: number,
     actualizadas: number,
-    advertencias: string[],
+    correctas: number,
+    conObservaciones: number,
+    asociacionesExitosas: number,
+    asociacionesFallidas: number,
+    conSolicitudSeleccionada: boolean,
   ) {
-    const resumen =
-      exitosas === total
-        ? `${exitosas} de ${total} CV procesado${total === 1 ? '' : 's'} correctamente.`
-        : exitosas === 0
-          ? `No fue posible procesar los ${total} CV.`
-          : `${exitosas} de ${total} CV procesado${exitosas === 1 ? '' : 's'} correctamente · ${fallidas} con error.`;
+    const resumen = this.resumenPrincipalCargaCv(
+      exitosas,
+      total,
+      fallidas,
+      correctas,
+      conObservaciones,
+    );
 
     const detalle = [
       creadas ? `${creadas} candidato${creadas === 1 ? '' : 's'} creado${creadas === 1 ? '' : 's'}` : '',
       actualizadas ? `${actualizadas} perfil${actualizadas === 1 ? '' : 'es'} actualizado${actualizadas === 1 ? '' : 's'}` : '',
-      this.detalleCargaCvCompacto(advertencias, []),
+      conSolicitudSeleccionada && asociacionesExitosas
+        ? `${asociacionesExitosas} asociado${asociacionesExitosas === 1 ? '' : 's'} a solicitud`
+        : '',
+      conSolicitudSeleccionada && asociacionesFallidas
+        ? `${asociacionesFallidas} asociación${asociacionesFallidas === 1 ? '' : 'es'} con error`
+        : '',
     ].filter(Boolean).join(' ');
 
     return detalle ? `${resumen} ${detalle}` : resumen;
+  }
+
+  private resumenPrincipalCargaCv(
+    exitosas: number,
+    total: number,
+    fallidas: number,
+    correctas: number,
+    conObservaciones: number,
+  ) {
+    if (exitosas === 0) {
+      return total === 1
+        ? 'No se pudo procesar el CV. Intenta nuevamente.'
+        : `No se pudieron procesar los ${total} CV. Intenta nuevamente.`;
+    }
+
+    if (fallidas === 0 && conObservaciones === 0) {
+      return `${exitosas} de ${total} CV procesado${total === 1 ? '' : 's'} correctamente.`;
+    }
+
+    if (fallidas === 0 && conObservaciones > 0) {
+      return total === 1
+        ? '1 de 1 CV procesado con observaciones.'
+        : `${total} CV procesados · ${correctas} correcto${correctas === 1 ? '' : 's'} · ${conObservaciones} con observaciones.`;
+    }
+
+    return `${exitosas} CV procesado${exitosas === 1 ? '' : 's'} · ${correctas} correcto${correctas === 1 ? '' : 's'} · ${conObservaciones} con observaciones · ${fallidas} con error.`;
   }
 
   private obtenerMensajeErrorCargaCv(error: unknown) {
@@ -2307,14 +2579,58 @@ export class CandidatosList implements OnInit, OnDestroy {
     const mensajeBackend =
       this.extraerMensajeBackend(error);
 
-    return mensajeBackend ||
+    return this.mensajeSeguroCargaCv(
+      mensajeBackend ||
       obtenerMensajeError(
         error,
-        'No fue posible procesar el CV. Intenta nuevamente.',
-      );
+        'No se pudo procesar el CV. Intenta nuevamente.',
+      ),
+      'No se pudo procesar el CV. Intenta nuevamente.',
+    );
+  }
+
+  private mensajeErrorAsociacionCv(error: unknown) {
+    return this.mensajeSeguroCargaCv(
+      obtenerMensajeError(
+        error,
+        'El CV fue procesado, pero no se pudo asociar el candidato a la solicitud.',
+      ),
+      'El CV fue procesado, pero no se pudo asociar el candidato a la solicitud.',
+    );
+  }
+
+  private mensajeSeguroCargaCv(mensaje: string | null | undefined, fallback: string) {
+    const limpio = (mensaje ?? '').replace(/\s+/g, ' ').trim();
+
+    if (!limpio || this.esMensajeTecnicoCargaCv(limpio)) {
+      return fallback;
+    }
+
+    return limpio;
+  }
+
+  private esMensajeTecnicoCargaCv(mensaje: string) {
+    const normalizado = mensaje.toLowerCase();
+
+    return (
+      /[\{\}\[\]]/.test(mensaje) ||
+      normalizado.includes('pydantic') ||
+      normalizado.includes('traceback') ||
+      normalizado.includes('stack') ||
+      normalizado.includes('status code') ||
+      normalizado.includes('validation') ||
+      normalizado.includes('value_error') ||
+      /\bloc\b/.test(normalizado) ||
+      normalizado.includes('detail') ||
+      /\b[a-z]+_[a-z0-9_]+\b/.test(normalizado)
+    );
   }
 
   private esTimeoutCargaCv(error: unknown) {
+    return this.esTimeoutError(error);
+  }
+
+  private esTimeoutError(error: unknown) {
     if (typeof error !== 'object' || error === null || !('name' in error)) {
       return false;
     }
@@ -2854,7 +3170,6 @@ export class CandidatosList implements OnInit, OnDestroy {
 
             cargo:
               solicitud?.cargo ??
-              candidato.cand_titulo ??
               'Sin cargo',
 
             match:
@@ -2928,7 +3243,6 @@ export class CandidatosList implements OnInit, OnDestroy {
 
       cargo:
         principal?.cargo ??
-        candidato.cand_titulo ??
         'Sin cargo',
 
       fechaPostulacion:
@@ -3149,7 +3463,47 @@ export class CandidatosList implements OnInit, OnDestroy {
     const coincidencia = limpio.match(/^(?:SOL-?)?(\d+)$/);
 
     return coincidencia
-      ? `SOL-${coincidencia[1].padStart(6, '0')}`
+      ? `SOL-${coincidencia[1]}`
       : limpio;
+  }
+
+  private resolverCodigoSolicitudIngresado(valor?: string | null) {
+    const normalizado = this.normalizarCodigoBusqueda(valor);
+
+    if (!normalizado) {
+      return '';
+    }
+
+    const solicitud = this.solicitudesCargaDisponibles.find(
+      (item) => this.codigoSolicitudCoincide(item.codigo, normalizado),
+    );
+
+    return solicitud?.codigo ?? normalizado;
+  }
+
+  private codigoSolicitudCoincide(codigoReal?: string | null, valorBusqueda?: string | null) {
+    const codigo = this.normalizarCodigoBusqueda(codigoReal);
+    const busqueda = this.normalizarCodigoBusqueda(valorBusqueda);
+
+    if (!busqueda) {
+      return true;
+    }
+
+    if (!codigo) {
+      return false;
+    }
+
+    if (this.normalizar(codigo).includes(this.normalizar(busqueda))) {
+      return true;
+    }
+
+    const numeroCodigo = codigo.match(/^SOL-(\d+)$/i)?.[1];
+    const numeroBusqueda = busqueda.match(/^SOL-(\d+)$/i)?.[1];
+
+    return Boolean(
+      numeroCodigo &&
+      numeroBusqueda &&
+      Number(numeroCodigo) === Number(numeroBusqueda),
+    );
   }
 }

@@ -36,6 +36,8 @@ interface AccionGestionOption {
   styleUrl: './entrevista-estado-modal.scss',
 })
 export class EntrevistaEstadoModal implements OnChanges {
+  readonly observacionMaxLength = 300;
+
   @Input() entrevista: EntrevistaResumen | null = null;
   @Input() detalle: EntrevistaApi | null = null;
   @Input() resultados: NombreResultadoCatalogoApi[] = [];
@@ -114,7 +116,7 @@ export class EntrevistaEstadoModal implements OnChanges {
 
   get titulo() {
     return this.mostrarResultadosPorArea || this.feedbackSoloConsulta
-      ? 'Feedback de entrevista'
+      ? 'Resultado de la entrevista'
       : this.modo === 'reprogramar'
         ? 'Reprogramar entrevista'
         : this.modo === 'cancelar'
@@ -148,7 +150,7 @@ export class EntrevistaEstadoModal implements OnChanges {
     }
 
     if (this.mostrarResultadosPorArea && !this.mostrarSelectorEstado) {
-      return 'Guardar feedback';
+      return 'Guardar resultado';
     }
 
     const seleccionada = this.accionSeleccionada;
@@ -264,17 +266,20 @@ export class EntrevistaEstadoModal implements OnChanges {
 
   get mostrarResultadosPorArea() {
     return this.modo === 'gestionar' &&
-      this.estadoActualNormalizado === 'realizada';
+      this.estadoActualNormalizado === 'realizada' &&
+      this.solicitudPermiteAcciones;
   }
 
   get feedbackSoloConsulta() {
-    return false;
+    return this.modo === 'gestionar' &&
+      this.estadoActualNormalizado === 'realizada' &&
+      !this.solicitudPermiteAcciones;
   }
 
   get mensajeFeedbackSoloConsulta() {
     return this.solicitudCancelada
       ? 'Esta solicitud está cancelada. No permite agendar nuevas entrevistas.'
-      : 'No se pudo confirmar que la solicitud permita registrar feedback. Los feedbacks registrados quedan disponibles solo para consulta.';
+      : 'No se pudo confirmar que la solicitud permita registrar resultados. Los resultados registrados quedan disponibles solo para consulta.';
   }
 
   get estadoPostulacionActual() {
@@ -344,7 +349,7 @@ export class EntrevistaEstadoModal implements OnChanges {
 
   get textoFeedbacksRegistrados() {
     const total = this.totalFeedbacksRegistrados;
-    return `${total} feedback${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`;
+    return `${total} resultado${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`;
   }
 
   get tipoFeedbackActivo() {
@@ -381,6 +386,10 @@ export class EntrevistaEstadoModal implements OnChanges {
 
   get linkReunionDetalle() {
     return this.entrevista?.linkReunion || this.detalle?.enlace_reunion || '';
+  }
+
+  get indicacionesDetalle() {
+    return this.detalle?.comentarios_convocatoria || this.entrevista?.observacion || '';
   }
 
   get opcionAprobado() {
@@ -424,7 +433,13 @@ export class EntrevistaEstadoModal implements OnChanges {
   }
 
   autorFeedback(evaluacion: EvaluacionEntrevistaApi) {
+    // TODO BACKEND M5:
+    // Mostrar rol del evaluador cuando el endpoint de evaluaciones lo entregue.
     return evaluacion.usuario_nombre || 'Entrevistador no informado';
+  }
+
+  observacionFeedbackLongitud(tipoId: number) {
+    return this.evaluacionTipo(tipoId).observacion.length;
   }
 
   fechaFeedback(evaluacion: EvaluacionEntrevistaApi) {
@@ -543,7 +558,7 @@ export class EntrevistaEstadoModal implements OnChanges {
     const payload = this.payloadEvaluaciones();
 
     if (payload.length === 0) {
-      this.errorLocalEvaluaciones = 'Selecciona un resultado e ingresa observaciones antes de guardar.';
+      this.errorLocalEvaluaciones = 'Selecciona un resultado para guardar.';
       return;
     }
 
@@ -630,7 +645,7 @@ export class EntrevistaEstadoModal implements OnChanges {
 
     return [{
       // Compatibilidad temporal: la UI sigue enviando el tipo requerido por backend,
-      // pero el usuario solo ve un feedback breve a nivel de entrevista.
+      // pero el usuario solo ve un resultado breve a nivel de entrevista.
       tipoId: tipo.tipo_entrevista_id,
       existe: evaluacion.existe,
       nombreResultadoId: Number(evaluacion.resultadoId),

@@ -45,6 +45,7 @@ export interface DataTableAction<T> {
   id: string;
   label: string;
   icon: DataTableActionIcon;
+  tone?: 'default' | 'success' | 'danger';
   visible?: (row: T) => boolean;
   disabled?: (row: T) => boolean;
   disabledReason?: (row: T) => string;
@@ -213,6 +214,13 @@ export class DataTable<T> {
         (row) =>
           this.isSelected(row),
       )
+    );
+  }
+
+  get someVisibleSelected() {
+    return (
+      this.rows.some((row) => this.isSelected(row)) &&
+      !this.allVisibleSelected
     );
   }
 
@@ -727,6 +735,7 @@ export class DataTable<T> {
     this.openActionMenuRowId = id;
     this.positionActionMenu(
       event.currentTarget as HTMLElement,
+      row,
     );
   }
 
@@ -797,9 +806,13 @@ export class DataTable<T> {
 
   private positionActionMenu(
     trigger: HTMLElement,
+    row: T,
   ) {
     const menuWidth = 230;
-    const menuEstimatedHeight = 160;
+    const menuEstimatedHeight = Math.min(
+      360,
+      16 + this.secondaryRowActions(row).length * 40,
+    );
     const gap = 6;
     const padding = 12;
     const triggerRect =

@@ -113,6 +113,12 @@ td:nth-child(2) {
   color: #047857;
 }
 
+.file-status.is-warning strong::before {
+  content: "!";
+  background: #fffbeb;
+  color: #b45309;
+}
+
 .file-status.is-error strong::before {
   content: "!";
   background: #fef2f2;
@@ -123,6 +129,31 @@ td:nth-child(2) {
   color: var(--color-muted);
   font-size: 13px;
   line-height: 1.35;
+}
+
+.file-status-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.file-status-details section {
+  display: grid;
+  gap: 3px;
+}
+
+.file-status-details b {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.file-status-details p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: normal;
 }
 
 th:last-child,
@@ -140,7 +171,7 @@ tr:last-child td {
   outline-offset: 3px;
 }
 
-td span {
+td:first-child > span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;

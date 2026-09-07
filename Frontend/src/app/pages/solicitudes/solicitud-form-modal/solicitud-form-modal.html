@@ -283,6 +283,12 @@
           </div>
 
           <div class="form-field">
+            <!--
+              REGLA UX:
+              La edición modifica datos de la solicitud.
+              Los cambios de estado se gestionan mediante acciones del flujo,
+              no desde el formulario general de edición.
+            -->
             <span>Estado</span>
             <input type="text" [value]="estadoSolicitudTexto" disabled />
             <small class="state-help" *ngIf="mostrarAyudaEstadoPendiente">

@@ -260,6 +260,7 @@ const MENSAJES_EXACTOS: Record<string, string> = {
   'la nueva contraseña debe ser distinta de la contraseña actual': 'La nueva contraseña debe ser distinta de la actual.',
   'la nueva fecha de vencimiento debe ser futura': 'La nueva fecha de vencimiento debe ser posterior a la fecha y hora actual.',
   'la operación viola una restricción de integridad o unicidad': 'No se pudo guardar porque ya existe información relacionada o duplicada.',
+  'la entrevista entra en conflicto con un registro existente': 'Ya existe una entrevista con esos datos. Revisa la agenda o elige otro horario.',
   'la opción no pertenece a la pregunta': 'La opción seleccionada no corresponde a esa pregunta.',
   'la pregunta debe tener al menos dos opciones': 'Agrega al menos dos opciones para guardar la pregunta.',
   'la pregunta debe tener exactamente una opción correcta': 'Marca exactamente una opción correcta.',
@@ -286,6 +287,7 @@ const MENSAJES_EXACTOS: Record<string, string> = {
   'no puede modificar preguntas de un cuestionario que ya fue asignado': 'No puedes modificar las preguntas de un cuestionario que ya fue asignado.',
   'no puede quitar la última habilidad excluyente de la solicitud': 'La solicitud debe mantener al menos una habilidad excluyente.',
   'no puede responder un cuestionario en progreso': 'Solo puedes responder el cuestionario mientras está en progreso.',
+  'no fue posible completar el agendamiento masivo; no se creó ninguna entrevista': 'No se pudieron agendar las entrevistas porque una de ellas entra en conflicto con la agenda existente.',
   'no se puede eliminar la empresa porque posee clientes asociados': 'No puedes eliminar esta empresa porque tiene clientes asociados.',
   'no se puede eliminar la última habilidad excluyente de la solicitud': 'La solicitud debe mantener al menos una habilidad excluyente.',
   'no se puede repetir una habilidad dentro de la solicitud': 'No repitas habilidades dentro de la misma solicitud.',
@@ -338,6 +340,18 @@ const REGLAS_MENSAJES: Array<(mensaje: string, status: number) => string | null>
   (mensaje) => {
     const match = mensaje.match(/^Solo se permiten entrevistas y evaluaciones cuando la postulación está en estado 'En entrevista'\. Estado actual de la postulación: '(.+?)'$/i);
     return match ? `Esta entrevista no se puede gestionar porque la postulación está en estado "${match[1]}".` : null;
+  },
+  (mensaje) => {
+    const match = mensaje.match(/^Solo se permiten entrevistas y evaluaciones cuando la solicitud está en estado 'En Entrevistas'\. Estado actual de la solicitud: '(.+?)'$/i);
+    return match ? `No se puede agendar la entrevista porque la solicitud está en estado "${match[1]}".` : null;
+  },
+  (mensaje) => {
+    const match = mensaje.match(/^Todo entrevistador debe poseer INT_EVALUATE\. Usuarios sin permiso: .+$/i);
+    return match ? 'Uno o más participantes seleccionados no tienen permiso para evaluar entrevistas.' : null;
+  },
+  (mensaje) => {
+    const match = mensaje.match(/^Usuarios entrevistadores inactivos: .+$/i);
+    return match ? 'Uno o más participantes seleccionados no tienen una cuenta activa.' : null;
   },
   (mensaje) => {
     const match = mensaje.match(/^Debe informar una observación para pasar a (.+)$/i);

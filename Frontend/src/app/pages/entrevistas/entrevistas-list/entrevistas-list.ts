@@ -120,6 +120,14 @@ export class EntrevistasList implements OnInit {
       className: (entrevista) => this.estadoClase(entrevista.estado),
     },
     {
+      key: 'estadoPostulacion',
+      label: 'Estado de postulación',
+      width: 170,
+      type: 'badge',
+      value: (entrevista) => entrevista.estadoPostulacion || 'Sin estado',
+      className: (entrevista) => this.estadoClase(entrevista.estadoPostulacion || 'Sin estado'),
+    },
+    {
       key: 'candidato',
       label: 'Candidato',
       width: 220,
@@ -164,7 +172,7 @@ export class EntrevistasList implements OnInit {
     },
     {
       id: 'feedback',
-      label: 'Registrar feedback',
+      label: 'Registrar resultado',
       icon: 'edit',
       disabled: (entrevista) => !this.puedeRegistrarFeedback(entrevista),
       disabledReason: (entrevista) => this.motivoAccionNoDisponible(entrevista, 'feedback'),
@@ -335,6 +343,7 @@ export class EntrevistasList implements OnInit {
       ).pipe(
         finalize(() => {
           this.guardandoFormularioAgenda = false;
+          this.cdr.detectChanges();
         }),
       ).subscribe({
         next: () => {
@@ -349,6 +358,7 @@ export class EntrevistasList implements OnInit {
         },
         error: (error) => {
           this.errorFormularioAgenda = obtenerMensajeError(error, 'No se pudieron agendar las entrevistas.');
+          this.cdr.detectChanges();
         },
       });
       return;
@@ -357,6 +367,7 @@ export class EntrevistasList implements OnInit {
     this.entrevistasService.crear(payload).pipe(
       finalize(() => {
         this.guardandoFormularioAgenda = false;
+        this.cdr.detectChanges();
       }),
     ).subscribe({
       next: () => {
@@ -372,6 +383,7 @@ export class EntrevistasList implements OnInit {
       },
       error: (error) => {
         this.errorFormularioAgenda = obtenerMensajeError(error, 'No se pudo crear la entrevista.');
+        this.cdr.detectChanges();
       },
     });
   }
@@ -560,7 +572,7 @@ export class EntrevistasList implements OnInit {
         this.alerta = {
           tipo: 'warning',
           variante: 'soft',
-          mensaje: 'El feedback estará disponible cuando la entrevista esté realizada.',
+          mensaje: 'El resultado de la entrevista estará disponible cuando la entrevista esté realizada.',
         };
         return;
       }
@@ -628,7 +640,7 @@ export class EntrevistasList implements OnInit {
     }
 
     if (!this.esEstadoEntrevista(this.entrevistaSeleccionada, ['Realizada'])) {
-      this.errorEvaluaciones = 'Solo puedes registrar feedback cuando la entrevista está realizada.';
+      this.errorEvaluaciones = 'Solo puedes registrar el resultado cuando la entrevista está realizada.';
       this.cdr.markForCheck();
       return;
     }
@@ -666,13 +678,13 @@ export class EntrevistasList implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.mensajeEvaluaciones = 'Feedback guardado correctamente.';
+          this.mensajeEvaluaciones = 'Resultado de la entrevista guardado correctamente.';
           this.cargarDetalleEntrevista(this.entrevistaSeleccionada!.id);
           this.cargarEntrevistas();
           this.cdr.markForCheck();
         },
         error: (error) => {
-          this.errorEvaluaciones = this.mensajeErrorEvaluacion(error, 'No se pudieron guardar los resultados por área.');
+          this.errorEvaluaciones = this.mensajeErrorEvaluacion(error, 'No se pudo guardar el resultado. Intenta nuevamente.');
           this.cdr.markForCheck();
         },
       });
@@ -849,7 +861,8 @@ export class EntrevistasList implements OnInit {
   }
 
   private puedeRegistrarFeedback(entrevista: EntrevistaResumen) {
-    return this.esEstadoEntrevista(entrevista, ['Realizada']);
+    return this.esEstadoEntrevista(entrevista, ['Realizada']) &&
+      this.cumplePrecondicionM5(entrevista);
   }
 
   private puedeCambiarEstado(entrevista: EntrevistaResumen) {
@@ -872,7 +885,23 @@ export class EntrevistasList implements OnInit {
 
   private motivoAccionNoDisponible(entrevista: EntrevistaResumen, accion: 'feedback' | 'gestion' = 'gestion') {
     if (accion === 'feedback') {
-      return 'No disponible: la entrevista aún no está realizada.';
+      if (!this.esEstadoEntrevista(entrevista, ['Realizada'])) {
+        return 'No disponible: la entrevista aún no está realizada.';
+      }
+
+      if (this.solicitudCancelada(entrevista)) {
+        return 'No disponible: solicitud cancelada.';
+      }
+
+      if (this.normalizar(entrevista.estadoSolicitud ?? '') !== 'en entrevistas') {
+        return 'No disponible: la solicitud no está en etapa de entrevistas.';
+      }
+
+      if (this.normalizar(entrevista.estadoPostulacion ?? '') !== 'en entrevista') {
+        return 'No disponible: la postulación no está en entrevista.';
+      }
+
+      return 'No disponible para registrar resultado.';
     }
 
     if (this.solicitudCancelada(entrevista)) {
@@ -947,7 +976,7 @@ export class EntrevistasList implements OnInit {
 
   private mensajeEstadoSolicitudFeedback(mensaje: string) {
     return this.esErrorEstadoSolicitudFeedback(mensaje)
-      ? 'No se pudo guardar el feedback. La solicitud asociada a esta entrevista no permite registrar evaluaciones en su estado actual.'
+      ? 'No se pudo guardar el resultado. La solicitud asociada a esta entrevista no permite registrar evaluaciones en su estado actual.'
       : mensaje;
   }
 

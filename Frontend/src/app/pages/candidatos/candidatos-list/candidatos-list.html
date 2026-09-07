@@ -52,12 +52,6 @@
     </div>
   </section>
 
-  <section class="match-context-message" *ngIf="mostrarMensajeSinMatchContexto">
-    <strong>Aún no hay resultados de match para esta solicitud.</strong>
-    <span>Los candidatos asociados todavía no tienen evaluación de compatibilidad registrada.</span>
-  </section>
-
-
   <app-alert-region
     [alerta]="alerta"
     (cerrar)="cerrarAlerta()"
@@ -151,76 +145,35 @@
       *ngIf="!importandoCvs"
       [alerta]="feedbackCargaCv"
       [cerrable]="true"
-      (cerrar)="feedbackCargaCv = null"
+      (cerrar)="cerrarFeedbackCargaCv()"
     ></app-alert-region>
-  </section>
 
-
-  <!--
-    Decisión UX/UI M3
-
-    La búsqueda rápida es la acción principal del listado.
-    Permite localizar candidatos utilizando:
-    - nombre
-    - correo
-    - código de solicitud SOL-XXX
-    - cargo
-
-    Los filtros específicos se mantienen para búsquedas
-    de reclutamiento más precisas.
-  -->
-  <section class="candidate-autocomplete" *ngIf="mostrarListadoCandidatos" aria-label="Buscar candidato por nombre">
-    <label for="candidate-autocomplete-input">Buscar candidato</label>
-
-    <div class="candidate-autocomplete__box" [class.has-selection]="candidatoFiltroSeleccionado">
-      <input
-        id="candidate-autocomplete-input"
-        type="search"
-        [ngModel]="busquedaCandidatoTexto"
-        (ngModelChange)="actualizarBusquedaCandidato($event)"
-        (focus)="abrirAutocompletarCandidato()"
-        [attr.aria-expanded]="autocompletarCandidatoAbierto"
-        aria-controls="candidate-autocomplete-results"
-        autocomplete="off"
-        placeholder="Escribe el nombre de un candidato"
-      />
-
-      <button
-        *ngIf="candidatoFiltroSeleccionado || busquedaCandidatoTexto"
-        type="button"
-        aria-label="Limpiar candidato seleccionado"
-        (click)="limpiarCandidatoFiltro()"
-      >
-        ×
-      </button>
-    </div>
-
-    <div
-      id="candidate-autocomplete-results"
-      class="candidate-autocomplete__results"
-      *ngIf="autocompletarCandidatoAbierto && (sugerenciasCandidatos.length > 0 || mostrarSinSugerenciasCandidato)"
+    <section
+      class="cv-request-result"
+      *ngIf="!importandoCvs && resultadoCargaSolicitud"
+      aria-live="polite"
     >
-      <button
+      <div>
+        <strong>{{ tituloResultadoCargaSolicitud }}</strong>
+        <span>Puedes revisar los candidatos de esta solicitud.</span>
+      </div>
+
+      <app-button
         type="button"
-        *ngFor="let candidato of sugerenciasCandidatos; trackBy: trackCandidato"
-        (click)="seleccionarCandidatoFiltro(candidato)"
+        variant="secondary"
+        size="sm"
+        (pressed)="verCandidatosSolicitudCarga()"
       >
-        <strong>{{ candidato.nombre }}</strong>
-        <span *ngIf="candidato.correo">{{ candidato.correo }}</span>
-      </button>
-
-      <p *ngIf="mostrarSinSugerenciasCandidato">No se encontraron candidatos.</p>
-    </div>
-
-    <p class="candidate-autocomplete__selected" *ngIf="candidatoFiltroSeleccionado">
-      Candidato seleccionado: {{ candidatoFiltroSeleccionado.nombre }}
-    </p>
+        Ver candidatos de {{ resultadoCargaSolicitud.solicitud.codigo }}
+      </app-button>
+    </section>
   </section>
+
 
   <app-filter-panel
     *ngIf="mostrarListadoCandidatos"
     [class.is-request-context]="enContextoSolicitud"
-    [title]="enContextoSolicitud ? 'Filtrar candidatos' : 'Buscar y filtrar'"
+    [title]="enContextoSolicitud ? 'Filtros' : 'Buscar y filtrar'"
     [description]="descripcionFiltros"
     [quickSearchPlaceholder]="placeholderBusquedaRapida"
     [filtersButtonLabel]="enContextoSolicitud ? 'Filtros' : 'Filtros'"
@@ -234,6 +187,10 @@
   (clear)="limpiarFiltros()"
 >
 
+    <div class="request-filter-group-title" *ngIf="enContextoSolicitud">
+      Filtros generales
+    </div>
+
     <!--
       Integración M3
 
@@ -246,8 +203,15 @@
       <input
         [(ngModel)]="filtros.idSolicitud"
         type="text"
+        list="solicitudes-filtro-candidatos"
         placeholder="Ej. SOL-000001"
+        (ngModelChange)="validarSolicitudFiltroPorCodigo()"
+        (blur)="normalizarFiltroSolicitud()"
       />
+
+      <datalist id="solicitudes-filtro-candidatos">
+        <option *ngFor="let solicitud of solicitudesCargaDisponibles" [value]="solicitud.codigo"></option>
+      </datalist>
     </label>
 
 
@@ -346,7 +310,7 @@
     </label>
 
 
-    <label>
+    <label *ngIf="!enContextoSolicitud">
       Nivel profesional
 
       <select
@@ -364,6 +328,10 @@
         </option>
       </select>
     </label>
+
+    <div class="request-filter-group-title" *ngIf="enContextoSolicitud">
+      Filtros técnicos
+    </div>
 
     <label>
       Habilidad
@@ -393,6 +361,25 @@
       </ng-template>
     </label>
 
+
+    <label *ngIf="enContextoSolicitud">
+      Nivel técnico
+
+      <select
+        [(ngModel)]="filtros.nivel"
+      >
+        <option value="">
+          Todos
+        </option>
+
+        <option
+          *ngFor="let nivel of niveles"
+          [ngValue]="nivel"
+        >
+          {{ nivel }}
+        </option>
+      </select>
+    </label>
 
     <label>
       Experiencia mínima
@@ -528,6 +515,7 @@
   <app-data-table
     *ngIf="puedeMostrarTablaCandidatos"
     [title]="tituloTabla"
+    [subtitle]="subtituloTabla"
     [columns]="columnasTabla"
     [rows]="candidatosPaginados"
     [total]="candidatosFiltrados.length"

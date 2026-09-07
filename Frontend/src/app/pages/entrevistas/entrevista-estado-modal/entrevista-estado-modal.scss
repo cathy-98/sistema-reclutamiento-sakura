@@ -91,7 +91,7 @@ p {
 
 .feedback-history__item {
   display: grid;
-  gap: 7px;
+  gap: 6px;
   padding: 11px 0;
   border-bottom: 1px solid var(--color-border);
   background: transparent;
@@ -116,7 +116,7 @@ p {
 
 .feedback-history__item strong {
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 900;
 }
 
@@ -126,6 +126,7 @@ p {
   font-weight: 800;
 }
 
+.feedback-history__meta,
 .feedback-history__type {
   color: var(--color-text-soft);
   font-size: 14px;
@@ -143,9 +144,14 @@ p {
   font-weight: 900;
 }
 
+.feedback-history__result-text {
+  line-height: 1.25;
+}
+
 .feedback-history__observation {
   color: var(--color-text);
   font-size: 15px;
+  line-height: 1.45;
 }
 
 .detail-view,
@@ -158,6 +164,15 @@ p {
   display: grid;
   gap: 10px;
   padding-top: 2px;
+}
+
+.detail-text {
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .section-heading {

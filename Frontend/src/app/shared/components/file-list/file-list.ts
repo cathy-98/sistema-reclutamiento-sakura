@@ -4,9 +4,13 @@ import { Button } from '../button/button';
 import { IconButton } from '../icon-button/icon-button';
 
 export interface FileListStatus {
-  state: 'pending' | 'processing' | 'success' | 'error';
+  state: 'pending' | 'processing' | 'success' | 'warning' | 'error';
   label: string;
   message?: string;
+  details?: Array<{
+    title: string;
+    messages: string[];
+  }>;
 }
 
 @Component({

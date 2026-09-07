@@ -960,6 +960,10 @@ export class SolicitudFormModal implements OnInit {
     const solicitudCargo = this.detalleCargo;
     const solicitudEstado = this.estadoSolicitudTexto;
 
+    // TODO FLUJO M3:
+    // El paso de la solicitud a "En Entrevistas" se realizará
+    // dentro del flujo masivo de candidatos.
+    // No duplicar esta transición desde Editar solicitud.
     // Transporta el contexto sin crear una pantalla nueva de candidatos.
     this.router.navigate(['/candidatos'], {
       queryParams: {

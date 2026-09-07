@@ -36,9 +36,16 @@
               class="file-status"
               *ngIf="fileStatus(file) as status"
               [ngClass]="'is-' + status.state"
+              aria-live="polite"
             >
               <strong>{{ status.label }}</strong>
               <span *ngIf="status.message">{{ status.message }}</span>
+              <div class="file-status-details" *ngIf="status.details?.length">
+                <section *ngFor="let detail of status.details">
+                  <b>{{ detail.title }}</b>
+                  <p *ngFor="let message of detail.messages">{{ message }}</p>
+                </section>
+              </div>
             </div>
           </td>
           <td>
