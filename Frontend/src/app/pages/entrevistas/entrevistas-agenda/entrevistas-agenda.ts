@@ -22,6 +22,12 @@ import { AuthService } from '../../../services/auth.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { InformesService } from '../../../services/informes.service';
 import { EntrevistaFormModal } from '../entrevista-form-modal/entrevista-form-modal';
+import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
+import { SolicitudResumen } from '../../../shared/models/solicitud.model';
+import {
+  SolicitudAutocompleteOption,
+  codigoSolicitudCoincide,
+} from '../../../shared/utils/solicitud-autocomplete';
 
 interface DiaAgenda {
   fecha: Date;
@@ -32,7 +38,7 @@ interface DiaAgenda {
 
 @Component({
   selector: 'app-entrevistas-agenda',
-  imports: [CommonModule, FormsModule, AlertRegion, Button, IconButton, EntrevistaEstadoModal, EntrevistaFormModal, PageHeader, PageLayout],
+  imports: [CommonModule, FormsModule, AlertRegion, Button, IconButton, EntrevistaEstadoModal, EntrevistaFormModal, SolicitudAutocomplete, PageHeader, PageLayout],
   templateUrl: './entrevistas-agenda.html',
   styleUrl: './entrevistas-agenda.scss',
 })
@@ -41,6 +47,7 @@ export class EntrevistasAgenda implements OnInit {
   errorCarga = '';
   alerta: AlertaUi | null = null;
   entrevistas: EntrevistaResumen[] = [];
+  solicitudesFiltro: SolicitudResumen[] = [];
   entrevistaSeleccionada: EntrevistaResumen | null = null;
   entrevistaDetalle: EntrevistaApi | null = null;
   modoEstado: 'ver' | 'gestionar' | 'reprogramar' | 'confirmar' | 'realizar' | 'no-asistio' | 'cancelar' = 'reprogramar';
@@ -95,7 +102,11 @@ export class EntrevistasAgenda implements OnInit {
         const texto = this.normalizar(
           `${entrevista.candidato} ${entrevista.idSolicitud} ${entrevista.cargo} ${entrevista.tipo} ${entrevista.entrevistador}`,
         );
-        return !busquedaNormalizada || texto.includes(busquedaNormalizada);
+        return (
+          !busquedaNormalizada ||
+          texto.includes(busquedaNormalizada) ||
+          codigoSolicitudCoincide(entrevista.idSolicitud, this.busqueda)
+        );
       })
       .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
   }
@@ -150,6 +161,7 @@ export class EntrevistasAgenda implements OnInit {
       )
       .subscribe({
       next: ({ entrevistas, solicitudes, informes }) => {
+        this.solicitudesFiltro = solicitudes;
         const estadosSolicitudPorCodigo = new Map(
           solicitudes.map((solicitud) => [solicitud.codigo, solicitud.estado]),
         );
@@ -306,6 +318,10 @@ export class EntrevistasAgenda implements OnInit {
 
   cerrarAlerta() {
     this.alerta = null;
+  }
+
+  seleccionarSolicitudBusqueda(solicitud: SolicitudAutocompleteOption | null) {
+    this.busqueda = solicitud?.codigo?.trim() ?? '';
   }
 
   abrirFormularioIndividual() {

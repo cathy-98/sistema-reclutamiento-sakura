@@ -70,12 +70,8 @@
   padding: 12px 14px;
   border: 1px solid #d8dee8;
   border-radius: 8px;
-  background: #ffffbf;
-  color: #475569;
-}
-
-.initial-list-message {
   background: #f8fafc;
+  color: #475569;
 }
 
 .request-filter-group-title {
@@ -248,7 +244,14 @@
   align-items: center;
 }
 
-.associated-request-field input {
+.associated-request-field app-solicitud-autocomplete {
+  flex: 1 1 190px;
+  min-width: 0;
+  max-width: 280px;
+}
+
+.associated-request-field input,
+.associated-request-field ::ng-deep app-solicitud-autocomplete input {
   flex: 1 1 190px;
   min-width: 0;
   max-width: 280px;
@@ -382,6 +385,10 @@
   }
 
   .associated-request-field input {
+    max-width: none;
+  }
+
+  .associated-request-field app-solicitud-autocomplete {
     max-width: none;
   }
 

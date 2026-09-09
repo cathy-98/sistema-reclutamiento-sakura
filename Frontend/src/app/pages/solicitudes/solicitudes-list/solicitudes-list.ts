@@ -17,9 +17,14 @@ import {
 import { FilterPanel } from '../../../shared/components/filter-panel/filter-panel';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
+import {
+  SolicitudAutocompleteOption,
+  codigoSolicitudCoincide,
+} from '../../../shared/utils/solicitud-autocomplete';
 import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal';
 
 const SOLICITUDES_LOAD_TIMEOUT_MS = 4000;
@@ -49,6 +54,7 @@ interface FiltrosSolicitudes {
     PageHeader,
     PageLayout,
     FilterPanel,
+    SolicitudAutocomplete,
   ],
   templateUrl: './solicitudes-list.html',
   styleUrl: './solicitudes-list.scss',
@@ -223,8 +229,14 @@ export class SolicitudesList implements OnInit {
       );
 
       return (
-        textoSolicitud.includes(filtros.busquedaRapida) &&
-        this.normalizar(solicitud.codigo).includes(filtros.id) &&
+        (
+          textoSolicitud.includes(filtros.busquedaRapida) ||
+          codigoSolicitudCoincide(solicitud.codigo, this.filtros.busquedaRapida)
+        ) &&
+        (
+          !filtros.id ||
+          codigoSolicitudCoincide(solicitud.codigo, this.filtros.id)
+        ) &&
         this.normalizar(solicitud.nombre).includes(filtros.nombre) &&
         this.normalizar(solicitud.cliente).includes(filtros.cliente) &&
         this.normalizar(solicitud.cargo).includes(filtros.cargo) &&
@@ -507,6 +519,30 @@ export class SolicitudesList implements OnInit {
 
   buscar() {
     this.paginaActual = 1;
+  }
+
+  seleccionarSolicitudBusquedaRapida(solicitud: SolicitudAutocompleteOption) {
+    this.filtros = {
+      ...this.filtros,
+      busquedaRapida: solicitud.codigo?.trim() ?? this.filtros.busquedaRapida,
+    };
+    this.buscar();
+  }
+
+  actualizarFiltroSolicitud(valor: string) {
+    this.filtros = {
+      ...this.filtros,
+      id: valor,
+    };
+    this.buscar();
+  }
+
+  seleccionarFiltroSolicitud(solicitud: SolicitudResumen | null) {
+    this.filtros = {
+      ...this.filtros,
+      id: solicitud?.codigo ?? '',
+    };
+    this.buscar();
   }
 
   limpiarFiltros() {

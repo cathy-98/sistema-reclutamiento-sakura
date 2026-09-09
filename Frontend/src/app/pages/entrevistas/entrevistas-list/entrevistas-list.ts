@@ -32,6 +32,11 @@ import { EntrevistaFormModal } from '../entrevista-form-modal/entrevista-form-mo
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { InformesService } from '../../../services/informes.service';
 import { AuthService } from '../../../services/auth.service';
+import { SolicitudResumen } from '../../../shared/models/solicitud.model';
+import {
+  SolicitudAutocompleteOption,
+  codigoSolicitudCoincide,
+} from '../../../shared/utils/solicitud-autocomplete';
 
 interface FiltrosEntrevistas {
   busquedaRapida: string;
@@ -71,6 +76,7 @@ export class EntrevistasList implements OnInit {
   registrosPorPagina = 5;
   seleccionados = new Set<string>();
   entrevistas: EntrevistaResumen[] = [];
+  solicitudesFiltro: SolicitudResumen[] = [];
   filtros: FiltrosEntrevistas = this.filtrosIniciales();
   mostrarFormulario = false;
   errorFormularioAgenda = '';
@@ -210,7 +216,10 @@ export class EntrevistasList implements OnInit {
       );
 
       return (
-        texto.includes(filtros.busquedaRapida) &&
+        (
+          texto.includes(filtros.busquedaRapida) ||
+          codigoSolicitudCoincide(entrevista.idSolicitud, this.filtros.busquedaRapida)
+        ) &&
         this.normalizar(entrevista.cargo).includes(filtros.cargo) &&
         (!filtros.fecha || entrevista.fecha === filtros.fecha) &&
         (!filtros.estado || entrevista.estado === filtros.estado) &&
@@ -274,6 +283,7 @@ export class EntrevistasList implements OnInit {
       )
       .subscribe({
       next: ({ entrevistas, solicitudes, informes }) => {
+        this.solicitudesFiltro = solicitudes;
         const cargosPorSolicitud = new Map(
           solicitudes.map((solicitud) => [solicitud.codigo, solicitud.cargo]),
         );
@@ -701,6 +711,14 @@ export class EntrevistasList implements OnInit {
 
   buscar() {
     this.paginaActual = 1;
+  }
+
+  seleccionarSolicitudBusquedaRapida(solicitud: SolicitudAutocompleteOption) {
+    this.filtros = {
+      ...this.filtros,
+      busquedaRapida: solicitud.codigo?.trim() ?? this.filtros.busquedaRapida,
+    };
+    this.buscar();
   }
 
   cambiarPagina(pagina: number) {

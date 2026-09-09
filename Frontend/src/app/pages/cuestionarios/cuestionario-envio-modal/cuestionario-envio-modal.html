@@ -8,12 +8,16 @@
     <p class="test-summary">{{ resumen }}</p>
 
     <app-form-field label="Solicitud" [required]="true">
-      <select formControlName="solicitudId" (change)="cambiarSolicitud()" [disabled]="cargandoOpciones || enviando">
-        <option [ngValue]="null">Selecciona una solicitud</option>
-        <option *ngFor="let solicitud of solicitudes" [ngValue]="solicitud.id">
-          {{ solicitud.codigo }} - {{ solicitud.cargo }} - {{ solicitud.cliente }}
-        </option>
-      </select>
+      <app-solicitud-autocomplete
+        [value]="codigoSolicitudSeleccionada"
+        [solicitudes]="solicitudes"
+        [selectedId]="formulario.value.solicitudId ?? null"
+        placeholder="Selecciona una solicitud"
+        [disabled]="cargandoOpciones || enviando"
+        [required]="true"
+        (valueChange)="actualizarCodigoSolicitud($event)"
+        (selected)="seleccionarSolicitud($any($event))"
+      ></app-solicitud-autocomplete>
     </app-form-field>
 
     <section class="request-summary" *ngIf="solicitudSeleccionada">

@@ -83,15 +83,16 @@
       </label>
 
       <div class="associated-request-field__control">
-        <input
+        <app-solicitud-autocomplete
           id="solicitud-asociada-cv"
-          type="text"
-          list="solicitudes-carga-cv"
+          name="solicitud-asociada-cv"
+          [value]="codigoSolicitudCarga"
+          [solicitudes]="solicitudesCargaDisponibles"
+          [selectedId]="solicitudCargaSeleccionada?.id ?? null"
           placeholder="Ej. SOL-000017"
-          [(ngModel)]="codigoSolicitudCarga"
-          (ngModelChange)="validarSolicitudCargaPorCodigo()"
-          (blur)="validarSolicitudCargaPorCodigo()"
-        />
+          (valueChange)="actualizarCodigoSolicitudCarga($event)"
+          (selected)="seleccionarSolicitudCarga($any($event))"
+        ></app-solicitud-autocomplete>
 
         <button
           type="button"
@@ -106,12 +107,8 @@
         Déjalo vacío para cargarlo como candidato general.
       </small>
 
-      <datalist id="solicitudes-carga-cv">
-        <option *ngFor="let solicitud of solicitudesCargaDisponibles" [value]="solicitud.codigo"></option>
-      </datalist>
-
       <span class="associated-request-field__error" *ngIf="mostrarSolicitudCargaNoEncontrada">
-        No se encontró una solicitud con ese número.
+        No se encontraron solicitudes.
       </span>
 
     </div>
@@ -174,15 +171,17 @@
     *ngIf="mostrarListadoCandidatos"
     [class.is-request-context]="enContextoSolicitud"
     [title]="enContextoSolicitud ? 'Filtros' : 'Buscar y filtrar'"
-    [description]="descripcionFiltros"
-    [quickSearchPlaceholder]="placeholderBusquedaRapida"
-    [filtersButtonLabel]="enContextoSolicitud ? 'Filtros' : 'Filtros'"
+  [description]="descripcionFiltros"
+  [quickSearchPlaceholder]="placeholderBusquedaRapida"
+  [filtersButtonLabel]="enContextoSolicitud ? 'Filtros' : 'Filtros'"
+  [quickSearchSolicitudes]="!enContextoSolicitud ? solicitudesCargaDisponibles : []"
 
   [(quickSearch)]="busquedaRapida"
 
   [collapsible]="true"
   [filtersExpanded]="false"
 
+  (quickSearchSolicitudSelected)="seleccionarSolicitudBusquedaRapida($event)"
   (search)="buscar()"
   (clear)="limpiarFiltros()"
 >
@@ -200,18 +199,14 @@
     <label *ngIf="!enContextoSolicitud">
       Código de solicitud
 
-      <input
-        [(ngModel)]="filtros.idSolicitud"
-        type="text"
-        list="solicitudes-filtro-candidatos"
+      <app-solicitud-autocomplete
+        [value]="filtros.idSolicitud"
+        [solicitudes]="solicitudesCargaDisponibles"
+        [selectedId]="solicitudFiltroSeleccionada?.id ?? null"
         placeholder="Ej. SOL-000001"
-        (ngModelChange)="validarSolicitudFiltroPorCodigo()"
-        (blur)="normalizarFiltroSolicitud()"
-      />
-
-      <datalist id="solicitudes-filtro-candidatos">
-        <option *ngFor="let solicitud of solicitudesCargaDisponibles" [value]="solicitud.codigo"></option>
-      </datalist>
+        (valueChange)="actualizarFiltroSolicitud($event)"
+        (selected)="seleccionarFiltroSolicitud($any($event))"
+      ></app-solicitud-autocomplete>
     </label>
 
 

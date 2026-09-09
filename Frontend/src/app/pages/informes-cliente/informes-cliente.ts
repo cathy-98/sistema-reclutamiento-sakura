@@ -23,8 +23,13 @@ import { Modal } from '../../shared/components/modal/modal';
 import { PageLayout } from '../../shared/components/page-layout/page-layout';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { TabItem, Tabs } from '../../shared/components/tabs/tabs';
+import { SolicitudAutocomplete } from '../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
 import { AlertaUi } from '../../shared/models/alerta-ui.model';
 import { obtenerMensajeError } from '../../shared/utils/api-error';
+import {
+  SolicitudAutocompleteOption,
+  codigoSolicitudCoincide,
+} from '../../shared/utils/solicitud-autocomplete';
 
 type VistaInforme = 'aprobados' | 'pendientes' | 'no-aprobados';
 
@@ -79,6 +84,7 @@ interface FiltrosInformes {
     Modal,
     PageHeader,
     PageLayout,
+    SolicitudAutocomplete,
     Tabs,
   ],
   templateUrl: './informes-cliente.html',
@@ -212,6 +218,26 @@ export class InformesCliente implements OnInit {
     );
   }
 
+  get solicitudesFiltro(): SolicitudAutocompleteOption[] {
+    const solicitudes = new Map<string, SolicitudAutocompleteOption>();
+
+    this.informes.forEach((informe) => {
+      if (!informe.idSolicitud) {
+        return;
+      }
+
+      if (!solicitudes.has(informe.idSolicitud)) {
+        solicitudes.set(informe.idSolicitud, {
+          id: informe.idSolicitud,
+          codigo: informe.idSolicitud,
+          cargo: informe.cargo,
+        });
+      }
+    });
+
+    return Array.from(solicitudes.values());
+  }
+
   get tituloTablaInformes() {
     if (this.vistaActiva === 'aprobados') {
       return 'Informes aprobados';
@@ -238,8 +264,14 @@ export class InformesCliente implements OnInit {
         `${informe.idSolicitud} ${informe.nombre} ${informe.correo} ${informe.cargo} ${informe.estado} ${informe.disponibilidad} ${informe.motivoM6}`,
       );
       const coincideTexto =
-        textoInforme.includes(filtrosNormalizados.busquedaRapida) &&
-        this.normalizar(informe.idSolicitud).includes(filtrosNormalizados.idSolicitud) &&
+        (
+          textoInforme.includes(filtrosNormalizados.busquedaRapida) ||
+          codigoSolicitudCoincide(informe.idSolicitud, this.busquedaRapida)
+        ) &&
+        (
+          !filtrosNormalizados.idSolicitud ||
+          codigoSolicitudCoincide(informe.idSolicitud, this.filtros.idSolicitud)
+        ) &&
         this.normalizar(informe.nombre).includes(filtrosNormalizados.nombre) &&
         this.normalizar(informe.disponibilidad).includes(filtrosNormalizados.disponibilidad);
       const coincideEstado = !this.filtros.estado || this.filtros.estado === 'Todos' || informe.estado === this.filtros.estado;
@@ -343,6 +375,27 @@ export class InformesCliente implements OnInit {
 
   buscar() {
     this.paginaActual = 1;
+  }
+
+  seleccionarSolicitudBusquedaRapida(solicitud: SolicitudAutocompleteOption) {
+    this.busquedaRapida = solicitud.codigo?.trim() ?? this.busquedaRapida;
+    this.buscar();
+  }
+
+  actualizarFiltroSolicitud(valor: string) {
+    this.filtros = {
+      ...this.filtros,
+      idSolicitud: valor,
+    };
+    this.buscar();
+  }
+
+  seleccionarFiltroSolicitud(solicitud: SolicitudAutocompleteOption | null) {
+    this.filtros = {
+      ...this.filtros,
+      idSolicitud: solicitud?.codigo?.trim() ?? '',
+    };
+    this.buscar();
   }
 
   limpiarFiltros() {

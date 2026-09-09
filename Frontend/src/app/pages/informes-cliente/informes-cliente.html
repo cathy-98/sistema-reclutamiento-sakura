@@ -15,15 +15,24 @@
   <app-filter-panel
     description="Usa uno o más campos para encontrar informes de candidatos."
     quickSearchPlaceholder="Buscar por solicitud, candidato o cargo"
+    [quickSearchSolicitudes]="solicitudesFiltro"
     [(quickSearch)]="busquedaRapida"
     [collapsible]="true"
     [filtersExpanded]="false"
+    (quickSearchSolicitudSelected)="seleccionarSolicitudBusquedaRapida($event)"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
     <label>
       ID solicitud
-      <input [(ngModel)]="filtros.idSolicitud" type="text" placeholder="Ej. SOL-000001" />
+      <app-solicitud-autocomplete
+        [value]="filtros.idSolicitud"
+        [solicitudes]="solicitudesFiltro"
+        [selectedId]="filtros.idSolicitud"
+        placeholder="Ej. SOL-000001"
+        (valueChange)="actualizarFiltroSolicitud($event)"
+        (selected)="seleccionarFiltroSolicitud($event)"
+      ></app-solicitud-autocomplete>
     </label>
 
     <label>

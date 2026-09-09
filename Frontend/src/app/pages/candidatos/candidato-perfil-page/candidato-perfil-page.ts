@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, finalize, forkJoin, Observable, of, take, timeout } from 'rxjs';
+import { catchError, finalize, forkJoin, Observable, of, take, throwError, timeout } from 'rxjs';
 import { CandidatoProfileTab, CandidatoProfileTabs } from '../candidato-profile-tabs/candidato-profile-tabs';
 import { Button } from '../../../shared/components/button/button';
 import { Modal } from '../../../shared/components/modal/modal';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
+import { StateMessage } from '../../../shared/components/state-message/state-message';
 import { EntrevistaFormModal } from '../../entrevistas/entrevista-form-modal/entrevista-form-modal';
 import {
   EntrevistaApi,
@@ -78,7 +79,7 @@ interface ContextoPostulacionPerfil {
   estado: string;
   estadoId?: number | null;
   match: number | null;
-  renta: number;
+  renta: number | null;
   fechaPostulacionTimestamp: number;
 }
 
@@ -109,6 +110,7 @@ interface CatalogosPerfilM3 {
     EntrevistaFormModal,
     Modal,
     PageLayout,
+    StateMessage,
   ],
   templateUrl: './candidato-perfil-page.html',
   styleUrl: './candidato-perfil-page.scss',
@@ -118,6 +120,7 @@ export class CandidatoPerfilPage implements OnInit {
   // Para habilitarla cuando exista soporte backend/BD, cambiar a true.
   readonly mostrarModuloDocumentos = false;
   perfilCargado = false;
+  errorPerfil = '';
   tabActiva: PerfilTab = 'experiencia';
   postulacionSeleccionadaId = '';
   busquedaPostulacion = '';
@@ -269,15 +272,15 @@ export class CandidatoPerfilPage implements OnInit {
       nombre: params.get('nombre') || 'Candidato sin nombre',
       correo: params.get('correo') || 'Sin correo',
       telefono: params.get('telefono') || 'Sin teléfono',
-      cargo: params.get('cargo') || 'Sin cargo',
-      estado: params.get('estado') || 'Sin estado',
+      cargo: params.get('cargo') || 'Sin información',
+      estado: params.get('estado') || 'Sin información',
       disponibilidad: params.get('disponibilidad') || 'Sin disponibilidad',
-      renta: Number(params.get('renta') || 0),
+      renta: this.normalizarNumero(params.get('renta')),
       rut: params.get('rut') || 'Sin RUT',
       fechaNacimiento: 'Sin fecha',
       fechaRegistro: 'Sin fecha',
       tituloProfesional: 'Sin título registrado',
-      estadoUsuario: params.get('estadoUsuario') || 'Sin estado',
+      estadoUsuario: params.get('estadoUsuario') || 'Sin información',
       resumenProfesional: 'Sin resumen profesional registrado.',
       urlPerfil: extraerLinkedinUrl(params.get('urlPerfil')) ?? '',
       enlaces: this.extraerEnlacesPerfil(params.get('urlPerfil')),
@@ -305,6 +308,10 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get rentaFormateada() {
+    if (this.candidato.renta == null) {
+      return 'Sin información';
+    }
+
     return `$${this.candidato.renta.toLocaleString('es-CL')} CLP líquidos`;
   }
 
@@ -946,8 +953,9 @@ export class CandidatoPerfilPage implements OnInit {
     this.router.navigate([this.esAutoservicio ? '/portal-candidato' : '/candidatos']);
   }
 
-  private cargarPerfilM3() {
+  cargarPerfilM3() {
     this.perfilCargado = false;
+    this.errorPerfil = '';
 
     const candidatoId = this.route.snapshot.paramMap.get('id');
     const perfil$ = this.esAutoservicio
@@ -978,7 +986,7 @@ export class CandidatoPerfilPage implements OnInit {
     forkJoin({
       perfil: perfil$.pipe(timeout(6000), catchError((error) => {
         console.info('Perfil M3 no disponible.', error);
-        return of(null);
+        return throwError(() => error);
       })),
       solicitudes: solicitudes$.pipe(timeout(6000), catchError((error) => {
         console.info('Solicitudes del candidato no disponibles.', error);
@@ -1102,6 +1110,8 @@ export class CandidatoPerfilPage implements OnInit {
         },
         error: (error) => {
           console.warn('No fue posible cargar el perfil completo.', error);
+          this.errorPerfil =
+            'No se pudo cargar la información del candidato. Intenta nuevamente.';
           this.perfilCargado = true;
         },
       });
@@ -1153,6 +1163,9 @@ export class CandidatoPerfilPage implements OnInit {
     const solicitudResumen = primeraSolicitud
       ? this.solicitudResumenPorId(solicitudesCatalogo, primeraSolicitud.slcd_solicitud_id)
       : null;
+    const estadoPostulacion = primeraSolicitud
+      ? this.estadoPostulacionNombre(primeraSolicitud)
+      : null;
     const disponibilidadNombre =
       disponibilidades.find(
         (disponibilidad) =>
@@ -1176,10 +1189,12 @@ export class CandidatoPerfilPage implements OnInit {
       nombre,
       correo: perfil.cand_email ?? 'Sin correo',
       telefono: perfil.cand_telefono ?? '',
-      cargo: solicitudResumen?.cargo ?? 'Sin solicitud asociada',
-      estado: this.candidato.estado,
+      cargo: primeraSolicitud
+        ? solicitudResumen?.cargo ?? 'Sin información'
+        : 'Sin solicitud asociada',
+      estado: estadoPostulacion ?? 'Sin postulación',
       disponibilidad: disponibilidadNombre ?? this.candidato.disponibilidad,
-      renta: primeraSolicitud?.slcd_pretension_renta ?? this.candidato.renta,
+      renta: this.normalizarRenta(primeraSolicitud?.slcd_pretension_renta),
       rut: this.formatearRut(perfil.cand_rut_sin_dv, perfil.cand_dv) ?? this.candidato.rut,
       fechaNacimiento: this.formatearFecha(perfil.cand_fecha_nacimiento) || this.candidato.fechaNacimiento,
       fechaRegistro: this.formatearFecha(perfil.cand_fecha_creacion) || this.candidato.fechaRegistro,
@@ -1405,15 +1420,14 @@ export class CandidatoPerfilPage implements OnInit {
             solicitud?.codigo,
             postulacion.slcd_solicitud_id,
           );
-        const cargo = solicitud?.cargo ??
-          `Solicitud ${postulacion.slcd_solicitud_id}`;
+        const cargo = solicitud?.cargo ?? 'Sin información';
         const estado = estadosPorId.get(
           postulacion.slcd_estado_solicitud_candidato_id ?? 0,
         ) ?? 'Sin estado';
         const match = this.normalizarNumero(
           postulacion.slcd_puntaje_compatibilidad,
         ) ?? null;
-        const renta = postulacion.slcd_pretension_renta ?? 0;
+        const renta = this.normalizarRenta(postulacion.slcd_pretension_renta);
 
         this.contextoPostulaciones.set(codigo, {
           postulacionId: postulacion.slcd_id,
@@ -1477,7 +1491,7 @@ export class CandidatoPerfilPage implements OnInit {
         fecha?: string;
         estado?: string;
         match?: number;
-        renta?: number;
+        renta?: number | string | null;
       }>;
 
       return items
@@ -1506,17 +1520,17 @@ export class CandidatoPerfilPage implements OnInit {
             postulacionId: idPostulacion,
             solicitudId: Number(item.idSolicitud) || undefined,
             idSolicitud: codigo,
-            cargo: item.cargo || 'Sin cargo',
+            cargo: item.cargo || 'Sin información',
             estado: item.estado || 'Sin estado',
             match: item.match == null ? null : Number(item.match),
-            renta: Number(item.renta ?? 0),
+            renta: this.normalizarRenta(item.renta),
             fechaPostulacionTimestamp: this.fechaTimestamp(item.fecha),
           });
 
           return [
             codigo,
             item.clienteEmpresa || 'Solicitud',
-            item.cargo || 'Sin cargo',
+            item.cargo || 'Sin información',
             item.fecha || 'Sin fecha',
             item.estado || 'Sin estado',
           ] as PostulacionPerfil;
@@ -2099,7 +2113,7 @@ export class CandidatoPerfilPage implements OnInit {
     solicitudId?: number | null,
   ) {
     return solicitudId
-      ? `SOL-${String(solicitudId).padStart(6, '0')}`
+      ? `Solicitud ${solicitudId}`
       : '';
   }
 
@@ -2119,7 +2133,7 @@ export class CandidatoPerfilPage implements OnInit {
       return limpio;
     }
 
-    return `SOL-${coincidencia[1].padStart(6, '0')}`;
+    return limpio;
   }
 
   private rangoFechas(inicio?: string | null, fin?: string | null) {
@@ -2177,10 +2191,14 @@ export class CandidatoPerfilPage implements OnInit {
 
   private normalizarNumero(valor?: number | string | null) {
     if (valor == null || valor === '') {
-      return undefined;
+      return null;
     }
 
     const numero = Number(valor);
-    return Number.isNaN(numero) ? undefined : numero;
+    return Number.isFinite(numero) ? numero : null;
+  }
+
+  private normalizarRenta(valor?: number | string | null) {
+    return this.normalizarNumero(valor);
   }
 }

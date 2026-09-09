@@ -9,7 +9,7 @@ export interface CandidatoPerfil {
   cargo: string;
   estado: string;
   disponibilidad: string;
-  renta: number;
+  renta: number | null;
   rut: string;
   fechaNacimiento: string;
   fechaRegistro: string;

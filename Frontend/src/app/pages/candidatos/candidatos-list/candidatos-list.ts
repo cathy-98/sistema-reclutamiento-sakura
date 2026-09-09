@@ -11,6 +11,7 @@ import {
   Subscription,
   switchMap,
   take,
+  throwError,
   timeout,
 } from 'rxjs';
 
@@ -54,11 +55,17 @@ import { FilterPanel } from '../../../shared/components/filter-panel/filter-pane
 import { Modal } from '../../../shared/components/modal/modal';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
+import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
 
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudHabilidadApi, SolicitudResumen } from '../../../shared/models/solicitud.model';
 import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { CurrencyClPipe } from '../../../shared/pipes/currency-cl.pipe';
+import {
+  codigoSolicitudCoincide,
+  normalizarCodigoSolicitudBusqueda,
+  resolverSolicitudReal,
+} from '../../../shared/utils/solicitud-autocomplete';
 
 import {
   EntrevistaCandidatoSeleccionado,
@@ -91,7 +98,7 @@ interface PostulacionTabla {
   cargo: string;
   match: number;
   matchDisponible: boolean;
-  renta: number;
+  renta: number | null;
   fechaPostulacion: string;
   fechaPostulacionRaw: string | null;
   estado: string;
@@ -123,9 +130,9 @@ interface Candidato {
   estado: Exclude<EstadoCandidato, 'Todos'>;
   estadoUsuario: string;
   disponibilidad: string;
-  renta: number;
+  renta: number | null;
   nivel: NivelCandidato;
-  experiencia: number;
+  experiencia: number | null;
   habilidades: string[];
 }
 
@@ -204,6 +211,7 @@ interface ResultadoCargaSolicitud {
     FilterPanel,
     Modal,
     ActionBar,
+    SolicitudAutocomplete,
     EntrevistaFormModal,
   ],
   templateUrl: './candidatos-list.html',
@@ -399,7 +407,7 @@ export class CandidatosList implements OnInit, OnDestroy {
       width: 170,
 
       value: (candidato) =>
-        candidato.renta > 0
+        candidato.renta != null
           ? this.currencyCl.transform(candidato.renta)
           : 'Sin información',
     },
@@ -617,6 +625,10 @@ export class CandidatosList implements OnInit, OnDestroy {
       return 'No hay candidatos asociados a esta solicitud.';
     }
 
+    if (!this.enContextoSolicitud && this.candidatos.length === 0) {
+      return 'No se encontraron candidatos.';
+    }
+
     return this.enContextoSolicitud
       ? 'No se encontraron candidatos compatibles para esta solicitud.'
       : 'No se encontraron candidatos con los filtros seleccionados.';
@@ -831,7 +843,7 @@ export class CandidatosList implements OnInit, OnDestroy {
             error,
           );
 
-          return of([] as CandidatoApi[]);
+          return throwError(() => error);
         }),
       ),
 
@@ -1110,9 +1122,7 @@ export class CandidatosList implements OnInit, OnDestroy {
           }
 
           if (candidatos.length === 0) {
-            this.errorCarga = this.enContextoSolicitud
-              ? ''
-              : 'No se encontraron candidatos registrados en el backend.';
+            this.errorCarga = '';
 
             this.candidatos =
               [];
@@ -1156,7 +1166,7 @@ export class CandidatosList implements OnInit, OnDestroy {
           );
 
           this.errorCarga =
-            'No se pudieron cargar candidatos desde el backend.';
+            'No se pudieron cargar los candidatos. Intenta nuevamente.';
 
           this.candidatos =
             [];
@@ -1306,8 +1316,11 @@ export class CandidatosList implements OnInit, OnDestroy {
 
       const coincideNivel =
         !this.filtros.nivel ||
-        this.normalizar(candidato.nivel) ===
-          this.normalizar(this.filtros.nivel);
+        (
+          candidato.nivel !== 'Sin información' &&
+          this.normalizar(candidato.nivel) ===
+            this.normalizar(this.filtros.nivel)
+        );
 
       const coincideHabilidad =
         !filtrosNormalizados.habilidad ||
@@ -1326,7 +1339,10 @@ export class CandidatosList implements OnInit, OnDestroy {
        */
       const coincideRenta =
         !renta ||
-        candidato.renta <= renta;
+        (
+          candidato.renta != null &&
+          candidato.renta <= renta
+        );
 
       const coincideMatch =
         !match ||
@@ -1334,7 +1350,10 @@ export class CandidatosList implements OnInit, OnDestroy {
 
       const coincideExperiencia =
         !experiencia ||
-        candidato.experiencia >= experiencia;
+        (
+          candidato.experiencia != null &&
+          candidato.experiencia >= experiencia
+        );
 
       return (
         coincideTexto &&
@@ -1474,6 +1493,11 @@ export class CandidatosList implements OnInit, OnDestroy {
     this.normalizarFiltroSolicitud();
     this.busquedaEjecutada = true;
     this.paginaActual = 1;
+  }
+
+  seleccionarSolicitudBusquedaRapida(solicitud: { codigo?: string | null }) {
+    this.busquedaRapida = solicitud.codigo?.trim() ?? this.busquedaRapida;
+    this.buscar();
   }
 
   cambiarPagina(pagina: number) {
@@ -2003,7 +2027,7 @@ export class CandidatosList implements OnInit, OnDestroy {
   }
 
   validarSolicitudCargaPorCodigo() {
-    const codigoNormalizado = this.normalizarCodigoBusqueda(
+    const codigoNormalizado = normalizarCodigoSolicitudBusqueda(
       this.codigoSolicitudCarga,
     );
 
@@ -2018,10 +2042,19 @@ export class CandidatosList implements OnInit, OnDestroy {
     }
 
     this.solicitudCargaSeleccionada =
-      this.solicitudesCargaDisponibles.find(
-        (solicitud) =>
-          this.codigoSolicitudCoincide(solicitud.codigo, codigoNormalizado),
-      ) ?? null;
+      resolverSolicitudReal(this.solicitudesCargaDisponibles, codigoNormalizado);
+  }
+
+  actualizarCodigoSolicitudCarga(valor: string) {
+    this.codigoSolicitudCarga = valor;
+    this.validarSolicitudCargaPorCodigo();
+  }
+
+  seleccionarSolicitudCarga(solicitud: SolicitudResumen | null) {
+    this.solicitudCargaSeleccionada = solicitud;
+    this.codigoSolicitudCarga = solicitud?.codigo ?? '';
+    this.solicitudCargaFueBuscada = Boolean(this.codigoSolicitudCarga.trim());
+    this.resultadoCargaSolicitud = null;
   }
 
   validarSolicitudFiltroPorCodigo() {
@@ -2048,6 +2081,22 @@ export class CandidatosList implements OnInit, OnDestroy {
       ...this.filtros,
       idSolicitud: codigoNormalizado,
     };
+  }
+
+  actualizarFiltroSolicitud(valor: string) {
+    this.filtros = {
+      ...this.filtros,
+      idSolicitud: valor,
+    };
+    this.validarSolicitudFiltroPorCodigo();
+  }
+
+  seleccionarFiltroSolicitud(solicitud: SolicitudResumen | null) {
+    this.filtros = {
+      ...this.filtros,
+      idSolicitud: solicitud?.codigo ?? '',
+    };
+    this.buscar();
   }
 
   limpiarSolicitudCarga() {
@@ -3141,11 +3190,13 @@ export class CandidatosList implements OnInit, OnDestroy {
             matchOriginal !== '' &&
             Number.isFinite(matchNumero);
 
+          const rentaOriginal =
+            postulacion.slcd_pretension_renta as number | string | null | undefined;
           const rentaNumero =
-            Number(
-              postulacion.slcd_pretension_renta ??
-                0,
-            );
+            rentaOriginal == null ||
+            rentaOriginal === ''
+              ? null
+              : Number(rentaOriginal);
 
           return {
             idPostulacion:
@@ -3170,7 +3221,7 @@ export class CandidatosList implements OnInit, OnDestroy {
 
             cargo:
               solicitud?.cargo ??
-              'Sin cargo',
+              'Sin información',
 
             match:
               matchDisponible
@@ -3180,9 +3231,9 @@ export class CandidatosList implements OnInit, OnDestroy {
             matchDisponible,
 
             renta:
-              Number.isFinite(rentaNumero)
+              rentaNumero != null && Number.isFinite(rentaNumero)
                 ? rentaNumero
-                : 0,
+                : null,
 
             fechaPostulacion:
               this.formatearFecha(
@@ -3243,7 +3294,7 @@ export class CandidatosList implements OnInit, OnDestroy {
 
       cargo:
         principal?.cargo ??
-        'Sin cargo',
+        'Sin información',
 
       fechaPostulacion:
         principal?.fechaPostulacion ??
@@ -3266,16 +3317,15 @@ export class CandidatosList implements OnInit, OnDestroy {
         'Sin disponibilidad',
 
       renta:
-        principal?.renta ?? 0,
+        principal?.renta ?? null,
 
       nivel:
         nivelProfesional ??
         habilidadPrincipal?.nivel ??
-        this.niveles[0] ??
-        'Sin nivel',
+        'Sin información',
 
       experiencia:
-        habilidadPrincipal?.experiencia ?? 0,
+        habilidadPrincipal?.experiencia ?? null,
 
       habilidades:
         habilidadesCandidato,
@@ -3306,10 +3356,11 @@ export class CandidatosList implements OnInit, OnDestroy {
     return {
       nivel:
         principal.nivel_habilidad?.nvhb_nombre ??
-        this.niveles[0] ??
-        'Sin nivel',
+        'Sin información',
       experiencia:
-        Number(principal.cdhb_anios_experiencia ?? 0),
+        principal.cdhb_anios_experiencia == null
+          ? null
+          : Number(principal.cdhb_anios_experiencia),
     };
   }
 
@@ -3404,7 +3455,7 @@ export class CandidatosList implements OnInit, OnDestroy {
 
     if (!limpio) {
       return solicitudId
-        ? `SOL-${String(solicitudId).padStart(6, '0')}`
+        ? `Solicitud ${solicitudId}`
         : '';
     }
 
@@ -3414,7 +3465,7 @@ export class CandidatosList implements OnInit, OnDestroy {
       return limpio;
     }
 
-    return `SOL-${coincidencia[1].padStart(6, '0')}`;
+    return limpio;
   }
 
   private fechaApiTimestamp(
@@ -3454,17 +3505,7 @@ export class CandidatosList implements OnInit, OnDestroy {
   }
 
   private normalizarCodigoBusqueda(valor?: string | null) {
-    const limpio = valor?.trim().toUpperCase() ?? '';
-
-    if (!limpio) {
-      return '';
-    }
-
-    const coincidencia = limpio.match(/^(?:SOL-?)?(\d+)$/);
-
-    return coincidencia
-      ? `SOL-${coincidencia[1]}`
-      : limpio;
+    return normalizarCodigoSolicitudBusqueda(valor);
   }
 
   private resolverCodigoSolicitudIngresado(valor?: string | null) {
@@ -3475,35 +3516,13 @@ export class CandidatosList implements OnInit, OnDestroy {
     }
 
     const solicitud = this.solicitudesCargaDisponibles.find(
-      (item) => this.codigoSolicitudCoincide(item.codigo, normalizado),
+      (item) => codigoSolicitudCoincide(item.codigo, normalizado),
     );
 
     return solicitud?.codigo ?? normalizado;
   }
 
   private codigoSolicitudCoincide(codigoReal?: string | null, valorBusqueda?: string | null) {
-    const codigo = this.normalizarCodigoBusqueda(codigoReal);
-    const busqueda = this.normalizarCodigoBusqueda(valorBusqueda);
-
-    if (!busqueda) {
-      return true;
-    }
-
-    if (!codigo) {
-      return false;
-    }
-
-    if (this.normalizar(codigo).includes(this.normalizar(busqueda))) {
-      return true;
-    }
-
-    const numeroCodigo = codigo.match(/^SOL-(\d+)$/i)?.[1];
-    const numeroBusqueda = busqueda.match(/^SOL-(\d+)$/i)?.[1];
-
-    return Boolean(
-      numeroCodigo &&
-      numeroBusqueda &&
-      Number(numeroCodigo) === Number(numeroBusqueda),
-    );
+    return codigoSolicitudCoincide(codigoReal, valorBusqueda);
   }
 }

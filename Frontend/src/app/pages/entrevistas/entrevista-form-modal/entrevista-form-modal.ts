@@ -8,12 +8,14 @@ import { FormActions } from '../../../shared/components/form-actions/form-action
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { IconButton } from '../../../shared/components/icon-button/icon-button';
 import { Modal } from '../../../shared/components/modal/modal';
+import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
 import { Stepper } from '../../../shared/components/stepper/stepper';
 import { EntrevistaPayload, ProgramacionTipoEntrevistaPayload } from '../../../services/entrevistas.service';
 import { CatalogosService, TipoEntrevistaCatalogoApi, UsuarioCatalogoApi } from '../../../services/catalogos.service';
 import { CandidatoApi, CandidatosService, PostulacionCandidatoApi } from '../../../services/candidatos.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
+import { resolverSolicitudReal } from '../../../shared/utils/solicitud-autocomplete';
 
 interface IntegranteEntrevista {
   id: string;
@@ -54,6 +56,7 @@ interface ProgramacionTipoForm {
     FormField,
     IconButton,
     Modal,
+    SolicitudAutocomplete,
     Stepper,
   ],
   templateUrl: './entrevista-form-modal.html',
@@ -75,6 +78,7 @@ export class EntrevistaFormModal implements OnInit {
   integrantes: IntegranteEntrevista[] = [];
 
   solicitudSeleccionadaId: number | null = null;
+  codigoSolicitudSeleccionada = '';
   postulacionesSeleccionadas = new Set<number>();
   cargo = '';
   errorEnvio = '';
@@ -259,6 +263,8 @@ export class EntrevistaFormModal implements OnInit {
       this.solicitudSeleccionadaId = solicitudId ? Number(solicitudId) : null;
     }
 
+    this.codigoSolicitudSeleccionada = this.solicitudSeleccionada?.codigo ?? '';
+
     // Al cambiar de solicitud se descartan candidatos de la selección anterior.
     this.postulacionesSolicitud = [];
     this.postulacionesSeleccionadas = new Set();
@@ -267,6 +273,35 @@ export class EntrevistaFormModal implements OnInit {
       this.cargarCandidatosSolicitud(this.solicitudSeleccionadaId);
     }
     this.actualizarTitulosSugeridos();
+  }
+
+  actualizarCodigoSolicitudSeleccionada(valor: string) {
+    this.codigoSolicitudSeleccionada = valor;
+
+    const solicitud = resolverSolicitudReal(this.solicitudes, valor);
+
+    if (!valor.trim()) {
+      this.alCambiarSolicitud(null);
+      return;
+    }
+
+    if (solicitud) {
+      if (Number(solicitud.id) !== Number(this.solicitudSeleccionadaId)) {
+        this.alCambiarSolicitud(solicitud.id);
+      }
+      return;
+    }
+
+    this.solicitudSeleccionadaId = null;
+    this.postulacionesSolicitud = [];
+    this.postulacionesSeleccionadas = new Set();
+    this.cargo = '';
+    this.actualizarTitulosSugeridos();
+  }
+
+  seleccionarSolicitudAutocomplete(solicitud: SolicitudResumen | null) {
+    this.codigoSolicitudSeleccionada = solicitud?.codigo ?? '';
+    this.alCambiarSolicitud(solicitud?.id ?? null);
   }
 
   eliminarCandidatoAgenda(candidato: EntrevistaCandidatoSeleccionado) {
@@ -582,6 +617,7 @@ export class EntrevistaFormModal implements OnInit {
 
     if (solicitudInicial) {
       this.solicitudSeleccionadaId = Number(solicitudInicial.id);
+      this.codigoSolicitudSeleccionada = solicitudInicial.codigo;
     }
 
     if (this.initialData?.solicitudCandidatoId) {
@@ -790,7 +826,7 @@ export class EntrevistaFormModal implements OnInit {
     const coincidencia = limpio.match(/^SOL-(\d+)$/i);
 
     return coincidencia
-      ? `SOL-${coincidencia[1].padStart(6, '0')}`
+      ? limpio
       : limpio;
   }
 

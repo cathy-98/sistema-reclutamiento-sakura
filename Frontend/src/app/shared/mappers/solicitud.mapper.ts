@@ -33,7 +33,7 @@ export function mapearSolicitudResumen(
 ): SolicitudResumen {
   return {
     id: String(solicitud.sol_id),
-    codigo: solicitud.sol_codigo || `SOL-${String(solicitud.sol_id).padStart(6, '0')}`,
+    codigo: solicitud.sol_codigo || 'Sin código',
     nombre: solicitud.sol_titulo || 'Sin nombre',
     cliente: obtenerNombre(catalogos.clientesPorId, solicitud.sol_cliente_id, 'Cliente pendiente'),
     empresaCliente: obtenerNombre(catalogos.empresasPorClienteId, solicitud.sol_cliente_id, 'Sin empresa cliente'),

@@ -6,6 +6,8 @@ import { DatePicker } from '../../../shared/components/date-picker/date-picker';
 import { FormActions } from '../../../shared/components/form-actions/form-actions';
 import { FormField } from '../../../shared/components/form-field/form-field';
 import { Modal } from '../../../shared/components/modal/modal';
+import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
+import { resolverSolicitudReal } from '../../../shared/utils/solicitud-autocomplete';
 
 export interface CuestionarioEnvioPayload {
   solicitudId: number;
@@ -32,7 +34,7 @@ export interface CandidatoCuestionarioOption {
 
 @Component({
   selector: 'app-cuestionario-envio-modal',
-  imports: [CommonModule, ReactiveFormsModule, Modal, FormField, DatePicker, FormActions, Button],
+  imports: [CommonModule, ReactiveFormsModule, Modal, FormField, DatePicker, FormActions, Button, SolicitudAutocomplete],
   templateUrl: './cuestionario-envio-modal.html',
   styleUrl: './cuestionario-envio-modal.scss',
 })
@@ -59,6 +61,7 @@ export class CuestionarioEnvioModal {
 
   candidatosSeleccionados = new Set<number>();
   errorCandidatos = '';
+  codigoSolicitudSeleccionada = '';
 
   get fechaHoyInput() {
     const fecha = new Date();
@@ -94,8 +97,37 @@ export class CuestionarioEnvioModal {
   }
 
   cambiarSolicitud() {
+    this.codigoSolicitudSeleccionada = this.solicitudSeleccionada?.codigo ?? '';
     this.candidatosSeleccionados = new Set();
     this.errorCandidatos = '';
+  }
+
+  actualizarCodigoSolicitud(valor: string) {
+    this.codigoSolicitudSeleccionada = valor;
+
+    if (!valor.trim()) {
+      this.formulario.patchValue({ solicitudId: null });
+      this.cambiarSolicitud();
+      return;
+    }
+
+    const solicitud = resolverSolicitudReal(this.solicitudes, valor);
+
+    if (solicitud) {
+      this.formulario.patchValue({ solicitudId: Number(solicitud.id) });
+      this.cambiarSolicitud();
+      return;
+    }
+
+    this.formulario.patchValue({ solicitudId: null });
+    this.candidatosSeleccionados = new Set();
+    this.errorCandidatos = '';
+  }
+
+  seleccionarSolicitud(solicitud: SolicitudCuestionarioOption | null) {
+    this.codigoSolicitudSeleccionada = solicitud?.codigo ?? '';
+    this.formulario.patchValue({ solicitudId: solicitud?.id ?? null });
+    this.cambiarSolicitud();
   }
 
   alternarCandidato(candidatoId: number, seleccionado: boolean) {

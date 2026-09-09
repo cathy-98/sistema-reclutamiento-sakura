@@ -393,9 +393,6 @@
 }
 
 .section-row,
-.section-title,
-.select-all,
-.attach-cell,
 .summary-footer,
 .summary-count,
 .summary-actions {
@@ -408,10 +405,6 @@
   gap: 16px;
 }
 
-.section-title {
-  gap: 14px;
-}
-
 .count-pill {
   padding: 8px 12px;
   border-radius: var(--radius-sm);
@@ -421,75 +414,16 @@
   font-weight: 700;
 }
 
-.select-all,
-.attach-cell {
-  gap: 10px;
-  font-weight: 700;
-}
-
 input[type='checkbox'] {
   width: 20px;
   height: 20px;
   accent-color: var(--color-sakura);
 }
 
-.selected-table {
-  overflow: hidden;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-}
-
-.selected-header,
-.selected-row {
-  display: grid;
-  grid-template-columns: minmax(240px, 1.4fr) 130px 130px minmax(260px, 1.5fr) 100px 150px;
-  align-items: center;
-}
-
-.selected-header {
-  min-height: 48px;
-  background: var(--color-surface-soft);
-  color: var(--color-text-soft);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.selected-header span,
-.selected-row > * {
-  min-width: 0;
-  padding: 14px 18px;
-}
-
-.selected-row {
-  min-height: 104px;
-  border-top: 1px solid var(--color-border);
-}
-
 .candidate-cell {
   display: flex;
   align-items: center;
   gap: 14px;
-}
-
-.candidate-avatar {
-  display: grid;
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-sakura-soft);
-  color: var(--color-sakura);
-  font-weight: 700;
-}
-
-.level-pill {
-  display: inline-flex;
-  padding: 7px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--color-info-bg);
-  color: var(--color-info);
-  font-weight: 700;
 }
 
 .result-cell strong {
@@ -629,15 +563,6 @@ input[type='checkbox'] {
     border-left: 0;
   }
 
-  .selected-table {
-    overflow-x: auto;
-  }
-
-  .selected-header,
-  .selected-row {
-    min-width: 920px;
-  }
-
   .approvals-grid {
     grid-template-columns: 1fr;
   }
@@ -667,15 +592,6 @@ input[type='checkbox'] {
 
   .request-info article:nth-child(n + 3) {
     border-top: 1px solid var(--color-border);
-  }
-
-  .selected-table {
-    overflow-x: auto;
-  }
-
-  .selected-header,
-  .selected-row {
-    min-width: 960px;
   }
 
   .approvals-grid {

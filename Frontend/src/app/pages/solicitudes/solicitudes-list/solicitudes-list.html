@@ -15,8 +15,10 @@
     description="Usa uno o más campos para encontrar solicitudes."
     quickSearchPlaceholder="Ej. SOL-000001, Banco BICE o Frontend"
     [(quickSearch)]="filtros.busquedaRapida"
+    [quickSearchSolicitudes]="solicitudes"
     [collapsible]="true"
     [filtersExpanded]="false"
+    (quickSearchSolicitudSelected)="seleccionarSolicitudBusquedaRapida($event)"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >
@@ -28,7 +30,14 @@
 
     <label>
       Solicitud
-      <input [(ngModel)]="filtros.id" type="text" placeholder="Ej. SOL-000001" />
+      <app-solicitud-autocomplete
+        [value]="filtros.id"
+        [solicitudes]="solicitudes"
+        [selectedId]="filtros.id"
+        placeholder="Ej. SOL-000001"
+        (valueChange)="actualizarFiltroSolicitud($event)"
+        (selected)="seleccionarFiltroSolicitud($any($event))"
+      ></app-solicitud-autocomplete>
     </label>
 
     <label>
@@ -105,7 +114,7 @@
   [idSolicitud]="solicitudSeleccionadaId"
   [modo]="modoFormulario"
   [codigoSolicitudInicial]="solicitudSeleccionadaCodigo || ''"
-  [codigoSolicitudSugerido]="modoFormulario === 'crear' ? codigoSolicitudEstimado : ''"
+  [codigoSolicitudSugerido]="''"
   [solicitudResumenInicial]="solicitudSeleccionadaResumen"
   (cerrar)="cerrarFormulario()"
   (guardado)="manejarFormularioGuardado()"

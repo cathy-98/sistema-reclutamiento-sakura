@@ -46,16 +46,17 @@
           <ng-template #selectorSolicitud>
             <div class="form-grid compact-grid single">
               <app-form-field label="Solicitud" [required]="true">
-                <select
+                <app-solicitud-autocomplete
                   name="solicitudSeleccionadaId"
-                  [(ngModel)]="solicitudSeleccionadaId"
-                  (change)="alCambiarSolicitud($any($event.target).value)"
-                >
-                  <option value="">Selecciona una solicitud</option>
-                  <option *ngFor="let solicitud of solicitudes" [value]="solicitud.id">
-                    {{ solicitud.codigo }} · {{ solicitud.cargo }}
-                  </option>
-                </select>
+                  [value]="codigoSolicitudSeleccionada"
+                  [solicitudes]="solicitudes"
+                  [selectedId]="solicitudSeleccionadaId"
+                  placeholder="Selecciona una solicitud"
+                  [disabled]="cargandoDatos"
+                  [required]="true"
+                  (valueChange)="actualizarCodigoSolicitudSeleccionada($event)"
+                  (selected)="seleccionarSolicitudAutocomplete($any($event))"
+                ></app-solicitud-autocomplete>
               </app-form-field>
             </div>
 

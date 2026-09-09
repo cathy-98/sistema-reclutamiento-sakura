@@ -34,6 +34,10 @@ export class CandidateEditableMetrics implements OnInit {
   }
 
   get rentaFormateada() {
+    if (this.candidato.renta == null) {
+      return 'Sin información';
+    }
+
     return `$${this.candidato.renta.toLocaleString('es-CL')} CLP líquidos`;
   }
 
@@ -42,7 +46,7 @@ export class CandidateEditableMetrics implements OnInit {
   }
 
   iniciarEdicionRenta() {
-    this.rentaEdicion = this.candidato.renta;
+    this.rentaEdicion = this.candidato.renta ?? 0;
     this.errorRenta = '';
     this.editandoRenta = true;
   }

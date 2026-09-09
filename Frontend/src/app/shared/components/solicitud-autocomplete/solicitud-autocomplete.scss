@@ -1,0 +1,77 @@
+.solicitud-autocomplete {
+  position: relative;
+  width: 100%;
+}
+
+.solicitud-autocomplete input {
+  width: 100%;
+}
+
+.solicitud-autocomplete__list,
+.solicitud-autocomplete__empty {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-card-bg);
+  box-shadow: var(--shadow-card-soft);
+}
+
+.solicitud-autocomplete__list {
+  display: grid;
+  max-height: 230px;
+  overflow-y: auto;
+}
+
+.solicitud-autocomplete__list button {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.solicitud-autocomplete__list button:last-child {
+  border-bottom: 0;
+}
+
+.solicitud-autocomplete__list button:hover,
+.solicitud-autocomplete__list button.is-active {
+  background: var(--color-surface-soft);
+}
+
+.solicitud-autocomplete__list button.is-selected {
+  background: var(--color-sakura-soft);
+}
+
+.solicitud-autocomplete__list strong {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.solicitud-autocomplete__list span,
+.solicitud-autocomplete__empty {
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solicitud-autocomplete__empty {
+  padding: 10px 12px;
+}

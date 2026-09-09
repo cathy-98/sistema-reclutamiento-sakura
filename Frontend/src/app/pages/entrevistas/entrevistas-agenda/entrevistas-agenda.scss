@@ -485,10 +485,6 @@
   margin: 0 0 6px;
 }
 
-.empty-state p {
-  margin: 0;
-}
-
 .sr-only {
   border: 0;
   clip: rect(0 0 0 0);
@@ -508,10 +504,6 @@
 
   .calendar-panel {
     max-width: 420px;
-  }
-
-  .card-content dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -547,8 +539,7 @@
     flex-direction: column;
   }
 
-  .interview-card,
-  .card-content dl {
+  .interview-card {
     grid-template-columns: 1fr;
   }
 }

@@ -10,8 +10,10 @@
     description="Usa uno o más campos para encontrar entrevistas."
     quickSearchPlaceholder="Buscar por solicitud, candidato o tipo"
     [(quickSearch)]="filtros.busquedaRapida"
+    [quickSearchSolicitudes]="solicitudesFiltro"
     [collapsible]="true"
     [filtersExpanded]="false"
+    (quickSearchSolicitudSelected)="seleccionarSolicitudBusquedaRapida($event)"
     (search)="buscar()"
     (clear)="limpiarFiltros()"
   >

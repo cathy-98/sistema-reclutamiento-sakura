@@ -129,7 +129,8 @@ label {
   font-weight: 700;
 }
 
-input {
+input,
+::ng-deep app-solicitud-autocomplete input {
   min-height: 54px;
   padding: 0 18px;
   border: 1px solid var(--color-border);
@@ -338,11 +339,6 @@ dd {
 .state-chip.is-danger {
   background: var(--color-danger-bg);
   color: var(--color-danger);
-}
-
-.state-chip.is-info {
-  background: var(--color-info-bg);
-  color: var(--color-info);
 }
 
 .empty-process {

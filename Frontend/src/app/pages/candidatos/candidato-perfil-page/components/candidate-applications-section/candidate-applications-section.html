@@ -33,13 +33,14 @@
   <form class="application-search" (ngSubmit)="busquedaChange.emit(busqueda)">
     <label>
       Buscar
-      <input
+      <app-solicitud-autocomplete
         name="busquedaPostulacion"
-        [ngModel]="busqueda"
-        (ngModelChange)="busquedaChange.emit($event)"
-        type="search"
+        [value]="busqueda"
+        [solicitudes]="solicitudesBusqueda"
         placeholder="Insertar búsqueda"
-      />
+        (valueChange)="busquedaChange.emit($event)"
+        (selected)="seleccionarSolicitudBusqueda($event)"
+      ></app-solicitud-autocomplete>
     </label>
     <app-button>Buscar</app-button>
   </form>

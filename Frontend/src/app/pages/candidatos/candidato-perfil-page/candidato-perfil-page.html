@@ -2,7 +2,7 @@
   <section class="profile-page">
     <header class="profile-hero">
       <app-candidate-profile-header
-        *ngIf="perfilCargado; else profileHeroSkeleton"
+        *ngIf="perfilCargado && !errorPerfil; else profileHeroState"
         [candidato]="candidato"
         [matchClass]="matchClass"
         [postulaciones]="postulaciones"
@@ -22,27 +22,38 @@
         (postulacionSeleccionadaIdChange)="seleccionarPostulacion($event)"
       ></app-candidate-profile-header>
 
-      <ng-template #profileHeroSkeleton>
-        <div class="profile-hero-skeleton" aria-hidden="true">
-          <div class="skeleton-line skeleton-back"></div>
-          <div class="skeleton-layout">
-            <div>
-              <div class="skeleton-line skeleton-title"></div>
-              <div class="skeleton-line skeleton-text"></div>
-              <div class="skeleton-line skeleton-summary"></div>
-              <div class="skeleton-line skeleton-actions"></div>
+      <ng-template #profileHeroState>
+        <app-state-message
+          *ngIf="perfilCargado && errorPerfil; else profileHeroSkeleton"
+          type="error"
+          title="No se pudo cargar la información del candidato"
+          [message]="errorPerfil"
+          actionLabel="Reintentar"
+          (action)="cargarPerfilM3()"
+        ></app-state-message>
+
+        <ng-template #profileHeroSkeleton>
+          <div class="profile-hero-skeleton" aria-hidden="true">
+            <div class="skeleton-line skeleton-back"></div>
+            <div class="skeleton-layout">
+              <div>
+                <div class="skeleton-line skeleton-title"></div>
+                <div class="skeleton-line skeleton-text"></div>
+                <div class="skeleton-line skeleton-summary"></div>
+                <div class="skeleton-line skeleton-actions"></div>
+              </div>
+              <div>
+                <div class="skeleton-line skeleton-badge"></div>
+                <div class="skeleton-line skeleton-select"></div>
+              </div>
             </div>
-            <div>
-              <div class="skeleton-line skeleton-badge"></div>
-              <div class="skeleton-line skeleton-select"></div>
+            <div class="skeleton-cards">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
             </div>
           </div>
-          <div class="skeleton-cards">
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-          </div>
-        </div>
+        </ng-template>
       </ng-template>
 
      <!--M3: Observaciones ocultas según definición funcional actual.
@@ -55,7 +66,7 @@
 -->
     </header>
 
-    <div class="profile-tabs-bar">
+    <div class="profile-tabs-bar" *ngIf="perfilCargado && !errorPerfil">
       <app-candidato-profile-tabs
         [tabs]="tabs"
         [activeTab]="tabActiva"
@@ -63,7 +74,11 @@
       ></app-candidato-profile-tabs>
     </div>
 
-    <section class="profile-content" aria-label="Contenido del perfil candidato">
+    <section
+      *ngIf="perfilCargado && !errorPerfil"
+      class="profile-content"
+      aria-label="Contenido del perfil candidato"
+    >
       @switch (tabActiva) {
         @case ('experiencia') {
           <section class="section-stack">

@@ -2,6 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from '../../../../../shared/components/button/button';
+import { SolicitudAutocomplete } from '../../../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
+import {
+  SolicitudAutocompleteOption,
+  codigoSolicitudCoincide,
+} from '../../../../../shared/utils/solicitud-autocomplete';
 import {
   CandidatoPerfil,
   EntrevistaPerfilResumen,
@@ -11,7 +16,7 @@ import {
 
 @Component({
   selector: 'app-candidate-applications-section',
-  imports: [CommonModule, FormsModule, Button],
+  imports: [CommonModule, FormsModule, Button, SolicitudAutocomplete],
   templateUrl: './candidate-applications-section.html',
   styleUrl: './candidate-applications-section.scss',
 })
@@ -29,7 +34,19 @@ export class CandidateApplicationsSection {
 
   get postulacionesFiltradas() {
     const texto = this.busqueda.trim().toLowerCase();
-    return this.postulaciones.filter((postulacion) => postulacion.join(' ').toLowerCase().includes(texto));
+    return this.postulaciones.filter((postulacion) =>
+      postulacion.join(' ').toLowerCase().includes(texto) ||
+      codigoSolicitudCoincide(postulacion[0], this.busqueda),
+    );
+  }
+
+  get solicitudesBusqueda(): SolicitudAutocompleteOption[] {
+    return this.postulaciones.map((postulacion) => ({
+      id: postulacion[0],
+      codigo: postulacion[0],
+      cargo: postulacion[2],
+      cliente: postulacion[1],
+    }));
   }
 
   get postulacionSeleccionada() {
@@ -59,6 +76,10 @@ export class CandidateApplicationsSection {
 
   formatoContador(valor: number) {
     return String(valor).padStart(2, '0');
+  }
+
+  seleccionarSolicitudBusqueda(solicitud: SolicitudAutocompleteOption | null) {
+    this.busquedaChange.emit(solicitud?.codigo?.trim() ?? '');
   }
 
   estadoPostulacionClase(estado: string) {

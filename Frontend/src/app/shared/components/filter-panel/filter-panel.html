@@ -34,15 +34,36 @@
       class="filter-search-area"
       *ngIf="showQuickSearch"
     >
-      <label class="quick-search">
+      <label class="quick-search" (click)="$event.stopPropagation()">
         {{ quickSearchLabel }}
 
         <input
           [ngModel]="quickSearch"
           type="search"
           [placeholder]="quickSearchPlaceholder"
+          autocomplete="off"
+          (focus)="focusQuickSearch()"
           (ngModelChange)="updateQuickSearch($event)"
+          (keydown)="handleQuickSearchKeydown($event)"
         />
+
+        <div class="quick-search__suggestions" *ngIf="showQuickSearchSolicitudOptions" role="listbox">
+          <button
+            type="button"
+            *ngFor="let solicitud of quickSearchSolicitudOptions; let index = index"
+            role="option"
+            [class.is-active]="index === quickSearchActiveSuggestion"
+            (mouseenter)="quickSearchActiveSuggestion = index"
+            (click)="selectQuickSearchSolicitud(solicitud)"
+          >
+            <strong>{{ solicitud.codigo }}</strong>
+            <span>{{ solicitud.cargo || solicitud.nombre || 'Sin cargo' }}</span>
+          </button>
+        </div>
+
+        <span class="quick-search__empty" *ngIf="showQuickSearchSolicitudEmpty">
+          No se encontraron solicitudes.
+        </span>
       </label>
 
 

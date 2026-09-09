@@ -944,12 +944,7 @@ export class EntrevistasService {
 
       idSolicitud:
         entrevista.solicitud_codigo ??
-        `SOL-${String(
-          entrevista.solicitud_id,
-        ).padStart(
-          6,
-          '0',
-        )}`,
+        `Solicitud ${entrevista.solicitud_id}`,
 
       candidato:
         entrevista.candidato_nombre ??
