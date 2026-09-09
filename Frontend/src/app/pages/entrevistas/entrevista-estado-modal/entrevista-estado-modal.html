@@ -18,13 +18,32 @@
     </section>
 
     <p class="state-note compact-note" *ngIf="cargandoDetalle && !detalle">
-      Cargando detalle de entrevista...
+      {{ mostrarResultadosPorArea || feedbackSoloConsulta ? 'Cargando feedback...' : 'Cargando detalle de entrevista...' }}
     </p>
 
     <section class="detail-view" *ngIf="esLectura && entrevista && detalle">
-      <h4 class="section-title">Datos de la entrevista</h4>
+      <h4 class="section-title">Información de la entrevista</h4>
 
       <dl class="detail-grid">
+        <div>
+          <dt>Solicitud</dt>
+          <dd class="request-state-value">
+            <span>{{ solicitudDetalle }}</span>
+            <span
+              class="request-state-helper"
+              *ngIf="solicitudCancelada"
+              tabindex="0"
+              title="La solicitud está cancelada. No permite agendar nuevas entrevistas."
+              aria-label="La solicitud está cancelada. No permite agendar nuevas entrevistas."
+            >
+              i
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt>Candidato</dt>
+          <dd>{{ entrevista.candidato }}</dd>
+        </div>
         <div>
           <dt>Fecha</dt>
           <dd>{{ fechaEntrevistaLegible }}</dd>
@@ -44,19 +63,8 @@
           </dd>
         </div>
         <div>
-          <dt>Solicitud</dt>
-          <dd class="request-state-value">
-            <span>{{ solicitudDetalle }}</span>
-            <span
-              class="request-state-helper"
-              *ngIf="solicitudCancelada"
-              tabindex="0"
-              title="La solicitud está cancelada. No permite agendar nuevas entrevistas."
-              aria-label="La solicitud está cancelada. No permite agendar nuevas entrevistas."
-            >
-              i
-            </span>
-          </dd>
+          <dt>Estado postulación</dt>
+          <dd>{{ estadoPostulacionActual }}</dd>
         </div>
         <div class="wide">
           <dt>Participantes</dt>
@@ -75,27 +83,31 @@
         </div>
       </dl>
 
+      <section class="detail-section" *ngIf="indicacionesDetalle">
+        <h4 class="section-title">Indicaciones para la entrevista</h4>
+        <p class="detail-text">{{ indicacionesDetalle }}</p>
+      </section>
+
       <section class="detail-section">
         <header class="section-heading">
-          <h4 class="section-title">Feedback de entrevista</h4>
+          <h4 class="section-title">Resultado de la entrevista</h4>
           <span *ngIf="totalFeedbacksRegistrados > 0">{{ cantidadFeedbacksDetalle }}</span>
         </header>
 
         <div class="feedback-history" *ngIf="feedbacksRegistrados.length > 0; else feedbackEmpty">
           <article class="feedback-history__item" *ngFor="let feedback of feedbacksRegistrados">
             <header class="feedback-history__header">
-              <strong>{{ autorFeedback(feedback) }}</strong>
-              <span>{{ fechaFeedback(feedback) }}</span>
+              <strong class="feedback-history__result-text">{{ etiquetaResultado(feedback.resultado_nombre) }}</strong>
+              <span *ngIf="feedback.tipo_entrevista_nombre">{{ feedback.tipo_entrevista_nombre }}</span>
             </header>
 
-            <p class="feedback-history__type">{{ feedback.tipo_entrevista_nombre || 'Entrevista' }}</p>
-            <p class="feedback-history__result">{{ etiquetaResultado(feedback.resultado_nombre) }}</p>
+            <p class="feedback-history__meta">{{ autorFeedback(feedback) }} · {{ fechaFeedback(feedback) }}</p>
             <p class="feedback-history__observation">{{ feedback.observacion || 'Sin observaciones registradas.' }}</p>
           </article>
         </div>
 
         <ng-template #feedbackEmpty>
-          <p class="empty-note">Aún no se han registrado feedbacks para esta entrevista.</p>
+          <p class="empty-note">Aún no hay feedback registrado para esta entrevista.</p>
         </ng-template>
       </section>
     </section>
@@ -140,7 +152,7 @@
         Motivo *
         <textarea
           formControlName="motivo"
-          maxlength="500"
+          maxlength="300"
           rows="4"
           placeholder="Indica el motivo para continuar"
         ></textarea>
@@ -148,8 +160,10 @@
     </section>
 
     <section class="feedback-form" *ngIf="mostrarResultadosPorArea">
+      <h4 class="section-title">Registrar resultado</h4>
+
       <fieldset class="result-selector">
-        <legend>Resultado de la entrevista *</legend>
+        <legend>Resultado *</legend>
 
         <label
           class="choice-pill"
@@ -168,21 +182,24 @@
       </fieldset>
 
       <label class="observations-field">
-        Observaciones *
+        Observación
         <textarea
           [(ngModel)]="evaluacionTipo(tipoFeedbackActivoId).observacion"
           [ngModelOptions]="{ standalone: true }"
-          maxlength="300"
+          [attr.maxlength]="observacionMaxLength"
           rows="4"
-          placeholder="Escribe tus observaciones sobre la entrevista"
+          placeholder="Escribe una observación sobre la entrevista"
+          aria-describedby="contador-observacion-feedback"
         ></textarea>
-        <small>{{ evaluacionTipo(tipoFeedbackActivoId).observacion.length }} / 300</small>
+        <small id="contador-observacion-feedback" aria-live="polite">
+          {{ observacionFeedbackLongitud(tipoFeedbackActivoId) }} / {{ observacionMaxLength }}
+        </small>
       </label>
 
-      <p class="state-error" *ngIf="errorEvaluaciones">
+      <p class="state-error" *ngIf="errorEvaluaciones" role="alert">
         {{ errorEvaluaciones }}
       </p>
-      <p class="state-error" *ngIf="errorLocalEvaluaciones">
+      <p class="state-error" *ngIf="errorLocalEvaluaciones" role="alert">
         {{ errorLocalEvaluaciones }}
       </p>
       <p class="state-success" *ngIf="mensajeEvaluaciones && !errorEvaluaciones && !errorLocalEvaluaciones">
@@ -197,39 +214,39 @@
 
       <div class="feedback-history" *ngIf="feedbacksRegistrados.length > 0; else feedbackSoloConsultaEmpty">
         <article class="feedback-history__item" *ngFor="let feedback of feedbacksRegistrados">
-          <header>
-            <strong>{{ autorFeedback(feedback) }}</strong>
-            <span>{{ feedback.tipo_entrevista_nombre || 'Entrevista' }} · {{ fechaFeedback(feedback) }}</span>
+          <header class="feedback-history__header">
+            <strong class="feedback-history__result-text">{{ etiquetaResultado(feedback.resultado_nombre) }}</strong>
+            <span *ngIf="feedback.tipo_entrevista_nombre">{{ feedback.tipo_entrevista_nombre }}</span>
           </header>
 
-          <p class="feedback-history__result">{{ etiquetaResultado(feedback.resultado_nombre) }}</p>
+          <p class="feedback-history__meta">{{ autorFeedback(feedback) }} · {{ fechaFeedback(feedback) }}</p>
           <p class="feedback-history__observation">{{ feedback.observacion || 'Sin observaciones registradas.' }}</p>
         </article>
       </div>
 
       <ng-template #feedbackSoloConsultaEmpty>
-        <p class="empty-note">Aún no se han registrado feedbacks para esta entrevista.</p>
+        <p class="empty-note">Aún no hay feedback registrado para esta entrevista.</p>
       </ng-template>
     </section>
 
     <details class="feedback-disclosure" *ngIf="mostrarResultadosPorArea && feedbacksRegistrados.length > 0">
-      <summary>{{ textoFeedbacksRegistrados }} · Ver anteriores</summary>
+      <summary>Resultados registrados · {{ textoFeedbacksRegistrados }}</summary>
 
       <div class="feedback-history">
         <article class="feedback-history__item" *ngFor="let feedback of feedbacksRegistrados">
-          <header>
-            <strong>{{ autorFeedback(feedback) }}</strong>
-            <span>{{ feedback.tipo_entrevista_nombre || 'Entrevista' }} · {{ fechaFeedback(feedback) }}</span>
+          <header class="feedback-history__header">
+            <strong class="feedback-history__result-text">{{ etiquetaResultado(feedback.resultado_nombre) }}</strong>
+            <span *ngIf="feedback.tipo_entrevista_nombre">{{ feedback.tipo_entrevista_nombre }}</span>
           </header>
 
-          <p class="feedback-history__result">{{ etiquetaResultado(feedback.resultado_nombre) }}</p>
+          <p class="feedback-history__meta">{{ autorFeedback(feedback) }} · {{ fechaFeedback(feedback) }}</p>
           <p class="feedback-history__observation">{{ feedback.observacion || 'Sin observaciones registradas.' }}</p>
         </article>
       </div>
     </details>
 
     <p class="state-note compact-note" *ngIf="entrevistaRealizadaSinEvaluacionDisponible">
-      No tienes permisos para registrar feedback en esta entrevista.
+      No tienes permisos para registrar el resultado de esta entrevista.
     </p>
 
     <p class="state-error" *ngIf="error && !mostrarResultadosPorArea">
@@ -244,10 +261,10 @@
     <app-button
       *ngIf="mostrarResultadosPorArea"
       [variant]="varianteAccion"
-      [disabled]="guardando || guardandoEvaluaciones || !evaluacionTipo(tipoFeedbackActivoId).resultadoId || !evaluacionTipo(tipoFeedbackActivoId).observacion.trim()"
+      [disabled]="guardando || guardandoEvaluaciones || !evaluacionTipo(tipoFeedbackActivoId).resultadoId"
       (pressed)="enviar()"
     >
-      {{ guardando || guardandoEvaluaciones ? 'Guardando...' : 'Guardar feedback' }}
+      {{ guardando || guardandoEvaluaciones ? 'Guardando resultado...' : 'Guardar resultado' }}
     </app-button>
     <app-button
       *ngIf="mostrarBotonGestion"

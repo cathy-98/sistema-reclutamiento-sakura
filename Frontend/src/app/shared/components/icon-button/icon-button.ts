@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-export type IconButtonName = 'eye' | 'download' | 'calendar' | 'edit' | 'cancel' | 'trash' | 'mail';
+export type IconButtonName = 'eye' | 'download' | 'calendar' | 'edit' | 'cancel' | 'trash' | 'mail' | 'check';
 
 @Component({
   selector: 'app-icon-button',

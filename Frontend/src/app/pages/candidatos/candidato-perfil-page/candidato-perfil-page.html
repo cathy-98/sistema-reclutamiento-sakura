@@ -109,12 +109,9 @@
           <section class="section-stack">
             @defer {
               <app-candidate-match-section
-                [candidato]="candidato"
                 [matchClass]="matchClass"
                 [matchText]="matchTexto"
                 [habilidades]="habilidadesComparadas"
-                [fortalezas]="fortalezasMatch"
-                [areasMejora]="areasMejoraMatch"
               ></app-candidate-match-section>
             } @placeholder {
               <p class="section-loading">Cargando match...</p>

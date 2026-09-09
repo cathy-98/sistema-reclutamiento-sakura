@@ -19,7 +19,7 @@ export class CandidateEditableMetrics implements OnInit {
   @Input() matchText = 'Sin match';
   @Output() rentaSave = new EventEmitter<number>();
   @Output() disponibilidadSave = new EventEmitter<string>();
-  public disponibilidades: string[] = ['Inmediata', '15 días', '30 días', 'A convenir'];
+  public disponibilidades: string[] = [];
   editandoRenta = false;
   editandoDisponibilidad = false;
   rentaEdicion = 0;
@@ -91,7 +91,6 @@ export class CandidateEditableMetrics implements OnInit {
 
   cargarCatalogoDisponibilidades() {
     // M3 catalogos: GET /catalogos/disponibilidades -> selector Disponibilidad del perfil.
-    // Si el catalogo falla, CatalogosService devuelve [] y se mantienen las opciones locales.
     this.catalogosService
       .listarDisponibilidadesSeguro()
       .pipe(take(1))

@@ -368,6 +368,24 @@ td.wrap-cell .person-cell strong {
   color: var(--color-sakura);
 }
 
+.row-menu-list button.is-success {
+  color: var(--color-success);
+}
+
+.row-menu-list button.is-success:hover:not(:disabled) {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.row-menu-list button.is-danger {
+  color: var(--color-danger);
+}
+
+.row-menu-list button.is-danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
 .row-menu-list button:disabled {
   color: var(--color-muted);
   cursor: not-allowed;

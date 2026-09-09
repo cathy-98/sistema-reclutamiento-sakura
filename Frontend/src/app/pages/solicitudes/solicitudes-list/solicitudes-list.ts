@@ -23,6 +23,7 @@ import { obtenerMensajeError } from '../../../shared/utils/api-error';
 import { SolicitudFormModal } from '../solicitud-form-modal/solicitud-form-modal';
 
 const SOLICITUDES_LOAD_TIMEOUT_MS = 4000;
+const OBSERVACION_CIERRE_MAX_LENGTH = 300;
 
 interface FiltrosSolicitudes {
   busquedaRapida: string;
@@ -57,7 +58,11 @@ export class SolicitudesList implements OnInit {
   errorCarga = '';
   alerta: AlertaUi | null = null;
   mostrarFormulario = false;
+  mostrarConfirmacionPublicacion = false;
   mostrarConfirmacionCancelacion = false;
+  mostrarConfirmacionFinalizacion = false;
+  procesandoCierre = false;
+  errorCierre = '';
   solicitudSeleccionadaId: string | null = null;
   solicitudSeleccionadaCodigo: string | null = null;
   solicitudSeleccionadaResumen: SolicitudResumen | null = null;
@@ -67,6 +72,7 @@ export class SolicitudesList implements OnInit {
   paginaActual = 1;
   registrosPorPagina = 5;
   filtros: FiltrosSolicitudes = this.filtrosIniciales();
+  readonly observacionCierreMaxLength = OBSERVACION_CIERRE_MAX_LENGTH;
 
   readonly columnas: DataTableColumn<SolicitudResumen>[] = [
     {
@@ -176,6 +182,14 @@ export class SolicitudesList implements OnInit {
     return this.puedeCancelarSolicitud && this.estadoPermiteCancelacion(solicitud.estado);
   }
 
+  puedeFinalizarSolicitudFila(solicitud: SolicitudResumen) {
+    return this.puedeCancelarSolicitud && this.estadoPermiteFinalizacion(solicitud.estado);
+  }
+
+  puedePublicarSolicitudFila(solicitud: SolicitudResumen) {
+    return this.puedeEditarSolicitud && this.estadoPermitePublicacion(solicitud.estado);
+  }
+
   get codigoSolicitudEstimado() {
     const correlativos = this.solicitudes
       .map((solicitud) => /^SOL-(\d{6})$/.exec(solicitud.codigo)?.[1])
@@ -235,11 +249,25 @@ export class SolicitudesList implements OnInit {
         visible: () => this.puedeEditarSolicitud,
       },
       {
+        id: 'publicar',
+        label: 'Publicar solicitud',
+        icon: 'check',
+        tone: 'success',
+        visible: (solicitud) => this.puedePublicarSolicitudFila(solicitud),
+      },
+      {
+        id: 'finalizar',
+        label: 'Finalizar solicitud',
+        icon: 'check',
+        tone: 'success',
+        visible: (solicitud) => this.puedeFinalizarSolicitudFila(solicitud),
+      },
+      {
         id: 'cancelar',
         label: 'Cancelar solicitud',
         icon: 'cancel',
-        visible: () => this.puedeCancelarSolicitud,
-        disabled: (solicitud) => !this.puedeCancelarSolicitudFila(solicitud),
+        tone: 'danger',
+        visible: (solicitud) => this.puedeCancelarSolicitudFila(solicitud),
       },
     ];
   }
@@ -318,6 +346,28 @@ export class SolicitudesList implements OnInit {
     this.mostrarFormulario = true;
   }
 
+  abrirConfirmacionPublicacion(solicitud: SolicitudResumen) {
+    if (!this.puedeEditarSolicitud) {
+      this.mostrarAlertaPermisos();
+      return;
+    }
+
+    if (!this.estadoPermitePublicacion(solicitud.estado)) {
+      this.mostrarAlerta({
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: `No puedes publicar una solicitud en estado "${solicitud.estado}".`,
+      });
+      return;
+    }
+
+    this.solicitudSeleccionadaId = solicitud.id;
+    this.solicitudSeleccionadaCodigo = solicitud.codigo;
+    this.solicitudSeleccionadaResumen = solicitud;
+    this.errorCierre = '';
+    this.mostrarConfirmacionPublicacion = true;
+  }
+
   abrirConfirmacionCancelacion(solicitud: SolicitudResumen) {
     if (!this.puedeCancelarSolicitud) {
       this.mostrarAlertaPermisos();
@@ -336,7 +386,30 @@ export class SolicitudesList implements OnInit {
     this.solicitudSeleccionadaId = solicitud.id;
     this.solicitudSeleccionadaCodigo = solicitud.codigo;
     this.solicitudSeleccionadaResumen = solicitud;
+    this.errorCierre = '';
     this.mostrarConfirmacionCancelacion = true;
+  }
+
+  abrirConfirmacionFinalizacion(solicitud: SolicitudResumen) {
+    if (!this.puedeCancelarSolicitud) {
+      this.mostrarAlertaPermisos();
+      return;
+    }
+
+    if (!this.estadoPermiteFinalizacion(solicitud.estado)) {
+      this.mostrarAlerta({
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: `No puedes finalizar una solicitud en estado "${solicitud.estado}".`,
+      });
+      return;
+    }
+
+    this.solicitudSeleccionadaId = solicitud.id;
+    this.solicitudSeleccionadaCodigo = solicitud.codigo;
+    this.solicitudSeleccionadaResumen = solicitud;
+    this.errorCierre = '';
+    this.mostrarConfirmacionFinalizacion = true;
   }
 
   cambiarPagina(pagina: number) {
@@ -363,59 +436,50 @@ export class SolicitudesList implements OnInit {
       return;
     }
 
+    if (evento.action === 'publicar') {
+      this.abrirConfirmacionPublicacion(evento.row);
+      return;
+    }
+
     if (evento.action === 'cancelar') {
       this.abrirConfirmacionCancelacion(evento.row);
+      return;
+    }
+
+    if (evento.action === 'finalizar') {
+      this.abrirConfirmacionFinalizacion(evento.row);
     }
   }
 
   cerrarConfirmacionCancelacion() {
     this.mostrarConfirmacionCancelacion = false;
-    this.solicitudSeleccionadaId = null;
-    this.solicitudSeleccionadaCodigo = null;
-    this.solicitudSeleccionadaResumen = null;
+    this.limpiarSeleccionCierre();
+  }
+
+  cerrarConfirmacionFinalizacion() {
+    this.mostrarConfirmacionFinalizacion = false;
+    this.limpiarSeleccionCierre();
+  }
+
+  cerrarConfirmacionPublicacion() {
+    this.mostrarConfirmacionPublicacion = false;
+    this.limpiarSeleccionCierre();
+  }
+
+  confirmarPublicacionSolicitud() {
+    this.confirmarCambioEstado('En publicación', {
+      mensajeExito: 'Solicitud publicada correctamente.',
+      mensajeError: 'No se pudo publicar la solicitud.',
+      cerrar: () => this.cerrarConfirmacionPublicacion(),
+    });
   }
 
   confirmarCancelacionSolicitud(observacion: string) {
-    if (!this.solicitudSeleccionadaId) {
-      return;
-    }
+    this.confirmarCambioTerminal('Cancelado', observacion);
+  }
 
-    const observacionCancelacion = observacion.trim();
-
-    if (!observacionCancelacion) {
-      this.mostrarAlerta({
-        tipo: 'warning',
-        variante: 'soft',
-        mensaje: 'Ingresa una observación para cancelar la solicitud.',
-      });
-      return;
-    }
-
-    this.solicitudesService
-      .cambiarEstado(
-        this.solicitudSeleccionadaId,
-        'Cancelado',
-        observacionCancelacion,
-      )
-      .subscribe({
-        next: () => {
-          this.aplicarCancelacionEnListado(this.solicitudSeleccionadaId as string);
-          this.mostrarAlerta({
-            tipo: 'success',
-            variante: 'soft',
-            mensaje: 'Solicitud cancelada correctamente.',
-          });
-          this.cerrarConfirmacionCancelacion();
-        },
-        error: (error) => {
-          this.mostrarAlerta({
-            tipo: 'danger',
-            variante: 'soft',
-            mensaje: obtenerMensajeError(error, 'No se pudo cancelar la solicitud.'),
-          });
-          this.cerrarConfirmacionCancelacion();
-        },
-      });
+  confirmarFinalizacionSolicitud(observacion: string) {
+    this.confirmarCambioTerminal('Cerrado', observacion);
   }
 
   cerrarFormulario() {
@@ -499,19 +563,113 @@ export class SolicitudesList implements OnInit {
   }
 
   private estadoPermiteCancelacion(estado: string) {
-    return ['pendiente', 'en curso', 'en publicacion', 'en entrevistas', 'pausado'].includes(this.normalizar(estado));
+    return ['pendiente', 'en publicacion', 'en entrevistas', 'pausado'].includes(this.normalizar(estado));
   }
 
-  private aplicarCancelacionEnListado(idSolicitud: string) {
-    // Solo refleja el estado cancelado; no mezcla observaciones de cierre con descripción.
-    this.solicitudes = this.solicitudes.map((solicitud) =>
-      solicitud.id === idSolicitud
-        ? {
-            ...solicitud,
-            estado: 'Cancelado',
-          }
-        : solicitud,
-    );
+  private estadoPermitePublicacion(estado: string) {
+    // REGLA UX:
+    // La edición modifica datos de la solicitud.
+    // Los cambios de estado se gestionan mediante acciones del flujo,
+    // no desde el formulario general de edición.
+    return this.normalizar(estado) === 'pendiente';
+  }
+
+  private estadoPermiteFinalizacion(estado: string) {
+    return this.normalizar(estado) === 'en entrevistas';
+  }
+
+  private confirmarCambioTerminal(estado: 'Cancelado' | 'Cerrado', observacion: string) {
+    if (!this.solicitudSeleccionadaId || this.procesandoCierre) {
+      return;
+    }
+
+    const observacionCierre = observacion.trim();
+
+    if (!observacionCierre) {
+      this.errorCierre = 'Ingresa una observación para continuar.';
+      return;
+    }
+
+    if (observacionCierre.length > OBSERVACION_CIERRE_MAX_LENGTH) {
+      this.errorCierre = `La observación no puede superar ${OBSERVACION_CIERRE_MAX_LENGTH} caracteres.`;
+      return;
+    }
+
+    const solicitudId = this.solicitudSeleccionadaId;
+    const esFinalizacion = estado === 'Cerrado';
+    this.confirmarCambioEstado(estado, {
+      solicitudId,
+      observacion: observacionCierre,
+      mensajeExito: esFinalizacion
+        ? 'Solicitud finalizada correctamente.'
+        : 'Solicitud cancelada correctamente.',
+      mensajeError: esFinalizacion
+        ? 'No se pudo finalizar la solicitud.'
+        : 'No se pudo cancelar la solicitud.',
+      cerrar: () => {
+        if (esFinalizacion) {
+          this.cerrarConfirmacionFinalizacion();
+          return;
+        }
+
+        this.cerrarConfirmacionCancelacion();
+      },
+    });
+  }
+
+  private confirmarCambioEstado(
+    estado: 'En publicación' | 'Cancelado' | 'Cerrado',
+    opciones: {
+      solicitudId?: string;
+      observacion?: string;
+      mensajeExito: string;
+      mensajeError: string;
+      cerrar: () => void;
+    },
+  ) {
+    const solicitudId = opciones.solicitudId ?? this.solicitudSeleccionadaId;
+
+    if (!solicitudId || this.procesandoCierre) {
+      return;
+    }
+
+    this.procesandoCierre = true;
+    this.errorCierre = '';
+
+    this.solicitudesService
+      .cambiarEstado(solicitudId, estado, opciones.observacion ?? '')
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.procesandoCierre = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe({
+        next: () => {
+          opciones.cerrar();
+          this.mostrarAlerta({
+            tipo: 'success',
+            variante: 'soft',
+            mensaje: opciones.mensajeExito,
+          });
+          this.cargarSolicitudes({ conservarAlerta: true });
+        },
+        error: (error) => {
+          this.errorCierre = obtenerMensajeError(error, opciones.mensajeError);
+        },
+      });
+  }
+
+  private limpiarSeleccionCierre() {
+    if (this.procesandoCierre) {
+      return;
+    }
+
+    this.solicitudSeleccionadaId = null;
+    this.solicitudSeleccionadaCodigo = null;
+    this.solicitudSeleccionadaResumen = null;
+    this.errorCierre = '';
   }
 
   obtenerIdSolicitud(solicitud: SolicitudResumen) {

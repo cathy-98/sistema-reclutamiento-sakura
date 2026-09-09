@@ -212,8 +212,20 @@ export interface CandidatoPerfil extends CandidatoResumen {
 }
 
 export interface CandidatoVacantePayload {
-  slcd_solicitud_id: number;
-  slcd_puntaje_compatibilidad?: number;
+  slcd_pretension_renta?: number | null;
+  slcd_puntaje_compatibilidad?: number | null;
+  slcd_observaciones?: string | null;
+}
+
+export interface EvaluacionExcluyentesApi {
+  cumple_excluyentes: boolean;
+  habilidades_faltantes: Record<string, unknown>[];
+  advertencia?: string | null;
+}
+
+export interface PostulacionConEvaluacionApi {
+  postulacion: PostulacionCandidatoApi;
+  evaluacion: EvaluacionExcluyentesApi;
 }
 
 export interface CandidatoHabilidadPayload {
@@ -304,9 +316,16 @@ export class CandidatosService {
     return this.http.post<ImportCvResponse[]>(`${this.apiUrl}/importar-cvs`, formData);
   }
 
-  vincularVacante(candidatoId: string, payload: CandidatoVacantePayload) {
+  vincularVacante(
+    candidatoId: string,
+    solicitudId: string | number,
+    payload: CandidatoVacantePayload = {},
+  ) {
     // Integracion interna M3: POST /solicitudes/{solicitud_id}/candidatos/{candidato_id}.
-    return this.http.post(`/api/solicitudes/${payload.slcd_solicitud_id}/candidatos/${candidatoId}`, payload);
+    return this.http.post<PostulacionConEvaluacionApi>(
+      `/api/solicitudes/${solicitudId}/candidatos/${candidatoId}`,
+      payload,
+    );
   }
 
   agregarHabilidad(candidatoId: string, payload: CandidatoHabilidadPayload) {

@@ -18,6 +18,9 @@ export class ConfirmDialog {
   @Input() observacionLabel = '';
   @Input() observacionPlaceholder = '';
   @Input() observacionRequerida = false;
+  @Input() observacionMaxLength: number | null = null;
+  @Input() errorMessage = '';
+  @Input() procesando = false;
 
   @Output() cancelar = new EventEmitter<void>();
   @Output() confirmar = new EventEmitter<string>();
@@ -37,8 +40,16 @@ export class ConfirmDialog {
     return this.observacionRequerida && !this.observacion.trim();
   }
 
+  get observacionExcedeMaximo() {
+    return this.observacionMaxLength != null && this.observacion.length > this.observacionMaxLength;
+  }
+
+  get confirmarDeshabilitado() {
+    return this.procesando || this.observacionInvalida || this.observacionExcedeMaximo;
+  }
+
   confirmarAccion() {
-    if (this.observacionInvalida) {
+    if (this.confirmarDeshabilitado) {
       return;
     }
 

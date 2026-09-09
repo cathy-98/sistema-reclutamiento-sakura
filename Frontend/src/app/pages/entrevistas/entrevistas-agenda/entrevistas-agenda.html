@@ -16,7 +16,7 @@
   <section class="agenda-filters" aria-label="Filtros de agenda">
     <button
       type="button"
-      class="today-button"
+      class="filter-button"
       [class.is-active]="fechaSeleccionada === fechaHoy()"
       (click)="seleccionarHoy()"
     >
@@ -24,22 +24,62 @@
     </button>
 
     <div class="state-filter" aria-label="Filtrar por estado de entrevista">
-      <span>Estado entrevista</span>
       <button
         type="button"
+        class="filter-button"
+        [class.is-active]="estadoFiltro === 'Pendiente'"
+        (click)="cambiarEstadoFiltro('Pendiente')"
+      >
+        Pendientes
+      </button>
+
+      <button
+        type="button"
+        class="filter-button"
         [class.is-active]="!estadoFiltro"
         (click)="cambiarEstadoFiltro('')"
       >
         Todas
       </button>
+
       <button
         type="button"
-        *ngFor="let estado of estadosEntrevista"
-        [class.is-active]="estadoFiltro === estado"
-        (click)="cambiarEstadoFiltro(estado)"
+        class="active-filter-chip"
+        *ngIf="estadoFiltro && estadoFiltro !== 'Pendiente'"
+        (click)="quitarEstadoFiltro()"
+        [attr.aria-label]="'Quitar filtro ' + etiquetaEstado(estadoFiltro)"
       >
-        {{ estado }}
+        {{ etiquetaEstado(estadoFiltro) }}
+        <span aria-hidden="true">×</span>
       </button>
+
+      <div class="filter-menu" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="filter-button filter-menu__trigger"
+          [class.is-active]="estadoFiltro && estadoFiltro !== 'Pendiente'"
+          [attr.aria-expanded]="menuFiltrosAbierto"
+          aria-haspopup="menu"
+          (click)="alternarMenuFiltros($event)"
+        >
+          Filtros
+          <span aria-hidden="true">▾</span>
+        </button>
+
+        <div class="filter-menu__list" *ngIf="menuFiltrosAbierto" role="menu">
+          <button
+            type="button"
+            role="menuitemradio"
+            *ngFor="let estado of estadosFiltroSecundarios"
+            [attr.aria-checked]="estadoFiltro === estado"
+            [class.is-selected]="estadoFiltro === estado"
+            (click)="seleccionarEstadoDesdeFiltros(estado)"
+          >
+            <span>{{ etiquetaEstado(estado) }}</span>
+            <strong *ngIf="estadoFiltro === estado" aria-hidden="true">✓</strong>
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -104,6 +144,12 @@
                 Estado entrevista:
                 <span class="state-chip" [ngClass]="estadoClase(entrevista.estado)">{{ entrevista.estado }}</span>
               </span>
+              <span class="state-label">
+                Estado postulación:
+                <span class="state-chip" [ngClass]="estadoClase(entrevista.estadoPostulacion || 'Sin estado')">
+                  {{ entrevista.estadoPostulacion || 'Sin estado' }}
+                </span>
+              </span>
             </header>
 
             <footer>
@@ -167,7 +213,7 @@
                       [title]="motivoAccionNoDisponible(entrevista, 'feedback')"
                       (click)="accionFeedback(entrevista)"
                     >
-                      Feedback
+                      Resultado
                     </button>
                   </div>
                 </div>

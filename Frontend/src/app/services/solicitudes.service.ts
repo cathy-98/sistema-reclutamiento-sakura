@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, forkJoin, map, of, timeout } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap, timeout } from 'rxjs';
 import { CatalogosService, UsuarioCatalogoApi } from './catalogos.service';
 import { ClienteApi, ClientesService } from './clientes.service';
 import {
@@ -82,10 +82,17 @@ export class SolicitudesService {
   }
 
   cambiarEstado(id: string, estado: EstadoSolicitud, observacion: string) {
-    return this.http.patch<any>(`${this.apiUrl}/${id}/estado`, {
-      sol_estado_solicitud_id: estado === 'Cancelado' ? 4 : 1,
-      observacion,
-    });
+    return this.catalogosService.listarEstadosSolicitud().pipe(
+      timeout(4000),
+      catchError(() => of([])),
+      map((estados) => this.obtenerEstadoSolicitudId(estado, estados)),
+      switchMap((estadoId) =>
+        this.http.patch<SolicitudApi>(`${this.apiUrl}/${id}/estado`, {
+          sol_estado_solicitud_id: estadoId,
+          observacion,
+        }),
+      ),
+    );
   }
 
   agregarHabilidades(id: string, habilidades: SolicitudHabilidadPayload[]) {
@@ -100,6 +107,34 @@ export class SolicitudesService {
     return [usuario.usr_nombres, usuario.usr_apellido_paterno, usuario.usr_apellido_materno]
       .filter(Boolean)
       .join(' ') || usuario.usr_email;
+  }
+
+  private obtenerEstadoSolicitudId(
+    estadoObjetivo: EstadoSolicitud,
+    estados: { essl_id: number; essl_nombre?: string | null }[],
+  ) {
+    const estadoNormalizado = this.normalizarEstado(estadoObjetivo);
+    const estadoCatalogo = estados.find((estado) =>
+      this.normalizarEstado(estado.essl_nombre ?? '') === estadoNormalizado
+    );
+
+    if (estadoCatalogo) {
+      return estadoCatalogo.essl_id;
+    }
+
+    const estadoBase = Array.from(this.estadosBase.entries()).find(
+      ([, nombre]) => this.normalizarEstado(nombre) === estadoNormalizado,
+    );
+
+    return estadoBase?.[0] ?? 0;
+  }
+
+  private normalizarEstado(estado: string) {
+    return estado
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private mapearSolicitudes(

@@ -82,6 +82,7 @@
               type="checkbox"
               aria-label="Seleccionar todos los registros visibles"
               [checked]="allVisibleSelected"
+              [indeterminate]="someVisibleSelected"
               (change)="toggleVisibleRows($any($event.target).checked)"
             />
           </th>
@@ -295,6 +296,8 @@
                     *ngFor="let item of secondaryRowActions(row); trackBy: trackAction"
                     type="button"
                     role="menuitem"
+                    [class.is-success]="item.tone === 'success'"
+                    [class.is-danger]="item.tone === 'danger'"
                     [disabled]="disabledAction(item, row)"
                     [title]="actionTooltip(item, row)"
                     [attr.aria-label]="actionTooltip(item, row)"

@@ -4,6 +4,13 @@
   border-bottom: 1px solid var(--color-border-strong);
 }
 
+.tabs-helper {
+  margin: 4px 0 10px;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 :host ::ng-deep .informes-tabs .tabs {
   gap: 0;
   overflow-x: hidden;
@@ -23,6 +30,11 @@
   background: transparent;
 }
 
+:host ::ng-deep .informes-tabs button:last-child:not(.is-active) {
+  flex: 0.7 1 0;
+  color: var(--color-text-subtle);
+}
+
 .request-pill {
   display: inline-flex;
   min-height: 34px;
@@ -38,28 +50,19 @@
 
 .summary-modal {
   display: grid;
-  gap: 28px;
-  padding: 24px;
+  gap: 18px;
+  padding: 22px 24px;
 }
 
 .summary-section {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .summary-section > h3,
 .section-title h3 {
   margin: 0;
-  font-size: 18px;
-}
-
-.summary-section > h3 {
-  align-self: center;
-  grid-column: 2;
-}
-
-.summary-section:first-child {
-  grid-template-columns: auto 1fr;
+  font-size: 16px;
 }
 
 .section-marker {
@@ -118,6 +121,275 @@
   display: block;
   margin-top: 6px;
   overflow-wrap: anywhere;
+}
+
+.mail-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mail-fields label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mail-fields .wide {
+  grid-column: 1 / -1;
+}
+
+.mail-fields input,
+.mail-fields textarea,
+.single-field input,
+.single-field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.mail-fields input,
+.single-field input {
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.mail-fields textarea,
+.single-field textarea {
+  min-height: 92px;
+  max-height: 150px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.mail-fields input:disabled,
+.mail-fields textarea:disabled,
+.single-field input:disabled,
+.single-field textarea:disabled {
+  background: var(--color-surface-soft);
+  color: var(--color-text-subtle);
+}
+
+.single-field {
+  display: block;
+}
+
+.send-summary {
+  display: grid;
+  grid-template-columns: 140px 120px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.send-summary article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.send-summary span {
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.send-summary strong {
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.candidate-review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.candidate-review-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+}
+
+.candidate-review-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.candidate-review-info {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.candidate-review-info strong {
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.candidate-review-info span {
+  overflow-wrap: anywhere;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.select-all-cvs,
+.cv-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.select-all-cvs {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.cv-checkbox {
+  justify-self: end;
+  min-height: 30px;
+  white-space: nowrap;
+}
+
+.cv-checkbox.is-disabled {
+  color: var(--color-text-subtle);
+}
+
+.detail-toggle {
+  justify-self: end;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-sakura-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-sakura);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.detail-toggle:hover {
+  background: var(--color-sakura-soft);
+}
+
+.candidate-detail {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.candidate-detail dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.candidate-detail dt,
+.interview-detail > strong {
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.candidate-detail dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.interview-detail {
+  display: grid;
+  gap: 8px;
+}
+
+.interview-detail article {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.interview-detail article span {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.interview-detail p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.summary-final {
+  gap: 6px;
+}
+
+.summary-final p {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.empty-note,
+.preparing-note,
+.summary-error,
+.field-validation {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.empty-note,
+.preparing-note {
+  color: var(--color-text-subtle);
+}
+
+.field-validation {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.summary-error {
+  padding: 10px 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-weight: 700;
 }
 
 .section-row,
@@ -247,19 +519,76 @@ input[type='checkbox'] {
   font-size: 20px;
 }
 
+.approvals-section {
+  padding-top: 4px;
+}
+
+.approvals-empty {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.approvals-empty strong {
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.approvals-empty span {
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.approvals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.approvals-grid article {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+}
+
+.approvals-grid span {
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.approvals-grid strong {
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.approvals-grid p {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .summary-footer {
   justify-content: space-between;
   gap: 18px;
-  padding-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
 }
 
 .summary-count {
   flex-wrap: wrap;
-  gap: 12px;
-  min-height: 66px;
-  padding: 0 18px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
+  gap: 8px;
+  min-height: 44px;
+  color: var(--color-text-subtle);
 }
 
 .summary-count strong:last-child {
@@ -308,6 +637,23 @@ input[type='checkbox'] {
   .selected-row {
     min-width: 920px;
   }
+
+  .approvals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mail-fields,
+  .send-summary,
+  .candidate-review-main,
+  .candidate-detail dl {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-toggle,
+  .cv-checkbox,
+  .select-all-cvs {
+    justify-self: stretch;
+  }
 }
 
 @media (min-width: 641px) and (max-width: 1100px) {
@@ -330,5 +676,9 @@ input[type='checkbox'] {
   .selected-header,
   .selected-row {
     min-width: 960px;
+  }
+
+  .approvals-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

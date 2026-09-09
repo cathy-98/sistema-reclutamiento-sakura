@@ -43,7 +43,7 @@ export class EntrevistasAgenda implements OnInit {
   entrevistas: EntrevistaResumen[] = [];
   entrevistaSeleccionada: EntrevistaResumen | null = null;
   entrevistaDetalle: EntrevistaApi | null = null;
-  modoEstado: 'ver' | 'gestionar' | 'reprogramar' | 'cancelar' = 'reprogramar';
+  modoEstado: 'ver' | 'gestionar' | 'reprogramar' | 'confirmar' | 'realizar' | 'no-asistio' | 'cancelar' = 'reprogramar';
   guardandoEstado = false;
   guardandoEvaluaciones = false;
   cargandoDetalle = false;
@@ -62,6 +62,7 @@ export class EntrevistasAgenda implements OnInit {
   resultadosEvaluacion: NombreResultadoCatalogoApi[] = [];
   estadosEntrevista: EstadoEntrevista[] = ['Pendiente', 'Confirmada', 'Realizada', 'Reprogramada', 'Cancelada', 'No Asistio'];
   menuAbiertoId = '';
+  menuFiltrosAbierto = false;
 
   readonly diasSemana = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
   constructor(
@@ -126,6 +127,10 @@ export class EntrevistasAgenda implements OnInit {
     };
   }
 
+  get estadosFiltroSecundarios() {
+    return this.estadosEntrevista.filter((estado) => this.normalizar(estado) !== 'pendiente');
+  }
+
   cargarEntrevistas() {
     this.cargando = true;
     this.errorCarga = '';
@@ -176,7 +181,26 @@ export class EntrevistasAgenda implements OnInit {
 
   cambiarEstadoFiltro(estado: '' | EstadoEntrevista) {
     this.estadoFiltro = estado;
+    this.menuFiltrosAbierto = false;
     this.actualizarCalendario();
+  }
+
+  quitarEstadoFiltro() {
+    this.cambiarEstadoFiltro('');
+  }
+
+  alternarMenuFiltros(event: MouseEvent) {
+    event.stopPropagation();
+    this.cerrarMenuAcciones();
+    this.menuFiltrosAbierto = !this.menuFiltrosAbierto;
+  }
+
+  seleccionarEstadoDesdeFiltros(estado: EstadoEntrevista) {
+    this.cambiarEstadoFiltro(estado);
+  }
+
+  etiquetaEstado(estado: EstadoEntrevista) {
+    return this.normalizar(estado) === 'no asistio' ? 'No asistió' : estado;
   }
 
   seleccionarFecha(fechaIso: string) {
@@ -214,21 +238,12 @@ export class EntrevistasAgenda implements OnInit {
     this.guardandoEvaluaciones = false;
   }
 
-  confirmarEstado(payload: { fecha: string; horaInicio: string; horaFin: string; motivo: string }) {
-    if (!this.entrevistaSeleccionada || this.guardandoEstado || !this.puedeCambiarEstado(this.entrevistaSeleccionada)) {
+  confirmarEstado(payload: { estado?: EstadoEntrevista; fecha: string; horaInicio: string; horaFin: string; motivo: string }) {
+    if (!this.entrevistaSeleccionada || this.guardandoEstado) {
       return;
     }
 
-    const solicitud =
-      this.modoEstado === 'cancelar'
-        ? this.entrevistasService.cancelar(this.entrevistaSeleccionada.id, payload.motivo)
-        : this.entrevistasService.reprogramar(
-            this.entrevistaSeleccionada.id,
-            payload.fecha,
-            payload.horaInicio,
-            payload.horaFin,
-            payload.motivo,
-          );
+    const solicitud = this.solicitudEstadoEntrevista(payload);
 
     this.guardandoEstado = true;
     this.errorEstado = '';
@@ -240,14 +255,25 @@ export class EntrevistasAgenda implements OnInit {
         }),
       )
       .subscribe({
-      next: () => {
+      next: (entrevistaActualizada) => {
+        const estadoDevuelto =
+          entrevistaActualizada.estado ||
+          payload.estado ||
+          '';
+
         this.alerta = {
           tipo: 'success',
           variante: 'soft',
-          mensaje: this.modoEstado === 'cancelar' ? 'Entrevista cancelada correctamente.' : 'Entrevista reprogramada correctamente.',
+          mensaje: this.mensajeEstadoActualizado(estadoDevuelto),
         };
-        this.cerrarModalEstado();
         this.cargarEntrevistas();
+
+        if (this.modoEstado === 'gestionar' && this.entrevistaSeleccionada && this.normalizar(estadoDevuelto).replace(/\s+/g, '-') === 'realizada') {
+          this.cargarDetalleEntrevista(this.entrevistaSeleccionada.id);
+          return;
+        }
+
+        this.cerrarModalEstado();
       },
       error: (error) => {
         this.errorEstado = obtenerMensajeError(error, 'No se pudo actualizar la entrevista.');
@@ -301,6 +327,7 @@ export class EntrevistasAgenda implements OnInit {
     this.entrevistasService.crear(payload).pipe(
       finalize(() => {
         this.guardandoFormularioAgenda = false;
+        this.cdr.detectChanges();
       }),
     ).subscribe({
       next: () => {
@@ -315,6 +342,7 @@ export class EntrevistasAgenda implements OnInit {
       },
       error: (error) => {
         this.errorFormularioAgenda = obtenerMensajeError(error, 'No se pudo crear la entrevista.');
+        this.cdr.detectChanges();
       },
     });
   }
@@ -370,7 +398,7 @@ export class EntrevistasAgenda implements OnInit {
     }
 
     if (!this.esEstadoEntrevista(this.entrevistaSeleccionada, ['Realizada'])) {
-      this.errorEvaluaciones = 'Solo puedes registrar feedback cuando la entrevista está realizada.';
+      this.errorEvaluaciones = 'Solo puedes registrar el resultado cuando la entrevista está realizada.';
       this.cdr.markForCheck();
       return;
     }
@@ -407,13 +435,13 @@ export class EntrevistasAgenda implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.mensajeEvaluaciones = 'Feedback guardado correctamente.';
+          this.mensajeEvaluaciones = 'Resultado de la entrevista guardado correctamente.';
           this.cargarDetalleEntrevista(this.entrevistaSeleccionada!.id);
           this.cargarEntrevistas();
           this.cdr.markForCheck();
         },
         error: (error) => {
-          this.errorEvaluaciones = this.mensajeErrorEvaluacion(error, 'No se pudo guardar el feedback.');
+          this.errorEvaluaciones = this.mensajeErrorEvaluacion(error, 'No se pudo guardar el resultado. Intenta nuevamente.');
           this.cdr.markForCheck();
         },
       });
@@ -429,7 +457,8 @@ export class EntrevistasAgenda implements OnInit {
   }
 
   puedeRegistrarFeedback(entrevista: EntrevistaResumen) {
-    return this.esEstadoEntrevista(entrevista, ['Realizada']);
+    return this.esEstadoEntrevista(entrevista, ['Realizada']) &&
+      this.cumplePrecondicionEntrevista(entrevista);
   }
 
   private esEstadoEntrevista(entrevista: EntrevistaResumen, estados: string[]) {
@@ -496,7 +525,23 @@ export class EntrevistasAgenda implements OnInit {
 
   motivoAccionNoDisponible(entrevista: EntrevistaResumen, accion: 'feedback' | 'gestion' = 'gestion') {
     if (accion === 'feedback') {
-      return 'No disponible: la entrevista aún no está realizada.';
+      if (!this.esEstadoEntrevista(entrevista, ['Realizada'])) {
+        return 'No disponible: la entrevista aún no está realizada.';
+      }
+
+      if (this.solicitudCancelada(entrevista)) {
+        return 'No disponible: la solicitud está cancelada.';
+      }
+
+      if (this.normalizar(entrevista.estadoSolicitud ?? '') !== 'en entrevistas') {
+        return 'No disponible: la solicitud no está en etapa de entrevistas.';
+      }
+
+      if (this.normalizar(entrevista.estadoPostulacion ?? '') !== 'en entrevista') {
+        return 'No disponible: la postulación no está en entrevista.';
+      }
+
+      return 'No disponible para registrar resultado.';
     }
 
     if (this.solicitudCancelada(entrevista)) {
@@ -517,6 +562,7 @@ export class EntrevistasAgenda implements OnInit {
   @HostListener('document:click')
   cerrarMenuAlHacerClickFuera() {
     this.cerrarMenuAcciones();
+    this.menuFiltrosAbierto = false;
   }
 
   private cargarDetalleEntrevista(id: string) {
@@ -548,6 +594,79 @@ export class EntrevistasAgenda implements OnInit {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  private solicitudEstadoEntrevista(payload: { estado?: EstadoEntrevista; fecha: string; horaInicio: string; horaFin: string; motivo: string }) {
+    const id = this.entrevistaSeleccionada?.id ?? '';
+    const modo = this.modoEstado === 'gestionar'
+      ? this.modoDesdeEstado(payload.estado)
+      : this.modoEstado;
+
+    if (!modo || modo === 'ver') {
+      return throwError(() => new Error('La acción seleccionada no está disponible para esta entrevista.'));
+    }
+
+    if (modo === 'cancelar') {
+      return this.entrevistasService.cancelar(id, payload.motivo);
+    }
+
+    if (modo === 'confirmar') {
+      return this.entrevistasService.confirmar(id);
+    }
+
+    if (modo === 'realizar') {
+      return this.entrevistasService.realizar(id);
+    }
+
+    if (modo === 'no-asistio') {
+      return this.entrevistasService.noAsistio(id, payload.motivo);
+    }
+
+    return this.entrevistasService.reprogramar(
+      id,
+      payload.fecha,
+      payload.horaInicio,
+      payload.horaFin,
+      payload.motivo,
+    );
+  }
+
+  private modoDesdeEstado(estado?: EstadoEntrevista) {
+    const estadoNormalizado = this.normalizar(estado ?? '').replace(/\s+/g, '-');
+
+    if (estadoNormalizado === 'confirmar' || estadoNormalizado === 'confirmada') {
+      return 'confirmar';
+    }
+
+    if (estadoNormalizado === 'reprogramar' || estadoNormalizado === 'reprogramada') {
+      return 'reprogramar';
+    }
+
+    if (estadoNormalizado === 'realizar' || estadoNormalizado === 'realizada') {
+      return 'realizar';
+    }
+
+    if (estadoNormalizado === 'no-asistio') {
+      return 'no-asistio';
+    }
+
+    if (estadoNormalizado === 'cancelar' || estadoNormalizado === 'cancelada') {
+      return 'cancelar';
+    }
+
+    return '';
+  }
+
+  private mensajeEstadoActualizado(estadoDevuelto = '') {
+    if (this.modoEstado === 'reprogramar') {
+      return `Entrevista reprogramada correctamente${estadoDevuelto ? `: ${estadoDevuelto}` : ''}.`;
+    }
+
+    if (this.modoEstado === 'cancelar') {
+      return `Entrevista cancelada correctamente${estadoDevuelto ? `: ${estadoDevuelto}` : ''}.`;
+    }
+
+    return `Entrevista actualizada correctamente${estadoDevuelto ? `: ${estadoDevuelto}` : ''}.`;
   }
 
   fechaHoy() {
@@ -588,7 +707,7 @@ export class EntrevistasAgenda implements OnInit {
 
   private mensajeEstadoSolicitudFeedback(mensaje: string) {
     return this.esErrorEstadoSolicitudFeedback(mensaje)
-      ? 'No se pudo guardar el feedback. La solicitud asociada a esta entrevista no permite registrar evaluaciones en su estado actual.'
+      ? 'No se pudo guardar el resultado. La solicitud asociada a esta entrevista no permite registrar evaluaciones en su estado actual.'
       : mensaje;
   }
 

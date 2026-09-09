@@ -111,9 +111,9 @@
 
   <app-modal
     *ngIf="mostrarResumenAdministrador"
-    titulo="Resumen de candidatos seleccionados"
-    [subtitulo]="(solicitudResumen.cargo || 'Cargo sin definir') + ' · ' + (solicitudResumen.idSolicitud || 'Sin solicitud')"
-    ancho="xl"
+    titulo="Enviar resumen al administrador"
+    subtitulo="Revisa la información antes de enviar."
+    ancho="lg"
     (cerrar)="cerrarResumenAdministrador()"
   >
     <span modal-header-extra class="request-pill">
@@ -121,56 +121,17 @@
     </span>
 
     <div class="summary-modal">
-      <section class="summary-section" aria-labelledby="solicitud-title">
-        <div class="section-marker">1</div>
-        <h3 id="solicitud-title">Información de la solicitud</h3>
+      <section class="summary-section" aria-labelledby="destinatario-title">
+        <h3 id="destinatario-title">Destinatario(s)</h3>
 
-        <div class="request-info">
-          <article>
-            <span class="info-icon" aria-hidden="true">▣</span>
-            <div>
-              <span>Cargo</span>
-              <strong>{{ solicitudResumen.cargo || 'Sin cargo' }}</strong>
-            </div>
-          </article>
-
-          <article>
-            <span class="info-icon" aria-hidden="true">○</span>
-            <div>
-              <span>Solicitante</span>
-              <strong>No informado por backend</strong>
-            </div>
-          </article>
-
-          <article>
-            <span class="info-icon" aria-hidden="true">▤</span>
-            <div>
-              <span>Empresa</span>
-              <strong>{{ solicitudResumen.empresa || 'Sin empresa' }}</strong>
-            </div>
-          </article>
-
-          <article>
-            <span class="info-icon" aria-hidden="true">◇</span>
-            <div>
-              <span>Nivel requerido</span>
-              <strong>{{ solicitudResumen.nivel || 'Sin nivel' }}</strong>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="summary-section" aria-labelledby="destinatarios-title">
-        <div class="section-marker">2</div>
-        <h3 id="destinatarios-title">Destinatarios</h3>
-
-        <div class="request-info">
+        <div class="mail-fields">
           <label>
             <span>Para *</span>
             <input
               type="text"
               [(ngModel)]="destinatariosResumen"
               placeholder="correo@empresa.cl, director@empresa.cl"
+              [disabled]="preparandoDirectivos || enviandoDirectivos"
             />
           </label>
 
@@ -180,92 +141,169 @@
               type="text"
               [(ngModel)]="ccResumen"
               placeholder="opcional@empresa.cl"
+              [disabled]="preparandoDirectivos || enviandoDirectivos"
             />
           </label>
+        </div>
 
-          <label>
-            <span>Asunto</span>
-            <input
-              type="text"
-              [(ngModel)]="asuntoResumen"
-              placeholder="Resumen de candidatos"
-            />
-          </label>
+        <p class="field-validation" *ngIf="!destinatarioResumenValido">
+          Agrega al menos un destinatario para enviar el resumen.
+        </p>
+      </section>
 
-          <label>
-            <span>Mensaje</span>
-            <textarea
-              [(ngModel)]="cuerpoResumen"
-              placeholder="Mensaje para directivos"
-            ></textarea>
-          </label>
+      <section class="summary-section" aria-labelledby="asunto-title">
+        <h3 id="asunto-title">Asunto</h3>
+
+        <label class="single-field">
+          <input
+            type="text"
+            [(ngModel)]="asuntoResumen"
+            placeholder="Resumen de candidatos"
+            [disabled]="preparandoDirectivos || enviandoDirectivos"
+          />
+        </label>
+      </section>
+
+      <section class="summary-section" aria-labelledby="mensaje-title">
+        <h3 id="mensaje-title">Mensaje</h3>
+
+        <label class="single-field">
+          <textarea
+            [(ngModel)]="cuerpoResumen"
+            placeholder="Escribe un mensaje para el administrador."
+            [disabled]="preparandoDirectivos || enviandoDirectivos"
+          ></textarea>
+        </label>
+      </section>
+
+      <p class="preparing-note" *ngIf="preparandoDirectivos">Preparando información del envío...</p>
+
+      <section class="summary-section" aria-labelledby="contenido-title">
+        <h3 id="contenido-title">Contenido del envío</h3>
+
+        <div class="send-summary">
+          <article>
+            <span>Candidatos incluidos</span>
+            <strong>{{ candidatosSeleccionadosResumen.length }}</strong>
+          </article>
+
+          <article>
+            <span>CV adjuntos</span>
+            <strong>{{ totalCvsAdjuntos }}</strong>
+          </article>
+
+          <article>
+            <span>Solicitud / cargo</span>
+            <strong>{{ resumenContenidoEnvio || 'Sin solicitud asociada' }}</strong>
+          </article>
         </div>
       </section>
 
-      <section class="summary-section" aria-labelledby="seleccionados-title">
+      <section class="summary-section" aria-labelledby="candidatos-incluidos-title">
         <div class="section-row">
-          <div class="section-title">
-            <div class="section-marker">3</div>
-            <h3 id="seleccionados-title">Personas seleccionadas</h3>
-            <span class="count-pill">{{ candidatosSeleccionadosResumen.length }} candidatos</span>
-          </div>
+          <h3 id="candidatos-incluidos-title">Candidatos incluidos · {{ candidatosSeleccionadosResumen.length }}</h3>
 
-          <span class="count-pill">CV corporativo automático</span>
+          <label class="select-all-cvs">
+            <input
+              type="checkbox"
+              [checked]="todosCvsSeleccionados"
+              [indeterminate]="algunosCvsSeleccionados"
+              [disabled]="totalCvsDisponibles === 0 || preparandoDirectivos || enviandoDirectivos"
+              (change)="alternarTodosCvs($event)"
+            />
+            <span>Seleccionar todos los CV</span>
+          </label>
         </div>
 
-        <div class="selected-table" role="table" aria-label="Candidatos seleccionados para enviar al administrador">
-          <div class="selected-header" role="row">
-            <span role="columnheader">Candidato</span>
-            <span role="columnheader">Nivel</span>
-            <span role="columnheader">Experiencia</span>
-            <span role="columnheader">Resultado entrevista</span>
-            <span role="columnheader">Match</span>
-            <span role="columnheader">Documento</span>
-          </div>
-
-          <div class="selected-row" role="row" *ngFor="let candidato of candidatosSeleccionadosResumen">
-            <div class="candidate-cell" role="cell">
-              <span class="candidate-avatar">{{ iniciales(candidato.nombre) }}</span>
-              <div>
+        <div class="candidate-review-list">
+          <article class="candidate-review-card" *ngFor="let candidato of candidatosSeleccionadosResumen">
+            <div class="candidate-review-main">
+              <div class="candidate-review-info">
                 <strong>{{ candidato.nombre }}</strong>
-                <span>{{ candidato.correo }}</span>
+                <span>{{ candidato.estado }} · Match {{ candidato.match }}%</span>
+                <span>{{ candidato.cargo }}</span>
+              </div>
+
+              <label class="cv-checkbox" [class.is-disabled]="!candidatoTieneCvDisponible(candidato)">
+                <input
+                  type="checkbox"
+                  [checked]="candidatoTieneCvAdjunto(candidato)"
+                  [disabled]="!candidatoTieneCvDisponible(candidato) || preparandoDirectivos || enviandoDirectivos"
+                  (change)="alternarCvCandidato(candidato, $event)"
+                />
+                <span>{{ candidatoTieneCvDisponible(candidato) ? 'Adjuntar' : 'CV no disponible' }}</span>
+              </label>
+            </div>
+
+            <button
+              type="button"
+              class="detail-toggle"
+              [attr.aria-expanded]="detalleCandidatoAbierto(candidato)"
+              (click)="alternarDetalleCandidatoResumen(candidato)"
+            >
+              {{ detalleCandidatoAbierto(candidato) ? 'Ocultar detalle' : 'Ver detalle' }}
+            </button>
+
+            <div class="candidate-detail" *ngIf="detalleCandidatoAbierto(candidato)">
+              <dl>
+                <div>
+                  <dt>Correo electrónico</dt>
+                  <dd>{{ candidato.correo }}</dd>
+                </div>
+
+                <div>
+                  <dt>CV</dt>
+                  <dd>
+                    {{
+                      candidatoTieneCvDisponible(candidato)
+                        ? (candidatoTieneCvAdjunto(candidato) ? 'CV seleccionado como adjunto' : 'CV no seleccionado como adjunto')
+                        : 'CV no disponible'
+                    }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>Aprobación</dt>
+                  <dd>{{ textoClasificacion(candidato.clasificacion) }}</dd>
+                </div>
+              </dl>
+
+              <div class="interview-detail" *ngIf="candidato.entrevistas.length > 0">
+                <strong>Entrevistas realizadas</strong>
+
+                <article *ngFor="let entrevista of candidato.entrevistas">
+                  <span>{{ entrevista.tipo || 'Entrevista' }}</span>
+                  <p *ngIf="entrevista.resultado">Resultado: {{ entrevista.resultado }}</p>
+                  <p *ngIf="entrevista.entrevistador">Entrevistador: {{ entrevista.entrevistador }}</p>
+                  <p *ngIf="entrevista.observacion">Observación: {{ entrevista.observacion }}</p>
+                </article>
               </div>
             </div>
-
-            <div role="cell">
-              <span class="level-pill">{{ candidato.nivel }}</span>
-            </div>
-
-            <span role="cell">{{ candidato.experiencia }}</span>
-
-            <div class="result-cell" role="cell">
-              <strong [ngClass]="resultadoClase(candidato)">{{ candidato.resultadoEntrevista }}</strong>
-              <span>{{ candidato.detalleResultado }}</span>
-            </div>
-
-            <strong class="match-cell" role="cell">{{ candidato.match }}%</strong>
-
-            <span class="attach-cell" role="cell">CV corporativo</span>
-          </div>
+          </article>
         </div>
       </section>
+
+      <section class="summary-section summary-final" aria-labelledby="resumen-final-title">
+        <h3 id="resumen-final-title">Resumen final</h3>
+        <p>{{ candidatosSeleccionadosResumen.length }} candidatos · {{ totalCvsAdjuntos }} CV adjuntos</p>
+      </section>
+
+      <p class="summary-error" *ngIf="errorResumenAdministrador">{{ errorResumenAdministrador }}</p>
 
       <footer modal-footer class="summary-footer">
         <div class="summary-count">
-          <span aria-hidden="true">▤</span>
-          <strong>{{ candidatosSeleccionadosResumen.length }} candidatos seleccionados</strong>
-          <span>•</span>
-          <strong>{{ totalCvsAdjuntos }} CV se adjuntarán en el envío</strong>
+          <strong>{{ candidatosSeleccionadosResumen.length }} candidatos</strong>
+          <span>·</span>
+          <strong>{{ totalCvsAdjuntos }} CV adjuntos</strong>
         </div>
 
         <div class="summary-actions">
-          <app-button type="button" variant="secondary" (pressed)="descargarInformeResumen()">
-            <span aria-hidden="true">↓</span>
-            Descargar informe
+          <app-button type="button" variant="secondary" [disabled]="preparandoDirectivos || enviandoDirectivos" (pressed)="cerrarResumenAdministrador()">
+            Cancelar
           </app-button>
 
-          <app-button type="button" [disabled]="enviandoDirectivos" (pressed)="enviarResumenAdministrador()">
-            Enviar resumen al administrador
+          <app-button type="button" [disabled]="!puedeEnviarResumenAdministrador" (pressed)="enviarResumenAdministrador()">
+            {{ enviandoDirectivos ? 'Enviando...' : 'Enviar resumen' }}
           </app-button>
         </div>
       </footer>

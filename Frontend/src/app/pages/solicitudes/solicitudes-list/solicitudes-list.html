@@ -87,8 +87,9 @@
     loadingMessage="Cargando solicitudes..."
     [rowId]="obtenerIdSolicitud"
     [actions]="acciones"
+    [compactActions]="true"
     [selectedIds]="seleccionados"
-    emptyTitle="No hay solicitudes para mostrar"
+    emptyTitle="No se encontraron solicitudes."
     emptyMessage="Ajusta los filtros o limpia la búsqueda para volver al listado completo."
     (selectedIdsChange)="seleccionados = $event"
     (pageChange)="cambiarPagina($event)"
@@ -111,6 +112,20 @@
 ></app-solicitud-form-modal>
 
 <app-confirm-dialog
+  *ngIf="mostrarConfirmacionPublicacion"
+  titulo="Publicar solicitud"
+  mensaje="La solicitud pasará a En publicación y quedará disponible para continuar el proceso."
+  [detalle]="'Solicitud seleccionada: ' + (solicitudSeleccionadaCodigo || solicitudSeleccionadaId)"
+  [errorMessage]="errorCierre"
+  [procesando]="procesandoCierre"
+  textoCancelar="Volver"
+  textoConfirmar="Publicar solicitud"
+  variante="info"
+  (cancelar)="cerrarConfirmacionPublicacion()"
+  (confirmar)="confirmarPublicacionSolicitud()"
+></app-confirm-dialog>
+
+<app-confirm-dialog
   *ngIf="mostrarConfirmacionCancelacion"
   titulo="Cancelar solicitud"
   mensaje="Esta acción cambiará el estado de la solicitud a Cancelado."
@@ -118,9 +133,30 @@
   observacionLabel="Observación de cancelación *"
   observacionPlaceholder="Ej. Cancelada por solicitud del cliente"
   [observacionRequerida]="true"
+  [observacionMaxLength]="observacionCierreMaxLength"
+  [errorMessage]="errorCierre"
+  [procesando]="procesandoCierre"
   textoCancelar="Volver"
   textoConfirmar="Confirmar cancelación"
   variante="danger"
   (cancelar)="cerrarConfirmacionCancelacion()"
   (confirmar)="confirmarCancelacionSolicitud($event)"
+></app-confirm-dialog>
+
+<app-confirm-dialog
+  *ngIf="mostrarConfirmacionFinalizacion"
+  titulo="Finalizar solicitud"
+  mensaje="Registra el motivo o comentario asociado al cierre de la solicitud."
+  [detalle]="'Solicitud seleccionada: ' + (solicitudSeleccionadaCodigo || solicitudSeleccionadaId)"
+  observacionLabel="Observación *"
+  observacionPlaceholder="Ej. Vacantes cubiertas y proceso finalizado"
+  [observacionRequerida]="true"
+  [observacionMaxLength]="observacionCierreMaxLength"
+  [errorMessage]="errorCierre"
+  [procesando]="procesandoCierre"
+  textoCancelar="Cancelar"
+  textoConfirmar="Finalizar solicitud"
+  variante="info"
+  (cancelar)="cerrarConfirmacionFinalizacion()"
+  (confirmar)="confirmarFinalizacionSolicitud($event)"
 ></app-confirm-dialog>

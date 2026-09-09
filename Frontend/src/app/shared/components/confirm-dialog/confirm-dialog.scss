@@ -103,6 +103,18 @@
   font-weight: 700;
 }
 
+.confirm-field small {
+  margin-top: -2px;
+  text-align: right;
+}
+
+.confirm-error {
+  margin-top: 12px;
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .confirm-actions {
   display: flex;
   grid-column: 1 / -1;
@@ -131,6 +143,11 @@
 }
 
 .primary-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary-action:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
