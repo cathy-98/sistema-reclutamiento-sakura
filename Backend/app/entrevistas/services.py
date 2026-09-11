@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.candidatos.models import Candidato
+from app.candidatos import services as candidatos_services
 from app.catalogos.models import (
     EstadoEntrevista,
     EstadoSolicitud,
@@ -14,10 +15,15 @@ from app.catalogos.models import (
     NombreResultado,
     TipoEntrevista,
 )
+from app.solicitudes import schemas as solicitudes_schemas
+from app.solicitudes import services as solicitudes_services
 from app.solicitudes.models import Solicitud, SolicitudCandidato
 from app.usuarios.models import EstadoUsuario, Permiso, Rol, Usuario
 
 from . import models, schemas
+
+NOMBRE_ESTADO_POSTULACION_AGENDADA = "En entrevista"
+NOMBRE_ESTADO_SOLICITUD_AGENDADA = "En Entrevistas"
 
 
 class Module5Error(Exception):
@@ -33,6 +39,14 @@ class NotFoundError(Module5Error):
 
 class ConflictError(Module5Error):
     status_code = 409
+
+
+def _traducir_error_estado(exc: Exception) -> Module5Error:
+    if isinstance(exc, (candidatos_services.NotFoundError, solicitudes_services.NotFoundError)):
+        return NotFoundError(str(exc))
+    if isinstance(exc, (candidatos_services.ConflictError, solicitudes_services.ConflictError)):
+        return ConflictError(str(exc))
+    return Module5Error(str(exc))
 
 
 def now_utc_naive() -> datetime:
@@ -59,6 +73,21 @@ def _postulation(db: Session, slcd_id: int) -> SolicitudCandidato:
     return obj
 
 
+def _postulations_for_update(db: Session, slcd_ids: list[int]) -> list[SolicitudCandidato]:
+    rows = list(
+        db.scalars(
+            select(SolicitudCandidato)
+            .where(SolicitudCandidato.slcd_id.in_(slcd_ids))
+            .with_for_update()
+        ).all()
+    )
+    by_id = {post.slcd_id: post for post in rows}
+    missing = [slcd_id for slcd_id in slcd_ids if slcd_id not in by_id]
+    if missing:
+        raise NotFoundError(f"Postulaciones no encontradas: {missing}")
+    return [by_id[slcd_id] for slcd_id in slcd_ids]
+
+
 def _postulation_state_name(db: Session, post: SolicitudCandidato) -> str:
     st = db.get(EstadoSolicitudCandidato, post.slcd_estado_solicitud_candidato_id)
     return st.essc_nombre if st and st.essc_nombre else "Desconocido"
@@ -81,6 +110,97 @@ def _require_interview_stage(db: Session, post: SolicitudCandidato) -> None:
         raise ConflictError(
             "Solo se permiten entrevistas y evaluaciones cuando la solicitud está en estado 'En Entrevistas'. "
             f"Estado actual de la solicitud: '{request_state_name}'"
+        )
+
+
+def _agenda_state_changes(db: Session, posts: list[SolicitudCandidato]):
+    try:
+        estado_postulacion = candidatos_services._application_state(db, NOMBRE_ESTADO_POSTULACION_AGENDADA)
+    except candidatos_services.CandidateModuleError as exc:
+        raise _traducir_error_estado(exc) from exc
+
+    payload_postulacion = candidatos_services.schemas.PostulacionEstadoUpdate(
+        estado_id=estado_postulacion.essc_id,
+    )
+
+    try:
+        estado_solicitud = solicitudes_services._get_state_by_name(db, NOMBRE_ESTADO_SOLICITUD_AGENDADA)
+    except solicitudes_services.SolicitudModuleError as exc:
+        raise _traducir_error_estado(exc) from exc
+
+    payload_solicitud = solicitudes_schemas.SolicitudEstadoUpdate(
+        sol_estado_solicitud_id=estado_solicitud.essl_id,
+    )
+
+    try:
+        cambios_postulacion = [
+            (
+                post,
+                candidatos_services.validar_cambio_estado_postulacion(db, post, payload_postulacion),
+            )
+            for post in posts
+        ]
+    except candidatos_services.CandidateModuleError as exc:
+        raise _traducir_error_estado(exc) from exc
+
+    solicitudes_ids = sorted({post.slcd_solicitud_id for post in posts if post.slcd_solicitud_id})
+    cambios_solicitud = []
+    for solicitud_id in solicitudes_ids:
+        solicitud = db.scalar(select(Solicitud).where(Solicitud.sol_id == solicitud_id).with_for_update())
+        if solicitud is None:
+            raise NotFoundError("La solicitud asociada a la postulación no existe")
+        try:
+            current = solicitudes_services._get_state(db, solicitud.sol_estado_solicitud_id)
+        except solicitudes_services.SolicitudModuleError as exc:
+            raise _traducir_error_estado(exc) from exc
+        if current.essl_id == estado_solicitud.essl_id:
+            cambios_solicitud.append((solicitud, None))
+            continue
+
+        try:
+            cambios_solicitud.append((
+                solicitud,
+                solicitudes_services.validar_cambio_estado_solicitud(
+                    db,
+                    solicitud,
+                    payload_solicitud,
+                ),
+            ))
+        except solicitudes_services.SolicitudModuleError as exc:
+            raise _traducir_error_estado(exc) from exc
+
+    return payload_postulacion, payload_solicitud, cambios_postulacion, cambios_solicitud
+
+
+def _aplicar_cambios_estado_agenda(
+    payload_postulacion: candidatos_services.schemas.PostulacionEstadoUpdate,
+    payload_solicitud: solicitudes_schemas.SolicitudEstadoUpdate,
+    cambios_postulacion,
+    cambios_solicitud,
+    *,
+    actor_user_id: int,
+) -> None:
+    # En el agendamiento, la entrevista y los cambios de estado comparten una
+    # misma transacción: Postulación En revision -> En entrevista y Solicitud
+    # En Publicacion -> En Entrevistas. Si la solicitud ya está En Entrevistas,
+    # no se vuelve a cambiar; todo queda en memoria hasta el commit final.
+    for post, target in cambios_postulacion:
+        candidatos_services.aplicar_cambio_estado_postulacion_sin_commit(
+            post,
+            target,
+            payload_postulacion,
+        )
+
+    for solicitud, cambio in cambios_solicitud:
+        if cambio is None:
+            continue
+        current, target, _closure_warning = cambio
+        solicitudes_services.aplicar_cambio_estado_solicitud_sin_commit(
+            solicitud,
+            current,
+            target,
+            payload_solicitud,
+            actor_user_id=actor_user_id,
         )
 
 
@@ -259,9 +379,11 @@ def _attach_types(db: Session, interview_id: int, tipos: list[schemas.TipoEntrev
 
 def _new_interview(db: Session, slcd_id: int, start: datetime, end: datetime, title: str,
                    link: str | None, comments: str | None,
-                   tipos: list[schemas.TipoEntrevistaAsignacion], creator_id: int) -> models.CitaEntrevista:
+                   tipos: list[schemas.TipoEntrevistaAsignacion], creator_id: int,
+                   *, validate_stage: bool = True) -> models.CitaEntrevista:
     post = _postulation(db, slcd_id)
-    _require_interview_stage(db, post)
+    if validate_stage:
+        _require_interview_stage(db, post)
     pending = _state(db, "Pendiente")
     obj = models.CitaEntrevista(
         ctev_solicitud_candidato_id=slcd_id,
@@ -284,34 +406,48 @@ def _new_interview(db: Session, slcd_id: int, start: datetime, end: datetime, ti
 def create_interview(db: Session, payload: schemas.EntrevistaCreate, creator_id: int) -> schemas.EntrevistaRead:
     start, end = _validate_future_dates(payload.fecha_hora_inicio, payload.fecha_hora_fin)
     _validate_types_and_users(db, payload.tipos)
+    post = _postulations_for_update(db, [payload.solicitud_candidato_id])[0]
+    # Primero se validan las transiciones; si algo falla, el rollback evita
+    # entrevistas o estados parcialmente actualizados.
+    cambios_estado = _agenda_state_changes(db, [post])
     try:
         obj = _new_interview(db, payload.solicitud_candidato_id, start, end,
                              payload.titulo_evento, payload.enlace_reunion,
-                             payload.comentarios_convocatoria, payload.tipos, creator_id)
+                             payload.comentarios_convocatoria, payload.tipos, creator_id,
+                             validate_stage=False)
+        _aplicar_cambios_estado_agenda(*cambios_estado, actor_user_id=creator_id)
         db.commit(); db.refresh(obj)
     except IntegrityError as exc:
         db.rollback()
         raise ConflictError("La entrevista entra en conflicto con un registro existente") from exc
+    except Exception:
+        db.rollback()
+        raise
     return interview_read(db, obj)
 
 
 def create_interviews_bulk(db: Session, payload: schemas.EntrevistaMasivaCreate, creator_id: int) -> schemas.EntrevistaMasivaRead:
     start, end = _validate_future_dates(payload.fecha_hora_inicio, payload.fecha_hora_fin)
     _validate_types_and_users(db, payload.tipos)
-    # Validar todo antes de escribir: operación atómica.
-    posts = [_postulation(db, sid) for sid in payload.solicitudes_candidatos_ids]
-    for post in posts: _require_interview_stage(db, post)
+    posts = _postulations_for_update(db, payload.solicitudes_candidatos_ids)
+    # Primero se validan las transiciones; si algo falla, el rollback evita
+    # entrevistas o estados parcialmente actualizados.
+    cambios_estado = _agenda_state_changes(db, posts)
     created = []
     try:
         for sid in payload.solicitudes_candidatos_ids:
             created.append(_new_interview(db, sid, start, end, payload.titulo_evento,
                                           payload.enlace_reunion, payload.comentarios_convocatoria,
-                                          payload.tipos, creator_id))
+                                          payload.tipos, creator_id, validate_stage=False))
+        _aplicar_cambios_estado_agenda(*cambios_estado, actor_user_id=creator_id)
         db.commit()
         for obj in created: db.refresh(obj)
     except IntegrityError as exc:
         db.rollback()
         raise ConflictError("No fue posible completar el agendamiento masivo; no se creó ninguna entrevista") from exc
+    except Exception:
+        db.rollback()
+        raise
     return schemas.EntrevistaMasivaRead(
         total_solicitados=len(payload.solicitudes_candidatos_ids),
         total_creados=len(created),

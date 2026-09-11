@@ -183,6 +183,30 @@ def cambiar_estado_solicitud(
         raise _translate_error(exc) from exc
 
 
+@router.patch(
+    "/{solicitud_id}/postulaciones/estado-masivo",
+    response_model=schemas.SolicitudPostulacionesEstadoMasivoResponse,
+)
+def cambiar_estado_postulaciones_solicitud_masivo(
+    solicitud_id: int,
+    payload: schemas.SolicitudPostulacionesEstadoMasivoUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_permissions("CAN_UPDATE")),
+):
+    # Orquesta el avance masivo de postulaciones seleccionadas junto con su solicitud.
+    try:
+        target_state_id = services.obtener_estado_destino_solicitud_masiva(db)
+        _ensure_state_permission(db, target_state_id, current_user)
+        return services.cambiar_estado_masivo_postulaciones_solicitud(
+            db,
+            solicitud_id,
+            payload,
+            actor_user_id=current_user.usr_id,
+        )
+    except services.SolicitudModuleError as exc:
+        raise _translate_error(exc) from exc
+
+
 @router.get(
     "/{solicitud_id}/habilidades",
     response_model=list[schemas.SolicitudHabilidadResponse],

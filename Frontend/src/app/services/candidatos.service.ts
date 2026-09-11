@@ -110,6 +110,18 @@ export interface PostulacionCandidatoApi {
   slcd_motivo_rechazo_id?: number | null;
 }
 
+export interface CambioMasivoPostulacionesSolicitudResponse {
+  solicitud: {
+    sol_id: number;
+    sol_codigo?: string | null;
+    sol_estado_solicitud_id?: number | null;
+  };
+  postulaciones: PostulacionCandidatoApi[];
+  total_postulaciones: number;
+  estado_solicitud: string;
+  estado_postulaciones: string;
+}
+
 export interface IdiomaCandidatoApi {
   cdio_id: number;
   cdio_candidato_id: number;
@@ -501,6 +513,18 @@ export class CandidatosService {
     return this.http.patch<PostulacionCandidatoApi>(
       `/api/postulaciones/${postulacionId}/estado`,
       payload,
+    );
+  }
+
+  cambiarEstadoMasivoPostulacionesSolicitud(
+    solicitudId: string | number,
+    postulacionIds: Array<string | number>,
+  ) {
+    return this.http.patch<CambioMasivoPostulacionesSolicitudResponse>(
+      `/api/solicitudes/${solicitudId}/postulaciones/estado-masivo`,
+      {
+        postulacion_ids: postulacionIds.map((id) => Number(id)),
+      },
     );
   }
 }

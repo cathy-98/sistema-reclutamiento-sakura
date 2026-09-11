@@ -4,6 +4,8 @@ from datetime import datetime, time
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.candidatos import schemas as candidato_schemas
+
 
 class StrictSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -108,6 +110,11 @@ class SolicitudEstadoUpdate(StrictSchema):
     observacion: str | None = Field(default=None, min_length=1, max_length=300)
 
 
+class SolicitudPostulacionesEstadoMasivoUpdate(StrictSchema):
+    # La solicitud viene desde la URL; el body solo recibe las postulaciones seleccionadas.
+    postulacion_ids: list[int] = Field(..., min_length=1)
+
+
 class SolicitudResponse(BaseModel):
     sol_id: int
     sol_codigo: str | None = None
@@ -134,6 +141,15 @@ class SolicitudResponse(BaseModel):
     habilidades: list[SolicitudHabilidadResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SolicitudPostulacionesEstadoMasivoResponse(BaseModel):
+    # Resume el estado final de la operación masiva sin cambiar los contratos existentes.
+    solicitud: SolicitudResponse
+    postulaciones: list[candidato_schemas.PostulacionResponse]
+    total_postulaciones: int
+    estado_solicitud: str
+    estado_postulaciones: str
 
 
 class HistorialSolicitudResponse(BaseModel):

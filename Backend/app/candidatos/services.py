@@ -821,13 +821,23 @@ def update_application(db:Session,obj:SolicitudCandidato,payload:schemas.Postula
     _commit(db); db.refresh(obj); return obj
 
 
-def change_application_state(db:Session,obj:SolicitudCandidato,payload:schemas.PostulacionEstadoUpdate):
+def validar_cambio_estado_postulacion(
+    db: Session,
+    obj: SolicitudCandidato,
+    payload: schemas.PostulacionEstadoUpdate,
+) -> EstadoSolicitudCandidato | None:
+    """Valida si la transición de estado de una postulación está permitida.
+
+    Usa las reglas existentes de STATE_TRANSITIONS y valida datos asociados,
+    pero no modifica ni guarda la postulación. La separación es:
+    validar -> aplicar sin commit -> commit final del flujo que orquesta.
+    """
     current=db.get(EstadoSolicitudCandidato,obj.slcd_estado_solicitud_candidato_id)
     target=db.get(EstadoSolicitudCandidato,payload.estado_id)
     if target is None: raise ValidationError("Estado de postulación no existe")
     current_name=(current.essc_nombre if current else "").casefold()
     target_name=target.essc_nombre.casefold()
-    if target_name==current_name: return obj
+    if target_name==current_name: return None
     allowed=STATE_TRANSITIONS.get(current_name,set())
     if target_name not in allowed: raise ConflictError(f"Transición no permitida: {current.essc_nombre if current else '?'} -> {target.essc_nombre}")
     if target_name in {"inhabilitado","descartado"}:
@@ -835,9 +845,32 @@ def change_application_state(db:Session,obj:SolicitudCandidato,payload:schemas.P
         if db.get(MotivoRechazo,payload.motivo_rechazo_id) is None: raise ValidationError("Motivo de rechazo no existe")
     else:
         if payload.motivo_rechazo_id is not None: raise ValidationError("motivo_rechazo_id solo corresponde a Inhabilitado o Descartado")
+    return target
+
+
+def aplicar_cambio_estado_postulacion_sin_commit(
+    obj: SolicitudCandidato,
+    target: EstadoSolicitudCandidato | None,
+    payload: schemas.PostulacionEstadoUpdate,
+) -> None:
+    """Aplica el cambio de estado de la postulación sin realizar commit.
+
+    Deja los cambios en memoria para que formen parte de una transacción mayor
+    y se confirmen junto con otras operaciones relacionadas en un commit final.
+    """
+    if target is None:
+        return
     obj.slcd_estado_solicitud_candidato_id=target.essc_id
     obj.slcd_motivo_rechazo_id=payload.motivo_rechazo_id
     if payload.observaciones is not None: obj.slcd_observaciones=payload.observaciones
+
+
+def change_application_state(db:Session,obj:SolicitudCandidato,payload:schemas.PostulacionEstadoUpdate):
+    # El endpoint individual conserva su commit propio, pero usa la misma validación reutilizable.
+    target = validar_cambio_estado_postulacion(db, obj, payload)
+    aplicar_cambio_estado_postulacion_sin_commit(obj, target, payload)
+    if target is None:
+        return obj
     _commit(db); db.refresh(obj); return obj
 
 

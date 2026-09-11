@@ -618,7 +618,7 @@
 
       <label>
         Nuevo estado
-        <select [(ngModel)]="estadoMasivoSeleccionado" [disabled]="opcionesEstadoMasivo.length === 0 || seleccionEstadosMixtos">
+        <select [(ngModel)]="estadoMasivoSeleccionado" [disabled]="guardandoEstadoMasivo || opcionesEstadoMasivo.length === 0 || seleccionEstadosMixtos">
           <option value="">Seleccionar estado</option>
           <option *ngFor="let estado of opcionesEstadoMasivo" [ngValue]="estado">{{ estado }}</option>
         </select>
@@ -626,7 +626,7 @@
 
       <label>
         Observación
-        <textarea [(ngModel)]="observacionEstadoMasivo" maxlength="300" placeholder="Opcional"></textarea>
+        <textarea [(ngModel)]="observacionEstadoMasivo" maxlength="300" placeholder="Opcional" [disabled]="guardandoEstadoMasivo"></textarea>
       </label>
 
       <p class="state-message is-error" *ngIf="errorEstadoMasivo">{{ errorEstadoMasivo }}</p>

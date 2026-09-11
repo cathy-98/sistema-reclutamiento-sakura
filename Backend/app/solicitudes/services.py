@@ -20,6 +20,7 @@ from app.catalogos.models import (
     TipoContrato,
 )
 from app.clientes.models import Cliente
+from app.candidatos import services as candidatos_services
 from app.solicitudes import models, schemas
 from app.usuarios.models import Usuario
 
@@ -28,6 +29,9 @@ TZ_CHILE = ZoneInfo("America/Santiago")
 ACTIVE_USER_STATUS_NAME = os.getenv("ACTIVE_USER_STATUS_NAME", "Activo")
 RECRUITER_ROLE_NAME = "Reclutador"
 INITIAL_REQUEST_STATUS_NAME = "Pendiente"
+# Estados destino del avance masivo: se buscan por nombre en catálogo, nunca por ID fijo.
+NOMBRE_ESTADO_DESTINO_POSTULACION_MASIVA = "En entrevista"
+NOMBRE_ESTADO_DESTINO_SOLICITUD_MASIVA = "En Entrevistas"
 
 STATE_TRANSITIONS: dict[str, set[str]] = {
     "pendiente": {"en publicacion", "cancelado"},
@@ -428,13 +432,31 @@ def get_target_state_permission(db: Session, target_state_id: int) -> str:
     return "SOL_DELETE" if target_name in TERMINAL_STATE_NAMES else "SOL_UPDATE"
 
 
-def change_state(
+def obtener_estado_destino_solicitud_masiva(db: Session) -> int:
+    # El router necesita el estado destino para aplicar los permisos existentes.
+    return _get_state_by_name(db, NOMBRE_ESTADO_DESTINO_SOLICITUD_MASIVA).essl_id
+
+
+def _traducir_error_modulo_candidatos(exc: candidatos_services.CandidateModuleError) -> SolicitudModuleError:
+    # La operación vive en solicitudes, pero reutiliza validaciones del módulo de candidatos.
+    if isinstance(exc, candidatos_services.NotFoundError):
+        return NotFoundError(str(exc))
+    if isinstance(exc, candidatos_services.ConflictError):
+        return ConflictError(str(exc))
+    return ValidationError(str(exc))
+
+
+def validar_cambio_estado_solicitud(
     db: Session,
     solicitud: models.Solicitud,
     payload: schemas.SolicitudEstadoUpdate,
-    *,
-    actor_user_id: int,
-) -> models.Solicitud:
+) -> tuple[EstadoSolicitud, EstadoSolicitud, str | None]:
+    """Valida si la transición de estado de una solicitud está permitida.
+
+    Verifica la transición y sus reglas antes de aplicar cualquier cambio.
+    La separación es: validar -> aplicar sin commit -> commit final del flujo
+    que orquesta la operación.
+    """
     current = _get_state(db, solicitud.sol_estado_solicitud_id)
     target = _get_state(db, payload.sol_estado_solicitud_id)
 
@@ -483,15 +505,173 @@ def change_state(
             closure_warning = (
                 f"La solicitud fue cerrada con {contratados} de {vacantes} vacante(s) cubierta(s)."
             )
+    return current, target, closure_warning
+
+
+def aplicar_cambio_estado_solicitud_sin_commit(
+    solicitud: models.Solicitud,
+    current: EstadoSolicitud,
+    target: EstadoSolicitud,
+    payload: schemas.SolicitudEstadoUpdate,
+    *,
+    actor_user_id: int,
+) -> None:
+    """Aplica el cambio de estado de la solicitud sin realizar commit.
+
+    Deja estado y auditoría preparados en memoria para guardarlos junto con
+    otras operaciones relacionadas mediante un único commit final.
+    """
     solicitud._audit_user_id = actor_user_id
     solicitud._audit_comment = payload.observacion or (
         f"Cambio de estado: {current.essl_nombre} -> {target.essl_nombre}"
     )
     solicitud.sol_estado_solicitud_id = target.essl_id
+
+
+def change_state(
+    db: Session,
+    solicitud: models.Solicitud,
+    payload: schemas.SolicitudEstadoUpdate,
+    *,
+    actor_user_id: int,
+) -> models.Solicitud:
+    current, target, closure_warning = validar_cambio_estado_solicitud(db, solicitud, payload)
+    aplicar_cambio_estado_solicitud_sin_commit(
+        solicitud,
+        current,
+        target,
+        payload,
+        actor_user_id=actor_user_id,
+    )
     _commit(db)
     result = get_solicitud(db, solicitud.sol_id)
     result._closure_warning = closure_warning
     return result
+
+
+def cambiar_estado_masivo_postulaciones_solicitud(
+    db: Session,
+    solicitud_id: int,
+    payload: schemas.SolicitudPostulacionesEstadoMasivoUpdate,
+    *,
+    actor_user_id: int,
+) -> schemas.SolicitudPostulacionesEstadoMasivoResponse:
+    # Flujo contextual: todas las postulaciones seleccionadas pertenecen a una sola solicitud.
+    solicitud = get_solicitud(db, solicitud_id)
+    postulacion_ids = payload.postulacion_ids
+    ids_unicos = list(dict.fromkeys(postulacion_ids))
+
+    if len(ids_unicos) != len(postulacion_ids):
+        raise ValidationError("No se deben repetir postulaciones en el cambio masivo")
+
+    if not ids_unicos:
+        raise ValidationError("Debe seleccionar al menos una postulación")
+
+    try:
+        estado_postulacion = candidatos_services._application_state(
+            db,
+            NOMBRE_ESTADO_DESTINO_POSTULACION_MASIVA,
+        )
+    except candidatos_services.CandidateModuleError as exc:
+        raise _traducir_error_modulo_candidatos(exc) from exc
+
+    payload_postulacion = candidatos_services.schemas.PostulacionEstadoUpdate(
+        estado_id=estado_postulacion.essc_id,
+    )
+    estado_solicitud = _get_state_by_name(db, NOMBRE_ESTADO_DESTINO_SOLICITUD_MASIVA)
+    payload_solicitud = schemas.SolicitudEstadoUpdate(
+        sol_estado_solicitud_id=estado_solicitud.essl_id,
+    )
+
+    postulaciones = list(
+        db.scalars(
+            select(models.SolicitudCandidato)
+            .where(models.SolicitudCandidato.slcd_id.in_(ids_unicos))
+            .with_for_update()
+        ).all()
+    )
+    postulaciones_por_id = {
+        postulacion.slcd_id: postulacion
+        for postulacion in postulaciones
+    }
+    faltantes = [
+        postulacion_id
+        for postulacion_id in ids_unicos
+        if postulacion_id not in postulaciones_por_id
+    ]
+    if faltantes:
+        raise NotFoundError(f"Postulaciones no encontradas: {faltantes}")
+
+    fuera_de_solicitud = [
+        postulacion.slcd_id
+        for postulacion in postulaciones
+        if postulacion.slcd_solicitud_id != solicitud.sol_id
+    ]
+    if fuera_de_solicitud:
+        raise ConflictError(
+            "Todas las postulaciones deben pertenecer a la solicitud indicada"
+        )
+
+    # Primero se validan todas las transiciones para evitar cambios parciales.
+    try:
+        cambios_postulacion = [
+            (
+                postulacion,
+                candidatos_services.validar_cambio_estado_postulacion(
+                    db,
+                    postulacion,
+                    payload_postulacion,
+                ),
+            )
+            for postulacion in postulaciones
+        ]
+    except candidatos_services.CandidateModuleError as exc:
+        raise _traducir_error_modulo_candidatos(exc) from exc
+
+    cambio_solicitud = validar_cambio_estado_solicitud(db, solicitud, payload_solicitud)
+
+    # Operación atómica: desde aquí no se hacen commits individuales.
+    # Solicitud y postulaciones se escriben juntas con un único commit final.
+    try:
+        for postulacion, target in cambios_postulacion:
+            candidatos_services.aplicar_cambio_estado_postulacion_sin_commit(
+                postulacion,
+                target,
+                payload_postulacion,
+            )
+        current, target, closure_warning = cambio_solicitud
+        aplicar_cambio_estado_solicitud_sin_commit(
+            solicitud,
+            current,
+            target,
+            payload_solicitud,
+            actor_user_id=actor_user_id,
+        )
+        _commit(db)
+    except SolicitudModuleError:
+        # Ante cualquier error del flujo masivo se revierte la unidad completa.
+        db.rollback()
+        raise
+    except Exception:
+        # También se revierte si falla el commit o aparece un error no controlado.
+        db.rollback()
+        raise
+
+    solicitud_actualizada = get_solicitud(db, solicitud.sol_id)
+    solicitud_actualizada._closure_warning = closure_warning
+    for postulacion in postulaciones:
+        db.refresh(postulacion)
+
+    return schemas.SolicitudPostulacionesEstadoMasivoResponse(
+        solicitud=solicitud_actualizada,
+        postulaciones=[
+            postulaciones_por_id[postulacion_id]
+            for postulacion_id in ids_unicos
+        ],
+        total_postulaciones=len(ids_unicos),
+        estado_solicitud=estado_solicitud.essl_nombre,
+        estado_postulaciones=estado_postulacion.essc_nombre,
+    )
 
 
 def list_habilidades(db: Session, solicitud_id: int) -> list[models.SolicitudHabilidad]:

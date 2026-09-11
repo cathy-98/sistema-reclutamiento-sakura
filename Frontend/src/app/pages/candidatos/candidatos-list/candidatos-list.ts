@@ -292,7 +292,7 @@ export class CandidatosList implements OnInit, OnDestroy {
   private queryParamsSubscription?: Subscription;
   private estadosPostulacionPorNombre = new Map<string, number>();
   private readonly transicionesPostulacion = new Map<string, string[]>([
-    ['en revision', ['En entrevista']],
+    ['en revision', []],
     ['en entrevista', ['Seleccionado']],
     ['seleccionado', ['Contratado']],
   ]);
@@ -1930,11 +1930,13 @@ export class CandidatosList implements OnInit, OnDestroy {
             this.alerta = {
               tipo: 'success',
               variante: 'soft',
-              mensaje:
-                'Entrevista agendada correctamente.',
+              mensaje: 'Entrevista agendada correctamente.',
             };
 
+            this.seleccionados =
+              new Set<string>();
             this.cerrarAgendaEntrevista();
+            this.cargarCandidatos();
           },
 
           error: (error) => {
@@ -1987,11 +1989,11 @@ export class CandidatosList implements OnInit, OnDestroy {
             tipo: 'success',
             variante: 'soft',
 
-            mensaje:
-              `${entrevistas.length} entrevistas agendadas correctamente.`,
+            mensaje: `${entrevistas.length} entrevistas agendadas correctamente.`,
           };
 
           this.cerrarAgendaEntrevista();
+          this.cargarCandidatos();
         },
 
         error: (error) => {
@@ -2155,9 +2157,16 @@ export class CandidatosList implements OnInit, OnDestroy {
   }
 
   actualizarEstadoMasivo() {
-    const estadoId = this.estadosPostulacionPorNombre.get(this.normalizar(this.estadoMasivoSeleccionado));
+    if (!this.puedeActualizarEstadoMasivo) {
+      this.errorEstadoMasivo = 'Selecciona un estado permitido para estos candidatos.';
+      return;
+    }
 
-    if (!this.puedeActualizarEstadoMasivo || !estadoId) {
+    const estadoDestino = this.normalizar(this.estadoMasivoSeleccionado);
+
+    const estadoId = this.estadosPostulacionPorNombre.get(estadoDestino);
+
+    if (!estadoId) {
       this.errorEstadoMasivo = 'Selecciona un estado permitido para estos candidatos.';
       return;
     }
