@@ -108,6 +108,11 @@ class Institucion(Base):
     inst_tipo_institucion_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tbl_tipo_institucion.tint_id"), nullable=True
     )
+    inst_creado_automaticamente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    inst_origen: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    inst_origen_candidato_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("tbl_candidato.cand_id"), nullable=True
+    )
 
     tipo_institucion: Mapped[Optional["TipoInstitucion"]] = relationship(
         "TipoInstitucion", back_populates="instituciones", lazy="joined"
@@ -123,6 +128,11 @@ class Carrera(Base):
 
     crra_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     crra_nombre: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    crra_creado_automaticamente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    crra_origen: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    crra_origen_candidato_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("tbl_candidato.cand_id"), nullable=True
+    )
 
 
 class NivelEducacional(Base):
@@ -172,6 +182,11 @@ class Idioma(Base):
 
     idio_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     idio_nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    idio_creado_automaticamente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    idio_origen: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    idio_origen_candidato_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("tbl_candidato.cand_id"), nullable=True
+    )
 
 
 class NivelIdioma(Base):
@@ -213,6 +228,11 @@ class Habilidad(Base):
         ForeignKey("tbl_categoria_habilidad.cthb_id", ondelete="RESTRICT"),
         nullable=True,
     )
+    hab_creado_automaticamente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    hab_origen: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    hab_origen_candidato_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("tbl_candidato.cand_id"), nullable=True
+    )
 
     categoria: Mapped[Optional["CategoriaHabilidad"]] = relationship(
         "CategoriaHabilidad", back_populates="habilidades", lazy="joined"
@@ -253,6 +273,11 @@ class Cargo(Base):
     crgo_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     crgo_nombre: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     crgo_descripcion: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    crgo_creado_automaticamente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    crgo_origen: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    crgo_origen_candidato_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("tbl_candidato.cand_id"), nullable=True
+    )
 
 
 class Modalidad(Base):

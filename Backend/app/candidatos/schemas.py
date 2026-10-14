@@ -63,7 +63,7 @@ class DireccionResponse(DireccionCreate):
 class HabilidadCreate(StrictSchema):
     cdhb_habilidad_id: int = Field(gt=0)
     cdhb_nivel_habilidad_id: int | None = Field(default=None, gt=0)
-    cdhb_anios_experiencia: int = Field(default=0, ge=0)
+    cdhb_anios_experiencia: int | None = Field(default=None, ge=0)
 
 
 class HabilidadUpdate(StrictSchema):

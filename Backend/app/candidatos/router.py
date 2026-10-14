@@ -254,28 +254,68 @@ def _save_upload(file: UploadFile, content: bytes) -> str:
     name=f"{uuid.uuid4().hex}{suffix}"; path=base/name; path.write_bytes(content); return str(path).replace("\\","/")
 
 
-def _import_one(file:UploadFile,db:Session):
+def _rut_pair_is_valid(rut: int | None, dv: int | str | None) -> bool:
+    if rut is None or dv is None:
+        return False
+    dv_text = "K" if dv == 10 else str(dv).strip().upper()
+    return cv_parser._is_valid_rut(str(rut), dv_text)
+
+
+def _merge_imported_core_fields(existing, core: dict) -> None:
+    new_rut = core.get("cand_rut_sin_dv")
+    new_dv = core.get("cand_dv")
+    existing_rut = getattr(existing, "cand_rut_sin_dv", None)
+    existing_dv = getattr(existing, "cand_dv", None)
+
+    # RUT es la única excepción al merge conservador: si el dato guardado se
+    # demuestra inválido por DV y el CV trae uno válido, se autocorrige.
+    if (
+        existing_rut is not None
+        and existing_dv is not None
+        and not _rut_pair_is_valid(existing_rut, existing_dv)
+        and _rut_pair_is_valid(new_rut, new_dv)
+    ):
+        existing.cand_rut_sin_dv = new_rut
+        existing.cand_dv = new_dv
+
+    # En importación solo completamos campos vacíos: el CV puede mejorar datos
+    # faltantes, pero no debe pisar correcciones administrativas ya guardadas
+    # salvo la excepción explícita del RUT inválido.
+    for field, value in core.items():
+        if value and not getattr(existing, field, None):
+            setattr(existing, field, value)
+
+
+def _import_one(file:UploadFile,db:Session, *, commit: bool = True):
     content=file.file.read()
     try:
         text=cv_parser.extract_text(file.filename or "cv.pdf",content)
         core,warnings=cv_parser.parse_core(text)
-        nested,nested_warnings=services.derive_nested_from_cv(db,text)
+        existing=services.get_candidate_by_email(db, core["cand_email"])
+        nested,nested_warnings=services.derive_nested_from_cv(
+            db,
+            text,
+            origin_candidate_id=existing.cand_id if existing else None,
+        )
         warnings.extend(nested_warnings)
     except ValueError as exc: raise HTTPException(status_code=422,detail=str(exc)) from exc
     path=_save_upload(file,content)
-    existing=services.get_candidate_by_email(db,core["cand_email"])
+    # La deduplicación actual de importación se basa en email normalizado. No
+    # inferimos identidad por RUT/nombre/teléfono en este flujo para evitar
+    # merges aproximados entre personas distintas.
+    created_catalogs = nested.pop("_catalogos_creados", [])
     if existing:
         # Si el correo pertenece a candidato existente: complementa campos vacíos y agrega CV sin tocar password.
-        for field,value in core.items():
-            if value and not getattr(existing,field,None): setattr(existing,field,value)
+        _merge_imported_core_fields(existing, core)
         existing.cand_url_1=services.merge_semicolon(existing.cand_url_1,core.get("cand_url_1"))
         existing.cand_cv_urls=services.merge_semicolon(existing.cand_cv_urls,path)
         services.merge_imported_nested(db,existing,nested)
-        services._commit(db)
+        if commit:
+            services._commit(db)
         obj=services.get_candidate(db,existing.cand_id)
         return {"candidato":_profile(obj),"creado":False,"actualizado":True,"password_temporal":None,"cv_ruta_guardada":path,"advertencias":warnings}
     payload=schemas.CandidatoCreate(**core,cand_cv_urls=path,**nested)
-    try:obj,pwd=services.create_candidate(db,payload)
+    try:obj,pwd=services.create_candidate(db,payload,auto_catalogs=created_catalogs,commit=commit)
     except services.CandidateModuleError as exc: raise _http(exc) from exc
     return {"candidato":_profile(obj),"creado":True,"actualizado":False,"password_temporal":pwd,"cv_ruta_guardada":path,"advertencias":warnings}
 
@@ -287,7 +327,15 @@ def import_cv(file:UploadFile=File(...),db:Session=Depends(get_db),_:Usuario=Dep
 
 @router.post("/candidatos/importar-cvs", response_model=list[schemas.ImportCvResponse])
 def import_cvs(files:list[UploadFile]=File(...),db:Session=Depends(get_db),_:Usuario=Depends(require_permissions("CAN_UPDATE"))):
-    return [_import_one(file,db) for file in files]
+    try:
+        # El lote comparte una transacción para evitar que un CV anterior quede
+        # confirmado si otro archivo falla durante el mismo importador masivo.
+        results = [_import_one(file, db, commit=False) for file in files]
+        services._commit(db)
+        return results
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.get(

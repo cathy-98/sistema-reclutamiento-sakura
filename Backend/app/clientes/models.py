@@ -1,7 +1,7 @@
 # app/clientes/models.py                        
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -17,6 +17,11 @@ class Empresa(Base):
     emp_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     emp_nombre: Mapped[str | None] = mapped_column(String(30), nullable=True)
     emp_identificacion: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    emp_creado_automaticamente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    emp_origen: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    emp_origen_candidato_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("tbl_candidato.cand_id"), nullable=True
+    )
 
     clientes: Mapped[list["Cliente"]] = relationship(
         "Cliente",
