@@ -118,6 +118,7 @@ interface PostulacionTabla {
  */
 interface Candidato {
   idCandidato: string;
+  cvUrls?: string | null;
   postulaciones: PostulacionTabla[];
 
   match: number;
@@ -257,6 +258,7 @@ export class CandidatosList implements OnInit, OnDestroy {
   observacionEstadoMasivo = '';
   guardandoEstadoMasivo = false;
   errorEstadoMasivo = '';
+  descargandoCvOriginal = new Set<string>();
 
   mostrarConfirmacionDesactivacion = false;
   candidatoSeleccionadoDesactivacion: Candidato | null = null;
@@ -461,8 +463,11 @@ export class CandidatosList implements OnInit, OnDestroy {
 
     {
       id: 'descargar-cv',
-      label: 'Descargar CV',
+      label: 'Descargar CV original',
       icon: 'download',
+      visible: (candidato) => Boolean(candidato.cvUrls),
+      disabled: (candidato) => this.descargandoCvOriginal.has(this.obtenerIdCandidato(candidato)),
+      disabledReason: () => 'Descarga en curso',
     },
 
     {
@@ -1627,6 +1632,11 @@ export class CandidatosList implements OnInit, OnDestroy {
       return;
     }
 
+    if (evento.action === 'descargar-cv') {
+      this.descargarCvOriginal(evento.row);
+      return;
+    }
+
     if (
       evento.action ===
       'agendar-entrevista'
@@ -1779,6 +1789,53 @@ export class CandidatosList implements OnInit, OnDestroy {
     this.alerta = null;
   }
 
+  private descargarCvOriginal(candidato: Candidato) {
+    const id = this.obtenerIdCandidato(candidato);
+    if (this.descargandoCvOriginal.has(id)) {
+      return;
+    }
+
+    this.descargandoCvOriginal.add(id);
+    this.candidatosService
+      .descargarCvOriginal(id)
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.descargandoCvOriginal.delete(id);
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe({
+        next: (respuesta) => this.descargarBlobCvOriginal(respuesta, `cv-original-${id}`),
+        error: (error) => {
+          this.alerta = {
+            tipo: 'warning',
+            variante: 'soft',
+            mensaje: obtenerMensajeError(error, 'No se encontró un CV original disponible.'),
+          };
+        },
+      });
+  }
+
+  private descargarBlobCvOriginal(respuesta: { body: Blob | null; headers: { get(name: string): string | null } }, nombreFallback: string) {
+    if (!respuesta.body) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'No se encontró un CV original disponible.',
+      };
+      return;
+    }
+
+    const contentDisposition = respuesta.headers.get('Content-Disposition') ?? '';
+    const nombre = /filename="?([^";]+)"?/i.exec(contentDisposition)?.[1] || nombreFallback;
+    const url = URL.createObjectURL(respuesta.body);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    enlace.click();
+    URL.revokeObjectURL(url);
+  }
   abrirAgendaMasiva() {
     const candidatos =
       this.candidatos.filter(
@@ -3282,6 +3339,9 @@ export class CandidatosList implements OnInit, OnDestroy {
     return {
       idCandidato:
         String(candidato.cand_id),
+
+      cvUrls:
+        candidato.cand_cv_urls ?? null,
 
       postulaciones,
 

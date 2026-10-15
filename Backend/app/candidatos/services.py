@@ -343,6 +343,30 @@ def append_cv_url(db: Session, candidate: models.Candidato, cv_path: str) -> mod
     return get_candidate(db, candidate.cand_id)
 
 
+def resolve_original_cv_path(db: Session, candidate_id: int) -> Path:
+    """Resuelve el último CV registrado sin permitir salir del storage privado."""
+    candidate = get_candidate(db, candidate_id)
+    stored_paths = [item.strip() for item in (candidate.cand_cv_urls or '').split(';') if item.strip()]
+    if not stored_paths:
+        raise NotFoundError('CV original no disponible')
+
+    storage_root = Path(os.getenv('CANDIDATE_CV_STORAGE_DIR', 'storage/cv')).resolve()
+    candidate_path = Path(stored_paths[-1])
+    if not candidate_path.is_absolute():
+        candidate_path = Path.cwd() / candidate_path
+
+    resolved_path = candidate_path.resolve(strict=False)
+    try:
+        resolved_path.relative_to(storage_root)
+    except ValueError as exc:
+        raise NotFoundError('CV original no disponible') from exc
+
+    if not resolved_path.is_file():
+        raise NotFoundError('CV original no disponible')
+
+    return resolved_path
+
+
 # --------------------------- consultas de recursos anidados ---------------------------
 def list_candidate_skills(db: Session, candidate_id: int) -> list[models.CandidatoHabilidad]:
     candidate = get_candidate(db, candidate_id)

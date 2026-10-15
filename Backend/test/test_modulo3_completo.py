@@ -463,6 +463,94 @@ def test_crud_experiencia_con_habilidades(client, admin_token, seed):
     assert client.delete(f"/candidatos/{cid}/experiencias/{iid}",headers=_headers(admin_token)).status_code==204
 
 
+def test_descargar_cv_original_usa_la_ultima_ruta_registrada(client, admin_token, seed, monkeypatch, tmp_path):
+    storage = tmp_path / "cv"
+    storage.mkdir()
+    anterior = storage / "anterior.pdf"
+    ultimo = storage / "ultimo.pdf"
+    anterior.write_bytes(b"PDF anterior")
+    ultimo.write_bytes(b"PDF ultimo")
+    monkeypatch.setenv("CANDIDATE_CV_STORAGE_DIR", str(storage))
+
+    payload = _candidate_payload(seed, email="descarga-original@sakura.cl")
+    payload["cand_cv_urls"] = [str(anterior), str(ultimo)]
+    creado = client.post("/candidatos", headers=_headers(admin_token), json=payload)
+    assert creado.status_code == 201, creado.text
+
+    response = client.get(
+        f"/candidatos/{creado.json()['candidato']['cand_id']}/cv-original",
+        headers=_headers(admin_token),
+    )
+    assert response.status_code == 200
+    assert response.content == b"PDF ultimo"
+    assert "ultimo.pdf" in response.headers["content-disposition"]
+    assert response.headers["content-type"] == "application/pdf"
+
+
+def test_descargar_cv_original_rechaza_sin_cv_y_archivo_inexistente(client, admin_token, seed, monkeypatch, tmp_path):
+    storage = tmp_path / "cv"
+    storage.mkdir()
+    monkeypatch.setenv("CANDIDATE_CV_STORAGE_DIR", str(storage))
+
+    sin_cv = _candidate_payload(seed, email="sin-cv-original@sakura.cl")
+    sin_cv["cand_cv_urls"] = None
+    creado = client.post("/candidatos", headers=_headers(admin_token), json=sin_cv)
+    assert creado.status_code == 201, creado.text
+    cid = creado.json()["candidato"]["cand_id"]
+
+    assert client.get(f"/candidatos/{cid}/cv-original", headers=_headers(admin_token)).status_code == 404
+
+    sin_archivo = _candidate_payload(seed, email="cv-original-ausente@sakura.cl")
+    sin_archivo["cand_cv_urls"] = [str(storage / "ausente.pdf")]
+    creado = client.post("/candidatos", headers=_headers(admin_token), json=sin_archivo)
+    assert creado.status_code == 201, creado.text
+    assert client.get(
+        f"/candidatos/{creado.json()['candidato']['cand_id']}/cv-original",
+        headers=_headers(admin_token),
+    ).status_code == 404
+
+
+def test_descargar_cv_original_rechaza_ruta_externa_y_permisos(client, admin_token, view_token, no_perm_token, seed, monkeypatch, tmp_path):
+    storage = tmp_path / "cv"
+    storage.mkdir()
+    externo = tmp_path / "externo.pdf"
+    externo.write_bytes(b"fuera")
+    monkeypatch.setenv("CANDIDATE_CV_STORAGE_DIR", str(storage))
+
+    payload = _candidate_payload(seed, email="cv-original-externo@sakura.cl")
+    payload["cand_cv_urls"] = [str(externo)]
+    creado = client.post("/candidatos", headers=_headers(admin_token), json=payload)
+    assert creado.status_code == 201, creado.text
+    cid = creado.json()["candidato"]["cand_id"]
+
+    assert client.get(f"/candidatos/{cid}/cv-original").status_code == 401
+    assert client.get(f"/candidatos/{cid}/cv-original", headers=_headers(no_perm_token)).status_code == 403
+    assert client.get(f"/candidatos/{cid}/cv-original", headers=_headers(view_token)).status_code == 404
+    assert client.get("/candidatos/999999/cv-original", headers=_headers(view_token)).status_code == 404
+
+
+def test_descargar_cv_original_rechaza_symlink_fuera_del_storage(client, admin_token, seed, monkeypatch, tmp_path):
+    storage = tmp_path / "cv"
+    storage.mkdir()
+    externo = tmp_path / "externo.pdf"
+    externo.write_bytes(b"fuera")
+    enlace = storage / "enlace.pdf"
+    try:
+        enlace.symlink_to(externo)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"el entorno no permite crear symlink: {exc}")
+    monkeypatch.setenv("CANDIDATE_CV_STORAGE_DIR", str(storage))
+
+    payload = _candidate_payload(seed, email="cv-original-symlink@sakura.cl")
+    payload["cand_cv_urls"] = [str(enlace)]
+    creado = client.post("/candidatos", headers=_headers(admin_token), json=payload)
+    assert creado.status_code == 201, creado.text
+    assert client.get(
+        f"/candidatos/{creado.json()['candidato']['cand_id']}/cv-original",
+        headers=_headers(admin_token),
+    ).status_code == 404
+
+
 def test_fechas_estudio_invalidas_422(client, admin_token, seed):
     cid=_create_candidate(client,admin_token,seed)["candidato"]["cand_id"]
     r=client.post(f"/candidatos/{cid}/estudios",headers=_headers(admin_token),json={"etcd_fecha_inicio":"2025-01-01","etcd_fecha_fin":"2024-01-01"})

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import mimetypes
 import os
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_candidate, require_permissions
@@ -228,6 +230,21 @@ def create_candidate(payload:schemas.CandidatoCreate,db:Session=Depends(get_db),
 def get_candidate(candidate_id:int,db:Session=Depends(get_db),_:Usuario=Depends(require_permissions("CAN_VIEW"))):
     try: return _profile(services.get_candidate(db,candidate_id))
     except services.CandidateModuleError as exc: raise _http(exc) from exc
+
+
+@router.get("/candidatos/{candidate_id}/cv-original")
+def download_original_cv(
+    candidate_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_permissions("CAN_VIEW")),
+):
+    try:
+        path = services.resolve_original_cv_path(db, candidate_id)
+    except services.CandidateModuleError as exc:
+        raise _http(exc) from exc
+
+    media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    return FileResponse(path, filename=path.name, media_type=media_type)
 
 
 @router.put("/candidatos/{candidate_id}", response_model=schemas.CandidatoPerfilResponse)

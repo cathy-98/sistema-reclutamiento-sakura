@@ -315,6 +315,13 @@ export class CandidatosService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  descargarCvOriginal(id: string | number) {
+    return this.http.get(`${this.apiUrl}/${id}/cv-original`, {
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
   subirCv(archivo: File) {
     const formData = new FormData();
     formData.append('file', archivo);
