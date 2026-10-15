@@ -11,11 +11,15 @@ import { Modal } from '../../../shared/components/modal/modal';
 import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
 import { Stepper } from '../../../shared/components/stepper/stepper';
 import { EntrevistaPayload, ProgramacionTipoEntrevistaPayload } from '../../../services/entrevistas.service';
-import { CatalogosService, TipoEntrevistaCatalogoApi, UsuarioCatalogoApi } from '../../../services/catalogos.service';
+import {
+  CatalogosService,
+  EstadoSolicitudCandidatoCatalogoApi,
+  TipoEntrevistaCatalogoApi,
+  UsuarioCatalogoApi,
+} from '../../../services/catalogos.service';
 import { CandidatoApi, CandidatosService, PostulacionCandidatoApi } from '../../../services/candidatos.service';
 import { SolicitudesService } from '../../../services/solicitudes.service';
 import { SolicitudResumen } from '../../../shared/models/solicitud.model';
-import { resolverSolicitudReal } from '../../../shared/utils/solicitud-autocomplete';
 
 interface IntegranteEntrevista {
   id: string;
@@ -45,6 +49,14 @@ interface ProgramacionTipoForm {
   busquedaResponsable: string;
 }
 
+interface PostulacionAgendaDetalle {
+  postulacion: PostulacionCandidatoApi;
+  solicitud: SolicitudResumen | null;
+  estadoPostulacion: string;
+  elegible: boolean;
+  motivoNoElegible: string;
+}
+
 @Component({
   selector: 'app-entrevista-form-modal',
   imports: [
@@ -72,18 +84,27 @@ export class EntrevistaFormModal implements OnInit {
   @Output() guardar = new EventEmitter<EntrevistaPayload>();
 
   solicitudes: SolicitudResumen[] = [];
+  solicitudesTodas: SolicitudResumen[] = [];
   candidatosDisponibles: CandidatoApi[] = [];
   postulacionesSolicitud: PostulacionCandidatoApi[] = [];
+  postulacionesCandidato: PostulacionCandidatoApi[] = [];
   tiposCatalogo: TipoEntrevistaCatalogoApi[] = [];
   integrantes: IntegranteEntrevista[] = [];
+  estadosPostulacion: EstadoSolicitudCandidatoCatalogoApi[] = [];
 
   solicitudSeleccionadaId: number | null = null;
   codigoSolicitudSeleccionada = '';
   postulacionesSeleccionadas = new Set<number>();
   cargo = '';
+  modoBusqueda: 'solicitud' | 'candidato' = 'solicitud';
+  busquedaCandidato = '';
+  candidatoSeleccionadoId: number | null = null;
+  errorSolicitud = '';
   errorEnvio = '';
   cargandoDatos = false;
   cargandoCandidatosSolicitud = false;
+  cargandoPostulacionesCandidato = false;
+  solicitudEditadaPorUsuario = false;
   tabFormulario: 'datos' | 'programacion' | 'participantes' | 'revision' = 'datos';
   tipoActivoId: number | null = null;
 
@@ -156,9 +177,10 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   get todasPostulacionesSeleccionadas() {
+    const elegibles = this.postulacionesSolicitud.filter((postulacion) => this.postulacionElegible(postulacion));
     return (
-      this.postulacionesSolicitud.length > 0 &&
-      this.postulacionesSolicitud.every((postulacion) => this.postulacionesSeleccionadas.has(postulacion.slcd_id))
+      elegibles.length > 0 &&
+      elegibles.every((postulacion) => this.postulacionesSeleccionadas.has(postulacion.slcd_id))
     );
   }
 
@@ -171,7 +193,8 @@ export class EntrevistaFormModal implements OnInit {
       return this.candidatos.map((candidato) => candidato.nombre);
     }
 
-    return this.postulacionesSolicitud
+    const postulaciones = this.modoBusqueda === 'candidato' ? this.postulacionesCandidato : this.postulacionesSolicitud;
+    return postulaciones
       .filter((postulacion) => this.postulacionesSeleccionadas.has(postulacion.slcd_id))
       .map((postulacion) => this.nombrePostulacion(postulacion));
   }
@@ -193,6 +216,37 @@ export class EntrevistaFormModal implements OnInit {
     }
 
     return Array.from(this.postulacionesSeleccionadas);
+  }
+
+  get candidatosFiltrados() {
+    const busqueda = this.normalizarTexto(this.busquedaCandidato);
+    if (!busqueda) {
+      return this.candidatosDisponibles;
+    }
+
+    return this.candidatosDisponibles.filter((candidato) =>
+      this.normalizarTexto([
+        candidato.cand_nombres,
+        candidato.cand_apellido_paterno,
+        candidato.cand_apellido_materno,
+        candidato.cand_email,
+      ].filter(Boolean).join(' ')).includes(busqueda),
+    );
+  }
+
+  get candidatoSeleccionado() {
+    return this.candidatosDisponibles.find((candidato) => candidato.cand_id === this.candidatoSeleccionadoId) ?? null;
+  }
+
+  get postulacionesCandidatoDetalle(): PostulacionAgendaDetalle[] {
+    return this.postulacionesCandidato.map((postulacion) => this.detallePostulacionAgenda(postulacion));
+  }
+
+  get solicitudPostulacionSeleccionada() {
+    const postulacion = this.postulacionesSeleccionadasIds[0];
+    const registro = this.postulacionesCandidato.find((item) => item.slcd_id === postulacion)
+      ?? this.postulacionesSolicitud.find((item) => item.slcd_id === postulacion);
+    return registro ? this.solicitudDePostulacion(registro) : null;
   }
 
   cambiarTabFormulario(tab: string) {
@@ -233,14 +287,23 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   alternarPostulacion(postulacion: PostulacionCandidatoApi, seleccionado: boolean) {
+    if (!this.postulacionElegible(postulacion)) {
+      return;
+    }
+
     // Selección múltiple de candidatos asociados a la solicitud actual.
     const ids = new Set(this.postulacionesSeleccionadas);
+    if (this.modoBusqueda === 'candidato') {
+      ids.clear();
+    }
     if (seleccionado) {
       ids.add(postulacion.slcd_id);
     } else {
       ids.delete(postulacion.slcd_id);
     }
     this.postulacionesSeleccionadas = ids;
+    this.actualizarCargoDesdeSolicitud();
+    this.actualizarTitulosSugeridos();
   }
 
   postulacionMarcada(postulacionId: number) {
@@ -250,12 +313,103 @@ export class EntrevistaFormModal implements OnInit {
   alternarTodasPostulaciones(seleccionado: boolean) {
     // Seleccionar todos solo actúa sobre candidatos de la solicitud cargada.
     this.postulacionesSeleccionadas = seleccionado
-      ? new Set(this.postulacionesSolicitud.map((postulacion) => postulacion.slcd_id))
+      ? new Set(this.postulacionesSolicitud.filter((postulacion) => this.postulacionElegible(postulacion)).map((postulacion) => postulacion.slcd_id))
       : new Set();
   }
 
   limpiarPostulaciones() {
     this.postulacionesSeleccionadas = new Set();
+  }
+
+  cambiarModoBusqueda(modo: 'solicitud' | 'candidato') {
+    if (this.modoBusqueda === modo) {
+      return;
+    }
+
+    this.modoBusqueda = modo;
+    this.limpiarCandidatosPreseleccionadosSiCorresponde();
+    this.solicitudSeleccionadaId = null;
+    this.codigoSolicitudSeleccionada = '';
+    this.postulacionesSolicitud = [];
+    this.postulacionesCandidato = [];
+    this.postulacionesSeleccionadas = new Set();
+    this.candidatoSeleccionadoId = null;
+    this.busquedaCandidato = '';
+    this.errorSolicitud = '';
+    this.cargo = '';
+    this.errorEnvio = '';
+  }
+
+  seleccionarCandidato(candidato: CandidatoApi) {
+    this.candidatoSeleccionadoId = candidato.cand_id;
+    this.postulacionesCandidato = [];
+    this.postulacionesSeleccionadas = new Set();
+    this.solicitudSeleccionadaId = null;
+    this.codigoSolicitudSeleccionada = '';
+    this.cargo = '';
+    this.cargandoPostulacionesCandidato = true;
+
+    this.candidatosService
+      .listarSolicitudes(String(candidato.cand_id))
+      .pipe(
+        timeout(5000),
+        take(1),
+        catchError(() => of([])),
+        finalize(() => {
+          this.cargandoPostulacionesCandidato = false;
+        }),
+      )
+      .subscribe((postulaciones) => {
+        if (this.candidatoSeleccionadoId !== candidato.cand_id) {
+          return;
+        }
+        this.postulacionesCandidato = postulaciones;
+      });
+  }
+
+  detallePostulacionAgenda(postulacion: PostulacionCandidatoApi): PostulacionAgendaDetalle {
+    const solicitud = this.solicitudDePostulacion(postulacion);
+    const estadoPostulacion = this.estadoPostulacion(postulacion);
+    const elegible = this.postulacionElegible(postulacion);
+
+    return {
+      postulacion,
+      solicitud,
+      estadoPostulacion,
+      elegible,
+      motivoNoElegible: elegible ? '' : this.motivoNoElegible(postulacion, solicitud, estadoPostulacion),
+    };
+  }
+
+  estadoSolicitud(postulacion: PostulacionCandidatoApi) {
+    return this.solicitudDePostulacion(postulacion)?.estado ?? 'Sin estado';
+  }
+
+  estadoPostulacion(postulacion: PostulacionCandidatoApi) {
+    return this.estadosPostulacion.find((estado) => estado.essc_id === postulacion.slcd_estado_solicitud_candidato_id)?.essc_nombre ?? 'Sin estado';
+  }
+
+  postulacionElegible(postulacion: PostulacionCandidatoApi) {
+    const solicitud = this.solicitudDePostulacion(postulacion);
+    const estadoPostulacion = this.normalizarEstado(postulacion.slcd_estado_solicitud_candidato_id);
+    const nombreEstado = this.normalizarTexto(this.estadoPostulacion(postulacion));
+    const estadoValido = nombreEstado === 'en revision' || nombreEstado === 'en entrevista';
+    const idValido = estadoPostulacion === 'en revision' || estadoPostulacion === 'en entrevista';
+    return Boolean(solicitud && this.solicitudElegibleParaAgenda(solicitud) && (estadoValido || idValido));
+  }
+
+  motivoNoElegible(
+    postulacion: PostulacionCandidatoApi,
+    solicitud: SolicitudResumen | null = this.solicitudDePostulacion(postulacion),
+    estadoPostulacion = this.estadoPostulacion(postulacion),
+  ) {
+    if (!solicitud) {
+      return 'La solicitud ya no está disponible para agendar.';
+    }
+    if (!this.solicitudElegibleParaAgenda(solicitud)) {
+      return `Solicitud en estado ${solicitud.estado}.`;
+    }
+    return `Postulación en estado ${estadoPostulacion}.`;
   }
 
   alCambiarSolicitud(solicitudId?: string | number | null) {
@@ -277,18 +431,12 @@ export class EntrevistaFormModal implements OnInit {
 
   actualizarCodigoSolicitudSeleccionada(valor: string) {
     this.codigoSolicitudSeleccionada = valor;
-
-    const solicitud = resolverSolicitudReal(this.solicitudes, valor);
+    this.errorSolicitud = '';
+    this.solicitudEditadaPorUsuario = true;
+    this.limpiarCandidatosPreseleccionadosSiCorresponde();
 
     if (!valor.trim()) {
       this.alCambiarSolicitud(null);
-      return;
-    }
-
-    if (solicitud) {
-      if (Number(solicitud.id) !== Number(this.solicitudSeleccionadaId)) {
-        this.alCambiarSolicitud(solicitud.id);
-      }
       return;
     }
 
@@ -300,6 +448,9 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   seleccionarSolicitudAutocomplete(solicitud: SolicitudResumen | null) {
+    this.errorSolicitud = '';
+    this.solicitudEditadaPorUsuario = true;
+    this.limpiarCandidatosPreseleccionadosSiCorresponde();
     this.codigoSolicitudSeleccionada = solicitud?.codigo ?? '';
     this.alCambiarSolicitud(solicitud?.id ?? null);
   }
@@ -443,12 +594,19 @@ export class EntrevistaFormModal implements OnInit {
     this.errorEnvio = '';
 
     if (paso === 'datos') {
-      if (!this.solicitudSeleccionadaId && !this.tieneCandidatosPreseleccionados) {
-        this.errorEnvio = 'Selecciona una solicitud para continuar.';
+      if (this.modoBusqueda === 'solicitud' && !this.solicitudSeleccionadaId && !this.tieneCandidatosPreseleccionados) {
+        this.errorSolicitud = 'Selecciona una solicitud para continuar';
+        return false;
+      }
+      this.errorSolicitud = '';
+      if (this.modoBusqueda === 'candidato' && !this.candidatoSeleccionadoId) {
+        this.errorEnvio = 'Selecciona un candidato para continuar.';
         return false;
       }
       if (this.postulacionesSeleccionadasIds.length === 0) {
-        this.errorEnvio = 'Selecciona al menos un candidato asociado a una solicitud.';
+        this.errorEnvio = this.modoBusqueda === 'candidato'
+          ? 'Selecciona una postulación elegible para continuar.'
+          : 'Selecciona al menos un candidato asociado a una solicitud.';
         return false;
       }
       if (this.programaciones.size === 0) {
@@ -532,6 +690,10 @@ export class EntrevistaFormModal implements OnInit {
     const total = this.postulacionesSeleccionadasIds.length;
     const cantidad = total === 1 ? '1 candidato' : `${total || 0} candidatos`;
 
+    if (this.modoBusqueda === 'candidato') {
+      return this.candidatoSeleccionadoId ? `${this.codigoSolicitudResumen()} · ${cantidad}` : 'Selecciona un candidato';
+    }
+
     if (!this.tieneCandidatosPreseleccionados && !this.solicitudSeleccionadaId) {
       return 'Selecciona una solicitud';
     }
@@ -543,11 +705,13 @@ export class EntrevistaFormModal implements OnInit {
     forkJoin({
       tipos: this.catalogosService.listarTiposEntrevista().pipe(timeout(4000), catchError(() => of([]))),
       usuarios: this.catalogosService.listarUsuarios().pipe(timeout(4000), catchError(() => of([]))),
+      estadosPostulacion: this.catalogosService.listarEstadosSolicitudCandidatoSeguro().pipe(timeout(4000), catchError(() => of([]))),
     })
       .pipe(take(1))
-      .subscribe(({ tipos, usuarios }) => {
+      .subscribe(({ tipos, usuarios, estadosPostulacion }) => {
         this.tiposCatalogo = tipos.filter((tipo) => this.tipoEntrevistaValido(tipo.tpet_nombre));
         this.integrantes = usuarios.map((usuario) => this.mapearUsuarioAIntegrante(usuario));
+        this.estadosPostulacion = estadosPostulacion;
         this.prepararProgramacionReunion();
       });
   }
@@ -565,7 +729,8 @@ export class EntrevistaFormModal implements OnInit {
         }),
       )
       .subscribe(({ solicitudes, candidatos }) => {
-        this.solicitudes = solicitudes.filter((solicitud) => this.normalizar(solicitud.estado ?? '') !== 'cancelada');
+        this.solicitudesTodas = solicitudes;
+        this.solicitudes = solicitudes.filter((solicitud) => this.solicitudElegibleParaAgenda(solicitud));
         this.candidatosDisponibles = candidatos;
         this.aplicarPreseleccion();
       });
@@ -615,7 +780,7 @@ export class EntrevistaFormModal implements OnInit {
     const solicitudInicial =
       this.solicitudInicialDesdePayload();
 
-    if (solicitudInicial) {
+    if (solicitudInicial && !this.solicitudEditadaPorUsuario) {
       this.solicitudSeleccionadaId = Number(solicitudInicial.id);
       this.codigoSolicitudSeleccionada = solicitudInicial.codigo;
     }
@@ -640,6 +805,15 @@ export class EntrevistaFormModal implements OnInit {
     }
     this.cargo = this.candidatos.length === 1 ? this.candidatos[0].cargo : 'Múltiples cargos';
     this.actualizarTitulosSugeridos();
+  }
+
+  private limpiarCandidatosPreseleccionadosSiCorresponde() {
+    if (!this.tieneCandidatosPreseleccionados) {
+      return;
+    }
+
+    this.candidatos = [];
+    this.candidatosChange.emit([]);
   }
 
   private solicitudInicialDesdePayload() {
@@ -760,7 +934,8 @@ export class EntrevistaFormModal implements OnInit {
     if (this.candidatos[0]?.nombre) {
       return this.candidatos[0].nombre;
     }
-    const postulacion = this.postulacionesSolicitud.find((item) => this.postulacionesSeleccionadas.has(item.slcd_id));
+    const postulaciones = this.modoBusqueda === 'candidato' ? this.postulacionesCandidato : this.postulacionesSolicitud;
+    const postulacion = postulaciones.find((item) => this.postulacionesSeleccionadas.has(item.slcd_id));
     return postulacion ? this.nombrePostulacion(postulacion) : 'Candidato';
   }
 
@@ -768,7 +943,7 @@ export class EntrevistaFormModal implements OnInit {
     if (this.candidatos.length === 1) {
       return this.candidatos[0].idSolicitud;
     }
-    const solicitud = this.solicitudes.find((item) => Number(item.id) === Number(this.solicitudSeleccionadaId));
+    const solicitud = this.solicitudSeleccionada ?? this.solicitudPostulacionSeleccionada;
     if (solicitud?.codigo) {
       return solicitud.codigo;
     }
@@ -777,8 +952,21 @@ export class EntrevistaFormModal implements OnInit {
   }
 
   private actualizarCargoDesdeSolicitud() {
-    const solicitud = this.solicitudes.find((item) => Number(item.id) === Number(this.solicitudSeleccionadaId));
+    const solicitud = this.solicitudSeleccionada ?? this.solicitudPostulacionSeleccionada;
     this.cargo = solicitud?.cargo ?? this.candidatos[0]?.cargo ?? '';
+  }
+
+  private solicitudDePostulacion(postulacion: PostulacionCandidatoApi) {
+    return this.solicitudesTodas.find((solicitud) => Number(solicitud.id) === Number(postulacion.slcd_solicitud_id)) ?? null;
+  }
+
+  private normalizarEstado(estadoId?: number | null) {
+    const estado = this.estadosPostulacion.find((item) => item.essc_id === estadoId)?.essc_nombre ?? '';
+    return this.normalizarTexto(estado);
+  }
+
+  private normalizarTexto(valor: string) {
+    return valor.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
   }
 
   private mapearUsuarioAIntegrante(usuario: UsuarioCatalogoApi): IntegranteEntrevista {
@@ -801,7 +989,7 @@ export class EntrevistaFormModal implements OnInit {
       : 'Sin match';
   }
 
-  private nombreCandidato(candidato: CandidatoApi) {
+  nombreCandidato(candidato: CandidatoApi) {
     return [candidato.cand_nombres, candidato.cand_apellido_paterno, candidato.cand_apellido_materno].filter(Boolean).join(' ') ||
       candidato.cand_email ||
       `Candidato ${candidato.cand_id}`;
@@ -810,6 +998,11 @@ export class EntrevistaFormModal implements OnInit {
   private tipoEntrevistaValido(nombre?: string | null) {
     const normalizado = this.normalizar(nombre ?? '');
     return Boolean(normalizado) && normalizado !== 'ingles';
+  }
+
+  private solicitudElegibleParaAgenda(solicitud: SolicitudResumen) {
+    const estado = this.normalizar(solicitud.estado ?? '');
+    return estado === 'en-publicacion' || estado === 'en-entrevistas';
   }
 
   private normalizar(valor: string) {

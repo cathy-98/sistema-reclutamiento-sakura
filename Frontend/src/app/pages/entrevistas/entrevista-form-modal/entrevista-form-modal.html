@@ -21,7 +21,7 @@
     <ng-container [ngSwitch]="tabFormulario">
       <section class="form-step" *ngSwitchCase="'datos'">
         <div class="setup-main">
-          <div class="selected-candidates" *ngIf="tieneCandidatosPreseleccionados; else selectorSolicitud">
+          <div class="selected-candidates" *ngIf="tieneCandidatosPreseleccionados">
             <div class="section-heading">
               <strong>{{ esAgendaMasiva ? 'Candidatos seleccionados' : 'Candidato seleccionado' }}</strong>
               <span>{{ postulacionesSeleccionadasCantidad }} de {{ candidatos.length }} seleccionados</span>
@@ -43,24 +43,106 @@
             </div>
           </div>
 
-          <ng-template #selectorSolicitud>
-            <div class="form-grid compact-grid single">
-              <app-form-field label="Solicitud" [required]="true">
+          <ng-container>
+            <div class="search-mode" role="tablist" aria-label="Modo de búsqueda">
+              <button
+                type="button"
+                [class.is-active]="modoBusqueda === 'solicitud'"
+                [attr.aria-selected]="modoBusqueda === 'solicitud'"
+                (click)="cambiarModoBusqueda('solicitud')"
+              >Por solicitud</button>
+              <button
+                type="button"
+                [class.is-active]="modoBusqueda === 'candidato'"
+                [attr.aria-selected]="modoBusqueda === 'candidato'"
+                (click)="cambiarModoBusqueda('candidato')"
+              >Por candidato</button>
+            </div>
+
+            <div class="form-grid compact-grid single" *ngIf="modoBusqueda === 'solicitud'">
+              <app-form-field label="Buscar solicitud" [error]="errorSolicitud" [required]="true">
                 <app-solicitud-autocomplete
+                  id="interview-request-selector"
                   name="solicitudSeleccionadaId"
                   [value]="codigoSolicitudSeleccionada"
                   [solicitudes]="solicitudes"
                   [selectedId]="solicitudSeleccionadaId"
-                  placeholder="Selecciona una solicitud"
-                  [disabled]="cargandoDatos"
+                  placeholder="Ej. SOL-000008 o nombre del cargo"
+                  [disabled]="guardando"
                   [required]="true"
+                  noResultsMessage="No se encontraron solicitudes elegibles para agendar."
                   (valueChange)="actualizarCodigoSolicitudSeleccionada($event)"
                   (selected)="seleccionarSolicitudAutocomplete($any($event))"
                 ></app-solicitud-autocomplete>
               </app-form-field>
             </div>
 
-            <div class="candidate-picker" *ngIf="solicitudSeleccionadaId">
+            <div class="candidate-search" *ngIf="modoBusqueda === 'candidato'">
+              <app-form-field label="Candidato" [required]="true">
+                <input
+                  type="search"
+                  name="busquedaCandidato"
+                  [(ngModel)]="busquedaCandidato"
+                  placeholder="Buscar por nombre, apellido o correo"
+                  [disabled]="guardando"
+                />
+              </app-form-field>
+
+              <div class="candidate-list candidate-search__results" *ngIf="candidatosFiltrados.length">
+                <button
+                  type="button"
+                  class="candidate-pill candidate-result"
+                  *ngFor="let candidato of candidatosFiltrados"
+                  [class.is-selected]="candidatoSeleccionadoId === candidato.cand_id"
+                  (click)="seleccionarCandidato(candidato)"
+                >
+                  <strong>{{ nombreCandidato(candidato) }}</strong>
+                  <span>{{ candidato.cand_email || 'Sin correo' }}</span>
+                </button>
+              </div>
+
+              <div class="empty-state" *ngIf="!candidatosFiltrados.length">
+                <strong>No se encontraron candidatos.</strong>
+                <span>Prueba con otro nombre, apellido o correo.</span>
+              </div>
+            </div>
+
+            <div class="candidate-picker" *ngIf="modoBusqueda === 'candidato' && candidatoSeleccionadoId">
+              <div class="section-heading">
+                <strong>Postulaciones del candidato</strong>
+                <span *ngIf="!cargandoPostulacionesCandidato">Selecciona una postulación elegible</span>
+                <span *ngIf="cargandoPostulacionesCandidato">Cargando...</span>
+              </div>
+
+              <div class="empty-state" *ngIf="!cargandoPostulacionesCandidato && !postulacionesCandidato.length">
+                <strong>El candidato no tiene postulaciones.</strong>
+                <span>Selecciona otro candidato para continuar.</span>
+              </div>
+
+              <div class="candidate-list compact" *ngIf="postulacionesCandidato.length">
+                <label
+                  class="candidate-pill selectable"
+                  [class.is-disabled]="!detalle.elegible"
+                  *ngFor="let detalle of postulacionesCandidatoDetalle"
+                  [title]="detalle.motivoNoElegible"
+                >
+                  <input
+                    type="radio"
+                    name="postulacionCandidato"
+                    [checked]="postulacionMarcada(detalle.postulacion.slcd_id)"
+                    [disabled]="!detalle.elegible || guardando"
+                    (change)="alternarPostulacion(detalle.postulacion, $any($event.target).checked)"
+                  />
+                  <span>
+                    <strong>{{ detalle.solicitud?.codigo || ('Solicitud ' + detalle.postulacion.slcd_solicitud_id) }} · {{ detalle.solicitud?.cargo || 'Sin cargo' }}</strong>
+                    <small>{{ estadoSolicitud(detalle.postulacion) }} · {{ detalle.estadoPostulacion }}</small>
+                    <small *ngIf="!detalle.elegible" class="disabled-reason">{{ detalle.motivoNoElegible }}</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div class="candidate-picker" *ngIf="solicitudSeleccionadaId && !tieneCandidatosPreseleccionados">
               <div class="section-heading">
                 <strong>Candidatos asociados</strong>
                 <span *ngIf="!cargandoCandidatosSolicitud">{{ postulacionesSeleccionadasCantidad }} de {{ postulacionesSolicitud.length }} seleccionados</span>
@@ -87,16 +169,18 @@
                   <input
                     type="checkbox"
                     [checked]="postulacionMarcada(postulacion.slcd_id)"
+                    [disabled]="!postulacionElegible(postulacion) || guardando"
                     (change)="alternarPostulacion(postulacion, $any($event.target).checked)"
                   />
                   <span>
                     <strong>{{ nombrePostulacion(postulacion) }}</strong>
                     <small>{{ detallePostulacion(postulacion) }}</small>
+                    <small *ngIf="!postulacionElegible(postulacion)" class="disabled-reason">{{ motivoNoElegible(postulacion) }}</small>
                   </span>
                 </label>
               </div>
             </div>
-          </ng-template>
+          </ng-container>
         </div>
       </section>
 
