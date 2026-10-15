@@ -71,6 +71,39 @@ p {
   gap: 14px;
 }
 
+.feedback-type-list {
+  display: grid;
+  gap: 12px;
+}
+
+.feedback-type-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+}
+
+.feedback-type-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.feedback-type-card > header strong {
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.feedback-type-card > header span {
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .feedback-readonly {
   display: grid;
   gap: 12px;

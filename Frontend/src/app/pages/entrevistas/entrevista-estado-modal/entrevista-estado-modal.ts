@@ -311,11 +311,11 @@ export class EntrevistaEstadoModal implements OnChanges {
     const estadoSolicitud = this.normalizar(this.estadoSolicitudActual);
     const estadoPostulacion = this.normalizar(this.estadoPostulacionActual);
 
-    if (estadoSolicitud !== 'en entrevistas') {
+    if (estadoSolicitud !== 'en-entrevistas') {
       return false;
     }
 
-    if (estadoPostulacion && estadoPostulacion !== 'en entrevista' && estadoPostulacion !== 'sin estado') {
+    if (estadoPostulacion && estadoPostulacion !== 'en-entrevista' && estadoPostulacion !== 'sin-estado') {
       return false;
     }
 
@@ -325,11 +325,24 @@ export class EntrevistaEstadoModal implements OnChanges {
   get entrevistaRealizadaSinEvaluacionDisponible() {
     return this.modo === 'gestionar' &&
       this.estadoActualNormalizado === 'realizada' &&
-      this.opcionesFeedback.length < 2;
+      (
+        this.tiposEvaluables.length === 0 ||
+        this.opcionesFeedback.length === 0
+      );
   }
 
   get tiposEvaluables() {
-    return this.detalle?.tipos ?? [];
+    const tipos = this.detalle?.tipos ?? [];
+
+    if (!this.usuarioActualId) {
+      return [];
+    }
+
+    return tipos.filter((tipo) =>
+      (tipo.entrevistadores ?? []).some((entrevistador) =>
+        Number(entrevistador.usuario_id) === Number(this.usuarioActualId),
+      ),
+    );
   }
 
   get feedbacksRegistrados() {
@@ -361,7 +374,7 @@ export class EntrevistaEstadoModal implements OnChanges {
   }
 
   get tieneFeedbackHabilitado() {
-    return Boolean(this.tipoFeedbackActivo && this.opcionesFeedback.length >= 2);
+    return this.tiposEvaluables.length > 0 && this.opcionesFeedback.length > 0;
   }
 
   get resumenContextual() {
@@ -555,10 +568,17 @@ export class EntrevistaEstadoModal implements OnChanges {
     this.intentoGuardarResultados = true;
     this.errorLocalEvaluaciones = '';
 
+    if (!this.tieneFeedbackHabilitado) {
+      this.errorLocalEvaluaciones = this.tiposEvaluables.length === 0
+        ? 'No tienes tipos de entrevista asignados para evaluar.'
+        : 'No hay resultados disponibles para registrar.';
+      return;
+    }
+
     const payload = this.payloadEvaluaciones();
 
     if (payload.length === 0) {
-      this.errorLocalEvaluaciones = 'Selecciona un resultado para guardar.';
+      this.errorLocalEvaluaciones = 'Selecciona al menos un resultado para guardar.';
       return;
     }
 
@@ -610,6 +630,7 @@ export class EntrevistaEstadoModal implements OnChanges {
   resultadoTipoInvalido(tipoId: number) {
     return this.intentoGuardarResultados &&
       this.mostrarResultadosPorArea &&
+      this.tiposEvaluables.length === 1 &&
       !this.evaluacionTipo(tipoId).resultadoId;
   }
 
@@ -636,24 +657,21 @@ export class EntrevistaEstadoModal implements OnChanges {
   }
 
   private payloadEvaluaciones() {
-    const tipo = this.tipoFeedbackActivo;
-    const evaluacion = tipo ? this.evaluacionTipo(tipo.tipo_entrevista_id) : null;
+    return this.tiposEvaluables
+      .map((tipo) => {
+        const evaluacion = this.evaluacionTipo(tipo.tipo_entrevista_id);
 
-    if (!tipo || !evaluacion) {
-      return [];
-    }
-
-    return [{
-      // Compatibilidad temporal: la UI sigue enviando el tipo requerido por backend,
-      // pero el usuario solo ve un resultado breve a nivel de entrevista.
-      tipoId: tipo.tipo_entrevista_id,
-      existe: evaluacion.existe,
-      nombreResultadoId: Number(evaluacion.resultadoId),
-      observacion: evaluacion.observacion.trim() || null,
-    }].filter((item) =>
-      Number.isFinite(item.nombreResultadoId) &&
-      item.nombreResultadoId > 0,
-    );
+        return {
+          tipoId: tipo.tipo_entrevista_id,
+          existe: evaluacion.existe,
+          nombreResultadoId: Number(evaluacion.resultadoId),
+          observacion: evaluacion.observacion.trim() || null,
+        };
+      })
+      .filter((item) =>
+        Number.isFinite(item.nombreResultadoId) &&
+        item.nombreResultadoId > 0,
+      );
   }
 
   private fechaFeedbackValor(evaluacion: EvaluacionEntrevistaApi) {

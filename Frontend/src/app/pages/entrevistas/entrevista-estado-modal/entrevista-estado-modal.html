@@ -162,39 +162,61 @@
     <section class="feedback-form" *ngIf="mostrarResultadosPorArea">
       <h4 class="section-title">Registrar resultado</h4>
 
-      <fieldset class="result-selector">
-        <legend>Resultado *</legend>
+      <div class="feedback-type-list" *ngIf="tieneFeedbackHabilitado; else feedbackNoDisponible">
+        <article class="feedback-type-card" *ngFor="let tipo of tiposEvaluables">
+          <header>
+            <strong>{{ tipo.nombre }}</strong>
+            <span>{{ evaluacionTipo(tipo.tipo_entrevista_id).existe ? 'Resultado registrado' : 'Pendiente de resultado' }}</span>
+          </header>
 
-        <label
-          class="choice-pill"
-          *ngFor="let opcion of opcionesFeedback"
-          [class.is-selected]="evaluacionTipo(tipoFeedbackActivoId).resultadoId === opcion.nore_id"
-        >
-          <input
-            type="radio"
-            name="resultadoFeedback"
-            [value]="opcion.nore_id"
-            [(ngModel)]="evaluacionTipo(tipoFeedbackActivoId).resultadoId"
-            [ngModelOptions]="{ standalone: true }"
-          />
-          <span>{{ etiquetaResultado(opcion.nore_nombre) }}</span>
-        </label>
-      </fieldset>
+          <fieldset class="result-selector">
+            <legend>Resultado *</legend>
 
-      <label class="observations-field">
-        Observación
-        <textarea
-          [(ngModel)]="evaluacionTipo(tipoFeedbackActivoId).observacion"
-          [ngModelOptions]="{ standalone: true }"
-          [attr.maxlength]="observacionMaxLength"
-          rows="4"
-          placeholder="Escribe una observación sobre la entrevista"
-          aria-describedby="contador-observacion-feedback"
-        ></textarea>
-        <small id="contador-observacion-feedback" aria-live="polite">
-          {{ observacionFeedbackLongitud(tipoFeedbackActivoId) }} / {{ observacionMaxLength }}
-        </small>
-      </label>
+            <label
+              class="choice-pill"
+              *ngFor="let opcion of opcionesFeedback"
+              [class.is-selected]="evaluacionTipo(tipo.tipo_entrevista_id).resultadoId === opcion.nore_id"
+            >
+              <input
+                type="radio"
+                [name]="'resultadoFeedback-' + tipo.tipo_entrevista_id"
+                [value]="opcion.nore_id"
+                [(ngModel)]="evaluacionTipo(tipo.tipo_entrevista_id).resultadoId"
+                [ngModelOptions]="{ standalone: true }"
+              />
+              <span>{{ etiquetaResultado(opcion.nore_nombre) }}</span>
+            </label>
+          </fieldset>
+
+          <label class="observations-field">
+            Observación
+            <textarea
+              [(ngModel)]="evaluacionTipo(tipo.tipo_entrevista_id).observacion"
+              [ngModelOptions]="{ standalone: true }"
+              [attr.maxlength]="observacionMaxLength"
+              rows="4"
+              placeholder="Escribe una observación sobre la entrevista"
+              [attr.aria-describedby]="'contador-observacion-feedback-' + tipo.tipo_entrevista_id"
+            ></textarea>
+            <small [id]="'contador-observacion-feedback-' + tipo.tipo_entrevista_id" aria-live="polite">
+              {{ observacionFeedbackLongitud(tipo.tipo_entrevista_id) }} / {{ observacionMaxLength }}
+            </small>
+          </label>
+
+          <p class="state-error" *ngIf="resultadoTipoInvalido(tipo.tipo_entrevista_id)" role="alert">
+            Selecciona un resultado para este tipo de entrevista.
+          </p>
+        </article>
+      </div>
+
+      <ng-template #feedbackNoDisponible>
+        <p class="state-note compact-note" *ngIf="tiposEvaluables.length === 0">
+          No tienes tipos de entrevista asignados para evaluar esta entrevista.
+        </p>
+        <p class="state-note compact-note" *ngIf="tiposEvaluables.length > 0 && opcionesFeedback.length === 0">
+          No hay resultados disponibles para registrar.
+        </p>
+      </ng-template>
 
       <p class="state-error" *ngIf="errorEvaluaciones" role="alert">
         {{ errorEvaluaciones }}
@@ -261,7 +283,7 @@
     <app-button
       *ngIf="mostrarResultadosPorArea"
       [variant]="varianteAccion"
-      [disabled]="guardando || guardandoEvaluaciones || !evaluacionTipo(tipoFeedbackActivoId).resultadoId"
+      [disabled]="guardando || guardandoEvaluaciones || !tieneFeedbackHabilitado"
       (pressed)="enviar()"
     >
       {{ guardando || guardandoEvaluaciones ? 'Guardando resultado...' : 'Guardar resultado' }}
