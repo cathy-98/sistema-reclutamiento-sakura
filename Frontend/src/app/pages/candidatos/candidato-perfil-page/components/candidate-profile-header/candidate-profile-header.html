@@ -10,7 +10,7 @@
     <div class="name-row">
       <h1>{{ candidato.nombre }}</h1>
     </div>
-    <p class="applied-role">
+    <p class="applied-role" *ngIf="hasSelectedPostulation">
       <span>Postulado a</span>
       <strong>{{ candidato.cargo }}</strong>
     </p>
@@ -22,12 +22,16 @@
       (saveContact)="saveContact.emit($event)"
     ></app-candidate-contact-line>
 
-    <div class="candidate-primary-actions" aria-label="Acciones principales del candidato">
+    <div
+      *ngIf="hasSelectedPostulation"
+      class="candidate-primary-actions"
+      aria-label="Acciones principales del candidato"
+    >
       <app-button (pressed)="scheduleInterview.emit()">Agendar entrevista</app-button>
     </div>
   </div>
 
-  <div class="candidate-controls">
+  <div class="candidate-controls" *ngIf="hasSelectedPostulation">
     <label class="request-selector" *ngIf="postulaciones.length > 1; else singleRequest">
       Solicitud
       <select
@@ -72,6 +76,7 @@
   [candidato]="candidato"
   [matchClass]="matchClass"
   [matchText]="matchText"
+  [showPostulationMetrics]="hasSelectedPostulation"
   (rentaSave)="saveRent.emit($event)"
   (disponibilidadSave)="saveAvailability.emit($event)"
 ></app-candidate-editable-metrics>

@@ -52,11 +52,15 @@ export class CandidateApplicationsSection {
   get postulacionSeleccionada() {
     return this.postulaciones.find((postulacion) => postulacion[0] === this.postulacionSeleccionadaId) ||
       this.postulaciones[0] ||
-      (['Sin solicitud', 'Sin cliente', 'Sin puesto', 'Sin fecha', 'Sin estado'] as PostulacionPerfil);
+      null;
   }
 
   get totalPostulaciones() {
     return this.postulaciones.length;
+  }
+
+  get tienePostulaciones() {
+    return this.postulaciones.length > 0;
   }
 
   get totalPostulacionesActivas() {

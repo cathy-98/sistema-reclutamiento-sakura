@@ -1,12 +1,20 @@
 <section class="hero-summary" aria-labelledby="candidate-metrics-title">
   <h2 id="candidate-metrics-title" class="sr-only">Datos clave del candidato</h2>
 
-  <article class="metric-item" aria-labelledby="candidate-match-title">
+  <article
+    *ngIf="showPostulationMetrics"
+    class="metric-item"
+    aria-labelledby="candidate-match-title"
+  >
     <h3 id="candidate-match-title" class="metric-title">Match</h3>
     <app-match-score [value]="matchText" [scoreClass]="matchClass"></app-match-score>
   </article>
 
-  <article class="metric-item" aria-labelledby="candidate-income-title">
+  <article
+    *ngIf="showPostulationMetrics"
+    class="metric-item"
+    aria-labelledby="candidate-income-title"
+  >
     <header class="metric-header">
       <h3 id="candidate-income-title" class="metric-title">Renta esperada</h3>
       <app-icon-button

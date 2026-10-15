@@ -2,6 +2,11 @@
   <!-- Resumen e historial de postulaciones del candidato. -->
   <h2 id="application-history-title" class="application-title">Historial de postulaciones</h2>
 
+  <p class="empty-process" *ngIf="!tienePostulaciones">
+    Sin postulaciones registradas.
+  </p>
+
+  <ng-container *ngIf="tienePostulaciones">
   <div class="application-overview">
     <article
       class="next-interview"
@@ -99,9 +104,14 @@
       <p>{{ postulacionSeleccionada[1] }} · Estado del candidato: {{ postulacionSeleccionada[4] }}</p>
     </aside>
   </div>
+  </ng-container>
 </section>
 
-<section class="content-panel process-panel" aria-labelledby="selection-process-title">
+<section
+  *ngIf="tienePostulaciones && postulacionSeleccionada"
+  class="content-panel process-panel"
+  aria-labelledby="selection-process-title"
+>
   <!-- Detalle de etapas asociadas a la postulación seleccionada. -->
   <header class="process-header">
     <h2 id="selection-process-title">Proceso de selección: {{ postulacionSeleccionada[0] }}</h2>

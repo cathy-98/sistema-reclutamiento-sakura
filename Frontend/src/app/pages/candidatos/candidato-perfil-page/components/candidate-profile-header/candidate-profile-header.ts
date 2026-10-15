@@ -20,6 +20,7 @@ export class CandidateProfileHeader {
   @Input() postulacionSeleccionadaId = '';
   @Input() estadosPostulacion: string[] = [];
   @Input() canSavePostulationState = true;
+  @Input() hasSelectedPostulation = true;
   @Input() matchText = 'Sin match';
   @Input() contactSaving = false;
   @Input() contactError = '';

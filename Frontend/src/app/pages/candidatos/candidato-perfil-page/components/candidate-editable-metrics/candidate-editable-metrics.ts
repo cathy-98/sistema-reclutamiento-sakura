@@ -17,6 +17,7 @@ export class CandidateEditableMetrics implements OnInit {
   @Input({ required: true }) candidato!: CandidatoPerfil;
   @Input() matchClass = '';
   @Input() matchText = 'Sin match';
+  @Input() showPostulationMetrics = true;
   @Output() rentaSave = new EventEmitter<number>();
   @Output() disponibilidadSave = new EventEmitter<string>();
   public disponibilidades: string[] = [];

@@ -43,6 +43,14 @@ export interface EstudioPerfil {
   fecha: string;
 }
 
+export interface CursoPerfil {
+  nombre: string;
+  institucion?: string;
+  anio?: string;
+  certificado: boolean;
+  metadata: string[];
+}
+
 export type PostulacionPerfil = [string, string, string, string, string];
 
 export interface EntrevistaPerfilResumen {

@@ -40,6 +40,7 @@ import {
 import {
   CandidatoPerfilCompletoApi,
   CandidatosService,
+  CursoCandidatoApi,
   EstudioCandidatoApi,
   ExperienciaCandidatoApi,
   HabilidadCandidatoApi,
@@ -59,6 +60,7 @@ import { CandidateMatchSection } from './components/candidate-match-section/cand
 import { CandidateProfileHeader } from './components/candidate-profile-header/candidate-profile-header';
 import {
   CandidatoPerfil,
+  CursoPerfil,
   DocumentoPerfil,
   EntrevistaPerfilResumen,
   EstudioPerfil,
@@ -166,6 +168,13 @@ export class CandidatoPerfilPage implements OnInit {
     return Boolean(contexto?.postulacionId);
   }
 
+  get tienePostulacionSeleccionada() {
+    const contexto =
+      this.contextoPostulaciones.get(this.postulacionSeleccionadaId);
+
+    return Boolean(contexto?.postulacionId);
+  }
+
   get estadoPostulacionRequiereMotivo() {
     return [
       'descartado',
@@ -221,11 +230,16 @@ export class CandidatoPerfilPage implements OnInit {
       { id: 'experiencia', label: 'Experiencia', icon: 'briefcase' },
       { id: 'estudios', label: 'Estudios', icon: 'graduation' },
       { id: 'postulaciones', label: 'Postulaciones', icon: 'puzzle' },
-      { id: 'match', label: 'Match', icon: 'users' },
-      { id: 'evaluaciones', label: 'Evaluaciones técnicas', icon: 'file' },
        // M3: Observaciones ocultas según definición funcional actual.
     // { id: 'observaciones', label: 'Observaciones', icon: 'list' },
     ];
+
+    if (this.tienePostulacionSeleccionada) {
+      tabs.push(
+        { id: 'match', label: 'Match', icon: 'users' },
+        { id: 'evaluaciones', label: 'Evaluaciones técnicas', icon: 'file' },
+      );
+    }
 
     if (this.mostrarModuloDocumentos) {
       tabs.splice(5, 0, { id: 'documentos', label: 'Documentos', icon: 'file' });
@@ -237,6 +251,8 @@ export class CandidatoPerfilPage implements OnInit {
   experiencias: ExperienciaPerfil[] = [];
 
   estudios: EstudioPerfil[] = [];
+
+  cursos: CursoPerfil[] = [];
 
   postulaciones: PostulacionPerfil[] = [];
 
@@ -349,6 +365,10 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get procesoSeleccionado() {
+    if (!this.tienePostulacionSeleccionada) {
+      return [];
+    }
+
     return this.mapearEntrevistasProcesoM5(
       this.entrevistasCandidato.filter(
         (entrevista) =>
@@ -361,6 +381,10 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get proximaEntrevistaSeleccionada() {
+    if (!this.tienePostulacionSeleccionada) {
+      return null;
+    }
+
     return this.mapearProximaEntrevistaM5(
       this.entrevistasCandidato.filter(
         (entrevista) =>
@@ -372,8 +396,8 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   get evaluacionesTecnicasSeleccionadas() {
-    if (!this.postulacionSeleccionadaId) {
-      return this.evaluacionesTecnicas;
+    if (!this.tienePostulacionSeleccionada) {
+      return [];
     }
 
     const seleccionada =
@@ -903,6 +927,10 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   abrirModalEntrevista() {
+    if (!this.tienePostulacionSeleccionada) {
+      return;
+    }
+
     this.entrevistaPerfilError = '';
     this.guardandoEntrevistaPerfil = false;
     this.mostrarModalEntrevista = true;
@@ -946,6 +974,14 @@ export class CandidatoPerfilPage implements OnInit {
   }
 
   cambiarTab(tab: string) {
+    if (
+      ['match', 'evaluaciones'].includes(tab) &&
+      !this.tienePostulacionSeleccionada
+    ) {
+      this.tabActiva = 'experiencia';
+      return;
+    }
+
     this.tabActiva = tab as PerfilTab;
   }
 
@@ -1079,6 +1115,7 @@ export class CandidatoPerfilPage implements OnInit {
           this.candidato = this.mapearPerfilM3(perfil, solicitudes, solicitudesCatalogo, disponibilidades, idiomas, catalogosPerfil);
           this.experiencias = this.mapearExperienciasM3(perfil.experiencias ?? [], catalogosPerfil, perfil.habilidades ?? []);
           this.estudios = this.mapearEstudiosM3(perfil.estudios ?? [], catalogosPerfil);
+          this.cursos = this.mapearCursosM3(perfil.cursos ?? [], catalogosPerfil);
           this.habilidadesComparadas = this.mapearHabilidadesM3(perfil.habilidades ?? [], catalogosPerfil);
         }
 
@@ -1096,6 +1133,7 @@ export class CandidatoPerfilPage implements OnInit {
           this.resolverPostulacionMasReciente() ??
           '';
         this.aplicarContextoPostulacion(this.postulacionSeleccionadaId);
+        this.validarTabActivaConContexto();
 
         this.proximaEntrevista = this.mapearProximaEntrevistaM5(
           entrevistas,
@@ -1313,11 +1351,55 @@ export class CandidatoPerfilPage implements OnInit {
         estudio.institucion?.inst_nombre ??
         this.nombrePorId(catalogos.instituciones, estudio.etcd_institucion_id ?? estudio.cdet_institucion_id) ??
         'Institucion sin nombre',
-      fecha: this.rangoFechas(
+      fecha: this.rangoFechasEstudio(
         estudio.etcd_fecha_inicio ?? estudio.cdet_fecha_inicio,
         estudio.etcd_fecha_fin ?? estudio.cdet_fecha_fin,
       ),
     }));
+  }
+
+  private mapearCursosM3(
+    cursos: CursoCandidatoApi[],
+    catalogos: CatalogosPerfilM3,
+  ): CursoPerfil[] {
+    return cursos
+      .map((curso) => {
+        const nombre =
+          curso.curs_nombre_curso?.trim() ||
+          curso.cdcu_nombre?.trim() ||
+          '';
+
+        if (!nombre) {
+          return null;
+        }
+
+        const institucion =
+          curso.cdcu_institucion?.trim() ||
+          this.nombrePorId(catalogos.instituciones, curso.curs_institucion_id);
+        const anio =
+          curso.curs_anio_curso == null
+            ? undefined
+            : String(curso.curs_anio_curso);
+        // Si el catálogo no resuelve la institución, se omite el dato para no mostrar
+        // placeholders basados en IDs internos que el usuario no puede interpretar.
+        const metadata = [institucion, anio].filter((item): item is string => Boolean(item));
+        const cursoPerfil: CursoPerfil = {
+          nombre,
+          certificado: curso.curs_es_certificado === true,
+          metadata,
+        };
+
+        if (institucion) {
+          cursoPerfil.institucion = institucion;
+        }
+
+        if (anio) {
+          cursoPerfil.anio = anio;
+        }
+
+        return cursoPerfil;
+      })
+      .filter((curso): curso is CursoPerfil => Boolean(curso));
   }
 
   private mapearHabilidadesM3(
@@ -1471,6 +1553,17 @@ export class CandidatoPerfilPage implements OnInit {
       match: contexto.match,
       renta: contexto.renta,
     };
+  }
+
+  private validarTabActivaConContexto() {
+    // Match y evaluaciones existen solo dentro de una postulación; sin ese
+    // contexto, mostrar esas pestañas comunica un proceso que no existe.
+    if (
+      ['match', 'evaluaciones'].includes(this.tabActiva) &&
+      !this.tienePostulacionSeleccionada
+    ) {
+      this.tabActiva = 'experiencia';
+    }
   }
 
   private postulacionesDesdeQueryParams(): PostulacionPerfil[] {
@@ -2142,6 +2235,26 @@ export class CandidatoPerfilPage implements OnInit {
     return `${desde} - ${hasta}`;
   }
 
+  private rangoFechasEstudio(inicio?: string | null, fin?: string | null) {
+    const desde = this.formatearFecha(inicio);
+    const hasta = this.formatearFecha(fin);
+
+    if (desde && hasta) {
+      return `${desde} - ${hasta}`;
+    }
+
+    if (desde) {
+      return `Desde ${desde}`;
+    }
+
+    if (hasta) {
+      return `Hasta ${hasta}`;
+    }
+
+    // En estudios, fin=null no prueba vigencia; el parser deja null cuando la fecha es ambigua.
+    return 'Fecha no disponible';
+  }
+
   private formatearRut(rut?: number | null, dv?: number | string | null) {
     return rut == null || dv == null ? undefined : `${rut}-${dv}`;
   }
@@ -2151,7 +2264,10 @@ export class CandidatoPerfilPage implements OnInit {
       return '';
     }
 
-    const fechaNormalizada = new Date(fecha);
+    const fechaSoloDia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
+    const fechaNormalizada = fechaSoloDia
+      ? new Date(Number(fechaSoloDia[1]), Number(fechaSoloDia[2]) - 1, Number(fechaSoloDia[3]))
+      : new Date(fecha);
     return Number.isNaN(fechaNormalizada.getTime())
       ? fecha
       : new Intl.DateTimeFormat('es-CL').format(fechaNormalizada);
