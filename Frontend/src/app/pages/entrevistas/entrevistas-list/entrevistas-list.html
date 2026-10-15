@@ -48,7 +48,16 @@
     [message]="mensajeAccionesMasivas"
     *ngIf="!cargando && !errorCarga && entrevistasFiltradas.length > 0"
   >
-    <button type="button" [disabled]="seleccionados.size === 0" (click)="abrirModalCorreo()">Correos masivos</button>
+    <app-button
+      type="button"
+      variant="secondary"
+      size="sm"
+      [disabled]="seleccionados.size === 0"
+      (pressed)="abrirModalCorreo()"
+    >
+      <span class="button-icon" aria-hidden="true">✉</span>
+      Correos masivos
+    </app-button>
   </app-action-bar>
 
   <app-data-table

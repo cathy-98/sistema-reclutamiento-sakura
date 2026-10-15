@@ -121,12 +121,14 @@
           <h2 id="entrevistas-dia-title">{{ tituloPanelDia }}</h2>
           <p>{{ resumenEntrevistasDia }}</p>
         </div>
-        <label>
+        <label class="agenda-search">
           Buscar
           <app-solicitud-autocomplete
+            id="agenda-search"
+            name="agenda-search"
             [value]="busqueda"
             [solicitudes]="solicitudesFiltro"
-            placeholder="Candidato, solicitud o entrevistador"
+            placeholder="Buscar por candidato, solicitud o entrevistador"
             (valueChange)="busqueda = $event"
             (selected)="seleccionarSolicitudBusqueda($event)"
           ></app-solicitud-autocomplete>
