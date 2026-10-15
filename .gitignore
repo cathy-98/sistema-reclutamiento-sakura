@@ -14,3 +14,9 @@ frontend/dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Documentos cargados y artefactos generados localmente
+Backend/temp_cvs/
+Backend/storage/
+Backend/.pytest_cache/
+Backend/.pytest_tmp*/
