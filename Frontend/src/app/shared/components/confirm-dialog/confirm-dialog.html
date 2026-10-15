@@ -1,12 +1,23 @@
 <div class="confirm-backdrop" role="presentation">
   <section
     class="confirm-dialog"
+    [class.has-close]="mostrarCierre"
     role="alertdialog"
     aria-modal="true"
     [attr.aria-labelledby]="titleId"
     [attr.aria-describedby]="messageId"
   >
     <!-- Diálogo reutilizable para confirmar acciones sensibles. -->
+    <button
+      *ngIf="mostrarCierre"
+      class="confirm-close"
+      type="button"
+      aria-label="Cerrar"
+      (click)="cancelar.emit()"
+    >
+      ×
+    </button>
+
     <div class="confirm-icon" [ngClass]="variante" aria-hidden="true">!</div>
 
     <div class="confirm-content">

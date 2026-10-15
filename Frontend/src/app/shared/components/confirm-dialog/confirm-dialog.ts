@@ -21,6 +21,7 @@ export class ConfirmDialog {
   @Input() observacionMaxLength: number | null = null;
   @Input() errorMessage = '';
   @Input() procesando = false;
+  @Input() mostrarCierre = false;
 
   @Output() cancelar = new EventEmitter<void>();
   @Output() confirmar = new EventEmitter<string>();
