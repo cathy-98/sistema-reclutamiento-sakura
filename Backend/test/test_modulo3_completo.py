@@ -132,6 +132,13 @@ def _seed_database() -> SeedInfo:
         institucion = catalog_models.Institucion(inst_nombre="Universidad QA", inst_tipo_institucion_id=tipo_inst.tint_id)
         carrera = catalog_models.Carrera(crra_nombre="Ingenieria QA")
         nivel_edu = catalog_models.NivelEducacional(nved_nombre="Profesional")
+        idioma_ingles = catalog_models.Idioma(idio_nombre="Inglés")
+        nivel_idioma_intermedio = catalog_models.NivelIdioma(
+            nvid_codigo="INT", nvid_nombre="Intermedio", nvid_grupo="Intermedio", nvid_orden=1
+        )
+        nivel_idioma_avanzado = catalog_models.NivelIdioma(
+            nvid_codigo="AVA", nvid_nombre="Avanzado", nvid_grupo="Avanzado", nvid_orden=2
+        )
         h_python = catalog_models.Habilidad(hab_nombre="Python", hab_descripcion="Python")
         h_fastapi = catalog_models.Habilidad(hab_nombre="FastAPI", hab_descripcion="FastAPI")
         n_junior = catalog_models.NivelHabilidad(nvhb_nombre="Junior", nvhb_descripcion="J", nvhb_puntaje_base=10, nvhb_duracion=1)
@@ -141,7 +148,7 @@ def _seed_database() -> SeedInfo:
         contrato = catalog_models.TipoContrato(tpct_nombre="Indefinido", tpct_descripcion="Indef")
         disp = catalog_models.Disponibilidad(disp_nombre="Inmediata")
         prioridad = catalog_models.PrioridadSolicitud(prsol_nombre="Alta", prsol_descripcion="Alta")
-        db.add_all([institucion, carrera, nivel_edu, h_python, h_fastapi, n_junior, n_senior, cargo, modalidad, contrato, disp, prioridad]); db.flush()
+        db.add_all([institucion, carrera, nivel_edu, idioma_ingles, nivel_idioma_intermedio, nivel_idioma_avanzado, h_python, h_fastapi, n_junior, n_senior, cargo, modalidad, contrato, disp, prioridad]); db.flush()
 
         sol_states = {}
         for name in ["Pendiente", "En Publicacion", "En Entrevistas", "Cancelado", "Cerrado", "Pausado"]:
@@ -583,6 +590,377 @@ def test_importar_mismo_email_reutiliza_y_no_cambia_password(client, admin_token
     assert client.post("/auth/login",json={"email":"reuso@sakura.cl","password":pwd}).status_code==200
 
 
+def _cv_experiencia_empresa_cargo(email: str, experiencia: str) -> str:
+    return f"""Carla Perez Soto
+{email}
++56 9 1234 5678
+Ingeniera QA
+Experiencia laboral
+{experiencia}
+"""
+
+
+def _cv_habilidades_desconocidas(email: str, habilidades: str) -> str:
+    return f"""Carla Perez Soto
+{email}
++56 9 1234 5678
+Ingeniera QA
+Habilidades
+{habilidades}
+"""
+
+
+def _cv_idiomas(email: str, idiomas: str) -> str:
+    return f"""Carla Perez Soto
+{email}
++56 9 1234 5678
+Ingeniera QA
+Idiomas
+{idiomas}
+"""
+
+
+def test_importar_idioma_existente_y_nuevo_con_nivel_y_muestra_perfil(client, admin_token):
+    response = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("idiomas.txt", _cv_idiomas("idiomas.nuevos@sakura.cl", "English - Intermedio | Klingon - Avanzado").encode(), "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+    candidate_id = response.json()["candidato"]["cand_id"]
+    profile = client.get(f"/candidatos/{candidate_id}/perfil-completo", headers=_headers(admin_token))
+    assert profile.status_code == 200, profile.text
+    assert {(item["idioma"]["idio_nombre"], item["nivel_idioma"]["nvid_codigo"]) for item in profile.json()["idiomas"]} == {
+        ("Inglés", "INT"), ("Klingon", "AVA")
+    }
+    db = TestingSessionLocal()
+    try:
+        language = db.query(catalog_models.Idioma).filter_by(idio_nombre="Klingon").one()
+        assert language.idio_creado_automaticamente is True
+        assert language.idio_origen == "CV"
+        assert language.idio_origen_candidato_id == candidate_id
+    finally:
+        db.close()
+
+
+def test_reimportar_idioma_reutiliza_normalizado_y_no_duplica(client, admin_token):
+    for filename, line in (("idioma-1.txt", "Klingon - Avanzado"), ("idioma-2.txt", "KLINGON - AVANZADO")):
+        response = client.post(
+            "/candidatos/importar-cv",
+            headers=_headers(admin_token),
+            files={"file": (filename, _cv_idiomas("idioma.reuso@sakura.cl", line).encode(), "text/plain")},
+        )
+        assert response.status_code == 200, response.text
+    db = TestingSessionLocal()
+    try:
+        assert db.query(catalog_models.Idioma).filter(catalog_models.Idioma.idio_nombre.ilike("klingon")).count() == 1
+        candidate = db.query(candidate_models.Candidato).filter_by(cand_email="idioma.reuso@sakura.cl").one()
+        assert db.query(candidate_models.CandidatoIdioma).filter_by(cdio_candidato_id=candidate.cand_id).count() == 1
+    finally:
+        db.close()
+
+
+def test_idioma_sin_nivel_no_crea_catalogo_ni_asociacion(client, admin_token):
+    response = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("idioma-sin-nivel.txt", _cv_idiomas("idioma.sin.nivel@sakura.cl", "Klingon").encode(), "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+    assert any("no se pudo resolver un nivel válido" in warning.lower() for warning in response.json()["advertencias"])
+    db = TestingSessionLocal()
+    try:
+        assert db.query(catalog_models.Idioma).filter_by(idio_nombre="Klingon").count() == 0
+        candidate = db.query(candidate_models.Candidato).filter_by(cand_email="idioma.sin.nivel@sakura.cl").one()
+        assert candidate.idiomas == []
+    finally:
+        db.close()
+
+
+def test_idioma_nivel_ambiguo_no_crea_asociacion(client, admin_token):
+    response = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("idioma-ambiguo.txt", _cv_idiomas("idioma.ambiguo@sakura.cl", "Klingon - Intermedio Avanzado").encode(), "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+    db = TestingSessionLocal()
+    try:
+        assert db.query(catalog_models.Idioma).filter_by(idio_nombre="Klingon").count() == 0
+        candidate = db.query(candidate_models.Candidato).filter_by(cand_email="idioma.ambiguo@sakura.cl").one()
+        assert candidate.idiomas == []
+    finally:
+        db.close()
+
+
+def _cv_estudio_catalogo(email: str, estudio: str) -> str:
+    return f"""Carla Perez Soto
+{email}
++56 9 1234 5678
+Ingeniera QA
+Educación
+{estudio}
+"""
+
+
+def test_importar_cv_crea_catalogos_de_estudios_y_los_asocia(client, admin_token, seed):
+    casos = [
+        (
+            "estudio.carrera.nueva@sakura.cl",
+            "Carrera: Arquitectura de Datos | Institución: Universidad QA",
+            "Universidad QA",
+            "Arquitectura de Datos",
+        ),
+        (
+            "estudio.institucion.nueva@sakura.cl",
+            "Carrera: Ingenieria QA | Institución: Instituto Nuevo Horizonte",
+            "Instituto Nuevo Horizonte",
+            "Ingenieria QA",
+        ),
+        (
+            "estudio.ambos.nuevos@sakura.cl",
+            "Carrera: Bioinformatica Aplicada | Institución: Universidad Nueva Ciencia",
+            "Universidad Nueva Ciencia",
+            "Bioinformatica Aplicada",
+        ),
+    ]
+    for email, line, institution_name, career_name in casos:
+        response = client.post(
+            "/candidatos/importar-cv",
+            headers=_headers(admin_token),
+            files={"file": (f"{email}.txt", _cv_estudio_catalogo(email, line).encode(), "text/plain")},
+        )
+        assert response.status_code == 200, response.text
+        candidate_id = response.json()["candidato"]["cand_id"]
+        profile = client.get(f"/candidatos/{candidate_id}/perfil-completo", headers=_headers(admin_token))
+        assert profile.status_code == 200, profile.text
+        assert profile.json()["estudios"]
+        db = TestingSessionLocal()
+        try:
+            institution = db.query(catalog_models.Institucion).filter_by(inst_nombre=institution_name).one()
+            career = db.query(catalog_models.Carrera).filter_by(crra_nombre=career_name).one()
+            study = db.query(candidate_models.EstudioCandidato).filter_by(etcd_candidato_id=candidate_id).one()
+            assert (study.etcd_institucion_id, study.etcd_carrera_id) == (institution.inst_id, career.crra_id)
+            assert institution.inst_origen == "CV" if institution_name != "Universidad QA" else institution.inst_origen is None
+            if institution_name != "Universidad QA":
+                assert institution.inst_creado_automaticamente is True
+                assert institution.inst_origen_candidato_id == candidate_id
+            if career_name != "Ingenieria QA":
+                assert career.crra_creado_automaticamente is True
+                assert career.crra_origen == "CV"
+                assert career.crra_origen_candidato_id == candidate_id
+            assert study.etcd_nivel_educacional_id is None
+        finally:
+            db.close()
+
+
+def test_reimportar_estudio_reutiliza_catalogos_normalizados_y_no_duplica(client, admin_token):
+    for filename, line in (
+        ("estudio-1.txt", "Carrera: Ciencia de Datos | Institución: Universidad Horizonte"),
+        ("estudio-2.txt", "CARRERA: CIENCIA DE DATOS | INSTITUCIÓN: UNIVERSIDAD HORIZONTE"),
+    ):
+        response = client.post(
+            "/candidatos/importar-cv",
+            headers=_headers(admin_token),
+            files={"file": (filename, _cv_estudio_catalogo("estudio.reuso@sakura.cl", line).encode(), "text/plain")},
+        )
+        assert response.status_code == 200, response.text
+
+    db = TestingSessionLocal()
+    try:
+        institution = db.query(catalog_models.Institucion).filter_by(inst_nombre="Universidad Horizonte").one()
+        career = db.query(catalog_models.Carrera).filter_by(crra_nombre="Ciencia de Datos").one()
+        candidate = db.query(candidate_models.Candidato).filter_by(cand_email="estudio.reuso@sakura.cl").one()
+        assert db.query(catalog_models.Institucion).filter_by(inst_nombre="Universidad Horizonte").count() == 1
+        assert db.query(catalog_models.Carrera).filter_by(crra_nombre="Ciencia de Datos").count() == 1
+        assert db.query(candidate_models.EstudioCandidato).filter_by(etcd_candidato_id=candidate.cand_id).count() == 1
+        study = candidate.estudios[0]
+        assert (study.etcd_institucion_id, study.etcd_carrera_id) == (institution.inst_id, career.crra_id)
+    finally:
+        db.close()
+
+
+def test_importar_estudio_parcial_valido_y_rechaza_contexto_ambiguo(client, admin_token):
+    partial = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("estudio-parcial.txt", _cv_estudio_catalogo("estudio.parcial@sakura.cl", "Institución: Instituto Parcial").encode(), "text/plain")},
+    )
+    assert partial.status_code == 200, partial.text
+    ambiguous = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("estudio-ambiguo.txt", _cv_estudio_catalogo("estudio.ambiguo@sakura.cl", "Carrera: estudios y formación | Institución: Universidad").encode(), "text/plain")},
+    )
+    assert ambiguous.status_code == 200, ambiguous.text
+
+    db = TestingSessionLocal()
+    try:
+        partial_candidate = db.query(candidate_models.Candidato).filter_by(cand_email="estudio.parcial@sakura.cl").one()
+        partial_study = partial_candidate.estudios[0]
+        assert partial_study.etcd_institucion_id is not None
+        assert partial_study.etcd_carrera_id is None
+        assert db.query(catalog_models.Institucion).filter_by(inst_nombre="Universidad").count() == 0
+        assert db.query(catalog_models.Carrera).filter_by(crra_nombre="estudios y formación").count() == 0
+    finally:
+        db.close()
+
+
+def test_importar_cv_crea_habilidades_desconocidas_y_las_asocia(client, admin_token):
+    texto = _cv_habilidades_desconocidas(
+        "habilidades.nuevas@sakura.cl",
+        "Kotlin, Terraform | React Native",
+    )
+    response = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("cv-habilidades.txt", texto.encode(), "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+    candidate_id = response.json()["candidato"]["cand_id"]
+    profile = client.get(f"/candidatos/{candidate_id}/perfil-completo", headers=_headers(admin_token))
+    assert profile.status_code == 200, profile.text
+    assert {item["cdhb_habilidad_id"] for item in profile.json()["habilidades"]}
+
+    db = TestingSessionLocal()
+    try:
+        habilidades = db.query(catalog_models.Habilidad).filter(
+            catalog_models.Habilidad.hab_nombre.in_(["Kotlin", "Terraform", "React Native"])
+        ).all()
+        assert {item.hab_nombre for item in habilidades} == {"Kotlin", "Terraform", "React Native"}
+        assert all(item.hab_creado_automaticamente is True for item in habilidades)
+        assert all(item.hab_origen == "CV" for item in habilidades)
+        assert all(item.hab_origen_candidato_id == candidate_id for item in habilidades)
+        associations = db.query(candidate_models.CandidatoHabilidad).filter_by(cdhb_candidato_id=candidate_id).all()
+        assert {item.hab_id for item in habilidades}.issubset({item.cdhb_habilidad_id for item in associations})
+        assert all(item.cdhb_anios_experiencia is None for item in associations)
+    finally:
+        db.close()
+
+
+def test_reimportar_cv_reutiliza_habilidades_normalizadas_y_no_duplica(client, admin_token):
+    for filename, text in (
+        ("habilidades-1.txt", _cv_habilidades_desconocidas("habilidades.reuso@sakura.cl", "Kotlin, Terraform")),
+        ("habilidades-2.txt", _cv_habilidades_desconocidas("habilidades.reuso@sakura.cl", "KOTLIN, terraform")),
+    ):
+        response = client.post(
+            "/candidatos/importar-cv",
+            headers=_headers(admin_token),
+            files={"file": (filename, text.encode(), "text/plain")},
+        )
+        assert response.status_code == 200, response.text
+
+    db = TestingSessionLocal()
+    try:
+        assert db.query(catalog_models.Habilidad).filter_by(hab_nombre="Kotlin").count() == 1
+        assert db.query(catalog_models.Habilidad).filter_by(hab_nombre="Terraform").count() == 1
+        candidate = db.query(candidate_models.Candidato).filter_by(cand_email="habilidades.reuso@sakura.cl").one()
+        assert db.query(candidate_models.CandidatoHabilidad).filter_by(cdhb_candidato_id=candidate.cand_id).count() == 2
+    finally:
+        db.close()
+
+
+def test_importar_cv_no_crea_habilidad_desde_frase_ambigua(client, admin_token):
+    texto = _cv_habilidades_desconocidas(
+        "habilidades.ambiguas@sakura.cl",
+        "experiencia en desarrollo de sistemas, otros",
+    )
+    response = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("cv-ambiguo.txt", texto.encode(), "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+
+    db = TestingSessionLocal()
+    try:
+        assert db.query(catalog_models.Habilidad).filter_by(hab_nombre="experiencia en desarrollo de sistemas").count() == 0
+        assert db.query(candidate_models.Candidato).filter_by(cand_email="habilidades.ambiguas@sakura.cl").one().habilidades == []
+    finally:
+        db.close()
+
+
+def test_importar_cv_crea_empresa_y_cargo_nuevos_y_los_asocia(client, admin_token):
+    texto = _cv_experiencia_empresa_cargo(
+        "catalogos.nuevos@sakura.cl",
+        "Nova Sistemas SpA - Arquitecto de Integraciones",
+    )
+    r = client.post(
+        "/candidatos/importar-cv",
+        headers=_headers(admin_token),
+        files={"file": ("cv-nuevos.txt", texto.encode(), "text/plain")},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    candidate_id = body["candidato"]["cand_id"]
+    assert len(body["candidato"]["experiencias"]) == 1
+
+    db = TestingSessionLocal()
+    try:
+        empresa = db.query(cliente_models.Empresa).filter_by(emp_nombre="Nova Sistemas SpA").one()
+        cargo = db.query(catalog_models.Cargo).filter_by(crgo_nombre="Arquitecto de Integraciones").one()
+        experiencia = db.query(candidate_models.ExperienciaLaboral).filter_by(expl_candidato_id=candidate_id).one()
+        assert experiencia.expl_empresa_id == empresa.emp_id
+        assert experiencia.expl_cargo_id == cargo.crgo_id
+        assert empresa.emp_creado_automaticamente is True
+        assert cargo.crgo_creado_automaticamente is True
+        assert empresa.emp_origen == cargo.crgo_origen == "CV"
+        assert empresa.emp_origen_candidato_id == cargo.crgo_origen_candidato_id == candidate_id
+    finally:
+        db.close()
+
+
+def test_reimportar_cv_reutiliza_catalogos_y_no_duplica_experiencia(client, admin_token):
+    texto = _cv_experiencia_empresa_cargo(
+        "catalogos.reuso@sakura.cl",
+        "Nova Reuso SpA - Arquitecto de Datos",
+    )
+    for nombre in ("primera.txt", "segunda.txt"):
+        contenido = texto
+        if nombre == "segunda.txt":
+            contenido = contenido.replace("Nova Reuso SpA", "NOVA REUSO SPA").replace(
+                "Arquitecto de Datos", "ARQUITECTO DE DATOS"
+            )
+        r = client.post(
+            "/candidatos/importar-cv",
+            headers=_headers(admin_token),
+            files={"file": (nombre, contenido.encode(), "text/plain")},
+        )
+        assert r.status_code == 200, r.text
+
+    db = TestingSessionLocal()
+    try:
+        assert db.query(cliente_models.Empresa).filter_by(emp_nombre="Nova Reuso SpA").count() == 1
+        assert db.query(catalog_models.Cargo).filter_by(crgo_nombre="Arquitecto de Datos").count() == 1
+        candidate = db.query(candidate_models.Candidato).filter_by(cand_email="catalogos.reuso@sakura.cl").one()
+        assert db.query(candidate_models.ExperienciaLaboral).filter_by(expl_candidato_id=candidate.cand_id).count() == 1
+    finally:
+        db.close()
+
+
+def test_importar_cv_conserva_experiencia_con_un_catalogo_nuevo(client, admin_token):
+    casos = [
+        ("empresa_existente@sakura.cl", "Empresa QA - Jefa de Operaciones", "Empresa QA", "Jefa de Operaciones"),
+        ("cargo_existente@sakura.cl", "Nova Cliente SpA - Backend QA", "Nova Cliente SpA", "Backend QA"),
+    ]
+    for email, linea, empresa_nombre, cargo_nombre in casos:
+        r = client.post(
+            "/candidatos/importar-cv",
+            headers=_headers(admin_token),
+            files={"file": (f"{email}.txt", _cv_experiencia_empresa_cargo(email, linea).encode(), "text/plain")},
+        )
+        assert r.status_code == 200, r.text
+        candidate_id = r.json()["candidato"]["cand_id"]
+        db = TestingSessionLocal()
+        try:
+            empresa = db.query(cliente_models.Empresa).filter_by(emp_nombre=empresa_nombre).one()
+            cargo = db.query(catalog_models.Cargo).filter_by(crgo_nombre=cargo_nombre).one()
+            experiencia = db.query(candidate_models.ExperienciaLaboral).filter_by(expl_candidato_id=candidate_id).one()
+            assert (experiencia.expl_empresa_id, experiencia.expl_cargo_id) == (empresa.emp_id, cargo.crgo_id)
+        finally:
+            db.close()
+
+
 def test_importar_cv_sin_email_422(client, admin_token):
     r=client.post("/candidatos/importar-cv",headers=_headers(admin_token),files={"file":("cv.txt",b"Carla Perez\nSin correo", "text/plain")})
     assert r.status_code==422
@@ -597,6 +975,40 @@ def test_importar_varios_cvs(client, admin_token):
     files=[("files",("a.txt",_cv_text("multi1@sakura.cl").encode(),"text/plain")),("files",("b.txt",_cv_text("multi2@sakura.cl").encode(),"text/plain"))]
     r=client.post("/candidatos/importar-cvs",headers=_headers(admin_token),files=files)
     assert r.status_code==200 and len(r.json())==2 and all(x["creado"] for x in r.json())
+
+
+def test_importar_varios_cvs_revierte_catalogos_si_un_archivo_falla(client, admin_token):
+    files = [
+        (
+            "files",
+            (
+                "valido.txt",
+                _cv_experiencia_empresa_cargo(
+                    "lote.rollback@sakura.cl",
+                    "Empresa Lote Rollback - Cargo Lote Rollback",
+                ).replace(
+                    "Empresa Lote Rollback - Cargo Lote Rollback",
+                    "Empresa Lote Rollback - Cargo Lote Rollback\nTecnologias: Skill Lote Rollback\nEducación\nCarrera: Carrera Lote Rollback | Institución: Universidad Lote Rollback\nIdiomas\nKlingon - Avanzado",
+                ).encode(),
+                "text/plain",
+            ),
+        ),
+        ("files", ("invalido.csv", b"no es un CV", "text/csv")),
+    ]
+    response = client.post("/candidatos/importar-cvs", headers=_headers(admin_token), files=files)
+    assert response.status_code == 422
+
+    db = TestingSessionLocal()
+    try:
+        assert db.query(candidate_models.Candidato).filter_by(cand_email="lote.rollback@sakura.cl").count() == 0
+        assert db.query(cliente_models.Empresa).filter_by(emp_nombre="Empresa Lote Rollback").count() == 0
+        assert db.query(catalog_models.Cargo).filter_by(crgo_nombre="Cargo Lote Rollback").count() == 0
+        assert db.query(catalog_models.Habilidad).filter_by(hab_nombre="Skill Lote Rollback").count() == 0
+        assert db.query(catalog_models.Institucion).filter_by(inst_nombre="Universidad Lote Rollback").count() == 0
+        assert db.query(catalog_models.Carrera).filter_by(crra_nombre="Carrera Lote Rollback").count() == 0
+        assert db.query(catalog_models.Idioma).filter_by(idio_nombre="Klingon").count() == 0
+    finally:
+        db.close()
 
 
 # ---------------- postulaciones / exclusiones ----------------
