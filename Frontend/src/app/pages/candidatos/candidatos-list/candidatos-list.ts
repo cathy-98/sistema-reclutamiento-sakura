@@ -8,6 +8,7 @@ import {
   forkJoin,
   map,
   of,
+  Observable,
   Subscription,
   switchMap,
   take,
@@ -21,8 +22,16 @@ import {
 } from '../../../services/entrevistas.service';
 
 import {
+  CandidateEmailNotificationApi,
+  InformesService,
+  PlantillaNotificacionApi,
+  TipoCorreoCandidatoApi,
+} from '../../../services/informes.service';
+
+import {
   CatalogosService,
   HabilidadCatalogoApi,
+  MotivoRechazoCatalogoApi,
   NivelHabilidadCatalogoApi,
 } from '../../../services/catalogos.service';
 
@@ -56,6 +65,7 @@ import { Modal } from '../../../shared/components/modal/modal';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { PageLayout } from '../../../shared/components/page-layout/page-layout';
 import { SolicitudAutocomplete } from '../../../shared/components/solicitud-autocomplete/solicitud-autocomplete';
+import { CompactSelect, CompactSelectOption } from '../../../shared/components/compact-select/compact-select';
 
 import { AlertaUi } from '../../../shared/models/alerta-ui.model';
 import { SolicitudHabilidadApi, SolicitudResumen } from '../../../shared/models/solicitud.model';
@@ -74,6 +84,14 @@ import {
 
 type EstadoCandidato = 'Todos' | string;
 type NivelCandidato = string;
+
+interface ResultadoCambioEstadoMasivo {
+  postulacionId: number;
+  candidatoId: string;
+  nombre: string;
+  exitoso: boolean;
+  error?: string;
+}
 
 /**
  * Integración M3 - Candidatos y Postulaciones
@@ -168,6 +186,12 @@ interface HabilidadSolicitudContexto {
 }
 
 type EstadoArchivoCv = 'pendiente' | 'procesando' | 'procesado' | 'observado' | 'error';
+type CategoriaVisualAdvertenciaCv =
+  | 'Mapeo de información'
+  | 'Revisión manual'
+  | 'Asociación a solicitud'
+  | 'Requisitos'
+  | 'Observaciones generales';
 
 interface EstadoCargaArchivoCv {
   estado: EstadoArchivoCv;
@@ -213,6 +237,7 @@ interface ResultadoCargaSolicitud {
     Modal,
     ActionBar,
     SolicitudAutocomplete,
+    CompactSelect,
     EntrevistaFormModal,
   ],
   templateUrl: './candidatos-list.html',
@@ -250,12 +275,28 @@ export class CandidatosList implements OnInit, OnDestroy {
   guardandoAgenda = false;
   errorAgenda = '';
   mostrarModalCorreo = false;
-  plantillaCorreo: 'manual' | 'convocatoria' = 'convocatoria';
+  mostrarAvisoSolicitudCorreo = false;
+  solicitudCorreoResuelta: SolicitudContextoCandidatos | null = null;
+  opcionesSolicitudCorreo: SolicitudContextoCandidatos[] = [];
+  plantillaCorreo: 'manual' | TipoCorreoCandidatoApi = 'CONTACTO';
+  plantillaCorreoId = 0;
+  plantillasCorreo: PlantillaNotificacionApi[] = [];
+  plantillasCorreoExcluidas: Array<{ tipo: string; nombre: string; motivo: string }> = [];
+  cargandoPlantillasCorreo = false;
+  errorPlantillasCorreo = '';
   asuntoCorreo = '';
   cuerpoCorreo = '';
+  enviandoCorreo = false;
+  errorCorreo = '';
+  resultadosCorreo: CandidateEmailNotificationApi[] = [];
   mostrarModalEstadoMasivo = false;
+  modoCambioEstadoPostulacion: 'individual' | 'masivo' = 'masivo';
+  candidatoCambioEstado: Candidato | null = null;
+  postulacionCambioEstado: PostulacionTabla | null = null;
   estadoMasivoSeleccionado = '';
   observacionEstadoMasivo = '';
+  motivoRechazoEstadoId: number | null = null;
+  motivosRechazo: MotivoRechazoCatalogoApi[] = [];
   guardandoEstadoMasivo = false;
   errorEstadoMasivo = '';
   descargandoCvOriginal = new Set<string>();
@@ -293,10 +334,21 @@ export class CandidatosList implements OnInit, OnDestroy {
   solicitudCargaFueBuscada = false;
   private queryParamsSubscription?: Subscription;
   private estadosPostulacionPorNombre = new Map<string, number>();
-  private readonly transicionesPostulacion = new Map<string, string[]>([
+  private readonly transicionesIndividualesPostulacion = new Map<string, string[]>([
+    ['en revision', ['En entrevista', 'Inhabilitado', 'Descartado']],
+    ['en entrevista', ['Seleccionado', 'Inhabilitado', 'Descartado']],
+    ['seleccionado', ['Contratado', 'Descartado']],
+    ['inhabilitado', []],
+    ['descartado', []],
+    ['contratado', []],
+  ]);
+  private readonly transicionesMasivasPostulacion = new Map<string, string[]>([
     ['en revision', []],
     ['en entrevista', ['Seleccionado']],
     ['seleccionado', ['Contratado']],
+    ['inhabilitado', []],
+    ['descartado', []],
+    ['contratado', []],
   ]);
 
   /**
@@ -477,9 +529,28 @@ export class CandidatosList implements OnInit, OnDestroy {
     },
 
     {
+      id: 'descartar-postulacion',
+      label: 'Descartar',
+      icon: 'cancel',
+      tone: 'danger',
+      visible: (candidato) =>
+        this.cambioIndividualPermitido(candidato, 'Descartado'),
+    },
+
+    {
+      id: 'inhabilitar-postulacion',
+      label: 'Inhabilitar',
+      icon: 'trash',
+      tone: 'danger',
+      visible: (candidato) =>
+        this.cambioIndividualPermitido(candidato, 'Inhabilitado'),
+    },
+
+    {
       id: 'enviar-test',
       label: 'Enviar test',
       icon: 'edit',
+      visible: () => false,
     },
 
     {
@@ -501,6 +572,7 @@ export class CandidatosList implements OnInit, OnDestroy {
     private catalogosService: CatalogosService,
     private candidatosService: CandidatosService,
     private solicitudesService: SolicitudesService,
+    private informesService: InformesService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -879,6 +951,8 @@ export class CandidatosList implements OnInit, OnDestroy {
       habilidadesCatalogo: this.obtenerHabilidadesCatalogoContexto(),
 
       nivelesHabilidadSolicitud: this.obtenerNivelesHabilidadContexto(),
+
+      motivosRechazo: this.catalogosService.listarMotivosRechazoSeguro(),
     })
       .pipe(
         /**
@@ -904,6 +978,7 @@ export class CandidatosList implements OnInit, OnDestroy {
             habilidadesSolicitud,
             habilidadesCatalogo,
             nivelesHabilidadSolicitud,
+            motivosRechazo,
           }) => {
             if (candidatos.length === 0) {
               return of({
@@ -915,6 +990,7 @@ export class CandidatosList implements OnInit, OnDestroy {
                 habilidadesSolicitud,
                 habilidadesCatalogo,
                 nivelesHabilidadSolicitud,
+                motivosRechazo,
 
                 postulacionesPorCandidato:
                   new Map<number, PostulacionCandidatoApi[]>(),
@@ -998,6 +1074,7 @@ export class CandidatosList implements OnInit, OnDestroy {
                   habilidadesSolicitud,
                   habilidadesCatalogo,
                   nivelesHabilidadSolicitud,
+                  motivosRechazo,
                   postulacionesPorCandidato,
                   habilidadesPorCandidato,
                 };
@@ -1023,9 +1100,11 @@ export class CandidatosList implements OnInit, OnDestroy {
           habilidadesSolicitud,
           habilidadesCatalogo,
           nivelesHabilidadSolicitud,
+          motivosRechazo,
           postulacionesPorCandidato,
           habilidadesPorCandidato,
         }) => {
+          this.motivosRechazo = motivosRechazo;
           const estadosCatalogo = estados
             .map((estado) => estado.essc_nombre)
             .filter(
@@ -1432,19 +1511,72 @@ export class CandidatosList implements OnInit, OnDestroy {
     return this.estadosSeleccionadosContexto.length > 1;
   }
 
+  get esCambioEstadoIndividual() {
+    return this.modoCambioEstadoPostulacion === 'individual';
+  }
+
+  get tituloModalCambioEstado() {
+    return this.esCambioEstadoIndividual
+      ? 'Cambiar estado de postulación'
+      : 'Cambiar estado';
+  }
+
+  get subtituloModalCambioEstado() {
+    if (this.esCambioEstadoIndividual) {
+      return [
+        this.candidatoCambioEstado?.nombre,
+        this.postulacionCambioEstado?.codigoSolicitud,
+        this.postulacionCambioEstado?.cargo,
+      ].filter(Boolean).join(' · ');
+    }
+
+    return `${this.seleccionados.size} candidatos seleccionados`;
+  }
+
+  get estadoActualCambioIndividual() {
+    return this.postulacionCambioEstado?.estado ?? '';
+  }
+
+  get requiereMotivoRechazoEstado() {
+    return ['descartado', 'inhabilitado'].includes(
+      this.normalizar(this.estadoMasivoSeleccionado),
+    );
+  }
+
+  get opcionesEstadoIndividual() {
+    const estadoActual = this.normalizar(this.estadoActualCambioIndividual);
+    const estadosPermitidos = this.transicionesIndividualesPostulacion.get(estadoActual) ?? [];
+    const estadosCatalogo = new Set(this.estados.map((estado) => this.normalizar(estado)));
+
+    return estadosPermitidos.filter((estado) => estadosCatalogo.has(this.normalizar(estado)));
+  }
+
   get opcionesEstadoMasivo() {
+    if (this.esCambioEstadoIndividual) {
+      return this.opcionesEstadoIndividual;
+    }
+
     if (this.seleccionEstadosMixtos || this.estadosSeleccionadosContexto.length !== 1) {
       return [];
     }
 
     const estadoActual = this.normalizar(this.estadosSeleccionadosContexto[0]);
-    const estadosPermitidos = this.transicionesPostulacion.get(estadoActual) ?? [];
+    const estadosPermitidos = this.transicionesMasivasPostulacion.get(estadoActual) ?? [];
     const estadosCatalogo = new Set(this.estados.map((estado) => this.normalizar(estado)));
 
     return estadosPermitidos.filter((estado) => estadosCatalogo.has(this.normalizar(estado)));
   }
 
   get puedeActualizarEstadoMasivo() {
+    if (this.esCambioEstadoIndividual) {
+      return (
+        !this.guardandoEstadoMasivo &&
+        Boolean(this.postulacionCambioEstado) &&
+        Boolean(this.estadoMasivoSeleccionado) &&
+        (!this.requiereMotivoRechazoEstado || Boolean(this.motivoRechazoEstadoId))
+      );
+    }
+
     return (
       this.enContextoSolicitud &&
       !this.guardandoEstadoMasivo &&
@@ -1454,10 +1586,156 @@ export class CandidatosList implements OnInit, OnDestroy {
     );
   }
 
+  get contextoCorreo() {
+    return this.contextoCorreoFijo() ?? this.solicitudCorreoResuelta;
+  }
+
+  get enContextoCorreo() {
+    return Boolean(this.contextoCorreo);
+  }
+
+  get postulacionesSeleccionadasCorreo() {
+    const contexto = this.contextoCorreo;
+
+    if (!contexto) {
+      return [];
+    }
+
+    return this.candidatosSeleccionados
+      .map((candidato) => this.obtenerPostulacionEnSolicitud(candidato, contexto))
+      .filter((postulacion): postulacion is PostulacionTabla => Boolean(postulacion));
+  }
+
   get destinatariosCorreo() {
     return this.candidatosSeleccionados
       .map((candidato) => `${candidato.nombre} <${candidato.correo}>`)
       .join('\n');
+  }
+
+  get destinatariosCorreoDetalle() {
+    return this.candidatosSeleccionados.map((candidato) => {
+      const contexto = this.contextoCorreo;
+      const postulacionContextual = contexto
+        ? this.obtenerPostulacionEnSolicitud(candidato, contexto)
+        : null;
+      const correo = candidato.correo?.trim() || 'Sin correo';
+      const correoInvalido = correo === 'Sin correo' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+
+      return {
+        id: candidato.idCandidato,
+        nombre: candidato.nombre,
+        correo,
+        noEnviable: !contexto || !postulacionContextual || correoInvalido,
+        motivo: !contexto || !postulacionContextual
+          ? 'Inconsistencia de solicitud. Vuelve a resolver el contexto del envío.'
+          : correoInvalido
+              ? 'Correo no válido.'
+              : '',
+      };
+    });
+  }
+
+  get contextoModalCorreo() {
+    return [
+      `${this.candidatosSeleccionados.length} candidato${this.candidatosSeleccionados.length === 1 ? '' : 's'} seleccionado${this.candidatosSeleccionados.length === 1 ? '' : 's'}`,
+      this.contextoCorreo?.codigo,
+      this.contextoCorreo?.cargo,
+    ].filter(Boolean).join(' · ');
+  }
+
+  get candidatosCorreoSinPostulacionContextual() {
+    const contexto = this.contextoCorreo;
+
+    if (!contexto) {
+      return this.candidatosSeleccionados;
+    }
+
+    return this.candidatosSeleccionados.filter(
+      (candidato) => !this.obtenerPostulacionEnSolicitud(candidato, contexto),
+    );
+  }
+
+  get puedeEnviarCorreoMasivo() {
+    return (
+      this.mostrarModalCorreo &&
+      !this.enviandoCorreo &&
+      this.resultadosCorreo.length === 0 &&
+      this.enContextoCorreo &&
+      this.postulacionesSeleccionadasCorreo.length > 0 &&
+      this.candidatosCorreoSinPostulacionContextual.length === 0 &&
+      Boolean(this.asuntoCorreo.trim()) &&
+      Boolean(this.cuerpoCorreo.trim())
+    );
+  }
+
+  get resumenResultadosCorreo() {
+    if (this.resultadosCorreo.length === 0) {
+      return '';
+    }
+
+    const enviados = this.resultadosCorreo.filter((resultado) => resultado.estado === 'ENVIADO').length;
+    return `${enviados} de ${this.resultadosCorreo.length} correos enviados.`;
+  }
+
+  get estadoResultadosCorreo() {
+    if (this.resultadosCorreo.length === 0) {
+      return '';
+    }
+
+    const enviados = this.resultadosCorreo.filter((resultado) => resultado.estado === 'ENVIADO').length;
+    if (enviados === this.resultadosCorreo.length) {
+      return 'success';
+    }
+    if (enviados === 0) {
+      return 'error';
+    }
+    return 'partial';
+  }
+
+  get motivoEnvioCorreoDeshabilitado() {
+    if (!this.mostrarModalCorreo || this.enviandoCorreo || this.resultadosCorreo.length > 0) {
+      return '';
+    }
+
+    if (!this.enContextoCorreo) {
+      return 'Resuelve una solicitud antes de redactar el correo.';
+    }
+    if (this.postulacionesSeleccionadasCorreo.length === 0) {
+      return 'Selecciona al menos un candidato de esta solicitud.';
+    }
+    if (this.candidatosCorreoSinPostulacionContextual.length > 0) {
+      return 'Uno o más candidatos no tienen una postulación válida en esta solicitud.';
+    }
+    if (!this.asuntoCorreo.trim()) {
+      return 'Ingresa un asunto para continuar.';
+    }
+    if (!this.cuerpoCorreo.trim()) {
+      return 'Ingresa un mensaje para continuar.';
+    }
+
+    return '';
+  }
+
+  get plantillasCorreoDisponibles() {
+    return this.plantillasCorreo;
+  }
+
+  get opcionesPlantillaCorreo(): CompactSelectOption[] {
+    return [
+      ...this.plantillasCorreoDisponibles.map((plantilla) => ({
+        id: plantilla.plantilla_id,
+        nombre: plantilla.nombre,
+      })),
+      { id: 0, nombre: 'Manual' },
+    ];
+  }
+
+  get avisoPlantillasCorreo() {
+    if (this.errorPlantillasCorreo) {
+      return this.errorPlantillasCorreo;
+    }
+
+    return '';
   }
 
   get candidatosPaginados() {
@@ -1632,11 +1910,6 @@ export class CandidatosList implements OnInit, OnDestroy {
       return;
     }
 
-    if (evento.action === 'descargar-cv') {
-      this.descargarCvOriginal(evento.row);
-      return;
-    }
-
     if (
       evento.action ===
       'agendar-entrevista'
@@ -1645,6 +1918,27 @@ export class CandidatosList implements OnInit, OnDestroy {
         evento.row,
       ]);
 
+      return;
+    }
+
+    if (evento.action === 'descargar-cv') {
+      this.descargarCvOriginal(evento.row);
+      return;
+    }
+
+    if (
+      evento.action ===
+      'descartar-postulacion'
+    ) {
+      this.abrirCambioEstadoIndividual(evento.row, 'Descartado');
+      return;
+    }
+
+    if (
+      evento.action ===
+      'inhabilitar-postulacion'
+    ) {
+      this.abrirCambioEstadoIndividual(evento.row, 'Inhabilitado');
       return;
     }
 
@@ -1836,6 +2130,7 @@ export class CandidatosList implements OnInit, OnDestroy {
     enlace.click();
     URL.revokeObjectURL(url);
   }
+
   abrirAgendaMasiva() {
     const candidatos =
       this.candidatos.filter(
@@ -1882,18 +2177,10 @@ export class CandidatosList implements OnInit, OnDestroy {
   }
 
   /**
-   * Integración M3 -> M5
-   *
-   * La entrevista realmente se agenda sobre una postulación,
-   * no solamente sobre cand_id.
-   *
-   * El modal actual todavía recibe un único idSolicitud,
-   * por eso se utiliza temporalmente la postulación resumen.
-   *
-   * Pendiente M5:
-   * cuando un candidato tenga varias postulaciones, el modal
-   * debe permitir seleccionar explícitamente cuál proceso
-   * se está agendando antes de crear la entrevista.
+   * La entrevista siempre se agenda sobre una postulación, no solo sobre
+   * cand_id. El modal conserva dos caminos: por solicitud permite selección
+   * múltiple y por candidato consulta sus postulaciones para exigir una
+   * selección explícita cuando hay más de una opción elegible.
    */
   abrirAgendaEntrevista(
     candidatos: Candidato[],
@@ -2143,18 +2430,23 @@ export class CandidatosList implements OnInit, OnDestroy {
   }
 
   actualizarFiltroSolicitud(valor: string) {
+    const solicitudAnterior = this.resolverCodigoSolicitudIngresado(this.filtros.idSolicitud);
     this.filtros = {
       ...this.filtros,
       idSolicitud: valor,
     };
     this.validarSolicitudFiltroPorCodigo();
+    this.limpiarSeleccionSiCambiaSolicitud(solicitudAnterior, this.resolverCodigoSolicitudIngresado(valor));
   }
 
   seleccionarFiltroSolicitud(solicitud: SolicitudResumen | null) {
+    const solicitudAnterior = this.resolverCodigoSolicitudIngresado(this.filtros.idSolicitud);
+    const solicitudNueva = solicitud?.codigo ?? '';
     this.filtros = {
       ...this.filtros,
-      idSolicitud: solicitud?.codigo ?? '',
+      idSolicitud: solicitudNueva,
     };
+    this.limpiarSeleccionSiCambiaSolicitud(solicitudAnterior, this.resolverCodigoSolicitudIngresado(solicitudNueva));
     this.buscar();
   }
 
@@ -2171,27 +2463,355 @@ export class CandidatosList implements OnInit, OnDestroy {
       return;
     }
 
-    // Reutiliza el patrón de modal de correo existente; el envío queda bloqueado hasta contar con endpoint.
-    this.plantillaCorreo = 'convocatoria';
-    this.aplicarPlantillaCorreo();
+    this.errorCorreo = '';
+    this.resultadosCorreo = [];
+    this.solicitudCorreoResuelta = null;
+    this.opcionesSolicitudCorreo = [];
+
+    if (!this.contextoCorreoFijo()) {
+      const resolucion = this.resolverContextoCorreoDesdeSeleccion();
+
+      if (resolucion.tipo === 'resuelto') {
+        this.solicitudCorreoResuelta = resolucion.contexto;
+      }
+
+      if (resolucion.tipo === 'ambigua') {
+        this.opcionesSolicitudCorreo = resolucion.opciones;
+        this.mostrarAvisoSolicitudCorreo = true;
+        return;
+      }
+
+      if (resolucion.tipo === 'sin-postulacion') {
+        this.alerta = {
+          tipo: 'warning',
+          variante: 'soft',
+          mensaje:
+            'No se puede abrir el correo porque el candidato seleccionado no tiene una postulación asociada.',
+        };
+        return;
+      }
+
+      if (resolucion.tipo === 'sin-solicitud-comun') {
+        this.mostrarAvisoSolicitudCorreo = true;
+        return;
+      }
+    }
+
+    if (!this.enContextoCorreo) {
+      this.mostrarAvisoSolicitudCorreo = true;
+      return;
+    }
+
+    const candidatosSinPostulacion = this.candidatosCorreoSinPostulacionContextual;
+
+    if (candidatosSinPostulacion.length > 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje:
+          'No se puede abrir el correo porque hay candidatos seleccionados sin postulación válida en esta solicitud.',
+      };
+      return;
+    }
+
+    this.abrirModalRedaccionCorreo();
+  }
+
+  private abrirModalRedaccionCorreo() {
+    this.plantillaCorreo = 'manual';
+    this.plantillaCorreoId = 0;
+    this.errorCorreo = '';
+    this.resultadosCorreo = [];
     this.mostrarModalCorreo = true;
+    this.cargarPlantillasCorreo();
   }
 
   cerrarModalCorreo() {
+    if (this.enviandoCorreo) {
+      return;
+    }
     this.mostrarModalCorreo = false;
+    this.errorCorreo = '';
+    if (this.resultadosCorreo.length > 0) {
+      // Tras un envío finalizado, limpiamos la selección para no dejar un lote
+      // visualmente activo que pueda reenviarse en otro contexto por accidente.
+      this.seleccionados = new Set<string>();
+    }
+    this.resultadosCorreo = [];
+  }
+
+  cerrarAvisoSolicitudCorreo() {
+    this.mostrarAvisoSolicitudCorreo = false;
+    this.opcionesSolicitudCorreo = [];
+  }
+
+  irAFiltroSolicitudCorreo() {
+    this.mostrarAvisoSolicitudCorreo = false;
+    this.opcionesSolicitudCorreo = [];
+    // La solicitud se usa como filtro de consulta, no como asociación. Si la
+    // usuaria llegó con una selección mixta, se limpia para que el siguiente
+    // lote nazca desde el contexto de solicitud que elija en los filtros.
+    this.seleccionados = new Set<string>();
+    this.alerta = {
+      tipo: 'info',
+      variante: 'soft',
+      mensaje: 'Selecciona una solicitud en los filtros y luego elige los candidatos de ese proceso.',
+    };
+  }
+
+  seleccionarSolicitudCorreo(opcion: SolicitudContextoCandidatos) {
+    this.solicitudCorreoResuelta = opcion;
+    this.opcionesSolicitudCorreo = [];
+    this.mostrarAvisoSolicitudCorreo = false;
+
+    if (this.candidatosCorreoSinPostulacionContextual.length > 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje:
+          'No se puede abrir el correo porque hay candidatos seleccionados sin postulación válida en esta solicitud.',
+      };
+      return;
+    }
+
+    this.abrirModalRedaccionCorreo();
   }
 
   aplicarPlantillaCorreo() {
     if (this.plantillaCorreo === 'manual') {
+      this.plantillaCorreoId = 0;
       this.asuntoCorreo = '';
       this.cuerpoCorreo = '';
       return;
     }
 
-    const solicitud = this.solicitudContexto?.codigo || '{{Solicitud}}';
-    const cargo = this.solicitudContexto?.cargo || '{{Cargo}}';
-    this.asuntoCorreo = `Proceso ${solicitud} - ${cargo}`;
-    this.cuerpoCorreo = 'Hola {{Nombre}}, te contactamos por el proceso {{Solicitud}} para el cargo {{Cargo}}.';
+    const plantilla = this.plantillasCorreoDisponibles.find(
+      (item) => item.tipo === this.plantillaCorreo,
+    );
+
+    if (!plantilla) {
+      return;
+    }
+
+    this.plantillaCorreoId = plantilla.plantilla_id;
+    // Seleccionar una plantilla solo precarga texto editable. El estado de la
+    // postulación pertenece al workflow y nunca se modifica por elegir un mail.
+    this.asuntoCorreo = plantilla.asunto;
+    this.cuerpoCorreo = plantilla.cuerpo;
+  }
+
+  seleccionarPlantillaCorreo(plantillaId: number | null) {
+    const plantilla = this.plantillasCorreoDisponibles.find(
+      (item) => item.plantilla_id === plantillaId,
+    );
+
+    this.plantillaCorreoId = plantilla?.plantilla_id ?? 0;
+    this.plantillaCorreo = plantilla
+      ? plantilla.tipo as TipoCorreoCandidatoApi
+      : 'manual';
+    this.aplicarPlantillaCorreo();
+  }
+
+  cargarPlantillasCorreo() {
+    this.cargandoPlantillasCorreo = true;
+    this.errorPlantillasCorreo = '';
+    this.plantillasCorreo = [];
+    this.plantillasCorreoExcluidas = [];
+
+    this.informesService.listarPlantillas()
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargandoPlantillasCorreo = false;
+        }),
+      )
+      .subscribe({
+        next: (plantillas) => {
+          const resultado = this.filtrarPlantillasCorreoCandidatos(plantillas);
+          this.plantillasCorreo = resultado.disponibles;
+          this.plantillasCorreoExcluidas = resultado.excluidas;
+          const primera = this.plantillasCorreo[0];
+          if (primera) {
+            this.plantillaCorreo = primera.tipo as TipoCorreoCandidatoApi;
+            this.plantillaCorreoId = primera.plantilla_id;
+            this.aplicarPlantillaCorreo();
+          } else {
+            this.plantillaCorreo = 'manual';
+            this.plantillaCorreoId = 0;
+            this.asuntoCorreo = '';
+            this.cuerpoCorreo = '';
+          }
+        },
+        error: () => {
+          this.plantillaCorreo = 'manual';
+          this.plantillaCorreoId = 0;
+          this.asuntoCorreo = '';
+          this.cuerpoCorreo = '';
+          this.errorPlantillasCorreo = 'No se pudieron cargar las plantillas. Puedes continuar con Manual.';
+        },
+      });
+  }
+
+  private filtrarPlantillasCorreoCandidatos(plantillas: PlantillaNotificacionApi[]) {
+    const tiposCandidato = new Set(['CONTACTO', 'INVITACION', 'AVANCE', 'SELECCION']);
+    const disponibles: PlantillaNotificacionApi[] = [];
+    const excluidas: Array<{ tipo: string; nombre: string; motivo: string }> = [];
+
+    plantillas.forEach((plantilla) => {
+      const tipo = plantilla.tipo.toUpperCase();
+      const nombre = plantilla.nombre || tipo;
+
+      if (!plantilla.activa) {
+        excluidas.push({ tipo, nombre, motivo: 'inactiva' });
+        return;
+      }
+
+      if (!tiposCandidato.has(tipo)) {
+        excluidas.push({ tipo, nombre, motivo: 'pertenece a otro flujo' });
+        return;
+      }
+
+      const variablesNoSoportadas = this.variablesNoSoportadasPlantilla(plantilla);
+      if (variablesNoSoportadas.length > 0) {
+        excluidas.push({
+          tipo,
+          nombre,
+          motivo: `variables sin contexto: ${variablesNoSoportadas.join(', ')}`,
+        });
+        return;
+      }
+
+      disponibles.push({
+        ...plantilla,
+        tipo,
+        nombre: this.etiquetaPlantillaCorreo(plantilla),
+      });
+    });
+
+    return { disponibles, excluidas };
+  }
+
+  private etiquetaPlantillaCorreo(plantilla: PlantillaNotificacionApi) {
+    const nombre = plantilla.nombre?.trim();
+
+    if (nombre) {
+      return nombre;
+    }
+
+    const etiquetas: Record<string, string> = {
+      CONTACTO: 'Contacto inicial',
+      INVITACION: 'Invitación',
+      AVANCE: 'Avance del proceso',
+      SELECCION: 'Selección',
+    };
+
+    return etiquetas[plantilla.tipo.toUpperCase()] ?? plantilla.tipo;
+  }
+
+  private variablesNoSoportadasPlantilla(plantilla: PlantillaNotificacionApi) {
+    const soportadas = new Set([
+      '{nombre}',
+      '{cargo}',
+      '{codigo_solicitud}',
+      '{solicitud}',
+      '{{params.nombre}}',
+      '{{params.cargo}}',
+      '{{params.codigo_solicitud}}',
+      '{{params.solicitud}}',
+    ]);
+
+    const texto = `${plantilla.asunto} ${plantilla.cuerpo}`;
+    const variables = texto.match(/{{\s*params\.[^}]+\s*}}|{[^{}]+}/g) ?? [];
+
+    return Array.from(new Set(
+      variables
+        .map((variable) => variable.replace(/\s+/g, ''))
+        .filter((variable) => !soportadas.has(variable)),
+    ));
+  }
+
+  enviarCorreoCandidatos() {
+    this.errorCorreo = '';
+    this.resultadosCorreo = [];
+
+    if (!this.enContextoCorreo) {
+      this.errorCorreo = 'Resuelve una solicitud antes de enviar correos asociados a una postulación.';
+      return;
+    }
+
+    if (this.candidatosCorreoSinPostulacionContextual.length > 0) {
+      this.errorCorreo = 'Hay candidatos seleccionados sin una postulación inequívoca en esta solicitud.';
+      return;
+    }
+
+    if (!this.puedeEnviarCorreoMasivo) {
+      this.errorCorreo = 'Completa asunto y mensaje antes de enviar.';
+      return;
+    }
+
+    const solicitudCandidatoIds = this.postulacionesSeleccionadasCorreo.map(
+      (postulacion) => postulacion.idPostulacion,
+    );
+
+    this.enviandoCorreo = true;
+    // La selección visual usa cand_id, pero el envío usa slcd_id para que el
+    // historial quede asociado al proceso exacto y no solo a la persona.
+    this.informesService.enviarCorreosCandidatos({
+      solicitudCandidatoIds,
+      tipo: this.plantillaCorreo === 'manual' ? 'CONTACTO' : this.plantillaCorreo,
+      asunto: this.asuntoCorreo.trim(),
+      cuerpo: this.cuerpoCorreo.trim(),
+    })
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.enviandoCorreo = false;
+        }),
+      )
+      .subscribe({
+        next: (resultados) => {
+          this.resultadosCorreo = resultados;
+          const enviados = resultados.filter((resultado) => resultado.estado === 'ENVIADO').length;
+          if (enviados === resultados.length) {
+            this.errorCorreo = '';
+            return;
+          }
+          this.errorCorreo = 'Algunos correos no se pudieron enviar. Revisa el detalle antes de cerrar.';
+        },
+        error: (error) => {
+          this.errorCorreo = obtenerMensajeError(error, 'No se pudo enviar el correo. Inténtalo nuevamente.');
+        },
+      });
+  }
+
+  nombreResultadoCorreo(resultado: CandidateEmailNotificationApi) {
+    const postulacion = this.postulacionesSeleccionadasCorreo.find(
+      (item) => item.idPostulacion === resultado.solicitud_candidato_id,
+    );
+    const candidato = postulacion
+      ? this.candidatosSeleccionados.find((item) => item.postulaciones.some((post) => post.idPostulacion === postulacion.idPostulacion))
+      : null;
+
+    return candidato?.nombre || resultado.destinatario || `Postulación ${resultado.solicitud_candidato_id}`;
+  }
+
+  mensajeResultadoCorreo(resultado: CandidateEmailNotificationApi) {
+    if (resultado.estado === 'ENVIADO') {
+      return 'Enviado';
+    }
+
+    const error = (resultado.error ?? '').toLowerCase();
+    if (error.includes('correo válido') || error.includes('email')) {
+      return 'No enviado: el candidato no tiene un correo válido.';
+    }
+    if (error.includes('smtp') || error.includes('correo') || error.includes('env')) {
+      return 'No enviado: el servicio de correo no pudo completar el envío.';
+    }
+    if (error.includes('postulación') || error.includes('postulacion') || error.includes('encontrada')) {
+      return 'No enviado: no se pudo validar la postulación.';
+    }
+
+    return 'No enviado: revisa la configuración o intenta nuevamente.';
   }
 
   abrirModalEstadoMasivo() {
@@ -2199,17 +2819,63 @@ export class CandidatosList implements OnInit, OnDestroy {
       return;
     }
 
-    // Cambio masivo de estado: actúa sobre la postulación dentro de la solicitud actual.
+    this.modoCambioEstadoPostulacion = this.seleccionados.size === 1
+      ? 'individual'
+      : 'masivo';
+    this.candidatoCambioEstado = null;
+    this.postulacionCambioEstado = null;
     this.estadoMasivoSeleccionado = '';
     this.observacionEstadoMasivo = '';
+    this.motivoRechazoEstadoId = null;
+    this.errorEstadoMasivo = '';
+
+    if (this.esCambioEstadoIndividual) {
+      const candidato = this.candidatosSeleccionados[0] ?? null;
+      const postulacion = candidato
+        ? this.obtenerPostulacionNavegacion(candidato)
+        : null;
+
+      if (!candidato || !postulacion) {
+        this.errorEstadoMasivo = 'No se pudo resolver la postulación del candidato seleccionado.';
+      }
+
+      this.candidatoCambioEstado = candidato;
+      this.postulacionCambioEstado = postulacion;
+    }
+
+    this.mostrarModalEstadoMasivo = true;
+  }
+
+  abrirCambioEstadoIndividual(candidato: Candidato, estadoDestino: string) {
+    const postulacion = this.obtenerPostulacionNavegacion(candidato);
+
+    if (!postulacion || !this.transicionPermitidaIndividual(postulacion.estado, estadoDestino)) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'La acción no está disponible para el estado actual de la postulación.',
+      };
+      return;
+    }
+
+    this.modoCambioEstadoPostulacion = 'individual';
+    this.candidatoCambioEstado = candidato;
+    this.postulacionCambioEstado = postulacion;
+    this.estadoMasivoSeleccionado = estadoDestino;
+    this.observacionEstadoMasivo = '';
+    this.motivoRechazoEstadoId = null;
     this.errorEstadoMasivo = '';
     this.mostrarModalEstadoMasivo = true;
   }
 
   cerrarModalEstadoMasivo() {
     this.mostrarModalEstadoMasivo = false;
+    this.modoCambioEstadoPostulacion = 'masivo';
+    this.candidatoCambioEstado = null;
+    this.postulacionCambioEstado = null;
     this.estadoMasivoSeleccionado = '';
     this.observacionEstadoMasivo = '';
+    this.motivoRechazoEstadoId = null;
     this.errorEstadoMasivo = '';
   }
 
@@ -2231,14 +2897,71 @@ export class CandidatosList implements OnInit, OnDestroy {
     this.guardandoEstadoMasivo = true;
     this.errorEstadoMasivo = '';
 
-    forkJoin(
-      this.postulacionesSeleccionadasContexto.map((postulacion) =>
-        this.candidatosService.cambiarEstadoPostulacion(postulacion.idPostulacion, {
-          estado_id: estadoId,
-          observaciones: this.observacionEstadoMasivo.trim() || null,
-        }),
-      ),
-    )
+    if (this.esCambioEstadoIndividual) {
+      const postulacion = this.postulacionCambioEstado;
+
+      if (!postulacion) {
+        this.errorEstadoMasivo = 'No se pudo resolver la postulación del candidato seleccionado.';
+        this.guardandoEstadoMasivo = false;
+        return;
+      }
+
+      this.candidatosService.cambiarEstadoPostulacion(postulacion.idPostulacion, {
+        estado_id: estadoId,
+        motivo_rechazo_id: this.requiereMotivoRechazoEstado
+          ? this.motivoRechazoEstadoId
+          : null,
+        observaciones: this.observacionEstadoMasivo.trim() || null,
+      })
+        .pipe(
+          take(1),
+          finalize(() => {
+            this.guardandoEstadoMasivo = false;
+          }),
+        )
+        .subscribe({
+          next: () => {
+            this.alerta = {
+              tipo: 'success',
+              variante: 'soft',
+              mensaje: 'Estado de postulación actualizado correctamente.',
+            };
+            this.seleccionados = new Set<string>();
+            this.cerrarModalEstadoMasivo();
+            this.cargarCandidatos();
+          },
+          error: (error) => {
+            this.errorEstadoMasivo = obtenerMensajeError(error, 'No se pudo actualizar el estado de la postulación.');
+          },
+        });
+      return;
+    }
+
+    const postulaciones = this.postulacionesSeleccionadasContexto;
+    const resultados = postulaciones.map((postulacion): Observable<ResultadoCambioEstadoMasivo> => {
+      const candidato = this.candidatosSeleccionados.find((item) =>
+        item.postulaciones.some((itemPostulacion) => itemPostulacion.idPostulacion === postulacion.idPostulacion),
+      );
+      const contextoResultado = {
+        postulacionId: postulacion.idPostulacion,
+        candidatoId: candidato ? this.obtenerIdCandidato(candidato) : '',
+        nombre: candidato?.nombre ?? `Postulación ${postulacion.idPostulacion}`,
+      };
+
+      return this.candidatosService.cambiarEstadoPostulacion(postulacion.idPostulacion, {
+        estado_id: estadoId,
+        observaciones: this.observacionEstadoMasivo.trim() || null,
+      }).pipe(
+        map(() => ({ ...contextoResultado, exitoso: true })),
+        catchError((error) => of({
+          ...contextoResultado,
+          exitoso: false,
+          error: obtenerMensajeError(error, 'No se pudo actualizar esta postulación.'),
+        })),
+      );
+    });
+
+    forkJoin(resultados)
       .pipe(
         take(1),
         finalize(() => {
@@ -2246,18 +2969,36 @@ export class CandidatosList implements OnInit, OnDestroy {
         }),
       )
       .subscribe({
-        next: () => {
-          this.alerta = {
-            tipo: 'success',
-            variante: 'soft',
-            mensaje: `${this.postulacionesSeleccionadasContexto.length} candidatos actualizados correctamente.`,
-          };
-          this.seleccionados = new Set<string>();
-          this.cerrarModalEstadoMasivo();
+        next: (cambios) => {
+          const fallidos = cambios.filter((cambio) => !cambio.exitoso);
+          const exitosos = cambios.length - fallidos.length;
+
+          // Cada PATCH se captura por separado para no confundir un lote parcialmente
+          // aplicado con un fallo total ni perder la selección de los candidatos fallidos.
+          this.seleccionados = new Set(fallidos.map((cambio) => cambio.candidatoId));
           this.cargarCandidatos();
-        },
-        error: (error) => {
-          this.errorEstadoMasivo = obtenerMensajeError(error, 'No se pudo actualizar el estado masivo. No se completó la operación.');
+
+          if (fallidos.length === 0) {
+            this.alerta = {
+              tipo: 'success',
+              variante: 'soft',
+              mensaje: `${exitosos} candidatos actualizados correctamente.`,
+            };
+            this.cerrarModalEstadoMasivo();
+            return;
+          }
+
+          const nombresFallidos = fallidos.map((cambio) => cambio.nombre).join(', ');
+          this.errorEstadoMasivo = exitosos > 0
+            ? `${exitosos} candidatos actualizados. No se actualizaron ${fallidos.length}: ${nombresFallidos}.`
+            : `No se actualizaron los candidatos seleccionados: ${nombresFallidos}.`;
+          this.alerta = {
+            tipo: 'warning',
+            variante: 'soft',
+            mensaje: exitosos > 0
+              ? 'El cambio de estado se completó parcialmente. Revisa los candidatos que permanecen seleccionados.'
+              : 'No se pudo actualizar ningún candidato seleccionado.',
+          };
         },
       });
   }
@@ -2342,12 +3083,7 @@ export class CandidatosList implements OnInit, OnDestroy {
                         asociacion: carga.asociacion ?? undefined,
                         errorAsociacion: carga.errorAsociacion || undefined,
                       }
-                    : {
-                        estado: 'error' as EstadoArchivoCv,
-                        etiqueta: 'No se pudo procesar',
-                        mensaje: carga.error || 'No se pudo procesar el CV. Intenta nuevamente.',
-                        sinConfirmacion: carga.sinConfirmacion,
-                      },
+                    : this.estadoCargaCvError(carga),
                 ];
               }),
             ),
@@ -2506,6 +3242,48 @@ export class CandidatosList implements OnInit, OnDestroy {
       .filter(Boolean);
   }
 
+  private categoriaVisualAdvertenciaCv(mensaje: string): CategoriaVisualAdvertenciaCv {
+    const normalizado = mensaje
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (normalizado.includes('nombre inferido')) {
+      return 'Revisión manual';
+    }
+
+    if (
+      normalizado.includes('habilidad') ||
+      normalizado.includes('estudio') ||
+      normalizado.includes('experiencia') ||
+      normalizado.includes('idioma')
+    ) {
+      return 'Mapeo de información';
+    }
+
+    // La agrupación es solo visual: conserva el warning original como fuente
+    // de verdad y no crea estados ni reglas de negocio nuevas en Frontend.
+    return 'Observaciones generales';
+  }
+
+  private detallesAdvertenciasCargaCv(
+    advertencias: string[],
+  ): NonNullable<FileListStatus['details']> {
+    const grupos = new Map<CategoriaVisualAdvertenciaCv, string[]>();
+
+    advertencias.forEach((advertencia) => {
+      const categoria = this.categoriaVisualAdvertenciaCv(advertencia);
+      grupos.set(categoria, [...(grupos.get(categoria) ?? []), advertencia]);
+    });
+
+    // Si aparece un warning nuevo, se muestra neutralmente en vez de forzar una
+    // interpretación que Backend no entrega estructurada en el response actual.
+    return Array.from(grupos.entries()).map(([title, messages]) => ({
+      title,
+      messages,
+    }));
+  }
+
   private tieneObservacionesCargaCv(carga: ResultadoCargaCv) {
     return (
       this.advertenciasCargaCv(carga).length > 0 ||
@@ -2521,16 +3299,11 @@ export class CandidatosList implements OnInit, OnDestroy {
     const detalles: NonNullable<FileListStatus['details']> = [];
     const advertenciasCv = this.advertenciasCargaCv(carga);
 
-    if (advertenciasCv.length > 0) {
-      detalles.push({
-        title: 'Observaciones del CV',
-        messages: advertenciasCv,
-      });
-    }
+    detalles.push(...this.detallesAdvertenciasCargaCv(advertenciasCv));
 
     if (carga.errorAsociacion) {
       detalles.push({
-        title: 'Asociación',
+        title: 'Asociación a solicitud',
         messages: [
           this.mensajeSeguroCargaCv(
             carga.errorAsociacion,
@@ -2545,7 +3318,7 @@ export class CandidatosList implements OnInit, OnDestroy {
 
     if (evaluacion?.advertencia || faltantes.length > 0) {
       detalles.push({
-        title: 'Requisitos excluyentes',
+        title: 'Requisitos',
         messages: [
           evaluacion?.advertencia
             ? this.mensajeSeguroCargaCv(evaluacion.advertencia, 'La evaluación de requisitos requiere revisión.')
@@ -2568,11 +3341,24 @@ export class CandidatosList implements OnInit, OnDestroy {
   ): EstadoCargaArchivoCv {
     const observado = this.tieneObservacionesCargaCv(carga);
 
+    // Procesado con observaciones significa que el candidato sí fue procesado;
+    // solo se separa visualmente para que la reclutadora revise advertencias.
     return {
       estado: observado ? 'observado' : 'procesado',
       etiqueta: this.etiquetaCargaCvExitosa(carga),
       mensaje: this.mensajeCargaCvExitosa(carga, solicitudSeleccionada),
       detalles: this.detallesCargaCv(carga),
+    };
+  }
+
+  private estadoCargaCvError(carga: ResultadoCargaCv): EstadoCargaArchivoCv {
+    // En carga múltiple cada archivo conserva su propio resultado: un error
+    // bloqueante no debe ocultar CVs que sí fueron procesados correctamente.
+    return {
+      estado: 'error',
+      etiqueta: 'No se pudo procesar el CV',
+      mensaje: carga.error || 'No se pudo procesar el CV. Intenta nuevamente.',
+      sinConfirmacion: carga.sinConfirmacion,
     };
   }
 
@@ -2939,6 +3725,25 @@ export class CandidatosList implements OnInit, OnDestroy {
     return this.obtenerPostulacionContexto(candidato) ?? this.obtenerPostulacionPrincipal(candidato);
   }
 
+  private cambioIndividualPermitido(candidato: Candidato, estadoDestino: string) {
+    const postulacion = this.obtenerPostulacionNavegacion(candidato);
+
+    return Boolean(
+      postulacion &&
+      this.transicionPermitidaIndividual(postulacion.estado, estadoDestino),
+    );
+  }
+
+  private transicionPermitidaIndividual(estadoActual: string, estadoDestino: string) {
+    const permitidas = this.transicionesIndividualesPostulacion.get(
+      this.normalizar(estadoActual),
+    ) ?? [];
+
+    return permitidas.some((estado) =>
+      this.normalizar(estado) === this.normalizar(estadoDestino),
+    );
+  }
+
   private obtenerPostulacionContexto(candidato: Candidato) {
     const contexto = this.solicitudContexto;
 
@@ -2946,14 +3751,130 @@ export class CandidatosList implements OnInit, OnDestroy {
       return null;
     }
 
+    return this.obtenerPostulacionEnSolicitud(candidato, contexto);
+  }
+
+  private obtenerPostulacionEnSolicitud(
+    candidato: Candidato,
+    contexto: Pick<SolicitudContextoCandidatos, 'id' | 'codigo'>,
+  ) {
     const codigo = this.normalizar(contexto.codigo);
     const id = Number(contexto.id);
 
-    // La postulación se puede reconocer por id o por código, según lo disponible.
+    // El slcd_id debe resolverse contra una solicitud concreta. Comparar por
+    // id/código evita usar la primera o última postulación cuando el candidato
+    // participa en varios procesos.
     return candidato.postulaciones.find((postulacion) =>
       (Number.isFinite(id) && postulacion.idSolicitud === id) ||
       this.normalizar(postulacion.codigoSolicitud) === codigo,
     ) ?? null;
+  }
+
+  private contextoDesdeSolicitudFiltroSeleccionada() {
+    const solicitud = this.solicitudFiltroSeleccionada;
+
+    if (!solicitud) {
+      return null;
+    }
+
+    return {
+      id: String(solicitud.id),
+      codigo: solicitud.codigo,
+      cargo: solicitud.cargo,
+      estado: solicitud.estado,
+      prioridad: solicitud.prioridad,
+      vacantes: solicitud.vacantes,
+    };
+  }
+
+  private contextoCorreoFijo() {
+    return this.solicitudContexto ?? this.contextoDesdeSolicitudFiltroSeleccionada();
+  }
+
+  private resolverContextoCorreoDesdeSeleccion():
+    | { tipo: 'resuelto'; contexto: SolicitudContextoCandidatos }
+    | { tipo: 'ambigua'; opciones: SolicitudContextoCandidatos[] }
+    | { tipo: 'sin-postulacion' }
+    | { tipo: 'sin-solicitud-comun' } {
+    const candidatos = this.candidatosSeleccionados;
+
+    if (candidatos.some((candidato) => candidato.postulaciones.length === 0)) {
+      return { tipo: 'sin-postulacion' };
+    }
+
+    const solicitudesComunes = this.solicitudesComunesCandidatos(candidatos);
+
+    if (solicitudesComunes.length === 1) {
+      return { tipo: 'resuelto', contexto: solicitudesComunes[0] };
+    }
+
+    if (solicitudesComunes.length > 1) {
+      return { tipo: 'ambigua', opciones: solicitudesComunes };
+    }
+
+    return { tipo: 'sin-solicitud-comun' };
+  }
+
+  private solicitudesComunesCandidatos(candidatos: Candidato[]) {
+    const [primero] = candidatos;
+
+    if (!primero) {
+      return [];
+    }
+
+    const postulacionesUnicasPrimero = this.postulacionesUnicasPorSolicitud(primero);
+
+    return postulacionesUnicasPrimero
+      .filter((postulacion) =>
+        candidatos.every((candidato) =>
+          candidato.postulaciones.some((item) => item.idSolicitud === postulacion.idSolicitud),
+        ),
+      )
+      .map((postulacion) => this.contextoDesdePostulacion(postulacion));
+  }
+
+  private postulacionesUnicasPorSolicitud(candidato: Candidato) {
+    const postulaciones = new Map<number, PostulacionTabla>();
+
+    candidato.postulaciones.forEach((postulacion) => {
+      if (!postulaciones.has(postulacion.idSolicitud)) {
+        postulaciones.set(postulacion.idSolicitud, postulacion);
+      }
+    });
+
+    return Array.from(postulaciones.values());
+  }
+
+  private contextoDesdePostulacion(postulacion: PostulacionTabla): SolicitudContextoCandidatos {
+    return {
+      id: String(postulacion.idSolicitud),
+      codigo: postulacion.codigoSolicitud,
+      cargo: postulacion.cargo,
+      estado: postulacion.estado,
+    };
+  }
+
+  private limpiarSeleccionSiCambiaSolicitud(
+    solicitudAnterior: string,
+    solicitudNueva: string,
+  ) {
+    if (
+      this.enContextoSolicitud ||
+      this.seleccionados.size === 0 ||
+      solicitudAnterior === solicitudNueva
+    ) {
+      return;
+    }
+
+    // Cambiar el filtro de solicitud cambia el proceso sobre el que se
+    // resuelven los slcd_id. Limpiar evita conservar selecciones invisibles
+    // o pertenecientes a otra solicitud.
+    this.seleccionados = new Set<string>();
+    this.alerta = {
+      tipo: 'warning',
+      variante: 'soft',
+      mensaje: 'Al cambiar de solicitud se limpió la selección actual.',
+    };
   }
 
   private aplicarPostulacionContexto(candidato: Candidato) {

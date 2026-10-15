@@ -197,13 +197,15 @@
       No corresponde a cand_id.
     -->
     <label *ngIf="!enContextoSolicitud">
-      Código de solicitud
+      Solicitud
 
       <app-solicitud-autocomplete
+        id="candidate-request-filter"
+        name="candidate-request-filter"
         [value]="filtros.idSolicitud"
         [solicitudes]="solicitudesCargaDisponibles"
         [selectedId]="solicitudFiltroSeleccionada?.id ?? null"
-        placeholder="Ej. SOL-000001"
+        placeholder="Buscar por N.º de solicitud o cargo..."
         (valueChange)="actualizarFiltroSolicitud($event)"
         (selected)="seleccionarFiltroSolicitud($any($event))"
       ></app-solicitud-autocomplete>
@@ -454,43 +456,43 @@
     aria-label="Acciones masivas"
   >
 
-    <button
+    <app-button
       type="button"
+      variant="secondary"
+      size="sm"
       [disabled]="seleccionados.size === 0"
-      (click)="abrirModalCorreo()"
+      (pressed)="abrirModalCorreo()"
     >
-      <span aria-hidden="true">
-        ✓
-      </span>
+      <span class="button-icon" aria-hidden="true">✉</span>
 
       Enviar correo
-    </button>
+    </app-button>
 
 
-    <button
+    <app-button
       type="button"
+      variant="primary"
+      size="sm"
       [disabled]="seleccionados.size === 0"
-      (click)="abrirAgendaMasiva()"
+      (pressed)="abrirAgendaMasiva()"
     >
-      <span aria-hidden="true">
-        ✦
-      </span>
+      <span class="button-icon" aria-hidden="true">▦</span>
 
       Agendar entrevistas
-    </button>
+    </app-button>
 
 
-    <button
+    <app-button
       type="button"
+      variant="secondary"
+      size="sm"
       [disabled]="seleccionados.size === 0"
-      (click)="abrirModalEstadoMasivo()"
+      (pressed)="abrirModalEstadoMasivo()"
     >
-      <span aria-hidden="true">
-        ↻
-      </span>
+      <span class="button-icon" aria-hidden="true">↻</span>
 
       Cambiar estado
-    </button>
+    </app-button>
 
   </app-action-bar>
 
@@ -555,74 +557,185 @@
   ></app-entrevista-form-modal>
 
   <app-modal
-    *ngIf="mostrarModalCorreo"
-    titulo="Enviar correo"
-    [subtitulo]="solicitudContexto ? solicitudContexto.codigo + ' · ' + solicitudContexto.cargo : 'Candidatos seleccionados'"
-    ancho="md"
-    (cerrar)="cerrarModalCorreo()"
+    *ngIf="mostrarAvisoSolicitudCorreo"
+    titulo="Seleccionar solicitud"
+    [subtitulo]="seleccionados.size + ' candidatos seleccionados'"
+    ancho="sm"
+    (cerrar)="cerrarAvisoSolicitudCorreo()"
   >
-    <section class="mail-modal">
-      <p class="mail-note">
-        Prepara el mensaje para los candidatos seleccionados. El envío queda deshabilitado hasta contar con endpoint de correo.
-      </p>
+    <section class="mail-request-notice">
+      <ng-container *ngIf="opcionesSolicitudCorreo.length > 0; else avisoFiltroSolicitudCorreoTpl">
+        <p>
+          Elige el proceso existente para el que se enviará el correo. Esta acción no asocia candidatos a nuevas solicitudes.
+        </p>
 
-      <label>
-        Plantilla
-        <select [(ngModel)]="plantillaCorreo" (change)="aplicarPlantillaCorreo()">
-          <option value="convocatoria">Convocatoria</option>
-          <option value="manual">Manual</option>
-        </select>
-      </label>
+        <div class="mail-request-options">
+          <button
+            type="button"
+            *ngFor="let opcion of opcionesSolicitudCorreo"
+            (click)="seleccionarSolicitudCorreo(opcion)"
+          >
+            <strong>{{ opcion.codigo || opcion.id }}</strong>
+            <span>{{ opcion.cargo || 'Sin cargo informado' }}</span>
+          </button>
+        </div>
+      </ng-container>
 
-      <label>
-        Destinatarios
-        <textarea [value]="destinatariosCorreo" readonly></textarea>
-      </label>
-
-      <label>
-        Asunto
-        <input type="text" [(ngModel)]="asuntoCorreo" />
-      </label>
-
-      <label>
-        Mensaje
-        <textarea [(ngModel)]="cuerpoCorreo"></textarea>
-      </label>
-
-      <p class="mail-note">
-        Variables disponibles: {{ '{' }}{{ '{' }}Nombre{{ '}' }}{{ '}' }}, {{ '{' }}{{ '{' }}Solicitud{{ '}' }}{{ '}' }}, {{ '{' }}{{ '{' }}Cargo{{ '}' }}{{ '}' }}.
-      </p>
+      <ng-template #avisoFiltroSolicitudCorreoTpl>
+        <p>
+        Para enviar correo, selecciona primero una solicitud y luego elige los candidatos asociados a ese proceso.
+        </p>
+      </ng-template>
     </section>
 
     <div class="modal-actions" modal-footer>
-      <app-button variant="ghost" type="button" (pressed)="cerrarModalCorreo()">Cancelar</app-button>
-      <app-button type="button" [disabled]="true">Enviar correo</app-button>
+      <app-button variant="ghost" type="button" (pressed)="cerrarAvisoSolicitudCorreo()">
+        Cancelar
+      </app-button>
+      <app-button *ngIf="opcionesSolicitudCorreo.length === 0" type="button" (pressed)="irAFiltroSolicitudCorreo()">
+        Seleccionar solicitud
+      </app-button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    *ngIf="mostrarModalCorreo"
+    titulo="Enviar correo"
+    [subtitulo]="contextoModalCorreo"
+    ancho="md"
+    (cerrar)="cerrarModalCorreo()"
+  >
+    <section class="mail-modal" [class.has-results]="resultadosCorreo.length > 0">
+      <ng-container *ngIf="resultadosCorreo.length === 0; else resultadosCorreoTpl">
+        <div class="mail-field mail-template-field">
+          <span>Plantilla</span>
+          <app-compact-select
+            [options]="opcionesPlantillaCorreo"
+            [ngModel]="plantillaCorreoId"
+            [disabled]="enviandoCorreo"
+            placeholder="Manual"
+            (valueChange)="seleccionarPlantillaCorreo($event)"
+          ></app-compact-select>
+        </div>
+
+        <p class="mail-note" *ngIf="cargandoPlantillasCorreo">
+          Cargando plantillas...
+        </p>
+
+        <p class="mail-note" *ngIf="!cargandoPlantillasCorreo && avisoPlantillasCorreo">
+          {{ avisoPlantillasCorreo }}
+        </p>
+
+        <section class="mail-section" aria-labelledby="mail-recipients-title">
+          <h3 id="mail-recipients-title">Destinatarios ({{ destinatariosCorreoDetalle.length }})</h3>
+          <!-- Los destinatarios se separan del selector para que el listado no parezca parte del dropdown. -->
+          <div class="mail-recipient-list">
+            <article
+              *ngFor="let destinatario of destinatariosCorreoDetalle"
+              [class.is-invalid]="destinatario.noEnviable"
+            >
+              <div>
+                <strong>{{ destinatario.nombre }}</strong>
+                <span>{{ destinatario.correo }}</span>
+              </div>
+              <em *ngIf="destinatario.noEnviable">{{ destinatario.motivo }}</em>
+            </article>
+          </div>
+        </section>
+
+        <label class="mail-field">
+          Asunto
+          <input type="text" [(ngModel)]="asuntoCorreo" [disabled]="enviandoCorreo" />
+        </label>
+
+        <label class="mail-field mail-message-field">
+          Mensaje
+          <textarea [(ngModel)]="cuerpoCorreo" [disabled]="enviandoCorreo"></textarea>
+        </label>
+
+        <p class="mail-note">
+          Los datos entre llaves se completan automáticamente para cada candidato.
+        </p>
+
+        <p class="mail-note" *ngIf="motivoEnvioCorreoDeshabilitado">
+          {{ motivoEnvioCorreoDeshabilitado }}
+        </p>
+
+        <p class="summary-error" *ngIf="errorCorreo">{{ errorCorreo }}</p>
+      </ng-container>
+
+      <ng-template #resultadosCorreoTpl>
+        <section
+          class="mail-results"
+          [ngClass]="'is-' + estadoResultadosCorreo"
+          aria-label="Resultado del envío"
+        >
+        <h3>Resultado del envío</h3>
+        <p>{{ resumenResultadosCorreo }}</p>
+
+        <article *ngFor="let resultado of resultadosCorreo" [class.is-error]="resultado.estado !== 'ENVIADO'">
+          <strong>{{ nombreResultadoCorreo(resultado) }}</strong>
+          <span>{{ mensajeResultadoCorreo(resultado) }}</span>
+        </article>
+        </section>
+      </ng-template>
+    </section>
+
+    <div class="modal-actions" modal-footer>
+      <app-button variant="ghost" type="button" [disabled]="enviandoCorreo" (pressed)="cerrarModalCorreo()">
+        {{ resultadosCorreo.length > 0 ? 'Cerrar' : 'Cancelar' }}
+      </app-button>
+      <app-button *ngIf="resultadosCorreo.length === 0" type="button" [disabled]="!puedeEnviarCorreoMasivo" (pressed)="enviarCorreoCandidatos()">
+        {{ enviandoCorreo ? 'Enviando...' : 'Enviar correo' }}
+      </app-button>
     </div>
   </app-modal>
 
   <app-modal
     *ngIf="mostrarModalEstadoMasivo"
-    titulo="Cambiar estado"
-    [subtitulo]="seleccionados.size + ' candidatos seleccionados'"
+    [titulo]="tituloModalCambioEstado"
+    [subtitulo]="subtituloModalCambioEstado"
     ancho="sm"
     (cerrar)="cerrarModalEstadoMasivo()"
   >
     <section class="bulk-state-modal">
-      <p *ngIf="seleccionEstadosMixtos" class="state-message is-warning">
+      <p *ngIf="esCambioEstadoIndividual" class="state-message">
+        Estado actual: {{ estadoActualCambioIndividual || 'Sin estado' }}.
+      </p>
+
+      <p *ngIf="!esCambioEstadoIndividual && seleccionEstadosMixtos" class="state-message is-warning">
         Los candidatos seleccionados tienen estados distintos. Selecciona candidatos con el mismo estado actual para actualizar de forma segura.
       </p>
 
-      <p *ngIf="!seleccionEstadosMixtos && opcionesEstadoMasivo.length === 0" class="state-message is-warning">
+      <p *ngIf="!esCambioEstadoIndividual && !seleccionEstadosMixtos && opcionesEstadoMasivo.length === 0" class="state-message is-warning">
         No hay transiciones masivas permitidas para el estado actual según la regla existente.
+      </p>
+
+      <p *ngIf="esCambioEstadoIndividual && opcionesEstadoMasivo.length === 0" class="state-message is-warning">
+        No hay transiciones permitidas para el estado actual de esta postulación.
       </p>
 
       <label>
         Nuevo estado
-        <select [(ngModel)]="estadoMasivoSeleccionado" [disabled]="guardandoEstadoMasivo || opcionesEstadoMasivo.length === 0 || seleccionEstadosMixtos">
+        <select [(ngModel)]="estadoMasivoSeleccionado" [disabled]="guardandoEstadoMasivo || opcionesEstadoMasivo.length === 0 || (!esCambioEstadoIndividual && seleccionEstadosMixtos)">
           <option value="">Seleccionar estado</option>
           <option *ngFor="let estado of opcionesEstadoMasivo" [ngValue]="estado">{{ estado }}</option>
         </select>
       </label>
+
+      <label *ngIf="requiereMotivoRechazoEstado">
+        Motivo de rechazo
+        <select [(ngModel)]="motivoRechazoEstadoId" [disabled]="guardandoEstadoMasivo">
+          <option [ngValue]="null">Seleccionar motivo</option>
+          <option *ngFor="let motivo of motivosRechazo" [ngValue]="motivo.mtrc_id">
+            {{ motivo.mtrc_nombre }}
+          </option>
+        </select>
+      </label>
+
+      <p *ngIf="requiereMotivoRechazoEstado && motivosRechazo.length === 0" class="state-message is-error">
+        No hay motivos de rechazo configurados para guardar este estado.
+      </p>
 
       <label>
         Observación

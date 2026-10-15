@@ -28,11 +28,11 @@ export class CompactSelect implements ControlValueAccessor {
   @Input() actionDisabled = false;
   @Input() searchable = false;
   @Input() searchPlaceholder = 'Buscar...';
+  @Input() disabled = false;
   @Output() actionSelected = new EventEmitter<void>();
   @Output() valueChange = new EventEmitter<number | null>();
 
   value: number | null = null;
-  disabled = false;
   abierto = false;
   searchTerm = '';
 
