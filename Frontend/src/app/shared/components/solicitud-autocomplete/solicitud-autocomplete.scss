@@ -9,11 +9,9 @@
 
 .solicitud-autocomplete__list,
 .solicitud-autocomplete__empty {
-  position: absolute;
-  z-index: 30;
-  top: calc(100% + 5px);
-  right: 0;
-  left: 0;
+  position: fixed;
+  z-index: 160;
+  box-sizing: border-box;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: 7px;
@@ -23,8 +21,8 @@
 
 .solicitud-autocomplete__list {
   display: grid;
-  max-height: 230px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .solicitud-autocomplete__list button {

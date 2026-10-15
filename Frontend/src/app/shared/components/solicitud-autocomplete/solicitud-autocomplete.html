@@ -1,9 +1,13 @@
 <div class="solicitud-autocomplete" (click)="$event.stopPropagation()">
   <input
+    #inputElement
     [id]="inputId"
     [name]="name || inputId"
     type="text"
     autocomplete="off"
+    role="combobox"
+    [attr.aria-expanded]="abierto"
+    [attr.aria-controls]="inputId + '-listbox'"
     [required]="required"
     [disabled]="disabled"
     [ngModel]="value"
@@ -13,22 +17,33 @@
     (keydown)="manejarTecla($event)"
   />
 
-  <div class="solicitud-autocomplete__list" *ngIf="mostrarOpciones" role="listbox">
+  <div
+    class="solicitud-autocomplete__list"
+    *ngIf="mostrarOpciones"
+    [id]="inputId + '-listbox'"
+    [ngStyle]="panelStyle"
+    role="listbox"
+  >
     <button
       type="button"
       *ngFor="let solicitud of opciones; let index = index"
       role="option"
       [class.is-active]="index === opcionActiva"
       [class.is-selected]="estaSeleccionada(solicitud)"
+      [attr.aria-selected]="estaSeleccionada(solicitud)"
+      (mousedown)="seleccionarConMouse($event, solicitud)"
       (mouseenter)="opcionActiva = index"
-      (click)="seleccionar(solicitud)"
     >
       <strong>{{ solicitud.codigo }}</strong>
       <span>{{ solicitud.cargo || solicitud.nombre || 'Sin cargo' }}</span>
     </button>
   </div>
 
-  <div class="solicitud-autocomplete__empty" *ngIf="mostrarSinResultados">
+  <div
+    class="solicitud-autocomplete__empty"
+    *ngIf="mostrarSinResultados"
+    [ngStyle]="panelStyle"
+  >
     {{ noResultsMessage }}
   </div>
 </div>

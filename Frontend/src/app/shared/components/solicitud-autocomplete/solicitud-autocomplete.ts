@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   SolicitudAutocompleteOption,
@@ -14,6 +14,8 @@ import {
   styleUrl: './solicitud-autocomplete.scss',
 })
 export class SolicitudAutocomplete {
+  @ViewChild('inputElement') inputElement?: ElementRef<HTMLInputElement>;
+
   @Input() id = '';
   @Input() name = '';
   @Input() value = '';
@@ -30,6 +32,7 @@ export class SolicitudAutocomplete {
   abierto = false;
   opcionActiva = 0;
   fueEditado = false;
+  panelStyle: Record<string, string> = {};
   readonly fallbackInputId = `solicitud-autocomplete-${Math.random().toString(36).slice(2)}`;
 
   get inputId() {
@@ -67,6 +70,7 @@ export class SolicitudAutocomplete {
     this.fueEditado = true;
     this.abierto = Boolean(valor.trim());
     this.opcionActiva = 0;
+    this.actualizarPosicionPanel();
     this.valueChange.emit(valor);
 
     if (!valor.trim()) {
@@ -76,6 +80,7 @@ export class SolicitudAutocomplete {
 
   enfocar() {
     this.abierto = Boolean(this.value.trim());
+    this.actualizarPosicionPanel();
   }
 
   seleccionar(solicitud: SolicitudAutocompleteOption) {
@@ -89,6 +94,7 @@ export class SolicitudAutocomplete {
   manejarTecla(evento: KeyboardEvent) {
     if (!this.abierto && ['ArrowDown', 'ArrowUp'].includes(evento.key)) {
       this.abierto = this.opciones.length > 0;
+      this.actualizarPosicionPanel();
     }
 
     if (!this.abierto) {
@@ -113,6 +119,34 @@ export class SolicitudAutocomplete {
     if (evento.key === 'Escape') {
       this.abierto = false;
     }
+  }
+
+  seleccionarConMouse(evento: MouseEvent, solicitud: SolicitudAutocompleteOption) {
+    evento.preventDefault();
+    evento.stopPropagation();
+    this.seleccionar(solicitud);
+  }
+
+  @HostListener('window:resize')
+  actualizarPosicionPanel() {
+    const input = this.inputElement?.nativeElement;
+
+    if (!input) {
+      return;
+    }
+
+    const rect = input.getBoundingClientRect();
+    const margen = 12;
+    const altoVentana = typeof window === 'undefined' ? rect.bottom + 230 + margen : window.innerHeight;
+    const espacioDisponible = altoVentana - rect.bottom - margen;
+    const maxHeight = Math.max(96, Math.min(230, espacioDisponible));
+
+    this.panelStyle = {
+      top: `${rect.bottom + 5}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      maxHeight: `${maxHeight}px`,
+    };
   }
 
   @HostListener('document:click')
