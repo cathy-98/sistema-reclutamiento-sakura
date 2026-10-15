@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from fastapi import HTTPException
-from sqlalchemy import select, text
+from sqlalchemy import bindparam, select, text
 from sqlalchemy.orm import Session
 
 from app.auth.email_service import EmailConfigurationError, EmailDeliveryError, send_email
@@ -25,7 +25,8 @@ from app.informes.models import (
     NotificacionReclutamiento,
     PlantillaNotificacion,
 )
-from app.informes.pdf_service import generate_candidate_summary, generate_corporate_cv
+from app.informes.docx_service import generate_comparative_docx
+from app.informes.pdf_service import generate_candidate_summary, generate_comparative_report_pdf, generate_corporate_cv
 from app.informes.schemas import CVOverrides
 
 
@@ -280,6 +281,220 @@ def candidate_report_item(db: Session, slcd_id: int) -> dict:
         "entrevistas": interviews,
         "puede_enviar_rechazo": _norm(base.get("estado_postulacion")) in REJECTED_STATES,
         "puede_enviar_directivos": classification == "APROBADO",
+    }
+
+
+def _comparative_request(db: Session, solicitud_id: int) -> dict:
+    row = _one(
+        db,
+        """
+        SELECT s.sol_id AS solicitud_id, s.sol_codigo AS codigo,
+               ca.crgo_nombre AS cargo,
+               emp.emp_nombre AS empresa,
+               s.sol_cantidad_vacantes AS vacantes,
+               ar.area_nombre AS area,
+               m.mdld_nombre AS modalidad
+        FROM tbl_solicitud s
+        LEFT JOIN tbl_cargo ca ON ca.crgo_id = s.sol_cargo_id
+        LEFT JOIN tbl_cliente cli ON cli.cli_id = s.sol_cliente_id
+        LEFT JOIN tbl_empresa emp ON emp.emp_id = cli.cli_empresa_id
+        LEFT JOIN tbl_area ar ON ar.area_id = cli.cli_area_empresa_id
+        LEFT JOIN tbl_modalidad m ON m.mdld_id = s.sol_modalidad_id
+        WHERE s.sol_id = :sid
+        """,
+        {"sid": solicitud_id},
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    return row
+
+
+def _comparative_required_skills(db: Session, solicitud_id: int) -> list[dict]:
+    return _rows(
+        db,
+        """
+        SELECT sh.solhb_habilidad_id AS habilidad_id,
+               h.hab_nombre AS habilidad,
+               sh.solhb_nivel_habilidad_id AS nivel_requerido_id,
+               nh.nvhb_nombre AS nivel_requerido,
+               sh.solhb_anios_experiencia_req AS anios_experiencia_req,
+               sh.solhb_es_excluyente AS excluyente
+        FROM tbl_solicitud_habilidad sh
+        JOIN tbl_habilidad h ON h.hab_id = sh.solhb_habilidad_id
+        LEFT JOIN tbl_nivel_habilidad nh ON nh.nvhb_id = sh.solhb_nivel_habilidad_id
+        WHERE sh.solhb_solicitud_id = :sid
+        ORDER BY sh.solhb_es_excluyente DESC, h.hab_nombre
+        """,
+        {"sid": solicitud_id},
+    )
+
+
+def _comparative_selected_candidates(db: Session, solicitud_id: int, slcd_ids: list[int]) -> list[dict]:
+    rows = [
+        dict(x)
+        for x in db.execute(
+            text(
+                """
+        SELECT sc.slcd_id AS solicitud_candidato_id,
+               sc.slcd_solicitud_id AS solicitud_id,
+               sc.slcd_candidato_id AS candidato_id,
+               sc.slcd_pretension_renta AS pretension_renta,
+               c.cand_email AS correo,
+               c.cand_nombres,
+               c.cand_apellido_paterno,
+               c.cand_apellido_materno,
+               d.disp_nombre AS disponibilidad
+        FROM tbl_solicitud_candidato sc
+        JOIN tbl_candidato c ON c.cand_id = sc.slcd_candidato_id
+        LEFT JOIN tbl_disponibilidad d ON d.disp_id = c.cand_disponibilidad_id
+        WHERE sc.slcd_id IN :ids
+        """
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": slcd_ids},
+        ).mappings().all()
+    ]
+    found = {int(row["solicitud_candidato_id"]) for row in rows}
+    missing = [slcd_id for slcd_id in slcd_ids if slcd_id not in found]
+    if missing:
+        raise HTTPException(status_code=404, detail={"message": "Una o más postulaciones no existen", "ids": missing})
+    invalid = [int(row["solicitud_candidato_id"]) for row in rows if int(row["solicitud_id"]) != solicitud_id]
+    if invalid:
+        raise HTTPException(
+            status_code=409,
+            detail={"message": "Todas las postulaciones seleccionadas deben pertenecer a la solicitud informada", "ids": invalid},
+        )
+    by_id = {int(row["solicitud_candidato_id"]): row for row in rows}
+    return [by_id[slcd_id] for slcd_id in slcd_ids]
+
+
+def _comparative_candidate_skill_map(db: Session, candidate_ids: list[int]) -> dict[int, dict[int, dict]]:
+    if not candidate_ids:
+        return {}
+    rows = [
+        dict(x)
+        for x in db.execute(
+            text(
+                """
+        SELECT ch.cdhb_candidato_id AS candidato_id,
+               ch.cdhb_habilidad_id AS habilidad_id,
+               ch.cdhb_nivel_habilidad_id AS nivel_candidato_id,
+               nh.nvhb_nombre AS nivel_candidato,
+               ch.cdhb_anios_experiencia AS anios_experiencia
+        FROM tbl_candidato_habilidad ch
+        LEFT JOIN tbl_nivel_habilidad nh ON nh.nvhb_id = ch.cdhb_nivel_habilidad_id
+        WHERE ch.cdhb_candidato_id IN :ids
+        """
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": candidate_ids},
+        ).mappings().all()
+    ]
+    result: dict[int, dict[int, dict]] = defaultdict(dict)
+    for row in rows:
+        result[int(row["candidato_id"])][int(row["habilidad_id"])] = row
+    return result
+
+
+NO_OBSERVATIONS_TEXT = "Sin observaciones registradas"
+
+
+def _comparative_observations(db: Session, slcd_id: int) -> tuple[str, str, list[str]]:
+    rows = _rows(
+        db,
+        """
+        SELECT te.tpet_nombre AS tipo,
+               e.even_observacion AS observacion,
+               e.even_fecha_actualizacion AS evaluacion_actualizada,
+               e.even_fecha_creacion AS evaluacion_creada,
+               ce.ctev_fecha_hora_inicio AS entrevista_inicio,
+               ce.ctev_fecha_creacion AS entrevista_creada,
+               e.even_id AS evaluacion_id
+        FROM tbl_cita_entrevista ce
+        JOIN tbl_evaluacion_entrevista e ON e.even_cita_entrevista_id = ce.ctev_id
+        LEFT JOIN tbl_tipo_entrevista te ON te.tpet_id = e.even_tipo_entrevista_id
+        WHERE ce.ctev_solicitud_candidato_id = :slcd
+          AND e.even_observacion IS NOT NULL
+          AND trim(e.even_observacion) <> ''
+        ORDER BY
+          COALESCE(e.even_fecha_actualizacion, e.even_fecha_creacion, ce.ctev_fecha_hora_inicio, ce.ctev_fecha_creacion) DESC,
+          e.even_id DESC
+        """,
+        {"slcd": slcd_id},
+    )
+    latest = {"operacional": None, "tecnica": None}
+    for row in rows:
+        kind = _norm(row.get("tipo"))
+        target = None
+        if kind in {"rrhh", "operacional", "operativa", "recursos humanos"}:
+            target = "operacional"
+        elif kind in {"tecnica", "tecnico", "tecnologica", "tecnologico"}:
+            target = "tecnica"
+        if target and latest[target] is None:
+            latest[target] = str(row["observacion"])
+
+    return (
+        latest["operacional"] or NO_OBSERVATIONS_TEXT,
+        latest["tecnica"] or NO_OBSERVATIONS_TEXT,
+        [],
+    )
+
+
+def build_comparative_report_data(db: Session, solicitud_id: int, slcd_ids: list[int]) -> dict:
+    request = _comparative_request(db, solicitud_id)
+    required_skills = _comparative_required_skills(db, solicitud_id)
+    candidates = _comparative_selected_candidates(db, solicitud_id, slcd_ids)
+    skill_map = _comparative_candidate_skill_map(db, [int(row["candidato_id"]) for row in candidates])
+
+    out_candidates = []
+    for candidate in candidates:
+        full_name = " ".join(
+            x
+            for x in [
+                candidate.get("cand_nombres"),
+                candidate.get("cand_apellido_paterno"),
+                candidate.get("cand_apellido_materno"),
+            ]
+            if x
+        )
+        operational, technical, pending = _comparative_observations(db, int(candidate["solicitud_candidato_id"]))
+        techs = []
+        for req in required_skills:
+            got = skill_map.get(int(candidate["candidato_id"]), {}).get(int(req["habilidad_id"]))
+            # Regla del informe comparativo: "Nada" representa una tecnología requerida
+            # por la solicitud que no está registrada entre las habilidades del candidato.
+            techs.append({
+                **req,
+                "excluyente": bool(req.get("excluyente")),
+                "nivel_candidato_id": got.get("nivel_candidato_id") if got else None,
+                "nivel_candidato": (
+                    got.get("nivel_candidato")
+                    if got and got.get("nivel_candidato")
+                    else ("No informado" if got else "Nada")
+                ),
+                "anios_experiencia": got.get("anios_experiencia") if got else None,
+                "presente": got is not None,
+            })
+
+        out_candidates.append({
+            "solicitud_candidato_id": candidate["solicitud_candidato_id"],
+            "candidato_id": candidate["candidato_id"],
+            "nombre": full_name or candidate["correo"],
+            "correo": candidate["correo"],
+            "pretension_renta": candidate.get("pretension_renta"),
+            "disponibilidad": candidate.get("disponibilidad"),
+            "observacion_operacional": operational,
+            "observacion_tecnica": technical,
+            "observaciones_pendientes_definicion": pending,
+            "tecnologias_excluyentes": [x for x in techs if x["excluyente"]],
+            "tecnologias_no_excluyentes": [x for x in techs if not x["excluyente"]],
+        })
+
+    return {
+        "solicitud": request,
+        "habilidades_requeridas": [
+            {**skill, "excluyente": bool(skill.get("excluyente"))}
+            for skill in required_skills
+        ],
+        "candidatos": out_candidates,
     }
 
 
@@ -577,6 +792,25 @@ def generate_summary_document(db: Session, slcd_id: int, user_id: int) -> dict:
     return _save_document(db, slcd_id=slcd_id, kind="RESUMEN", filename=filename, path=path, user_id=user_id, snapshot=item)
 
 
+def generate_comparative_document(db: Session, solicitud_id: int, slcd_ids: list[int], fmt: str) -> tuple[dict, Path]:
+    data = build_comparative_report_data(db, solicitud_id, slcd_ids)
+    fmt = fmt.lower()
+    if fmt not in {"pdf", "docx"}:
+        raise HTTPException(status_code=422, detail="Formato de informe comparativo inválido")
+    solicitud = data.get("solicitud") or {}
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    code = solicitud.get("codigo") or str(solicitud.get("solicitud_id") or solicitud_id)
+    filename = f"INFORME_COMPARATIVO_{_slug(code)}_{stamp}.{fmt}"
+    path = _storage_root() / "comparativo" / filename
+    if fmt == "pdf":
+        generate_comparative_report_pdf(str(path), data)
+        media_type = "application/pdf"
+    else:
+        generate_comparative_docx(str(path), data)
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    return {"nombre_archivo": filename, "formato": fmt, "media_type": media_type}, path
+
+
 def generate_bulk(db: Session, ids: list[int], user_id: int, kind: str) -> tuple[dict, Path]:
     # Prevalidación completa para evitar generar documentos parciales por errores de negocio.
     prevalidated = [candidate_report_item(db, slcd) for slcd in ids]
@@ -659,10 +893,22 @@ def _render(template: str, item: dict) -> str:
         "{codigo_solicitud}": item.get("solicitud_codigo") or str(item["solicitud_id"]),
         "{solicitud}": item.get("solicitud_titulo") or item.get("solicitud_codigo") or "proceso de selección",
     }
+    # Algunas plantillas históricas fueron sembradas con sintaxis {{params.*}}.
+    # Se extiende el renderer único para no crear un segundo motor ni migrar datos
+    # en esta iteración.
+    values.update({
+        "{{params.nombre}}": values["{nombre}"],
+        "{{params.cargo}}": values["{cargo}"],
+        "{{params.codigo_solicitud}}": values["{codigo_solicitud}"],
+        "{{params.solicitud}}": values["{solicitud}"],
+    })
     result = template
     for key, val in values.items():
         result = result.replace(key, str(val))
     return result
+
+
+GENERAL_CANDIDATE_EMAIL_TYPES = {"CONTACTO", "INVITACION", "AVANCE", "SELECCION"}
 
 
 def prepare_directors(db: Session, ids: list[int], recipients: list[str], cc: list[str], subject: str | None, body: str | None, user_id: int) -> dict:
@@ -750,6 +996,103 @@ def send_rejections(db: Session, values: list, user_id: int) -> list[dict]:
     if any(x["estado"] == "ERROR" for x in responses):
         # No se pierde trazabilidad; el caller recibe todos los resultados.
         return responses
+    return responses
+
+
+def _failed_candidate_email(slcd_id: int, kind: str, message: str) -> dict:
+    return {
+        "notificacion_id": None,
+        "solicitud_candidato_id": slcd_id,
+        "tipo": kind,
+        "destinatario": None,
+        "cc": None,
+        "asunto": None,
+        "estado": "ERROR",
+        "fecha_creacion": None,
+        "fecha_envio": None,
+        "error": message,
+    }
+
+
+def send_candidate_emails(
+    db: Session,
+    ids: list[int],
+    kind: str,
+    subject: str | None,
+    body: str | None,
+    user_id: int,
+) -> list[dict]:
+    kind = kind.upper()
+    if kind not in GENERAL_CANDIDATE_EMAIL_TYPES:
+        raise HTTPException(status_code=422, detail="Tipo de notificación de candidato inválido")
+
+    tpl = _template(db, kind)
+    responses = []
+    for slcd in ids:
+        try:
+            item = candidate_report_item(db, slcd)
+        except HTTPException as exc:
+            responses.append(_failed_candidate_email(slcd, kind, str(exc.detail)))
+            continue
+
+        recipient = str(item.get("candidato_email") or "").strip()
+        final_subject = _render(subject or tpl.plnt_asunto, item).strip()
+        final_body = _render(body or tpl.plnt_cuerpo, item).strip()
+        if not recipient or "@" not in recipient or "." not in recipient.rsplit("@", 1)[-1]:
+            rows = _record_notifications(
+                db,
+                items=[item],
+                kind=kind,
+                recipients=recipient or "SIN_CORREO",
+                cc=None,
+                subject=final_subject or "(sin asunto)",
+                body=final_body or "(sin cuerpo)",
+                user_id=user_id,
+                state="ERROR",
+                error="El candidato no tiene un correo válido",
+            )
+            responses.append(_notification_dict(rows[0]))
+            continue
+        if not final_subject or not final_body:
+            rows = _record_notifications(
+                db,
+                items=[item],
+                kind=kind,
+                recipients=recipient,
+                cc=None,
+                subject=final_subject or "(sin asunto)",
+                body=final_body or "(sin cuerpo)",
+                user_id=user_id,
+                state="ERROR",
+                error="El asunto y el mensaje no pueden estar vacíos",
+            )
+            responses.append(_notification_dict(rows[0]))
+            continue
+
+        try:
+            send_email(to_emails=[recipient], subject=final_subject, body_text=final_body)
+            state, error = "ENVIADO", None
+        except (EmailConfigurationError, EmailDeliveryError) as exc:
+            state, error = "ERROR", str(exc)
+
+        # El correo se registra por postulación, no por cand_id: una misma
+        # persona puede participar en varias solicitudes y el historial debe
+        # conservar el contexto exacto del proceso. Cada intento se persiste
+        # aunque falle para no perder trazabilidad del lote parcial.
+        rows = _record_notifications(
+            db,
+            items=[item],
+            kind=kind,
+            recipients=recipient,
+            cc=None,
+            subject=final_subject,
+            body=final_body,
+            user_id=user_id,
+            state=state,
+            error=error,
+        )
+        responses.append(_notification_dict(rows[0]))
+
     return responses
 
 

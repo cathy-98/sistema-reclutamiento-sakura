@@ -6,7 +6,7 @@ from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
@@ -25,6 +25,8 @@ LIGHT = colors.HexColor("#F3F3F3")
 GREEN = colors.HexColor("#C6EFCE")
 YELLOW = colors.HexColor("#FFEB9C")
 RED = colors.HexColor("#FFC7CE")
+ORANGE_FILL = colors.HexColor("#F4B183")
+BLUE_GRAY = colors.HexColor("#D9E2F3")
 
 
 def _styles():
@@ -79,6 +81,158 @@ def _p(text: Any, style):
     value = "" if text is None else str(text)
     value = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>")
     return Paragraph(value, style)
+
+
+def _pm(markup: str, style):
+    return Paragraph(markup, style)
+
+
+def _level_color(level: str | None):
+    normalized = _normalize_level(level)
+    if normalized == "avanzado":
+        return GREEN
+    if normalized == "medio":
+        return ORANGE_FILL
+    if normalized == "basico":
+        return YELLOW
+    if normalized == "nada":
+        return RED
+    return BLUE_GRAY
+
+
+def _normalize_level(level: str | None) -> str:
+    value = "" if level is None else str(level).strip().casefold()
+    return (
+        value.replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
+
+
+def _money(value: Any) -> str:
+    if value is None:
+        return "No informada"
+    try:
+        return f"{int(value):,}".replace(",", ".")
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _candidate_identity(index: int, candidate: dict[str, Any]) -> str:
+    return "\n".join([
+        f"{index}. {candidate.get('nombre') or '-'}",
+        candidate.get("correo") or "-",
+        f"Pretensión: {_money(candidate.get('pretension_renta'))}",
+        f"Disponibilidad: {candidate.get('disponibilidad') or 'No informada'}",
+    ])
+
+
+def _tech_cell(items: list[dict[str, Any]], style) -> Paragraph:
+    if not items:
+        return _p("Sin tecnologías requeridas", style)
+    lines = []
+    for item in items:
+        level = item.get("nivel_candidato") or "No informado"
+        color = _level_color(level).hexval()
+        skill = str(item.get("habilidad") or "-").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        label = str(level).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        lines.append(f'{skill} <font color="#{color}">▬</font> <font color="#666666">{label}</font>')
+    return _pm("<br/>".join(lines), style)
+
+
+def _comparative_doc(path: str):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    return SimpleDocTemplate(
+        path,
+        pagesize=landscape(A4),
+        rightMargin=10 * mm,
+        leftMargin=10 * mm,
+        topMargin=12 * mm,
+        bottomMargin=12 * mm,
+        title="Informe Comparativo de Candidatos",
+        author="Sakura Reclutamiento",
+    )
+
+
+def _comparative_header(canvas, doc):
+    canvas.saveState()
+    canvas.setFillColor(colors.HexColor("#777777"))
+    canvas.setFont("Helvetica", 7)
+    canvas.drawRightString(287 * mm, 7 * mm, f"Página {doc.page}")
+    canvas.restoreState()
+
+
+def generate_comparative_report_pdf(path: str, data: dict[str, Any]) -> None:
+    st = _styles()
+    story = [
+        _p("INFORME DE CANDIDATOS", st["brand"]),
+        _p("Resumen comparativo para revisión y selección", st["subtitle"]),
+    ]
+    solicitud = data.get("solicitud") or {}
+    info = [
+        ["Cargo", solicitud.get("cargo") or "-", "Empresa", solicitud.get("empresa") or "-", "Vacantes", solicitud.get("vacantes") or "-"],
+        ["Solicitud", solicitud.get("codigo") or solicitud.get("solicitud_id") or "-", "Área", solicitud.get("area") or "-", "Modalidad", solicitud.get("modalidad") or "-"],
+    ]
+    info_table = Table(
+        [[_p(x, st["small"]) for x in row] for row in info],
+        colWidths=[23 * mm, 46 * mm, 23 * mm, 51 * mm, 23 * mm, 91 * mm],
+    )
+    info_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1), LIGHT),
+        ("BACKGROUND", (2, 0), (2, -1), LIGHT),
+        ("BACKGROUND", (4, 0), (4, -1), LIGHT),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#DDDDDD")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("PADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story += [info_table, Spacer(1, 4 * mm), _p("Nivel tecnológico", st["section"])]
+    legend = Table(
+        [["Avanzado", "Medio", "Básico", "Nada"]],
+        colWidths=[28 * mm, 28 * mm, 28 * mm, 28 * mm],
+    )
+    legend.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, 0), GREEN),
+        ("BACKGROUND", (1, 0), (1, 0), ORANGE_FILL),
+        ("BACKGROUND", (2, 0), (2, 0), YELLOW),
+        ("BACKGROUND", (3, 0), (3, 0), RED),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#DDDDDD")),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("PADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story += [legend, Spacer(1, 4 * mm), _p("CANDIDATOS SELECCIONADOS", st["section"])]
+
+    headers = ["Candidato", "Observación operacional", "Observación técnica", "Tecnologías excluyentes", "Tecnologías no excluyentes"]
+    rows = [[_p(x, st["small"]) for x in headers]]
+    for index, candidate in enumerate(data.get("candidatos") or [], start=1):
+        rows.append([
+            _p(_candidate_identity(index, candidate), st["small"]),
+            _p(candidate.get("observacion_operacional") or "Sin observaciones registradas", st["small"]),
+            _p(candidate.get("observacion_tecnica") or "Sin observaciones registradas", st["small"]),
+            _tech_cell(candidate.get("tecnologias_excluyentes") or [], st["small"]),
+            _tech_cell(candidate.get("tecnologias_no_excluyentes") or [], st["small"]),
+        ])
+    if len(rows) == 1:
+        rows.append([_p("Sin candidatos seleccionados", st["small"]), _p("-", st["small"]), _p("-", st["small"]), _p("-", st["small"]), _p("-", st["small"])])
+    table = Table(rows, colWidths=[42 * mm, 54 * mm, 54 * mm, 53 * mm, 54 * mm], repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), BRAND_ORANGE),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#DDDDDD")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(table)
+    _comparative_doc(path).build(story, onFirstPage=_comparative_header, onLaterPages=_comparative_header)
 
 
 def generate_corporate_cv(path: str, data: dict[str, Any]) -> None:

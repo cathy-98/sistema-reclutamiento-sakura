@@ -2,9 +2,20 @@ from __future__ import annotations
 import os
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 
 URL=os.getenv('DATABASE_URL') or os.getenv('SAKURA_DATABASE_URL')
 pytestmark=pytest.mark.skipif(not URL or URL.startswith('sqlite'), reason='Requiere PostgreSQL real mediante DATABASE_URL')
+
+TIPOS_NOTIFICACION = [
+    "RECHAZO",
+    "AGRADECIMIENTO",
+    "DIRECTIVOS",
+    "CONTACTO",
+    "INVITACION",
+    "AVANCE",
+    "SELECCION",
+]
 
 def q(sql,params=None):
     e=create_engine(URL,pool_pre_ping=True)
@@ -37,6 +48,90 @@ def test_documento_checks():
 
 def test_notificacion_checks():
     names={r['conname'] for r in q("SELECT conname FROM pg_constraint WHERE conrelid='tbl_notificacion_reclutamiento'::regclass")}; assert {'chk_tbl_notificacion_tipo','chk_tbl_notificacion_estado'}<=names
+
+def test_notificacion_tipo_constraint_alineado_con_plantillas():
+    definition=scalar("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='tbl_notificacion_reclutamiento'::regclass AND conname='chk_tbl_notificacion_tipo'")
+    for tipo in TIPOS_NOTIFICACION:
+        assert tipo in definition
+
+@pytest.mark.parametrize("tipo", TIPOS_NOTIFICACION)
+def test_notificacion_tipo_permite_comunicaciones_existentes(tipo):
+    e=create_engine(URL,pool_pre_ping=True)
+    try:
+        with e.connect() as c:
+            tx=c.begin()
+            try:
+                ids=c.execute(text("""
+                    SELECT
+                        (SELECT slcd_id FROM tbl_solicitud_candidato ORDER BY slcd_id LIMIT 1) AS slcd_id,
+                        (SELECT usr_id FROM tbl_usuario ORDER BY usr_id LIMIT 1) AS usr_id
+                """)).mappings().one()
+                if ids["slcd_id"] is None or ids["usr_id"] is None:
+                    pytest.skip("La BD real no tiene postulaciones/usuarios para validar el CHECK con INSERT transaccional.")
+                c.execute(text("""
+                    INSERT INTO tbl_notificacion_reclutamiento (
+                        ntfr_solicitud_candidato_id,
+                        ntfr_tipo,
+                        ntfr_destinatario,
+                        ntfr_asunto,
+                        ntfr_cuerpo,
+                        ntfr_estado,
+                        ntfr_usuario_id
+                    )
+                    VALUES (
+                        :slcd_id,
+                        :tipo,
+                        'qa-notificacion@example.com',
+                        'QA constraint',
+                        'QA constraint',
+                        'BORRADOR',
+                        :usr_id
+                    )
+                """), {"slcd_id": ids["slcd_id"], "tipo": tipo, "usr_id": ids["usr_id"]})
+            finally:
+                # La prueba valida PostgreSQL real sin dejar registros de auditoría ficticios.
+                tx.rollback()
+    finally:
+        e.dispose()
+
+def test_notificacion_tipo_rechaza_valor_invalido():
+    e=create_engine(URL,pool_pre_ping=True)
+    try:
+        with e.connect() as c:
+            tx=c.begin()
+            try:
+                ids=c.execute(text("""
+                    SELECT
+                        (SELECT slcd_id FROM tbl_solicitud_candidato ORDER BY slcd_id LIMIT 1) AS slcd_id,
+                        (SELECT usr_id FROM tbl_usuario ORDER BY usr_id LIMIT 1) AS usr_id
+                """)).mappings().one()
+                if ids["slcd_id"] is None or ids["usr_id"] is None:
+                    pytest.skip("La BD real no tiene postulaciones/usuarios para validar el CHECK con INSERT transaccional.")
+                with pytest.raises(IntegrityError):
+                    c.execute(text("""
+                        INSERT INTO tbl_notificacion_reclutamiento (
+                            ntfr_solicitud_candidato_id,
+                            ntfr_tipo,
+                            ntfr_destinatario,
+                            ntfr_asunto,
+                            ntfr_cuerpo,
+                            ntfr_estado,
+                            ntfr_usuario_id
+                        )
+                        VALUES (
+                            :slcd_id,
+                            'OTRO',
+                            'qa-notificacion@example.com',
+                            'QA constraint',
+                            'QA constraint',
+                            'BORRADOR',
+                            :usr_id
+                        )
+                    """), {"slcd_id": ids["slcd_id"], "usr_id": ids["usr_id"]})
+            finally:
+                tx.rollback()
+    finally:
+        e.dispose()
 
 def test_plantillas_seed_activas():
     rows=q("SELECT plnt_tipo,plnt_activa FROM tbl_plantilla_notificacion"); mp={x['plnt_tipo']:x['plnt_activa'] for x in rows}; assert mp.get('RECHAZO') is True and mp.get('AGRADECIMIENTO') is True and mp.get('DIRECTIVOS') is True

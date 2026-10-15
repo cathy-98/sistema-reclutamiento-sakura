@@ -222,6 +222,70 @@ def test_enviar_rechazo_candidato_no_formal_409(client,seed,monkeypatch):
 def test_rechazo_items_duplicados_422(client,seed):
     x={'tipo':'RECHAZO','solicitud_candidato_id':seed['pdes'],'asunto':'A','cuerpo':'B'}; assert client.post('/informes/rechazos/enviar',json={'items':[x,x]},headers=H(seed['reporter'])).status_code==422
 
+# ---------------- Correos generales a candidatos ----------------
+@pytest.mark.parametrize("tipo", ["CONTACTO", "AVANCE", "SELECCION"])
+def test_enviar_correo_candidato_exito_registra_historial(client,seed,monkeypatch,tipo):
+    sent=[]; monkeypatch.setattr(services,'send_email',lambda **kw: sent.append(kw))
+    p={'solicitud_candidato_ids':[seed['psel']],'tipo':tipo,'asunto':'Hola {nombre}','cuerpo':'Cargo {cargo} / {codigo_solicitud}'}
+    r=client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter']))
+    assert r.status_code==200,r.text
+    row=r.json()[0]
+    assert row['solicitud_candidato_id']==seed['psel'] and row['estado']=='ENVIADO' and row['notificacion_id']
+    assert sent and 'Hola' in sent[0]['subject']
+    db=TestingSessionLocal(); obj=db.get(im.NotificacionReclutamiento,row['notificacion_id']); db.close()
+    assert obj.ntfr_solicitud_candidato_id==seed['psel'] and obj.ntfr_tipo==tipo
+
+def test_enviar_correo_candidatos_varios(client,seed,monkeypatch):
+    sent=[]; monkeypatch.setattr(services,'send_email',lambda **kw: sent.append(kw))
+    p={'solicitud_candidato_ids':[seed['psel'],seed['pdes']],'tipo':'CONTACTO','asunto':'QA','cuerpo':'QA'}
+    r=client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter']))
+    assert r.status_code==200,r.text
+    assert [x['estado'] for x in r.json()]==['ENVIADO','ENVIADO']
+    assert len(sent)==2
+
+def test_enviar_correo_fallo_smtp_no_detiene_lote(client,seed,monkeypatch):
+    calls=[]
+    def maybe_fail(**kw):
+        calls.append(kw)
+        if len(calls)==2: raise EmailDeliveryError('SMTP QA')
+    monkeypatch.setattr(services,'send_email',maybe_fail)
+    p={'solicitud_candidato_ids':[seed['psel'],seed['pdes']],'tipo':'CONTACTO','asunto':'QA','cuerpo':'QA'}
+    r=client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter']))
+    assert r.status_code==200,r.text
+    states=[x['estado'] for x in r.json()]
+    assert states==['ENVIADO','ERROR']
+    assert all(x['notificacion_id'] for x in r.json())
+
+def test_enviar_correo_postulacion_invalida_resultado_individual(client,seed,monkeypatch):
+    monkeypatch.setattr(services,'send_email',lambda **kw: None)
+    p={'solicitud_candidato_ids':[999999],'tipo':'CONTACTO','asunto':'QA','cuerpo':'QA'}
+    r=client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter']))
+    assert r.status_code==200,r.text
+    row=r.json()[0]
+    assert row['estado']=='ERROR' and row['notificacion_id'] is None and row['solicitud_candidato_id']==999999
+
+def test_enviar_correo_candidato_email_invalido(client,seed,monkeypatch):
+    monkeypatch.setattr(services,'send_email',lambda **kw: None)
+    db=TestingSessionLocal()
+    cand_id=db.execute(text('SELECT slcd_candidato_id FROM tbl_solicitud_candidato WHERE slcd_id=:id'),{'id':seed['psel']}).scalar_one()
+    db.execute(text("UPDATE tbl_candidato SET cand_email='correo-invalido' WHERE cand_id=:id"),{'id':cand_id}); db.commit(); db.close()
+    p={'solicitud_candidato_ids':[seed['psel']],'tipo':'CONTACTO','asunto':'QA','cuerpo':'QA'}
+    r=client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter']))
+    assert r.status_code==200,r.text
+    assert r.json()[0]['estado']=='ERROR' and 'correo' in r.json()[0]['error'].lower()
+
+def test_enviar_correo_tipo_invalido_422(client,seed):
+    p={'solicitud_candidato_ids':[seed['psel']],'tipo':'DIRECTIVOS','asunto':'QA','cuerpo':'QA'}
+    assert client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter'])).status_code==422
+
+def test_enviar_correo_no_cambia_estado_postulacion(client,seed,monkeypatch):
+    monkeypatch.setattr(services,'send_email',lambda **kw: None)
+    db=TestingSessionLocal(); before=db.execute(text('SELECT slcd_estado_solicitud_candidato_id FROM tbl_solicitud_candidato WHERE slcd_id=:id'),{'id':seed['psel']}).scalar_one(); db.close()
+    p={'solicitud_candidato_ids':[seed['psel']],'tipo':'CONTACTO','asunto':'QA','cuerpo':'QA'}
+    assert client.post('/informes/candidatos/correos/enviar',json=p,headers=H(seed['reporter'])).status_code==200
+    db=TestingSessionLocal(); after=db.execute(text('SELECT slcd_estado_solicitud_candidato_id FROM tbl_solicitud_candidato WHERE slcd_id=:id'),{'id':seed['psel']}).scalar_one(); db.close()
+    assert after==before
+
 # ---------------- Notificaciones ----------------
 def test_notificaciones_listado_filtros_y_detalle(client,seed,monkeypatch):
     monkeypatch.setattr(services,'send_email',lambda **kw: None); p={'items':[{'tipo':'RECHAZO','solicitud_candidato_id':seed['pdes'],'asunto':'QA','cuerpo':'QA cuerpo'}]}; row=client.post('/informes/rechazos/enviar',json=p,headers=H(seed['reporter'])).json()[0]; r=client.get('/informes/notificaciones',params={'solicitud_candidato_id':seed['pdes'],'tipo':'RECHAZO','estado':'ENVIADO'},headers=H(seed['reporter'])); assert any(x['notificacion_id']==row['notificacion_id'] for x in r.json()); d=client.get(f"/informes/notificaciones/{row['notificacion_id']}",headers=H(seed['reporter'])); assert d.status_code==200 and d.json()['cuerpo']=='QA cuerpo'
@@ -229,7 +293,7 @@ def test_notificacion_inexistente_404(client,seed): assert client.get('/informes
 
 # ---------------- Plantillas ----------------
 def test_listar_plantillas(client,seed):
-    b=client.get('/informes/plantillas',headers=H(seed['reporter'])).json(); assert {x['tipo'] for x in b}=={'RECHAZO','AGRADECIMIENTO','DIRECTIVOS'}
+    b=client.get('/informes/plantillas',headers=H(seed['reporter'])).json(); assert {x['tipo'] for x in b}=={'RECHAZO','AGRADECIMIENTO','DIRECTIVOS','CONTACTO','INVITACION','AVANCE','SELECCION'}
 def test_editar_plantilla_y_auditoria(client,seed):
     b=client.get('/informes/plantillas',headers=H(seed['reporter'])).json(); pid=next(x['plantilla_id'] for x in b if x['tipo']=='RECHAZO'); r=client.patch(f"/informes/plantillas/{pid}",json={'asunto':'Nuevo asunto {cargo}'},headers=H(seed['reporter'])); assert r.status_code==200 and r.json()['asunto'].startswith('Nuevo'); db=TestingSessionLocal(); obj=db.get(im.PlantillaNotificacion,pid); assert obj.plnt_usuario_actualizacion_id==seed['reporter']; db.close()
 def test_patch_plantilla_vacio_422(client,seed):

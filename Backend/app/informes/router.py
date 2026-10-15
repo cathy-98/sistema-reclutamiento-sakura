@@ -14,12 +14,16 @@ from app.informes.schemas import (
     CVOverrides,
     CandidateListResponse,
     CategoriaHabilidadItem,
+    CandidateEmailNotificationResponse,
+    CorreosCandidatosSendRequest,
     DirectivosPrepareRequest,
     DirectivosPreview,
     DirectivosSendRequest,
     DocumentoResponse,
     HabilidadCategoriaUpdate,
     IdiomasReplaceRequest,
+    InformeComparativoRequest,
+    InformeComparativoResponse,
     MasivoDocumentoResponse,
     MasivoRequest,
     NotificationDetailResponse,
@@ -69,6 +73,22 @@ def candidatos(
         nombre=nombre,
         skip=skip,
         limit=limit,
+    )
+
+
+@router.post("/candidatos/correos/enviar", response_model=list[CandidateEmailNotificationResponse])
+def enviar_correos_candidatos(
+    payload: CorreosCandidatosSendRequest,
+    db: Session = Depends(get_db),
+    user: Usuario = Depends(report_user),
+):
+    return services.send_candidate_emails(
+        db,
+        payload.solicitud_candidato_ids,
+        payload.tipo,
+        payload.asunto,
+        payload.cuerpo,
+        user.usr_id,
     )
 
 
@@ -137,6 +157,35 @@ def generar_resumen_masivo(
 ):
     result, _ = services.generate_bulk(db, payload.solicitud_candidato_ids, user.usr_id, "RESUMEN")
     return result
+
+
+@router.post("/comparativo/datos", response_model=InformeComparativoResponse)
+def datos_informe_comparativo(
+    payload: InformeComparativoRequest,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(report_user),
+):
+    return services.build_comparative_report_data(db, payload.solicitud_id, payload.solicitud_candidato_ids)
+
+
+@router.post("/comparativo/pdf/descargar")
+def descargar_informe_comparativo_pdf(
+    payload: InformeComparativoRequest,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(report_user),
+):
+    result, path = services.generate_comparative_document(db, payload.solicitud_id, payload.solicitud_candidato_ids, "pdf")
+    return FileResponse(path, filename=result["nombre_archivo"], media_type=result["media_type"])
+
+
+@router.post("/comparativo/docx/descargar")
+def descargar_informe_comparativo_docx(
+    payload: InformeComparativoRequest,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(report_user),
+):
+    result, path = services.generate_comparative_document(db, payload.solicitud_id, payload.solicitud_candidato_ids, "docx")
+    return FileResponse(path, filename=result["nombre_archivo"], media_type=result["media_type"])
 
 
 @router.post("/candidatos/{solicitud_candidato_id}/cv-corporativo", response_model=DocumentoResponse, status_code=201)
@@ -265,7 +314,7 @@ def enviar_rechazos(
 @router.get("/notificaciones", response_model=list[NotificationResponse])
 def notificaciones(
     solicitud_candidato_id: int | None = Query(default=None, gt=0),
-    tipo: Literal["RECHAZO", "AGRADECIMIENTO", "DIRECTIVOS"] | None = None,
+    tipo: Literal["RECHAZO", "AGRADECIMIENTO", "DIRECTIVOS", "CONTACTO", "INVITACION", "AVANCE", "SELECCION"] | None = None,
     estado: Literal["BORRADOR", "ENVIADO", "ERROR"] | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),

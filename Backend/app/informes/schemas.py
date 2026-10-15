@@ -146,6 +146,56 @@ class MasivoDocumentoResponse(StrictModel):
     documento_ids: list[int]
 
 
+class InformeComparativoRequest(MasivoRequest):
+    solicitud_id: int = Field(gt=0)
+
+
+class InformeComparativoSolicitud(StrictModel):
+    solicitud_id: int
+    codigo: str | None = None
+    cargo: str | None = None
+    empresa: str | None = None
+    vacantes: int | None = None
+    area: str | None = None
+    modalidad: str | None = None
+
+
+class InformeComparativoHabilidadRequerida(StrictModel):
+    habilidad_id: int
+    habilidad: str
+    nivel_requerido_id: int | None = None
+    nivel_requerido: str | None = None
+    anios_experiencia_req: int | None = None
+    excluyente: bool
+
+
+class InformeComparativoTecnologiaCandidato(InformeComparativoHabilidadRequerida):
+    nivel_candidato_id: int | None = None
+    nivel_candidato: str
+    anios_experiencia: int | None = None
+    presente: bool
+
+
+class InformeComparativoCandidato(StrictModel):
+    solicitud_candidato_id: int
+    candidato_id: int
+    nombre: str
+    correo: EmailStr
+    pretension_renta: int | None = None
+    disponibilidad: str | None = None
+    observacion_operacional: str | None = None
+    observacion_tecnica: str | None = None
+    observaciones_pendientes_definicion: list[str] = Field(default_factory=list)
+    tecnologias_excluyentes: list[InformeComparativoTecnologiaCandidato] = Field(default_factory=list)
+    tecnologias_no_excluyentes: list[InformeComparativoTecnologiaCandidato] = Field(default_factory=list)
+
+
+class InformeComparativoResponse(StrictModel):
+    solicitud: InformeComparativoSolicitud
+    habilidades_requeridas: list[InformeComparativoHabilidadRequerida] = Field(default_factory=list)
+    candidatos: list[InformeComparativoCandidato] = Field(default_factory=list)
+
+
 class DirectivosPrepareRequest(MasivoRequest):
     destinatarios: list[EmailStr] = Field(min_length=1, max_length=30)
     cc: list[EmailStr] = Field(default_factory=list, max_length=30)
@@ -202,6 +252,27 @@ class RechazosSendRequest(StrictModel):
         return value
 
 
+TipoCorreoCandidato = Literal["CONTACTO", "INVITACION", "AVANCE", "SELECCION"]
+
+
+class CorreosCandidatosSendRequest(MasivoRequest):
+    tipo: TipoCorreoCandidato = "CONTACTO"
+    asunto: str | None = Field(default=None, max_length=300)
+    cuerpo: str | None = Field(default=None, max_length=10000)
+
+    @model_validator(mode="after")
+    def asunto_y_cuerpo_manual(self):
+        if (self.asunto is None or not self.asunto.strip()) and (self.cuerpo is None or not self.cuerpo.strip()):
+            return self
+        if self.asunto is None or not self.asunto.strip():
+            raise ValueError("Debe informar asunto cuando personaliza el correo")
+        if self.cuerpo is None or not self.cuerpo.strip():
+            raise ValueError("Debe informar cuerpo cuando personaliza el correo")
+        self.asunto = self.asunto.strip()
+        self.cuerpo = self.cuerpo.strip()
+        return self
+
+
 class NotificationResponse(StrictModel):
     notificacion_id: int
     solicitud_candidato_id: int
@@ -213,6 +284,19 @@ class NotificationResponse(StrictModel):
     fecha_creacion: datetime
     fecha_envio: datetime | None
     error: str | None
+
+
+class CandidateEmailNotificationResponse(StrictModel):
+    notificacion_id: int | None = None
+    solicitud_candidato_id: int
+    tipo: str
+    destinatario: str | None = None
+    cc: str | None = None
+    asunto: str | None = None
+    estado: str
+    fecha_creacion: datetime | None = None
+    fecha_envio: datetime | None = None
+    error: str | None = None
 
 
 class PlantillaResponse(StrictModel):

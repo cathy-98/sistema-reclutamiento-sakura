@@ -171,10 +171,17 @@ def _seed():
                 db.add(entrevista_models.EvaluacionEntrevista(even_nombre_resultado_id=results[result],even_observacion="QA",even_cita_entrevista_id=ce.ctev_id,even_usuario_id=recruiter.usr_id,even_tipo_entrevista_id=types["Tecnica"],even_fecha_creacion=now,even_fecha_actualizacion=now))
         interview(ppass,cpass,"Aprobado"); interview(pfaili,cfaili,"No Aprobado"); interview(ppendi,cpendi,"En Espera")
 
+        # La BD productiva permite que el historial registre los mismos tipos
+        # que las plantillas activas; el fixture debe reflejar ese contrato para
+        # probar correos a candidatos sin depender de datos externos.
         for kind,name,subject,body in [
             ("RECHAZO","Rechazo","Cierre - {cargo}","Hola {nombre}, cierre {codigo_solicitud}."),
             ("AGRADECIMIENTO","Gracias","Gracias - {cargo}","Gracias {nombre} por {solicitud}."),
-            ("DIRECTIVOS","Directivos","Aprobados - {cargo} - {codigo_solicitud}","Adjuntos candidatos para {solicitud}.")]:
+            ("DIRECTIVOS","Directivos","Aprobados - {cargo} - {codigo_solicitud}","Adjuntos candidatos para {solicitud}."),
+            ("CONTACTO","Contacto inicial","Contacto - {cargo}","Hola {nombre}, contacto por {cargo}."),
+            ("INVITACION","Invitación entrevista","Invitación - {cargo}","Hola {nombre}, invitación para {cargo}."),
+            ("AVANCE","Avance proceso","Avance - {cargo}","Hola {nombre}, avance en {cargo}."),
+            ("SELECCION","Seleccionado","Seleccionado - {cargo}","Hola {nombre}, seleccionado para {cargo}.")]:
             db.add(informe_models.PlantillaNotificacion(plnt_tipo=kind,plnt_nombre=name,plnt_asunto=subject,plnt_cuerpo=body,plnt_activa=True))
         db.commit()
         return dict(admin=admin.usr_id,recruiter=recruiter.usr_id,reporter=reporter.usr_id,catalog=catalog.usr_id,canview=canview.usr_id,canupdate=canupdate.usr_id,noperm=noperm.usr_id,
