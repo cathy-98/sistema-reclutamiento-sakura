@@ -255,6 +255,9 @@ CREATE TABLE public.tbl_cargo (
     crgo_id integer NOT NULL,
     crgo_nombre character varying(50),
     crgo_descripcion character varying(300),
+    crgo_creado_automaticamente boolean NOT NULL DEFAULT false,
+    crgo_origen character varying(20),
+    crgo_origen_candidato_id integer,
     CONSTRAINT chk_tbl_cargo_descripcion_vacia CHECK (((crgo_descripcion IS NULL) OR (TRIM(BOTH FROM crgo_descripcion) <> ''::text))),
     CONSTRAINT chk_tbl_cargo_nombre_vacio CHECK ((TRIM(BOTH FROM crgo_nombre) <> ''::text))
 );
@@ -283,6 +286,9 @@ ALTER TABLE public.tbl_cargo ALTER COLUMN crgo_id ADD GENERATED ALWAYS AS IDENTI
 CREATE TABLE public.tbl_carrera (
     crra_id integer NOT NULL,
     crra_nombre character varying(255),
+    crra_creado_automaticamente boolean NOT NULL DEFAULT false,
+    crra_origen character varying(20),
+    crra_origen_candidato_id integer,
     CONSTRAINT chk_tbl_carrera_nombre_vacio CHECK ((TRIM(BOTH FROM crra_nombre) <> ''::text))
 );
 
@@ -615,6 +621,9 @@ CREATE TABLE public.tbl_empresa (
     emp_id integer NOT NULL,
     emp_nombre character varying(30),
     emp_identificacion character varying(15),
+    emp_creado_automaticamente boolean NOT NULL DEFAULT false,
+    emp_origen character varying(20),
+    emp_origen_candidato_id integer,
     CONSTRAINT chk_tbl_empresa_identificacion_vacia CHECK ((TRIM(BOTH FROM emp_identificacion) <> ''::text)),
     CONSTRAINT chk_tbl_empresa_nombre_vacio CHECK ((TRIM(BOTH FROM emp_nombre) <> ''::text))
 );
@@ -896,6 +905,9 @@ CREATE TABLE public.tbl_habilidad (
     hab_nombre character varying(255),
     hab_descripcion character varying(300),
     hab_categoria_habilidad_id integer,
+    hab_creado_automaticamente boolean NOT NULL DEFAULT false,
+    hab_origen character varying(20),
+    hab_origen_candidato_id integer,
     CONSTRAINT chk_tbl_habilidad_nombre_vacio CHECK ((TRIM(BOTH FROM hab_nombre) <> ''::text))
 );
 
@@ -956,6 +968,9 @@ ALTER TABLE public.tbl_historial_solicitud ALTER COLUMN hsol_id ADD GENERATED AL
 CREATE TABLE public.tbl_idioma (
     idio_id integer NOT NULL,
     idio_nombre character varying(100) NOT NULL,
+    idio_creado_automaticamente boolean NOT NULL DEFAULT false,
+    idio_origen character varying(20),
+    idio_origen_candidato_id integer,
     CONSTRAINT chk_tbl_idioma_nombre CHECK ((TRIM(BOTH FROM idio_nombre) <> ''::text))
 );
 
@@ -984,6 +999,9 @@ CREATE TABLE public.tbl_institucion (
     inst_id integer NOT NULL,
     inst_nombre character varying(40),
     inst_tipo_institucion_id integer,
+    inst_creado_automaticamente boolean NOT NULL DEFAULT false,
+    inst_origen character varying(20),
+    inst_origen_candidato_id integer,
     CONSTRAINT chk_tbl_institucion_nombre_vacio CHECK ((TRIM(BOTH FROM inst_nombre) <> ''::text))
 );
 
@@ -4404,6 +4422,13 @@ ALTER TABLE ONLY public.tbl_candidato
 ALTER TABLE ONLY public.tbl_cargo
     ADD CONSTRAINT uq_tbl_cargo_nombre UNIQUE (crgo_nombre);
 
+--
+-- Name: tbl_cargo fk_tbl_cargo_origen_candidato; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
+--
+
+ALTER TABLE ONLY public.tbl_cargo
+    ADD CONSTRAINT fk_tbl_cargo_origen_candidato FOREIGN KEY (crgo_origen_candidato_id) REFERENCES public.tbl_candidato(cand_id) ON UPDATE RESTRICT ON DELETE SET NULL;
+
 
 --
 -- Name: tbl_carrera uq_tbl_carrera_nombre; Type: CONSTRAINT; Schema: public; Owner: elitsoft_admin
@@ -4499,6 +4524,13 @@ ALTER TABLE ONLY public.tbl_empresa
 
 ALTER TABLE ONLY public.tbl_empresa
     ADD CONSTRAINT uq_tbl_empresa_nombre UNIQUE (emp_nombre);
+
+--
+-- Name: tbl_empresa fk_tbl_empresa_origen_candidato; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
+--
+
+ALTER TABLE ONLY public.tbl_empresa
+    ADD CONSTRAINT fk_tbl_empresa_origen_candidato FOREIGN KEY (emp_origen_candidato_id) REFERENCES public.tbl_candidato(cand_id) ON UPDATE RESTRICT ON DELETE SET NULL;
 
 
 --
@@ -5954,6 +5986,9 @@ ALTER TABLE ONLY public.tbl_candidato_habilidad
 ALTER TABLE ONLY public.tbl_candidato_idioma
     ADD CONSTRAINT fk_tbl_candidato_idioma_nivel FOREIGN KEY (cdio_nivel_idioma_id) REFERENCES public.tbl_nivel_idioma(nvid_id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
+ALTER TABLE ONLY public.tbl_idioma
+    ADD CONSTRAINT fk_tbl_idioma_origen_candidato FOREIGN KEY (idio_origen_candidato_id) REFERENCES public.tbl_candidato(cand_id) ON UPDATE RESTRICT ON DELETE SET NULL;
+
 
 --
 -- Name: tbl_candidato fk_tbl_candidato_nivel_profesional; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
@@ -6195,6 +6230,13 @@ ALTER TABLE ONLY public.tbl_habilidad
     ADD CONSTRAINT fk_tbl_habilidad_categoria_habilidad FOREIGN KEY (hab_categoria_habilidad_id) REFERENCES public.tbl_categoria_habilidad(cthb_id);
 
 
+-- Name: tbl_habilidad fk_tbl_habilidad_origen_candidato; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
+--
+
+ALTER TABLE ONLY public.tbl_habilidad
+    ADD CONSTRAINT fk_tbl_habilidad_origen_candidato FOREIGN KEY (hab_origen_candidato_id) REFERENCES public.tbl_candidato(cand_id) ON UPDATE RESTRICT ON DELETE SET NULL;
+
+
 --
 -- Name: tbl_historial_solicitud fk_tbl_historial_solicitud_estado_actual; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
 --
@@ -6233,6 +6275,20 @@ ALTER TABLE ONLY public.tbl_historial_solicitud
 
 ALTER TABLE ONLY public.tbl_institucion
     ADD CONSTRAINT fk_tbl_institucion_tipo_institucion FOREIGN KEY (inst_tipo_institucion_id) REFERENCES public.tbl_tipo_institucion(tint_id);
+
+
+-- Name: tbl_institucion fk_tbl_institucion_origen_candidato; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
+--
+
+ALTER TABLE ONLY public.tbl_institucion
+    ADD CONSTRAINT fk_tbl_institucion_origen_candidato FOREIGN KEY (inst_origen_candidato_id) REFERENCES public.tbl_candidato(cand_id) ON UPDATE RESTRICT ON DELETE SET NULL;
+
+
+-- Name: tbl_carrera fk_tbl_carrera_origen_candidato; Type: FK CONSTRAINT; Schema: public; Owner: elitsoft_admin
+--
+
+ALTER TABLE ONLY public.tbl_carrera
+    ADD CONSTRAINT fk_tbl_carrera_origen_candidato FOREIGN KEY (crra_origen_candidato_id) REFERENCES public.tbl_candidato(cand_id) ON UPDATE RESTRICT ON DELETE SET NULL;
 
 
 --
