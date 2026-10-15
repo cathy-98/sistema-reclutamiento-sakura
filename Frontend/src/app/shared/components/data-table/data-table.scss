@@ -290,10 +290,12 @@ td.wrap-cell .person-cell strong {
 }
 
 .row-menu-trigger {
-  display: grid;
+  display: inline-grid;
   width: 38px;
+  min-width: 38px;
   height: 38px;
   place-items: center;
+  padding: 0;
 
   border: 1px solid transparent;
   border-radius: 6px;
@@ -304,7 +306,7 @@ td.wrap-cell .person-cell strong {
   cursor: pointer;
 
   font: inherit;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1;
 }
