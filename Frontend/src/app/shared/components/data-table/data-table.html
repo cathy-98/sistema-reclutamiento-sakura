@@ -5,20 +5,26 @@
 >
   <!-- Encabezado de tabla reutilizable: título y estado resumido del listado. -->
   <header class="table-header" *ngIf="!hideHeader">
-    <div>
-      <h3 [id]="titleId">
-        {{ title }}
-      </h3>
+    <div class="table-header__content">
+      <div>
+        <h3 [id]="titleId">
+          {{ title }}
+        </h3>
 
-      <p [id]="descriptionId">
-        {{
-          loading
-            ? loadingMessage
-            : errorMessage
-              ? 'No se pudo cargar la información.'
-              : subtitle || total + ' registros encontrados.'
-        }}
-      </p>
+        <p [id]="descriptionId">
+          {{
+            loading
+              ? loadingMessage
+              : errorMessage
+                ? 'No se pudo cargar la información.'
+                : subtitle || total + ' registros encontrados.'
+          }}
+        </p>
+      </div>
+
+      <span class="table-header__context" *ngIf="contextLabel">
+        {{ contextLabel }}
+      </span>
     </div>
   </header>
 

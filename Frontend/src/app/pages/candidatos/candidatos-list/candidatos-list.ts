@@ -677,6 +677,33 @@ export class CandidatosList implements OnInit, OnDestroy {
       : 'Listado de candidatos';
   }
 
+  get identificadorSolicitudTabla() {
+    const codigo =
+      this.solicitudContexto?.codigo ||
+      this.solicitudFiltroSeleccionada?.codigo ||
+      this.solicitudBusquedaRapidaSeleccionada?.codigo;
+
+    return codigo
+      ? `Solicitud: ${codigo}`
+      : '';
+  }
+
+  get solicitudBusquedaRapidaSeleccionada() {
+    if (this.enContextoSolicitud) {
+      return null;
+    }
+
+    const codigoBuscado = this.normalizarCodigoBusqueda(this.busquedaRapida);
+
+    if (!/^SOL-\d{6}$/.test(codigoBuscado)) {
+      return null;
+    }
+
+    return this.solicitudesCargaDisponibles.find(
+      (solicitud) => this.codigoSolicitudCoincide(solicitud.codigo, codigoBuscado),
+    ) ?? null;
+  }
+
   get subtituloTabla() {
     if (!this.solicitudFiltroSeleccionada || this.enContextoSolicitud) {
       return '';

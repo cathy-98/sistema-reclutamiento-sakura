@@ -12,6 +12,25 @@
   padding: 16px 18px 0;
 }
 
+.table-header__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.table-header__context {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .table-header h3 {
   margin: 0 0 5px;
   font-size: 18px;
@@ -396,6 +415,11 @@ td.wrap-cell .person-cell strong {
 @media (max-width: 640px) {
   .data-table-panel {
     border-radius: 10px;
+  }
+
+  .table-header__content {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .row-menu-list {

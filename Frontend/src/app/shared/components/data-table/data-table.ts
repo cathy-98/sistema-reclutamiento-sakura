@@ -73,6 +73,7 @@ export interface DataTableActionEvent<T> {
 export class DataTable<T> {
   @Input({ required: true }) title = '';
   @Input() subtitle = '';
+  @Input() contextLabel = '';
 
   @Input() hideHeader =
     false;
