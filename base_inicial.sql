@@ -1278,7 +1278,8 @@ CREATE TABLE public.tbl_notificacion_reclutamiento (
     CONSTRAINT chk_tbl_notificacion_cuerpo CHECK ((TRIM(BOTH FROM ntfr_cuerpo) <> ''::text)),
     CONSTRAINT chk_tbl_notificacion_destinatario CHECK ((TRIM(BOTH FROM ntfr_destinatario) <> ''::text)),
     CONSTRAINT chk_tbl_notificacion_estado CHECK (((ntfr_estado)::text = ANY (ARRAY[('BORRADOR'::character varying)::text, ('ENVIADO'::character varying)::text, ('ERROR'::character varying)::text]))),
-    CONSTRAINT chk_tbl_notificacion_tipo CHECK (((ntfr_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text])))
+    -- El historial debe aceptar los mismos tipos de comunicación que las plantillas activas del módulo.
+    CONSTRAINT chk_tbl_notificacion_tipo CHECK (((ntfr_tipo)::text = ANY (ARRAY[('RECHAZO'::character varying)::text, ('AGRADECIMIENTO'::character varying)::text, ('DIRECTIVOS'::character varying)::text, ('CONTACTO'::character varying)::text, ('INVITACION'::character varying)::text, ('AVANCE'::character varying)::text, ('SELECCION'::character varying)::text])))
 );
 
 
