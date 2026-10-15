@@ -4,13 +4,6 @@
   border-bottom: 1px solid var(--color-border-strong);
 }
 
-.tabs-helper {
-  margin: 4px 0 10px;
-  color: var(--color-text-subtle);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
 :host ::ng-deep .informes-tabs .tabs {
   gap: 0;
   overflow-x: hidden;
@@ -65,17 +58,6 @@
   font-size: 16px;
 }
 
-.section-marker {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 50%;
-  background: #fff0d9;
-  color: #9a5b0b;
-  font-weight: 700;
-}
-
 .request-info {
   display: grid;
   grid-column: 1 / -1;
@@ -97,17 +79,7 @@
   border-left: 1px solid var(--color-border);
 }
 
-.info-icon {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  place-items: center;
-  color: var(--color-text);
-  font-size: 24px;
-}
-
-.request-info span:not(.info-icon),
+.request-info span,
 .candidate-cell span,
 .result-cell span {
   display: block;
@@ -177,7 +149,95 @@
 }
 
 .single-field {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.single-field select {
+  width: 100%;
+  min-height: 42px;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.candidate-mail-modal {
+  display: grid;
+  gap: 18px;
+  padding: 22px 24px;
+}
+
+.mail-recipient-list {
+  display: grid;
+  max-height: 190px;
+  overflow: auto;
+  gap: 8px;
+}
+
+.mail-preview-list {
+  display: grid;
+  max-height: 420px;
+  overflow: auto;
+  gap: 12px;
+}
+
+.mail-recipient-list article,
+.mail-preview-list article,
+.mail-results article {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+}
+
+.mail-recipient-list strong,
+.mail-preview-list strong,
+.mail-results strong {
   display: block;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.mail-recipient-list span,
+.mail-recipient-list em,
+.mail-results span {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.35;
+  font-style: normal;
+}
+
+.mail-recipient-list em {
+  color: var(--color-sakura);
+  font-weight: 700;
+}
+
+.mail-results {
+  display: grid;
+  gap: 10px;
+}
+
+.mail-results h3,
+.mail-results p {
+  margin: 0;
+}
+
+.mail-results article.is-error {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 .send-summary {
@@ -530,7 +590,7 @@ input[type='checkbox'] {
 }
 
 .summary-actions {
-  gap: 14px;
+  gap: 10px;
 }
 
 @media (max-width: 640px) {

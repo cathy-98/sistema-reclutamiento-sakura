@@ -46,6 +46,61 @@ export interface CandidatoInformeApi {
   puede_enviar_directivos: boolean;
 }
 
+export interface InformeComparativoRequestApi {
+  solicitud_id: number;
+  solicitud_candidato_ids: number[];
+}
+
+export interface InformeComparativoSolicitudApi {
+  solicitud_id: number;
+  codigo?: string | null;
+  cargo?: string | null;
+  empresa?: string | null;
+  vacantes?: number | null;
+  area?: string | null;
+  modalidad?: string | null;
+}
+
+export interface InformeComparativoTecnologiaApi {
+  habilidad_id: number;
+  habilidad: string;
+  nivel_requerido_id?: number | null;
+  nivel_requerido?: string | null;
+  anios_experiencia_req?: number | null;
+  excluyente: boolean;
+  nivel_candidato_id?: number | null;
+  nivel_candidato: string;
+  anios_experiencia?: number | null;
+  presente: boolean;
+}
+
+export interface InformeComparativoCandidatoApi {
+  solicitud_candidato_id: number;
+  candidato_id: number;
+  nombre: string;
+  correo: string;
+  pretension_renta?: number | null;
+  disponibilidad?: string | null;
+  observacion_operacional?: string | null;
+  observacion_tecnica?: string | null;
+  observaciones_pendientes_definicion: string[];
+  tecnologias_excluyentes: InformeComparativoTecnologiaApi[];
+  tecnologias_no_excluyentes: InformeComparativoTecnologiaApi[];
+}
+
+export interface InformeComparativoResponseApi {
+  solicitud: InformeComparativoSolicitudApi;
+  habilidades_requeridas: Array<{
+    habilidad_id: number;
+    habilidad: string;
+    nivel_requerido_id?: number | null;
+    nivel_requerido?: string | null;
+    anios_experiencia_req?: number | null;
+    excluyente: boolean;
+  }>;
+  candidatos: InformeComparativoCandidatoApi[];
+}
+
 export interface CandidateListResponseApi {
   total: number;
   items: CandidatoInformeApi[];
@@ -67,6 +122,43 @@ export interface DirectivosPreviewApi {
   cuerpo: string;
   candidatos: CandidatoInformeApi[];
   adjuntos: DocumentoInformeApi[];
+}
+
+export type TipoCorreoCandidatoApi = 'CONTACTO' | 'INVITACION' | 'AVANCE' | 'SELECCION';
+
+export interface PlantillaNotificacionApi {
+  plantilla_id: number;
+  tipo: string;
+  nombre: string;
+  asunto: string;
+  cuerpo: string;
+  activa: boolean;
+}
+
+export interface CandidateEmailNotificationApi {
+  notificacion_id?: number | null;
+  solicitud_candidato_id: number;
+  tipo: string;
+  destinatario?: string | null;
+  cc?: string | null;
+  asunto?: string | null;
+  estado: string;
+  fecha_creacion?: string | null;
+  fecha_envio?: string | null;
+  error?: string | null;
+}
+
+export type TipoCorreoRechazoApi = 'RECHAZO' | 'AGRADECIMIENTO';
+
+export interface RechazoPreviewItemApi {
+  solicitud_candidato_id: number;
+  destinatario: string;
+  asunto: string;
+  cuerpo: string;
+}
+
+export interface RechazoPreviewApi {
+  items: RechazoPreviewItemApi[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -131,6 +223,24 @@ export class InformesService {
     });
   }
 
+  obtenerInformeComparativoDatos(payload: InformeComparativoRequestApi) {
+    return this.http.post<InformeComparativoResponseApi>(`${this.apiUrl}/comparativo/datos`, payload);
+  }
+
+  descargarInformeComparativoPdf(payload: InformeComparativoRequestApi) {
+    return this.http.post(`${this.apiUrl}/comparativo/pdf/descargar`, payload, {
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
+  descargarInformeComparativoDocx(payload: InformeComparativoRequestApi) {
+    return this.http.post(`${this.apiUrl}/comparativo/docx/descargar`, payload, {
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
   prepararDirectivos(payload: {
     solicitudCandidatoIds: number[];
     destinatarios: string[];
@@ -149,6 +259,54 @@ export class InformesService {
     cuerpo?: string | null;
   }) {
     return this.http.post(`${this.apiUrl}/directivos/enviar`, this.directivosPayload(payload));
+  }
+
+  enviarCorreosCandidatos(payload: {
+    solicitudCandidatoIds: number[];
+    tipo: TipoCorreoCandidatoApi;
+    asunto?: string | null;
+    cuerpo?: string | null;
+  }) {
+    return this.http.post<CandidateEmailNotificationApi[]>(`${this.apiUrl}/candidatos/correos/enviar`, {
+      solicitud_candidato_ids: payload.solicitudCandidatoIds,
+      tipo: payload.tipo,
+      asunto: payload.asunto || null,
+      cuerpo: payload.cuerpo || null,
+    });
+  }
+
+  prepararRechazos(payload: {
+    solicitudCandidatoIds: number[];
+    tipo: TipoCorreoRechazoApi;
+    asuntoPlantilla?: string | null;
+    cuerpoPlantilla?: string | null;
+  }) {
+    return this.http.post<RechazoPreviewApi>(`${this.apiUrl}/rechazos/preparar`, {
+      solicitud_candidato_ids: payload.solicitudCandidatoIds,
+      tipo: payload.tipo,
+      asunto_plantilla: payload.asuntoPlantilla || null,
+      cuerpo_plantilla: payload.cuerpoPlantilla || null,
+    });
+  }
+
+  enviarRechazos(items: Array<{
+    tipo: TipoCorreoRechazoApi;
+    solicitudCandidatoId: number;
+    asunto: string;
+    cuerpo: string;
+  }>) {
+    return this.http.post<CandidateEmailNotificationApi[]>(`${this.apiUrl}/rechazos/enviar`, {
+      items: items.map((item) => ({
+        tipo: item.tipo,
+        solicitud_candidato_id: item.solicitudCandidatoId,
+        asunto: item.asunto,
+        cuerpo: item.cuerpo,
+      })),
+    });
+  }
+
+  listarPlantillas() {
+    return this.http.get<PlantillaNotificacionApi[]>(`${this.apiUrl}/plantillas`);
   }
 
   descargarBlob(respuesta: HttpResponse<Blob>, nombreFallback: string) {

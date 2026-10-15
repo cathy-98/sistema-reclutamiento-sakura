@@ -78,7 +78,7 @@
       [disabled]="seleccionados.size === 0"
       (pressed)="descargarCvsMasivo()"
     >
-      <span aria-hidden="true">↓</span>
+      <span class="button-icon" aria-hidden="true">↓</span>
       Descargar CVs corporativos masivos
     </app-button>
 
@@ -86,11 +86,46 @@
       type="button"
       size="sm"
       variant="secondary"
-      [disabled]="seleccionados.size === 0"
+      [disabled]="!puedeDescargarInformeComparativo || descargandoInformeComparativo !== null"
+      (pressed)="descargarInformeComparativoMasivo('pdf')"
+    >
+      <span class="button-icon" aria-hidden="true">↓</span>
+      Descargar informe PDF
+    </app-button>
+
+    <app-button
+      type="button"
+      size="sm"
+      variant="secondary"
+      [disabled]="!puedeDescargarInformeComparativo || descargandoInformeComparativo !== null"
+      (pressed)="descargarInformeComparativoMasivo('docx')"
+    >
+      <span class="button-icon" aria-hidden="true">↓</span>
+      Descargar informe Word
+    </app-button>
+
+    <app-button
+      *ngIf="vistaActiva === 'aprobados'"
+      type="button"
+      size="sm"
+      variant="secondary"
+      [disabled]="!puedeAbrirCorreoAprobadosMasivo"
       (pressed)="enviarCorreoMasivo()"
     >
-      <span aria-hidden="true">✉</span>
-      Enviar resumen al administrador
+      <span class="button-icon" aria-hidden="true">✉</span>
+      Enviar correo
+    </app-button>
+
+    <app-button
+      *ngIf="vistaActiva === 'no-aprobados'"
+      type="button"
+      size="sm"
+      variant="secondary"
+      [disabled]="!puedeAbrirCorreoNoAprobadosMasivo"
+      (pressed)="enviarCorreoMasivo()"
+    >
+      <span class="button-icon" aria-hidden="true">✉</span>
+      Enviar correo
     </app-button>
   </app-action-bar>
 
@@ -110,13 +145,134 @@
     [selectedIds]="seleccionados"
     emptyTitle="No hay informes para mostrar"
     emptyMessage="Ajusta los filtros o cambia la vista de aprobación."
-    (selectedIdsChange)="seleccionados = $event"
+    (selectedIdsChange)="actualizarSeleccionInformes($event)"
     (pageChange)="cambiarPagina($event)"
     (pageSizeChange)="cambiarRegistrosPorPagina($event)"
     (actionClick)="manejarAccionTabla($event)"
     (clear)="limpiarFiltros()"
     (retry)="cargarInformes()"
   ></app-data-table>
+
+  <app-modal
+    *ngIf="mostrarModalCorreoCandidatos"
+    titulo="Enviar correo"
+    [subtitulo]="contextoCorreoCandidatos"
+    ancho="md"
+    (cerrar)="cerrarModalCorreoCandidatos()"
+  >
+    <section class="candidate-mail-modal" [class.has-results]="resultadosCorreoCandidatos.length > 0">
+      <ng-container *ngIf="resultadosCorreoCandidatos.length === 0; else resultadosCorreoCandidatosTpl">
+        <ng-container *ngIf="modoCorreoCandidatos === 'seleccion'; else correoCierreTpl">
+          <label class="single-field">
+            Plantilla
+            <select
+              [ngModel]="plantillaCorreoCandidatoId"
+              [disabled]="cargandoPlantillasCorreo || enviandoCorreoCandidatos"
+              (ngModelChange)="seleccionarPlantillaCorreoCandidato($event)"
+            >
+              <option [ngValue]="0">Manual</option>
+              <option *ngFor="let plantilla of plantillasCorreoCandidatos" [ngValue]="plantilla.plantilla_id">
+                {{ plantilla.nombre || plantilla.tipo }}
+              </option>
+            </select>
+          </label>
+        </ng-container>
+
+        <ng-template #correoCierreTpl>
+          <label class="single-field">
+            Tipo / plantilla
+            <select
+              [ngModel]="plantillaCorreoCierreId"
+              [disabled]="cargandoPlantillasCorreo || preparandoCorreoCierre || enviandoCorreoCandidatos"
+              (ngModelChange)="seleccionarPlantillaCorreoCierre($event)"
+            >
+              <option [ngValue]="0">Selecciona una plantilla</option>
+              <option *ngFor="let plantilla of plantillasCorreoCierre" [ngValue]="plantilla.plantilla_id">
+                {{ plantilla.nombre || plantilla.tipo }}
+              </option>
+            </select>
+          </label>
+        </ng-template>
+
+        <p class="preparing-note" *ngIf="cargandoPlantillasCorreo">Cargando plantillas...</p>
+        <p class="preparing-note" *ngIf="preparandoCorreoCierre">Preparando correos de cierre...</p>
+
+        <section class="summary-section" aria-labelledby="correo-candidatos-destinatarios-title">
+          <h3 id="correo-candidatos-destinatarios-title">Destinatarios · {{ destinatariosCorreoCandidatos.length }}</h3>
+
+          <div class="mail-recipient-list">
+            <article *ngFor="let destinatario of destinatariosCorreoCandidatos">
+              <strong>{{ destinatario.nombre }}</strong>
+              <span>{{ destinatario.correo }}</span>
+              <em>{{ destinatario.solicitud }}</em>
+            </article>
+          </div>
+        </section>
+
+        <ng-container *ngIf="modoCorreoCandidatos === 'seleccion'; else itemsCorreoCierreTpl">
+          <label class="single-field">
+            Asunto
+            <input type="text" [(ngModel)]="asuntoCorreoCandidatos" [disabled]="enviandoCorreoCandidatos" />
+          </label>
+
+          <label class="single-field">
+            Mensaje
+            <textarea #mensajeCorreoTextarea [(ngModel)]="cuerpoCorreoCandidatos" [disabled]="enviandoCorreoCandidatos"></textarea>
+          </label>
+        </ng-container>
+
+        <ng-template #itemsCorreoCierreTpl>
+          <section class="mail-preview-list" *ngIf="itemsCorreoCierre.length > 0" aria-label="Correos preparados">
+            <article *ngFor="let item of itemsCorreoCierre; let index = index">
+              <label class="single-field">
+                Asunto
+                <input
+                  type="text"
+                  [ngModel]="item.asunto"
+                  [disabled]="enviandoCorreoCandidatos"
+                  (ngModelChange)="actualizarItemCorreoCierre(index, 'asunto', $event)"
+                />
+              </label>
+
+              <label class="single-field">
+                Mensaje
+                <textarea
+                  #mensajeCorreoTextarea
+                  [ngModel]="item.cuerpo"
+                  [disabled]="enviandoCorreoCandidatos"
+                  (ngModelChange)="actualizarItemCorreoCierre(index, 'cuerpo', $event)"
+                ></textarea>
+              </label>
+            </article>
+          </section>
+        </ng-template>
+
+        <p class="summary-error" *ngIf="errorCorreoCandidatos">{{ errorCorreoCandidatos }}</p>
+      </ng-container>
+
+      <ng-template #resultadosCorreoCandidatosTpl>
+        <section class="mail-results" aria-label="Resultado del envío">
+          <h3>Resultado del envío</h3>
+          <p>{{ resumenResultadosCorreoCandidatos }}</p>
+
+          <article *ngFor="let resultado of resultadosCorreoCandidatos" [class.is-error]="resultado.estado !== 'ENVIADO'">
+            <strong>{{ resultado.destinatario || ('Postulación ' + resultado.solicitud_candidato_id) }}</strong>
+            <span>{{ resultado.estado === 'ENVIADO' ? 'Correo enviado.' : (resultado.error || 'No se pudo enviar.') }}</span>
+          </article>
+        </section>
+      </ng-template>
+    </section>
+
+    <div class="summary-actions" modal-footer>
+      <app-button type="button" variant="secondary" [disabled]="enviandoCorreoCandidatos" (pressed)="cerrarModalCorreoCandidatos()">
+        {{ resultadosCorreoCandidatos.length > 0 ? 'Cerrar' : 'Cancelar' }}
+      </app-button>
+
+      <app-button *ngIf="resultadosCorreoCandidatos.length === 0" type="button" [disabled]="!puedeEnviarCorreoCandidatos" (pressed)="enviarCorreoCandidatos()">
+        {{ enviandoCorreoCandidatos ? 'Enviando...' : 'Enviar correo' }}
+      </app-button>
+    </div>
+  </app-modal>
 
   <app-modal
     *ngIf="mostrarResumenAdministrador"

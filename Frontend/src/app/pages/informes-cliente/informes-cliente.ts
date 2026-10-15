@@ -1,13 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, take } from 'rxjs';
 import {
+  CandidatosService,
+  PostulacionCandidatoApi,
+} from '../../services/candidatos.service';
+import {
+  CandidateEmailNotificationApi,
   CandidatoInformeApi,
   ClasificacionInforme,
   DocumentoInformeApi,
   EvaluacionEntrevistaResumenApi,
+  InformeComparativoRequestApi,
   InformesService,
+  PlantillaNotificacionApi,
+  RechazoPreviewItemApi,
+  TipoCorreoRechazoApi,
+  TipoCorreoCandidatoApi,
 } from '../../services/informes.service';
 import { AlertRegion } from '../../shared/components/alert-region/alert-region';
 import { ActionBar } from '../../shared/components/action-bar/action-bar';
@@ -29,9 +39,11 @@ import { obtenerMensajeError } from '../../shared/utils/api-error';
 import {
   SolicitudAutocompleteOption,
   codigoSolicitudCoincide,
+  resolverSolicitudReal,
 } from '../../shared/utils/solicitud-autocomplete';
 
 type VistaInforme = 'aprobados' | 'pendientes' | 'no-aprobados';
+type ModoCorreoCandidatos = 'seleccion' | 'cierre';
 
 interface AprobacionMatrizInforme {
   tipo: 'Aprobación técnica' | 'Aprobación operacional' | 'Otra aprobación' | 'Resultado final';
@@ -44,6 +56,7 @@ interface AprobacionMatrizInforme {
 interface InformeCandidato {
   id: string;
   solicitudCandidatoId: number;
+  solicitudId: number;
   idSolicitud: string;
   match: number;
   nombre: string;
@@ -61,6 +74,7 @@ interface InformeCandidato {
   clasificacion: ClasificacionInforme;
   aprobado: boolean;
   puedeEnviarDirectivos: boolean;
+  puedeEnviarRechazo: boolean;
   entrevistas: EvaluacionEntrevistaResumenApi[];
 }
 
@@ -112,6 +126,34 @@ export class InformesCliente implements OnInit {
   errorResumenAdministrador = '';
   detallesResumenAbiertos = new Set<string>();
   cvsSeleccionadosResumen = new Set<number>();
+  mostrarModalCorreoCandidatos = false;
+  cargandoPlantillasCorreo = false;
+  enviandoCorreoCandidatos = false;
+  errorCorreoCandidatos = '';
+  candidatosCorreoSeleccionados: InformeCandidato[] = [];
+  plantillasCorreoCandidatos: PlantillaNotificacionApi[] = [];
+  plantillasCorreoCierre: PlantillaNotificacionApi[] = [];
+  modoCorreoCandidatos: ModoCorreoCandidatos = 'seleccion';
+  plantillaCorreoCandidato: TipoCorreoCandidatoApi | 'manual' = 'manual';
+  plantillaCorreoCandidatoId = 0;
+  plantillaCorreoCierreId = 0;
+  tipoCorreoCierre: TipoCorreoRechazoApi | '' = '';
+  preparandoCorreoCierre = false;
+  itemsCorreoCierre: RechazoPreviewItemApi[] = [];
+  asuntoCorreoCandidatos = '';
+  cuerpoCorreoCandidatos = '';
+  resultadosCorreoCandidatos: CandidateEmailNotificationApi[] = [];
+  descargandoInformeComparativo: 'pdf' | 'docx' | null = null;
+  solicitudComparativoId: number | null = null;
+  solicitudComparativoCodigo = '';
+  candidatosComparativoSolicitud: InformeCandidato[] = [];
+  cargandoCandidatosComparativo = false;
+  errorCandidatosComparativo = '';
+  private cargaCandidatosComparativoToken = 0;
+  private preparacionCorreoCierreToken = 0;
+
+  @ViewChildren('mensajeCorreoTextarea')
+  private mensajeCorreoTextareas?: QueryList<ElementRef<HTMLTextAreaElement>>;
 
   readonly tabsInformes: TabItem[] = [
     { id: 'aprobados', label: 'Aprobados' },
@@ -185,19 +227,29 @@ export class InformesCliente implements OnInit {
       icon: 'download',
     },
     {
-      id: 'descargar-informe',
-      label: 'Descargar informe',
-      icon: 'edit',
+      id: 'descargar-informe-pdf',
+      label: 'Informe PDF',
+      icon: 'download',
+    },
+    {
+      id: 'descargar-informe-docx',
+      label: 'Informe Word',
+      icon: 'download',
     },
     {
       id: 'enviar-correo',
       label: 'Enviar correo',
       icon: 'mail',
-      visible: (informe) => informe.puedeEnviarDirectivos,
+      visible: (informe) => this.vistaActiva === 'aprobados'
+        ? informe.puedeEnviarDirectivos
+        : this.vistaActiva === 'no-aprobados' && informe.puedeEnviarRechazo,
     },
   ];
 
-  constructor(private informesService: InformesService) {}
+  constructor(
+    private informesService: InformesService,
+    private candidatosService: CandidatosService,
+  ) {}
 
   ngOnInit() {
     this.cargarInformes();
@@ -219,16 +271,16 @@ export class InformesCliente implements OnInit {
   }
 
   get solicitudesFiltro(): SolicitudAutocompleteOption[] {
-    const solicitudes = new Map<string, SolicitudAutocompleteOption>();
+    const solicitudes = new Map<number, SolicitudAutocompleteOption>();
 
     this.informes.forEach((informe) => {
       if (!informe.idSolicitud) {
         return;
       }
 
-      if (!solicitudes.has(informe.idSolicitud)) {
-        solicitudes.set(informe.idSolicitud, {
-          id: informe.idSolicitud,
+      if (!solicitudes.has(informe.solicitudId)) {
+        solicitudes.set(informe.solicitudId, {
+          id: informe.solicitudId,
           codigo: informe.idSolicitud,
           cargo: informe.cargo,
         });
@@ -290,9 +342,48 @@ export class InformesCliente implements OnInit {
   }
 
   get mensajeAccionesMasivas() {
-    return this.seleccionados.size > 0
+    const seleccion = this.seleccionados.size > 0
       ? `${this.seleccionados.size} informes seleccionados.`
       : 'Selecciona informes para habilitar acciones masivas.';
+    return `${seleccion} ${this.mensajeInformeComparativo}`;
+  }
+
+  get informesSeleccionados() {
+    return this.informes.filter((informe) => this.seleccionados.has(informe.id));
+  }
+
+  get puedeDescargarInformeComparativo() {
+    return !!this.solicitudComparativoId
+      && this.candidatosComparativoSolicitud.length > 0
+      && !this.cargandoCandidatosComparativo
+      && !this.errorCandidatosComparativo
+      && this.descargandoInformeComparativo === null;
+  }
+
+  get solicitudesSeleccionadasComparativo() {
+    return this.solicitudComparativoId ? [this.solicitudComparativoId] : [];
+  }
+
+  get mensajeInformeComparativo() {
+    if (this.cargandoCandidatosComparativo) {
+      return 'Preparando informe comparativo...';
+    }
+
+    if (this.errorCandidatosComparativo) {
+      return this.errorCandidatosComparativo;
+    }
+
+    if (!this.solicitudComparativoId) {
+      return 'Selecciona una solicitud para generar el informe comparativo.';
+    }
+
+    const total = this.candidatosComparativoSolicitud.length;
+    const codigo = this.solicitudComparativoCodigo || `Solicitud ${this.solicitudComparativoId}`;
+    if (total === 0) {
+      return `La solicitud ${codigo} no tiene candidatos asociados.`;
+    }
+
+    return `El informe incluirá ${total} ${total === 1 ? 'candidato' : 'candidatos'} de ${codigo}.`;
   }
 
   get candidatosSeleccionadosResumen() {
@@ -344,6 +435,61 @@ export class InformesCliente implements OnInit {
       && this.destinatarioResumenValido;
   }
 
+  get puedeAbrirCorreoAprobadosMasivo() {
+    return this.vistaActiva === 'aprobados'
+      && this.seleccionados.size > 0
+      && this.informesSeleccionadosAprobados.length > 0;
+  }
+
+  get puedeAbrirCorreoNoAprobadosMasivo() {
+    return this.vistaActiva === 'no-aprobados'
+      && this.seleccionados.size > 0;
+  }
+
+  get puedeEnviarCorreoCandidatos() {
+    if (this.modoCorreoCandidatos === 'cierre') {
+      return !this.enviandoCorreoCandidatos
+        && !this.preparandoCorreoCierre
+        && this.tipoCorreoCierre !== ''
+        && this.itemsCorreoCierre.length > 0
+        && this.itemsCorreoCierre.every((item) => item.asunto.trim().length > 0 && item.cuerpo.trim().length > 0);
+    }
+
+    return !this.enviandoCorreoCandidatos
+      && this.candidatosCorreoSeleccionados.length > 0
+      && this.asuntoCorreoCandidatos.trim().length > 0
+      && this.cuerpoCorreoCandidatos.trim().length > 0
+      && this.plantillaCorreoCandidato === 'SELECCION';
+  }
+
+  get contextoCorreoCandidatos() {
+    const total = this.candidatosCorreoSeleccionados.length;
+    if (this.modoCorreoCandidatos === 'cierre') {
+      return total === 1 ? '1 candidato no aprobado seleccionado' : `${total} candidatos no aprobados seleccionados`;
+    }
+
+    return total === 1 ? '1 candidato aprobado seleccionado' : `${total} candidatos aprobados seleccionados`;
+  }
+
+  get destinatariosCorreoCandidatos() {
+    return this.candidatosCorreoSeleccionados.map((candidato) => ({
+      nombre: candidato.nombre,
+      correo: candidato.correo,
+      solicitud: candidato.idSolicitud,
+    }));
+  }
+
+  get resumenResultadosCorreoCandidatos() {
+    const enviados = this.resultadosCorreoCandidatos.filter((resultado) => resultado.estado === 'ENVIADO').length;
+    return `${enviados} de ${this.resultadosCorreoCandidatos.length} correos enviados.`;
+  }
+
+  get candidatosNoAprobadosSeleccionados() {
+    return this.informes
+      .filter((informe) => this.seleccionados.has(informe.id))
+      .filter((informe) => informe.clasificacion === 'NO_APROBADO');
+  }
+
   get destinatarioResumenValido() {
     return this.destinatariosValidos(this.destinatariosResumen).length > 0;
   }
@@ -371,6 +517,11 @@ export class InformesCliente implements OnInit {
     this.vistaActiva = vista as VistaInforme;
     this.paginaActual = 1;
     this.seleccionados = new Set<string>();
+    if (this.filtros.idSolicitud.trim()) {
+      this.actualizarContextoComparativoDesdeFiltros();
+    } else {
+      this.limpiarContextoComparativo();
+    }
   }
 
   buscar() {
@@ -388,6 +539,14 @@ export class InformesCliente implements OnInit {
       idSolicitud: valor,
     };
     this.buscar();
+    this.actualizarContextoComparativoDesdeFiltros();
+  }
+
+  actualizarSeleccionInformes(seleccion: Set<string>) {
+    this.seleccionados = new Set(seleccion);
+    if (!this.filtros.idSolicitud.trim()) {
+      this.actualizarContextoComparativoDesdeSeleccion();
+    }
   }
 
   seleccionarFiltroSolicitud(solicitud: SolicitudAutocompleteOption | null) {
@@ -396,12 +555,14 @@ export class InformesCliente implements OnInit {
       idSolicitud: solicitud?.codigo?.trim() ?? '',
     };
     this.buscar();
+    this.actualizarContextoComparativoDesdeFiltros();
   }
 
   limpiarFiltros() {
     this.filtros = this.filtrosIniciales();
     this.busquedaRapida = '';
     this.paginaActual = 1;
+    this.limpiarContextoComparativo();
   }
 
   cambiarPagina(pagina: number) {
@@ -437,8 +598,17 @@ export class InformesCliente implements OnInit {
       });
   }
 
+  descargarInformeComparativoMasivo(formato: 'pdf' | 'docx') {
+    this.generarInformeComparativoSolicitud(formato);
+  }
+
   enviarCorreoMasivo() {
-    this.abrirResumenAdministrador();
+    if (this.vistaActiva === 'no-aprobados') {
+      this.abrirCorreoCierre(this.candidatosNoAprobadosSeleccionados);
+      return;
+    }
+
+    this.abrirCorreoAprobados(this.informesSeleccionadosAprobados);
   }
 
   abrirResumenAdministrador() {
@@ -645,23 +815,7 @@ export class InformesCliente implements OnInit {
   }
 
   descargarInformeResumen() {
-    const ids = this.candidatosSeleccionadosResumen.map((informe) => informe.solicitudCandidatoId);
-
-    if (ids.length === 0) {
-      return;
-    }
-
-    this.informesService.descargarResumenMasivo(ids)
-      .pipe(take(1))
-      .subscribe({
-        next: (respuesta) => {
-          this.informesService.descargarBlob(respuesta, 'RESUMEN_MASIVO.zip');
-          this.mostrarConfirmacionAccion('Informe resumen descargado correctamente.');
-        },
-        error: (error) => {
-          this.mostrarErrorAccion(error, 'No se pudo descargar el informe resumen.');
-        },
-      });
+    this.generarInformeComparativoSolicitud('pdf');
   }
 
   manejarAccionTabla(evento: DataTableActionEvent<InformeCandidato>) {
@@ -670,14 +824,23 @@ export class InformesCliente implements OnInit {
       return;
     }
 
-    if (evento.action === 'descargar-informe') {
-      this.descargarDocumentoIndividual(evento.row, 'resumen');
+    if (evento.action === 'descargar-informe-pdf') {
+      this.generarInformeComparativoDesdeSolicitud(evento.row, 'pdf');
+      return;
+    }
+
+    if (evento.action === 'descargar-informe-docx') {
+      this.generarInformeComparativoDesdeSolicitud(evento.row, 'docx');
       return;
     }
 
     if (evento.action === 'enviar-correo') {
-      this.seleccionados = new Set([evento.row.id]);
-      this.abrirResumenAdministrador();
+      if (this.vistaActiva === 'no-aprobados') {
+        this.abrirCorreoCierre([evento.row]);
+        return;
+      }
+
+      this.abrirCorreoAprobados([evento.row]);
       return;
     }
   }
@@ -742,10 +905,296 @@ export class InformesCliente implements OnInit {
         next: (respuesta) => {
           this.informes = respuesta.items.map((item) => this.mapearInforme(item));
           this.seleccionados = new Set();
+          this.actualizarContextoComparativoDesdeFiltros();
         },
         error: (error) => {
           this.informes = [];
           this.errorCarga = obtenerMensajeError(error, 'No se pudieron cargar los informes desde M6.');
+        },
+      });
+  }
+
+  cargarCandidatosComparativo(solicitudId: number) {
+    const token = ++this.cargaCandidatosComparativoToken;
+    this.cargandoCandidatosComparativo = true;
+    this.errorCandidatosComparativo = '';
+    this.candidatosService.listarPorSolicitud(solicitudId)
+      .pipe(
+        take(1),
+        finalize(() => {
+          if (token === this.cargaCandidatosComparativoToken) {
+            this.cargandoCandidatosComparativo = false;
+          }
+        }),
+      )
+      .subscribe({
+        next: (postulaciones) => {
+          if (token !== this.cargaCandidatosComparativoToken) {
+            return;
+          }
+
+          this.candidatosComparativoSolicitud = postulaciones.map((postulacion) =>
+            this.mapearPostulacionComparativo(postulacion),
+          );
+          if (this.candidatosComparativoSolicitud.length === 0) {
+            this.errorCandidatosComparativo = 'La solicitud seleccionada no tiene candidatos asociados.';
+          }
+        },
+        error: (error) => {
+          if (token !== this.cargaCandidatosComparativoToken) {
+            return;
+          }
+
+          this.candidatosComparativoSolicitud = [];
+          this.errorCandidatosComparativo = obtenerMensajeError(error, 'No se pudieron cargar los candidatos asociados a la solicitud.');
+        },
+      });
+  }
+
+  abrirCorreoAprobados(candidatos: InformeCandidato[]) {
+    const aprobados = candidatos.filter((candidato) => candidato.aprobado && candidato.puedeEnviarDirectivos);
+
+    if (aprobados.length === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Selecciona candidatos aprobados para enviar correo.',
+      };
+      return;
+    }
+
+    this.modoCorreoCandidatos = 'seleccion';
+    this.candidatosCorreoSeleccionados = aprobados;
+    this.reiniciarEstadoCorreoCandidatos();
+    this.plantillaCorreoCandidato = 'manual';
+    this.plantillaCorreoCandidatoId = 0;
+    this.mostrarModalCorreoCandidatos = true;
+    this.cargarPlantillasCorreoCandidatos();
+  }
+
+  abrirCorreoCierre(candidatos: InformeCandidato[]) {
+    const noAprobados = candidatos.filter((candidato) => candidato.clasificacion === 'NO_APROBADO');
+    const noElegibles = noAprobados.filter((candidato) => !candidato.puedeEnviarRechazo);
+
+    if (noAprobados.length === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Selecciona candidatos no aprobados para enviar una comunicación de cierre.',
+      };
+      return;
+    }
+
+    if (noElegibles.length > 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'La selección contiene candidatos que todavía no tienen habilitada una comunicación de cierre.',
+      };
+      return;
+    }
+
+    this.modoCorreoCandidatos = 'cierre';
+    this.candidatosCorreoSeleccionados = noAprobados;
+    this.reiniciarEstadoCorreoCandidatos();
+    this.plantillaCorreoCierreId = 0;
+    this.tipoCorreoCierre = '';
+    this.mostrarModalCorreoCandidatos = true;
+    this.cargarPlantillasCorreoCierre();
+  }
+
+  cerrarModalCorreoCandidatos() {
+    if (this.enviandoCorreoCandidatos) {
+      return;
+    }
+
+    this.mostrarModalCorreoCandidatos = false;
+    this.errorCorreoCandidatos = '';
+    this.candidatosCorreoSeleccionados = [];
+    this.resultadosCorreoCandidatos = [];
+    this.itemsCorreoCierre = [];
+    this.plantillaCorreoCierreId = 0;
+    this.tipoCorreoCierre = '';
+  }
+
+  seleccionarPlantillaCorreoCandidato(plantillaId: number | null) {
+    const id = Number(plantillaId ?? 0);
+    const plantilla = this.plantillasCorreoCandidatos.find((item) => item.plantilla_id === id);
+    this.plantillaCorreoCandidatoId = plantilla?.plantilla_id ?? 0;
+    this.plantillaCorreoCandidato = plantilla
+      ? plantilla.tipo as TipoCorreoCandidatoApi
+      : 'manual';
+    this.aplicarPlantillaCorreoCandidato();
+  }
+
+  seleccionarPlantillaCorreoCierre(plantillaId: number | null) {
+    const id = Number(plantillaId ?? 0);
+    const plantilla = this.plantillasCorreoCierre.find((item) => item.plantilla_id === id);
+    this.plantillaCorreoCierreId = plantilla?.plantilla_id ?? 0;
+    this.tipoCorreoCierre = plantilla
+      ? plantilla.tipo as TipoCorreoRechazoApi
+      : '';
+    this.itemsCorreoCierre = [];
+    this.errorCorreoCandidatos = '';
+    this.preparacionCorreoCierreToken++;
+    this.resetearScrollMensajesCorreo();
+
+    if (!this.tipoCorreoCierre) {
+      return;
+    }
+
+    this.prepararCorreoCierre();
+  }
+
+  seleccionarTipoCorreoCierre(tipo: TipoCorreoRechazoApi | '') {
+    this.tipoCorreoCierre = tipo;
+    const plantilla = this.plantillasCorreoCierre.find((item) => item.tipo === tipo);
+    this.plantillaCorreoCierreId = plantilla?.plantilla_id ?? 0;
+    this.itemsCorreoCierre = [];
+    this.errorCorreoCandidatos = '';
+    this.preparacionCorreoCierreToken++;
+    this.resetearScrollMensajesCorreo();
+
+    if (!tipo) {
+      return;
+    }
+
+    this.prepararCorreoCierre();
+  }
+
+  actualizarItemCorreoCierre(index: number, field: 'asunto' | 'cuerpo', value: string) {
+    this.itemsCorreoCierre = this.itemsCorreoCierre.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [field]: value } : item
+    ));
+  }
+
+  enviarCorreoCandidatos() {
+    this.errorCorreoCandidatos = '';
+    this.resultadosCorreoCandidatos = [];
+
+    if (!this.puedeEnviarCorreoCandidatos) {
+      this.errorCorreoCandidatos = 'Revisa plantilla, asunto y mensaje antes de enviar.';
+      return;
+    }
+
+    if (this.modoCorreoCandidatos === 'cierre') {
+      this.enviarCorreoCierre();
+      return;
+    }
+
+    this.enviandoCorreoCandidatos = true;
+    this.informesService.enviarCorreosCandidatos({
+      solicitudCandidatoIds: this.candidatosCorreoSeleccionados.map((candidato) => candidato.solicitudCandidatoId),
+      tipo: 'SELECCION',
+      asunto: this.asuntoCorreoCandidatos.trim(),
+      cuerpo: this.cuerpoCorreoCandidatos.trim(),
+    })
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.enviandoCorreoCandidatos = false;
+        }),
+      )
+      .subscribe({
+        next: (resultados) => {
+          this.resultadosCorreoCandidatos = resultados;
+          const enviados = resultados.filter((resultado) => resultado.estado === 'ENVIADO').length;
+          if (enviados === resultados.length) {
+            this.errorCorreoCandidatos = '';
+            return;
+          }
+          this.errorCorreoCandidatos = 'Algunos correos no se pudieron enviar. Revisa el detalle antes de cerrar.';
+        },
+        error: (error) => {
+          this.errorCorreoCandidatos = obtenerMensajeError(error, 'No se pudo enviar el correo. Inténtalo nuevamente.');
+        },
+      });
+  }
+
+  enviarCorreoCandidatosAprobados() {
+    this.enviarCorreoCandidatos();
+  }
+
+  private reiniciarEstadoCorreoCandidatos() {
+    this.errorCorreoCandidatos = '';
+    this.resultadosCorreoCandidatos = [];
+    this.asuntoCorreoCandidatos = '';
+    this.cuerpoCorreoCandidatos = '';
+    this.itemsCorreoCierre = [];
+    this.plantillaCorreoCierreId = 0;
+    this.preparandoCorreoCierre = false;
+  }
+
+  private prepararCorreoCierre() {
+    if (!this.tipoCorreoCierre) {
+      return;
+    }
+
+    const token = ++this.preparacionCorreoCierreToken;
+    this.preparandoCorreoCierre = true;
+    this.errorCorreoCandidatos = '';
+    this.informesService.prepararRechazos({
+      solicitudCandidatoIds: this.candidatosCorreoSeleccionados.map((candidato) => candidato.solicitudCandidatoId),
+      tipo: this.tipoCorreoCierre,
+    })
+      .pipe(
+        take(1),
+        finalize(() => {
+          if (token === this.preparacionCorreoCierreToken) {
+            this.preparandoCorreoCierre = false;
+          }
+        }),
+      )
+      .subscribe({
+        next: (preview) => {
+          if (token !== this.preparacionCorreoCierreToken) {
+            return;
+          }
+
+          this.itemsCorreoCierre = preview.items;
+          this.resetearScrollMensajesCorreo();
+        },
+        error: (error) => {
+          if (token !== this.preparacionCorreoCierreToken) {
+            return;
+          }
+
+          this.itemsCorreoCierre = [];
+          this.errorCorreoCandidatos = obtenerMensajeError(error, 'No se pudo preparar el correo de cierre.');
+        },
+      });
+  }
+
+  private enviarCorreoCierre() {
+    if (!this.tipoCorreoCierre) {
+      return;
+    }
+
+    this.enviandoCorreoCandidatos = true;
+    this.informesService.enviarRechazos(this.itemsCorreoCierre.map((item) => ({
+      tipo: this.tipoCorreoCierre as TipoCorreoRechazoApi,
+      solicitudCandidatoId: item.solicitud_candidato_id,
+      asunto: item.asunto.trim(),
+      cuerpo: item.cuerpo.trim(),
+    })))
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.enviandoCorreoCandidatos = false;
+        }),
+      )
+      .subscribe({
+        next: (resultados) => {
+          this.resultadosCorreoCandidatos = resultados;
+          const enviados = resultados.filter((resultado) => resultado.estado === 'ENVIADO').length;
+          if (enviados === resultados.length) {
+            this.errorCorreoCandidatos = '';
+            return;
+          }
+          this.errorCorreoCandidatos = 'Algunos correos no se pudieron enviar. Revisa el detalle antes de cerrar.';
+        },
+        error: (error) => {
+          this.errorCorreoCandidatos = obtenerMensajeError(error, 'No se pudo enviar el correo de cierre.');
         },
       });
   }
@@ -764,6 +1213,7 @@ export class InformesCliente implements OnInit {
     return {
       id: String(item.solicitud_candidato_id),
       solicitudCandidatoId: item.solicitud_candidato_id,
+      solicitudId: item.solicitud_id,
       idSolicitud: item.solicitud_codigo ?? `Solicitud ${item.solicitud_id}`,
       match: Math.round(Number(item.match ?? 0)),
       nombre: item.candidato_nombre || item.candidato_email,
@@ -784,8 +1234,380 @@ export class InformesCliente implements OnInit {
       clasificacion: item.clasificacion,
       aprobado: item.clasificacion === 'APROBADO',
       puedeEnviarDirectivos: item.puede_enviar_directivos,
+      puedeEnviarRechazo: item.puede_enviar_rechazo,
       entrevistas: item.entrevistas ?? [],
     };
+  }
+
+  private get informesSeleccionadosAprobados() {
+    return this.informesSeleccionados
+      .filter((informe) => informe.aprobado && informe.puedeEnviarDirectivos);
+  }
+
+  private actualizarContextoComparativoDesdeFiltros() {
+    const solicitud = resolverSolicitudReal(this.solicitudesFiltro, this.filtros.idSolicitud);
+    if (!solicitud) {
+      this.limpiarContextoComparativo();
+      return;
+    }
+
+    this.establecerSolicitudComparativo(Number(solicitud.id), solicitud.codigo ?? `Solicitud ${solicitud.id}`);
+  }
+
+  private actualizarContextoComparativoDesdeSeleccion() {
+    if (this.seleccionados.size === 0) {
+      this.limpiarContextoComparativo();
+      return;
+    }
+
+    const seleccionados = this.informesSeleccionados;
+    const solicitudes = Array.from(new Set(seleccionados.map((informe) => informe.solicitudId)));
+    if (solicitudes.length !== 1) {
+      this.limpiarContextoComparativo();
+      this.errorCandidatosComparativo = 'Selecciona candidatos de una sola solicitud o usa el filtro de solicitud.';
+      return;
+    }
+
+    const referencia = seleccionados[0];
+    this.establecerSolicitudComparativo(referencia.solicitudId, referencia.idSolicitud);
+  }
+
+  private establecerSolicitudComparativo(solicitudId: number, codigo: string) {
+    if (!Number.isFinite(solicitudId) || solicitudId <= 0) {
+      this.limpiarContextoComparativo();
+      return;
+    }
+
+    if (
+      this.solicitudComparativoId === solicitudId
+      && (this.cargandoCandidatosComparativo || this.candidatosComparativoSolicitud.length > 0)
+    ) {
+      return;
+    }
+
+    this.solicitudComparativoId = solicitudId;
+    this.solicitudComparativoCodigo = codigo;
+    this.candidatosComparativoSolicitud = [];
+    this.errorCandidatosComparativo = '';
+    this.cargarCandidatosComparativo(solicitudId);
+  }
+
+  private limpiarContextoComparativo() {
+    this.cargaCandidatosComparativoToken++;
+    this.solicitudComparativoId = null;
+    this.solicitudComparativoCodigo = '';
+    this.candidatosComparativoSolicitud = [];
+    this.errorCandidatosComparativo = '';
+  }
+
+  private generarInformeComparativoDesdeSolicitud(candidato: InformeCandidato, formato: 'pdf' | 'docx') {
+    this.cargarYDescargarInformeComparativo(candidato.solicitudId, candidato.idSolicitud, formato);
+  }
+
+  private generarInformeComparativoSolicitud(formato: 'pdf' | 'docx') {
+    const solicitud = this.resolverSolicitudParaComparativo();
+    if (!solicitud) {
+      return;
+    }
+
+    this.cargarYDescargarInformeComparativo(solicitud.id, solicitud.codigo, formato);
+  }
+
+  private resolverSolicitudParaComparativo(): { id: number; codigo: string } | null {
+    const solicitudFiltro = resolverSolicitudReal(this.solicitudesFiltro, this.filtros.idSolicitud);
+    if (solicitudFiltro) {
+      return {
+        id: Number(solicitudFiltro.id),
+        codigo: solicitudFiltro.codigo ?? `Solicitud ${solicitudFiltro.id}`,
+      };
+    }
+
+    if (this.seleccionados.size === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Selecciona una solicitud en el filtro superior para generar el informe comparativo.',
+      };
+      return null;
+    }
+
+    const seleccionados = this.informesSeleccionados;
+    const solicitudes = Array.from(new Set(seleccionados.map((informe) => informe.solicitudId)));
+    if (solicitudes.length !== 1) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'Elige una sola solicitud antes de generar el informe comparativo.',
+      };
+      return null;
+    }
+
+    return {
+      id: seleccionados[0].solicitudId,
+      codigo: seleccionados[0].idSolicitud,
+    };
+  }
+
+  private cargarYDescargarInformeComparativo(solicitudId: number, codigo: string, formato: 'pdf' | 'docx') {
+    const token = ++this.cargaCandidatosComparativoToken;
+    this.solicitudComparativoId = solicitudId;
+    this.solicitudComparativoCodigo = codigo;
+    this.cargandoCandidatosComparativo = true;
+    this.errorCandidatosComparativo = '';
+
+    this.candidatosService.listarPorSolicitud(solicitudId)
+      .pipe(
+        take(1),
+        finalize(() => {
+          if (token === this.cargaCandidatosComparativoToken) {
+            this.cargandoCandidatosComparativo = false;
+          }
+        }),
+      )
+      .subscribe({
+        next: (postulaciones) => {
+          if (token !== this.cargaCandidatosComparativoToken) {
+            return;
+          }
+
+          const candidatos = postulaciones.map((postulacion) => this.mapearPostulacionComparativo(postulacion));
+          this.candidatosComparativoSolicitud = candidatos;
+          if (candidatos.length === 0) {
+            this.errorCandidatosComparativo = `La solicitud ${codigo} no tiene candidatos asociados.`;
+            this.alerta = {
+              tipo: 'warning',
+              variante: 'soft',
+              mensaje: this.errorCandidatosComparativo,
+            };
+            return;
+          }
+          this.descargarInformeComparativo(candidatos, formato);
+        },
+        error: (error) => {
+          if (token !== this.cargaCandidatosComparativoToken) {
+            return;
+          }
+
+          this.candidatosComparativoSolicitud = [];
+          this.errorCandidatosComparativo = obtenerMensajeError(error, 'No se pudieron cargar los candidatos asociados a la solicitud.');
+          this.mostrarErrorAccion(error, 'No se pudieron cargar los candidatos asociados a la solicitud.');
+        },
+      });
+  }
+
+  private mapearPostulacionComparativo(postulacion: PostulacionCandidatoApi): InformeCandidato {
+    const existente = this.informes.find((informe) => informe.solicitudCandidatoId === postulacion.slcd_id);
+    if (existente) {
+      return existente;
+    }
+
+    return {
+      id: String(postulacion.slcd_id),
+      solicitudCandidatoId: postulacion.slcd_id,
+      solicitudId: postulacion.slcd_solicitud_id,
+      idSolicitud: this.solicitudComparativoCodigo || `Solicitud ${postulacion.slcd_solicitud_id}`,
+      match: Math.round(Number(postulacion.slcd_puntaje_compatibilidad ?? 0)),
+      nombre: `Candidato ${postulacion.slcd_candidato_id ?? postulacion.slcd_id}`,
+      correo: 'Correo no disponible',
+      telefono: 'Sin telefono',
+      cargo: 'Sin cargo',
+      empresa: 'No informado',
+      nivel: 'Sin tecnologias',
+      experiencia: 'Sin informacion',
+      resultadoEntrevista: 'Sin resultado',
+      detalleResultado: 'Sin detalle',
+      motivoM6: 'Sin motivo informado',
+      estado: 'Sin estado',
+      disponibilidad: 'Sin disponibilidad',
+      clasificacion: 'PENDIENTE',
+      aprobado: false,
+      puedeEnviarDirectivos: false,
+      puedeEnviarRechazo: false,
+      entrevistas: [],
+    };
+  }
+
+  private descargarInformeComparativo(candidatos: InformeCandidato[], formato: 'pdf' | 'docx') {
+    const payload = this.payloadInformeComparativo(candidatos);
+    if (!payload) {
+      return;
+    }
+
+    const descarga$ = formato === 'pdf'
+      ? this.informesService.descargarInformeComparativoPdf(payload)
+      : this.informesService.descargarInformeComparativoDocx(payload);
+    const nombre = formato === 'pdf' ? 'INFORME_COMPARATIVO.pdf' : 'INFORME_COMPARATIVO.docx';
+
+    this.descargandoInformeComparativo = formato;
+    descarga$
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.descargandoInformeComparativo = null;
+        }),
+      )
+      .subscribe({
+        next: (respuesta) => {
+          this.informesService.descargarBlob(respuesta, nombre);
+          const solicitud = candidatos[0]?.idSolicitud ?? 'la solicitud';
+          this.mostrarConfirmacionAccion(
+            `Informe comparativo ${formato.toUpperCase()} descargado correctamente. Incluyó ${candidatos.length} ${candidatos.length === 1 ? 'candidato' : 'candidatos'} de ${solicitud}.`,
+          );
+        },
+        error: (error) => {
+          this.mostrarErrorAccion(error, `No se pudo descargar el informe comparativo ${formato.toUpperCase()}.`);
+        },
+      });
+  }
+
+  private payloadInformeComparativo(candidatos: InformeCandidato[]): InformeComparativoRequestApi | null {
+    if (candidatos.length === 0) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'La solicitud seleccionada no tiene candidatos asociados para generar el informe comparativo.',
+      };
+      return null;
+    }
+
+    const solicitudes = Array.from(new Set(candidatos.map((candidato) => candidato.solicitudId)));
+    if (solicitudes.length !== 1) {
+      this.alerta = {
+        tipo: 'warning',
+        variante: 'soft',
+        mensaje: 'El informe comparativo solo puede incluir candidatos de una misma solicitud.',
+      };
+      return null;
+    }
+
+    return {
+      solicitud_id: solicitudes[0],
+      solicitud_candidato_ids: candidatos.map((candidato) => candidato.solicitudCandidatoId),
+    };
+  }
+
+  private cargarPlantillasCorreoCandidatos() {
+    this.cargandoPlantillasCorreo = true;
+    this.errorCorreoCandidatos = '';
+    this.plantillasCorreoCandidatos = [];
+
+    this.informesService.listarPlantillas()
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargandoPlantillasCorreo = false;
+        }),
+      )
+      .subscribe({
+        next: (plantillas) => {
+          this.plantillasCorreoCandidatos = this.filtrarPlantillasCorreoCandidatos(plantillas);
+          const seleccion = this.plantillasCorreoCandidatos.find((plantilla) => plantilla.tipo === 'SELECCION');
+
+          if (!seleccion) {
+            this.errorCorreoCandidatos = 'No hay una plantilla activa de selección disponible.';
+            return;
+          }
+
+          this.plantillaCorreoCandidato = 'SELECCION';
+          this.plantillaCorreoCandidatoId = seleccion.plantilla_id;
+          this.aplicarPlantillaCorreoCandidato();
+        },
+        error: () => {
+          this.errorCorreoCandidatos = 'No se pudieron cargar las plantillas de correo.';
+        },
+      });
+  }
+
+  private cargarPlantillasCorreoCierre() {
+    this.cargandoPlantillasCorreo = true;
+    this.errorCorreoCandidatos = '';
+    this.plantillasCorreoCierre = [];
+
+    this.informesService.listarPlantillas()
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.cargandoPlantillasCorreo = false;
+        }),
+      )
+      .subscribe({
+        next: (plantillas) => {
+          this.plantillasCorreoCierre = plantillas
+            .filter((plantilla) => plantilla.activa && ['RECHAZO', 'AGRADECIMIENTO'].includes(plantilla.tipo.toUpperCase()))
+            .map((plantilla) => ({
+              ...plantilla,
+              tipo: plantilla.tipo.toUpperCase(),
+            }));
+
+          if (this.plantillasCorreoCierre.length === 0) {
+            this.errorCorreoCandidatos = 'No hay plantillas activas de cierre disponibles.';
+          }
+        },
+        error: () => {
+          this.errorCorreoCandidatos = 'No se pudieron cargar las plantillas de correo.';
+        },
+      });
+  }
+
+  private aplicarPlantillaCorreoCandidato() {
+    if (this.plantillaCorreoCandidato === 'manual') {
+      this.asuntoCorreoCandidatos = '';
+      this.cuerpoCorreoCandidatos = '';
+      this.resetearScrollMensajesCorreo();
+      return;
+    }
+
+    const plantilla = this.plantillasCorreoCandidatos.find((item) => item.plantilla_id === this.plantillaCorreoCandidatoId);
+    if (!plantilla) {
+      this.asuntoCorreoCandidatos = '';
+      this.cuerpoCorreoCandidatos = '';
+      this.resetearScrollMensajesCorreo();
+      return;
+    }
+
+    this.asuntoCorreoCandidatos = plantilla.asunto;
+    this.cuerpoCorreoCandidatos = plantilla.cuerpo;
+    this.resetearScrollMensajesCorreo();
+  }
+
+  private resetearScrollMensajesCorreo() {
+    queueMicrotask(() => {
+      this.mensajeCorreoTextareas?.forEach((textarea) => {
+        textarea.nativeElement.scrollTop = 0;
+      });
+    });
+  }
+
+  private filtrarPlantillasCorreoCandidatos(plantillas: PlantillaNotificacionApi[]) {
+    return plantillas
+      .filter((plantilla) => plantilla.activa && plantilla.tipo.toUpperCase() === 'SELECCION')
+      .filter((plantilla) => this.variablesNoSoportadasPlantilla(plantilla).length === 0)
+      .map((plantilla) => ({
+        ...plantilla,
+        tipo: plantilla.tipo.toUpperCase(),
+      }));
+  }
+
+  private variablesNoSoportadasPlantilla(plantilla: PlantillaNotificacionApi) {
+    const soportadas = new Set([
+      '{nombre}',
+      '{cargo}',
+      '{codigo_solicitud}',
+      '{solicitud}',
+      '{{params.nombre}}',
+      '{{params.cargo}}',
+      '{{params.codigo_solicitud}}',
+      '{{params.solicitud}}',
+    ]);
+
+    const texto = `${plantilla.asunto} ${plantilla.cuerpo}`;
+    const variables = texto.match(/{{\s*params\.[^}]+\s*}}|{[^{}]+}/g) ?? [];
+
+    return Array.from(new Set(
+      variables
+        .map((variable) => variable.replace(/\s+/g, ''))
+        .filter((variable) => !soportadas.has(variable)),
+    ));
   }
 
   private coincideVistaActiva(informe: InformeCandidato) {
